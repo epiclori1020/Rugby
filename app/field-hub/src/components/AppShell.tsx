@@ -1,4 +1,5 @@
-import type { ReactNode } from 'react'
+import { Menu, X } from 'lucide-react'
+import { useCallback, useEffect, useState, type ReactNode } from 'react'
 import type { HubTab } from '../App'
 import type { PlayerSyncOverview } from '../domain/sync'
 import type { AuthSessionState } from '../lib/auth'
@@ -70,21 +71,71 @@ export function AppShell({
   syncNotice = null,
 }: AppShellProps) {
   const meta = tabMeta[activeTab]
+  const [isNavigationOpen, setIsNavigationOpen] = useState(false)
+
+  const closeNavigation = useCallback(() => {
+    setIsNavigationOpen(false)
+  }, [])
+
+  const handleTabChange = useCallback(
+    (tab: HubTab) => {
+      onTabChange(tab)
+      closeNavigation()
+    },
+    [closeNavigation, onTabChange],
+  )
+
+  useEffect(() => {
+    if (!isNavigationOpen) {
+      return undefined
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        closeNavigation()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [closeNavigation, isNavigationOpen])
 
   return (
     <div className="app-shell">
-      <aside className="sidebar" aria-label="Hauptnavigation">
+      <aside
+        className={isNavigationOpen ? 'sidebar sidebar-open' : 'sidebar'}
+        id="app-sidebar"
+        aria-label="Hauptnavigation"
+      >
         <div className="brand-block">
           <p className="eyebrow">Rugby Donau S&C</p>
           <h1>Field Hub</h1>
           <p>Coach-Dashboard fuer Trainingstage, Sync und Feldorganisation.</p>
         </div>
-        <MainNavigation activeTab={activeTab} onTabChange={onTabChange} />
+        <MainNavigation activeTab={activeTab} onTabChange={handleTabChange} />
       </aside>
+      {isNavigationOpen ? (
+        <button
+          className="sidebar-backdrop"
+          type="button"
+          aria-label="Navigation schliessen"
+          onClick={closeNavigation}
+        />
+      ) : null}
 
       <main className="shell-main">
         <div className="topbar">
           <div className="page-title">
+            <button
+              className="mobile-menu-button"
+              type="button"
+              aria-controls="app-sidebar"
+              aria-expanded={isNavigationOpen}
+              aria-label={isNavigationOpen ? 'Navigation schliessen' : 'Navigation oeffnen'}
+              onClick={() => setIsNavigationOpen((currentValue) => !currentValue)}
+            >
+              {isNavigationOpen ? <X className="nav-icon" aria-hidden /> : <Menu className="nav-icon" aria-hidden />}
+            </button>
             <p className="eyebrow">{meta.eyebrow}</p>
             <h2>{meta.title}</h2>
             <p>{meta.description}</p>
@@ -102,10 +153,6 @@ export function AppShell({
           {children}
         </div>
       </main>
-
-      <div className="bottom-tab-bar" aria-label="Bottom Tab Navigation">
-        <MainNavigation activeTab={activeTab} onTabChange={onTabChange} />
-      </div>
     </div>
   )
 }

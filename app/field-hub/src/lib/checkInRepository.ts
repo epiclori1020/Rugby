@@ -96,10 +96,15 @@ function createId() {
 }
 
 const pendingSessionLogEnsures = new Map<string, Promise<SessionLog>>()
+const pendingCheckInEntrySaves = new Map<string, Promise<PlayerSessionEntry>>()
 const pendingCheckInSyncs = new Map<string, Promise<PlayerSyncOverview>>()
 
 function sessionLogEnsureKey(userId: string, sessionDefinitionId: string) {
   return `${userId}:${sessionDefinitionId}`
+}
+
+function checkInEntrySaveKey(userId: string, sessionLogId: string, playerId: string) {
+  return `${userId}:${sessionLogId}:${playerId}`
 }
 
 function sessionLogFromRow(row: SessionLogRow, syncStatus: SyncStatus = 'synced'): SessionLog {
@@ -520,7 +525,7 @@ export async function savePostSessionEntry(
   return entry
 }
 
-export async function saveCheckInEntry(
+async function saveCheckInEntryOnce(
   userId: string,
   sessionLogId: string,
   player: Player,
@@ -565,6 +570,30 @@ export async function saveCheckInEntry(
   await queueWrite('player_session_entries', entry.id, userId)
 
   return entry
+}
+
+export async function saveCheckInEntry(
+  userId: string,
+  sessionLogId: string,
+  player: Player,
+  patch: CheckInEntryPatch,
+  manualTrafficLight?: TrafficLight | 'auto',
+) {
+  const key = checkInEntrySaveKey(userId, sessionLogId, player.id)
+  const previousSave = pendingCheckInEntrySaves.get(key) ?? Promise.resolve(null)
+  const nextSave = previousSave
+    .catch(() => null)
+    .then(() => saveCheckInEntryOnce(userId, sessionLogId, player, patch, manualTrafficLight))
+
+  pendingCheckInEntrySaves.set(key, nextSave)
+
+  try {
+    return await nextSave
+  } finally {
+    if (pendingCheckInEntrySaves.get(key) === nextSave) {
+      pendingCheckInEntrySaves.delete(key)
+    }
+  }
 }
 
 export async function getCheckInSyncOverview(userId: string): Promise<PlayerSyncOverview> {

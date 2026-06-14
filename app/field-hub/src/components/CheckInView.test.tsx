@@ -110,6 +110,40 @@ const deletedPlayerWarning: PlayerWarning = {
   sessionDate: '2026-06-13',
 }
 
+const activePlayer: Player = {
+  id: 'player-active',
+  userId: 'user-1',
+  name: 'Max',
+  position: 'Back Row',
+  cluster: 'back_row',
+  active: true,
+  consentStatus: 'unklar',
+  photoConsentStatus: 'not_asked',
+  photoPath: null,
+  photoUpdatedAt: null,
+  returnerStatus: 'nein',
+  notes: '',
+  createdAt: '2026-06-16T18:00:00.000Z',
+  updatedAt: '2026-06-16T18:00:00.000Z',
+  deletedAt: null,
+  clientUpdatedAt: '2026-06-16T18:00:00.000Z',
+  syncStatus: 'synced',
+  syncError: null,
+}
+
+const autoGreenEntry: PlayerSessionEntry = {
+  ...deletedPlayerEntry,
+  id: 'entry-active-player',
+  playerId: activePlayer.id,
+  painScore: 0,
+  returnerFlag: 'nein',
+  redFlag: 'none',
+  trafficLight: 'green',
+  trafficLightSuggestion: 'green',
+  trafficLightWasManual: false,
+  syncStatus: 'synced',
+}
+
 describe('CheckInView active player metrics', () => {
   it('does not count stale entries for deleted players', () => {
     const checkInActions = {
@@ -123,7 +157,7 @@ describe('CheckInView active player metrics', () => {
       sessionLogId: 'session-log-1',
       refreshLocalCheckIns: async () => undefined,
       runSync: async () => syncOverview,
-      saveEntry: async () => undefined,
+      saveEntry: async () => true,
       saveSessionPatch: async () => undefined,
       getEntryForPlayer: (player: Player) => ({ ...deletedPlayerEntry, playerId: player.id }),
       sessionLog: null,
@@ -173,7 +207,7 @@ describe('CheckInView active player metrics', () => {
       sessionLogId: 'session-log-1',
       refreshLocalCheckIns: async () => undefined,
       runSync: async () => syncOverview,
-      saveEntry: async () => undefined,
+      saveEntry: async () => true,
       saveSessionPatch: async () => undefined,
       getEntryForPlayer: (player: Player) => ({ ...deletedPlayerEntry, playerId: player.id }),
       sessionLog: null,
@@ -208,5 +242,57 @@ describe('CheckInView active player metrics', () => {
 
     expect(markup).not.toContain('Offene Warnungen aus letzter Einheit')
     expect(markup).not.toContain('stale warning')
+  })
+
+  it('keeps automatic Ampel and Safety defaults visually neutral until the coach acts', () => {
+    const checkInActions = {
+      activePlayers: [activePlayer],
+      entries: [autoGreenEntry],
+      errorMessage: null,
+      expectedPlayerIds: [],
+      warnings: [],
+      syncOverview,
+      isLoading: false,
+      sessionLogId: 'session-log-1',
+      refreshLocalCheckIns: async () => undefined,
+      runSync: async () => syncOverview,
+      saveEntry: async () => true,
+      saveSessionPatch: async () => undefined,
+      getEntryForPlayer: () => autoGreenEntry,
+      sessionLog: null,
+      clearError: () => undefined,
+    } satisfies ReturnType<typeof useCheckIns>
+    const playerActions = {
+      players: [activePlayer],
+      syncOverview,
+      isLoading: false,
+      refreshLocalPlayers: async () => undefined,
+      runSync: async () => undefined,
+      savePlayer: async () => undefined,
+      deactivatePlayer: async () => undefined,
+      deletePlayer: async () => undefined,
+      uploadPlayerPhoto: async () => undefined,
+      removePlayerPhoto: async () => undefined,
+    } satisfies ReturnType<typeof usePlayers>
+
+    const markup = renderToStaticMarkup(
+      <CheckInView
+        authState={authState}
+        checkInActions={checkInActions}
+        onNavigate={() => undefined}
+        onSessionChange={() => undefined}
+        playerActions={playerActions}
+        returnerCaps={[]}
+        selectedSession={selectedSession}
+        selectedSessionId={selectedSession.id}
+        sessions={[selectedSession]}
+      />,
+    )
+
+    expect(markup).toContain('Vorschlag')
+    expect(markup).not.toContain('traffic-chip green active')
+    expect(markup).toContain('Keine Red Flag')
+    expect(markup).not.toContain('class="segmented active danger" type="button">Keine Red Flag')
+    expect(markup).not.toContain('segmented active danger')
   })
 })

@@ -878,6 +878,32 @@ Am Ende berichte:
 - eigene Bewertung deiner Arbeit von 1 bis 10 mit kurzer Begruendung
 ```
 
+## Field Hub UX-Entscheidung 2026-06-14
+
+Kontext:
+
+- Nach dem UX-Interaktionsaudit wurden Bottom-Navigation, Spieler-Einstieg, Check-in-Feedback, Ampel und Safety nachgebessert.
+- Die Umsetzung liegt auf Branch `codex/field-hub-ux-interactions`.
+
+Entscheidungen fuer Folgesessions:
+
+- Keine Bottom-Navigation fuer den Field Hub. Es gibt zu viele Hauptbereiche fuer eine stabile Bottom-Bar. iPad/Desktop behalten die linke Sidebar; iPhone/narrow Viewports nutzen einen linken Drawer per Menu-Button.
+- Der mobile Drawer soll geschlossen nicht interaktiv/fokussierbar sein. CSS nutzt `visibility`/`pointer-events`; bei spaeterem Ausbau waere ein voller Fokus-Trap optional, aber fuer den MVP nicht zwingend.
+- Spieler-Screen bleibt list-first. Spielerformulare werden erst ueber `Neu` oder Spieler-Auswahl als Sheet geoeffnet, nicht als dauerhaftes rechtes Standardpanel.
+- Check-in-Ampel trennt automatische Empfehlung von Coach-Auswahl. Automatisch `green` darf die Zeile signalisieren, aber der grüne Chip wird erst nach manueller Coach-Korrektur aktiv markiert.
+- Safety `Keine Red Flag` bleibt visuell neutral. Nur echte Red-Flag-Optionen duerfen `danger active` erscheinen.
+- Check-in-Saves werden pro `userId/sessionLogId/playerId` im lokalen Repository sequenziert, damit konkurrierende lokale Saves keinen zweiten `player_session_entries`-Datensatz erzeugen. Das ersetzt keine spaetere DB-Unique-Constraint, reduziert aber das MVP-Risiko lokal deutlich.
+- Button-Feedback bedeutet aktuell lokal verarbeitet/gespeichert; Remote-Sync laeuft weiterhin im Hintergrund und wird separat ueber Sync-Status/Pending angezeigt. Bei spaeterem UX-Ausbau sollte die Copy klarer zwischen `lokal gespeichert` und `remote synchronisiert` unterscheiden.
+- PWA-Stale-Code bleibt ein eigener P1-QA-Punkt. `registerType: autoUpdate` existiert, aber es gibt noch keinen sichtbaren App-Version-/Update-Hinweis. Folgesessions sollen bei UI-QA alte Service-Worker-/Cache-Scope-Effekte aktiv pruefen und eine kleine Update-/Version-Anzeige planen.
+
+Verifikation fuer diese UX-Runde:
+
+- `npm run typecheck`
+- `npm run lint`
+- `npm test`
+- `npm run build`
+- Browser-QA auf frischem Dev-Port, weil `127.0.0.1:5173` zeitweise alte PWA-Assets aus einem vorherigen Service-Worker zeigte.
+
 ## Empfohlener Startprompt fuer eine Trainingsplan-Session
 
 ```text

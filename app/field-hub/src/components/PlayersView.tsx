@@ -18,6 +18,7 @@ import {
 } from '../domain/players'
 import type { useBaselines } from '../hooks/useBaselines'
 import type { AuthSessionState } from '../lib/auth'
+import { triggerHapticFeedback } from '../lib/interactionFeedback'
 import { downloadPlayerPhotoUrl } from '../lib/playerRepository'
 import type { usePlayers } from '../hooks/usePlayers'
 import { AuthPanel } from './AuthPanel'
@@ -108,9 +109,11 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
   const { removePlayerPhoto } = playerActions
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
+  const [isSubmitting, setIsSubmitting] = useState(false)
   const [formValues, setFormValues] = useState<PlayerFormValues>(emptyPlayerFormValues)
   const [formError, setFormError] = useState<string | null>(null)
   const [formNotice, setFormNotice] = useState<string | null>(null)
+  const [viewNotice, setViewNotice] = useState<string | null>(null)
   const { clearPhotoLoadError, markPhotoLoadError, photoLoadError } = usePhotoLoadError()
 
   const selectedPlayer = useMemo(
@@ -124,6 +127,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
     setFormValues(emptyPlayerFormValues)
     setFormError(null)
     setFormNotice(null)
+    setViewNotice(null)
     clearPhotoLoadError()
     setIsEditorOpen(true)
   }
@@ -133,6 +137,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
     setFormValues(playerToFormValues(player))
     setFormError(null)
     setFormNotice(null)
+    setViewNotice(null)
     clearPhotoLoadError()
     setIsEditorOpen(true)
   }
@@ -181,16 +186,24 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
     setFormError(null)
     setFormNotice(null)
     clearPhotoLoadError()
+    setIsSubmitting(true)
+    triggerHapticFeedback('selection')
 
     try {
       await savePlayer(formValues, selectedPlayer ?? undefined)
-      setFormNotice(selectedPlayer ? 'Spieler aktualisiert.' : 'Spieler angelegt.')
+      const notice = selectedPlayer ? 'Spieler aktualisiert.' : 'Spieler angelegt.'
+      setFormNotice(notice)
+      setViewNotice(notice)
+      triggerHapticFeedback('success')
       if (!selectedPlayer) {
         setFormValues(emptyPlayerFormValues)
       }
       setIsEditorOpen(false)
     } catch (caughtError) {
+      triggerHapticFeedback('warning')
       setFormError(caughtError instanceof Error ? caughtError.message : 'Spieler konnte nicht gespeichert werden.')
+    } finally {
+      setIsSubmitting(false)
     }
   }
 
@@ -202,11 +215,14 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
     setFormError(null)
     setFormNotice(null)
     clearPhotoLoadError()
+    triggerHapticFeedback('selection')
 
     try {
       await deactivatePlayer(selectedPlayer)
       setFormNotice('Spieler deaktiviert.')
+      triggerHapticFeedback('success')
     } catch (caughtError) {
+      triggerHapticFeedback('warning')
       setFormError(caughtError instanceof Error ? caughtError.message : 'Spieler konnte nicht deaktiviert werden.')
     }
   }
@@ -226,6 +242,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
     setFormError(null)
     setFormNotice(null)
     clearPhotoLoadError()
+    triggerHapticFeedback('selection')
 
     try {
       await deletePlayer(selectedPlayer)
@@ -233,7 +250,9 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
       setFormValues(emptyPlayerFormValues)
       setFormNotice('Spieler geloescht.')
       setIsEditorOpen(false)
+      triggerHapticFeedback('success')
     } catch (caughtError) {
+      triggerHapticFeedback('warning')
       setFormError(caughtError instanceof Error ? caughtError.message : 'Spieler konnte nicht geloescht werden.')
     }
   }
@@ -249,11 +268,14 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
     setFormError(null)
     setFormNotice(null)
     clearPhotoLoadError()
+    triggerHapticFeedback('selection')
 
     try {
       await uploadPlayerPhoto(selectedPlayer, file)
       setFormNotice('Profilfoto gespeichert.')
+      triggerHapticFeedback('success')
     } catch (caughtError) {
+      triggerHapticFeedback('warning')
       setFormError(caughtError instanceof Error ? caughtError.message : 'Profilfoto konnte nicht gespeichert werden.')
     }
   }
@@ -266,11 +288,14 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
     setFormError(null)
     setFormNotice(null)
     clearPhotoLoadError()
+    triggerHapticFeedback('selection')
 
     try {
       await removePlayerPhoto(selectedPlayer)
       setFormNotice('Profilfoto entfernt.')
+      triggerHapticFeedback('success')
     } catch (caughtError) {
+      triggerHapticFeedback('warning')
       setFormError(caughtError instanceof Error ? caughtError.message : 'Profilfoto konnte nicht entfernt werden.')
     }
   }
@@ -304,6 +329,11 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
           <strong>{syncOverview.status}</strong>
           <span>{syncOverview.pendingCount} pending</span>
         </div>
+        {viewNotice ? (
+          <p className="form-success player-view-notice" aria-live="polite">
+            {viewNotice}
+          </p>
+        ) : null}
 
         <div className="player-list" aria-label="Spielerliste">
           {players.map((player) => (
@@ -501,9 +531,9 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
           </label>
 
           <div className="form-actions">
-            <button className="primary-action" type="submit">
+            <button className="primary-action" type="submit" disabled={isSubmitting}>
               <Save className="nav-icon" aria-hidden />
-              <span>Speichern</span>
+              <span>{isSubmitting ? 'Speichert...' : 'Speichern'}</span>
             </button>
             {selectedPlayer ? (
               <button className="secondary-action danger" type="button" onClick={handleDeactivate}>
@@ -541,19 +571,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
         </form>
           </article>
         </div>
-      ) : (
-        <article className="panel player-detail player-empty-detail">
-          <div className="library-heading">
-            <p className="eyebrow">Spielerformular</p>
-            <h3>Spieler auswaehlen oder neu anlegen</h3>
-            <p>Das Formular oeffnet sich als Sheet, damit die Liste auf iPad und iPhone stabil bleibt.</p>
-          </div>
-          <button className="primary-action" type="button" onClick={openNewPlayerSheet}>
-            <UserPlus className="nav-icon" aria-hidden />
-            <span>Neuen Spieler anlegen</span>
-          </button>
-        </article>
-      )}
+      ) : null}
     </section>
   )
 }

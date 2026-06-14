@@ -10,6 +10,7 @@ import {
   listExpectedPlayerIds,
   listLatestWarnings,
   rowFromEntry,
+  saveCheckInEntry,
   savePostSessionEntry,
   saveSessionLogPatch,
   type PlayerSessionEntryRow,
@@ -377,6 +378,22 @@ describe('checkInRepository session logs', () => {
     expect(saved.trafficLightWasManual).toBe(true)
     expect(saved.sessionLoad).toBe(560)
     await expect(localDb.pendingWrites.count()).resolves.toBe(1)
+  })
+
+  it('deduplicates concurrent check-in saves for the same player and session', async () => {
+    const [firstEntry, secondEntry] = await Promise.all([
+      saveCheckInEntry(userId, 'session-race', player, { present: true }),
+      saveCheckInEntry(userId, 'session-race', player, { readiness: 4 }),
+    ])
+
+    expect(secondEntry.id).toBe(firstEntry.id)
+    await expect(localDb.playerSessionEntries.count()).resolves.toBe(1)
+    await expect(localDb.pendingWrites.count()).resolves.toBe(1)
+    const savedEntry = await localDb.playerSessionEntries.get(firstEntry.id)
+    expect(savedEntry).toMatchObject({
+      present: true,
+      readiness: 4,
+    })
   })
 
   it('creates a pending session log only when saving training session notes', async () => {

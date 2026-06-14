@@ -168,9 +168,11 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
       if (typeof navigator === 'undefined' || navigator.onLine) {
         void runBackgroundSync()
       }
+      return true
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Check-in konnte nicht gespeichert werden.'
       setErrorMessage(message)
+      return false
     }
   }
 
