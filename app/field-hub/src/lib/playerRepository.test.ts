@@ -1,12 +1,20 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it, vi } from 'vitest'
 import type { Player } from '../domain/players'
-import { deletePlayer, listLocalPlayers, savePlayer, syncPlayers } from './playerRepository'
+import {
+  clearPlayerPhotoUrlCache,
+  deletePlayer,
+  downloadPlayerPhotoUrl,
+  listLocalPlayers,
+  savePlayer,
+  syncPlayers,
+} from './playerRepository'
 import { localDb } from './localDb'
 
 const supabaseState = vi.hoisted(() => ({
   removeError: null as { message: string } | null,
   removePaths: [] as string[],
+  downloadCount: 0,
   remoteRows: [] as unknown[],
   upsertRows: [] as unknown[],
 }))
@@ -36,6 +44,10 @@ vi.mock('./supabaseClient', () => ({
     })),
     storage: {
       from: vi.fn(() => ({
+        download: vi.fn(async () => {
+          supabaseState.downloadCount += 1
+          return { data: new Blob(['photo']), error: null }
+        }),
         remove: vi.fn(async (paths: string[]) => {
           if (supabaseState.removeError) {
             return { error: supabaseState.removeError }
@@ -77,10 +89,17 @@ function makePlayer(overrides: Partial<Player> = {}): Player {
 
 describe('playerRepository', () => {
   beforeEach(async () => {
+    vi.restoreAllMocks()
     supabaseState.removeError = null
     supabaseState.removePaths = []
+    supabaseState.downloadCount = 0
     supabaseState.remoteRows = []
     supabaseState.upsertRows = []
+    clearPlayerPhotoUrlCache()
+    vi.spyOn(URL, 'createObjectURL').mockImplementation(
+      (blob: Blob | MediaSource) => `blob:${(blob as Blob).size}:${supabaseState.downloadCount}`,
+    )
+    vi.spyOn(URL, 'revokeObjectURL').mockImplementation(() => undefined)
     Object.defineProperty(globalThis.navigator, 'onLine', {
       configurable: true,
       value: true,
@@ -89,7 +108,7 @@ describe('playerRepository', () => {
     await localDb.open()
   })
 
-  it('soft deletes players, clears profile photo references and queues a pending write', async () => {
+  it('soft deletes players immediately and defers profile photo cleanup to sync', async () => {
     const player = makePlayer()
     await localDb.players.put(player)
 
@@ -97,26 +116,26 @@ describe('playerRepository', () => {
 
     expect(deletedPlayer.deletedAt).toBeTruthy()
     expect(deletedPlayer.active).toBe(false)
-    expect(deletedPlayer.photoPath).toBeNull()
-    expect(deletedPlayer.photoUpdatedAt).toBeNull()
-    expect(supabaseState.removePaths).toEqual([`${userId}/players/player-1/profile.webp`])
+    expect(deletedPlayer.photoPath).toBe(`${userId}/players/player-1/profile.webp`)
+    expect(deletedPlayer.photoUpdatedAt).toBe('2026-06-16T18:05:00.000Z')
+    expect(supabaseState.removePaths).toEqual([])
     await expect(listLocalPlayers(userId)).resolves.toEqual([])
     await expect(localDb.pendingWrites.count()).resolves.toBe(1)
   })
 
-  it('keeps player photo references when storage cleanup fails during delete', async () => {
+  it('does not let storage cleanup failures block local player deletion', async () => {
     const player = makePlayer()
     await localDb.players.put(player)
     supabaseState.removeError = { message: 'Storage policy denied delete' }
 
-    await expect(deletePlayer(player)).rejects.toThrow('Storage policy denied delete')
+    const deletedPlayer = await deletePlayer(player)
 
     await expect(localDb.players.get(player.id)).resolves.toMatchObject({
-      deletedAt: null,
+      deletedAt: deletedPlayer.deletedAt,
       photoPath: `${userId}/players/player-1/profile.webp`,
-      syncStatus: 'synced',
+      syncStatus: 'pending',
     })
-    await expect(localDb.pendingWrites.count()).resolves.toBe(0)
+    await expect(localDb.pendingWrites.count()).resolves.toBe(1)
   })
 
   it('removes stored player photos when photo consent is revoked', async () => {
@@ -210,5 +229,26 @@ describe('playerRepository', () => {
       active: false,
     })
     await expect(listLocalPlayers(userId)).resolves.toEqual([])
+  })
+
+  it('caches downloaded player photo object urls by path and update timestamp', async () => {
+    await expect(downloadPlayerPhotoUrl('photo-path', '2026-06-16T18:00:00.000Z')).resolves.toBe('blob:5:1')
+    await expect(downloadPlayerPhotoUrl('photo-path', '2026-06-16T18:00:00.000Z')).resolves.toBe('blob:5:1')
+    await expect(downloadPlayerPhotoUrl('photo-path', '2026-06-16T18:05:00.000Z')).resolves.toBe('blob:5:2')
+
+    expect(supabaseState.downloadCount).toBe(2)
+  })
+
+  it('releases cached player photo object urls only when the cache is cleared', async () => {
+    await expect(downloadPlayerPhotoUrl('photo-path', '2026-06-16T18:00:00.000Z')).resolves.toBe('blob:5:1')
+    await expect(downloadPlayerPhotoUrl('photo-path', '2026-06-16T18:00:00.000Z')).resolves.toBe('blob:5:1')
+
+    expect(URL.revokeObjectURL).not.toHaveBeenCalled()
+
+    clearPlayerPhotoUrlCache()
+
+    expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:5:1')
+    await expect(downloadPlayerPhotoUrl('photo-path', '2026-06-16T18:00:00.000Z')).resolves.toBe('blob:5:2')
+    expect(supabaseState.downloadCount).toBe(2)
   })
 })

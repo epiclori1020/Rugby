@@ -1,5 +1,5 @@
 import { Camera, RefreshCw, Save, Trash2, UserMinus, UserPlus, Users, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent } from 'react'
 import { sprint30mOptionalLabel } from '../domain/baseline'
 import {
   clusterOptions,
@@ -35,9 +35,11 @@ type PlayersViewProps = {
 function PlayerAvatar({
   onPhotoLoadError,
   player,
+  previewUrl,
 }: {
   onPhotoLoadError?: () => void
   player: Player
+  previewUrl?: string | null
 }) {
   const [photoState, setPhotoState] = useState<{ path: string; url: string } | null>(null)
 
@@ -48,9 +50,7 @@ function PlayerAvatar({
 
     const photoPath = player.photoPath
     let isMounted = true
-    let objectUrl: string | null = null
-
-    downloadPlayerPhotoUrl(photoPath)
+    downloadPlayerPhotoUrl(photoPath, player.photoUpdatedAt)
       .then((url) => {
         if (!isMounted) {
           return
@@ -61,7 +61,6 @@ function PlayerAvatar({
           return
         }
 
-        objectUrl = url
         setPhotoState({ path: photoPath, url })
       })
       .catch(() => {
@@ -72,11 +71,12 @@ function PlayerAvatar({
 
     return () => {
       isMounted = false
-      if (objectUrl) {
-        URL.revokeObjectURL(objectUrl)
-      }
     }
   }, [onPhotoLoadError, player.photoConsentStatus, player.photoPath, player.photoUpdatedAt])
+
+  if (previewUrl) {
+    return <img className="player-avatar" src={previewUrl} alt="" />
+  }
 
   if (player.photoConsentStatus !== 'allowed' || !player.photoPath) {
     return <span className="player-avatar placeholder-avatar">{getPlayerInitials(player.name) || '?'}</span>
@@ -114,6 +114,8 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
   const [formError, setFormError] = useState<string | null>(null)
   const [formNotice, setFormNotice] = useState<string | null>(null)
   const [viewNotice, setViewNotice] = useState<string | null>(null)
+  const [photoPreviewUrls, setPhotoPreviewUrls] = useState<Record<string, string>>({})
+  const photoPreviewUrlsRef = useRef<Record<string, string>>({})
   const { clearPhotoLoadError, markPhotoLoadError, photoLoadError } = usePhotoLoadError()
 
   const selectedPlayer = useMemo(
@@ -163,6 +165,14 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [closePlayerSheet, isEditorOpen])
+
+  useEffect(
+    () => () => {
+      Object.values(photoPreviewUrlsRef.current).forEach((url) => URL.revokeObjectURL(url))
+      photoPreviewUrlsRef.current = {}
+    },
+    [],
+  )
 
   if (authState.status !== 'signed-in') {
     return (
@@ -271,10 +281,30 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
     triggerHapticFeedback('selection')
 
     try {
+      const previewUrl = URL.createObjectURL(file)
+      setPhotoPreviewUrls((currentUrls) => {
+        const previousUrl = currentUrls[selectedPlayer.id]
+        if (previousUrl) {
+          URL.revokeObjectURL(previousUrl)
+        }
+        const nextUrls = { ...currentUrls, [selectedPlayer.id]: previewUrl }
+        photoPreviewUrlsRef.current = nextUrls
+        return nextUrls
+      })
       await uploadPlayerPhoto(selectedPlayer, file)
       setFormNotice('Profilfoto gespeichert.')
       triggerHapticFeedback('success')
     } catch (caughtError) {
+      setPhotoPreviewUrls((currentUrls) => {
+        const previousUrl = currentUrls[selectedPlayer.id]
+        if (previousUrl) {
+          URL.revokeObjectURL(previousUrl)
+        }
+        const remainingUrls = { ...currentUrls }
+        delete remainingUrls[selectedPlayer.id]
+        photoPreviewUrlsRef.current = remainingUrls
+        return remainingUrls
+      })
       triggerHapticFeedback('warning')
       setFormError(caughtError instanceof Error ? caughtError.message : 'Profilfoto konnte nicht gespeichert werden.')
     }
@@ -292,6 +322,16 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
 
     try {
       await removePlayerPhoto(selectedPlayer)
+      setPhotoPreviewUrls((currentUrls) => {
+        const previousUrl = currentUrls[selectedPlayer.id]
+        if (previousUrl) {
+          URL.revokeObjectURL(previousUrl)
+        }
+        const remainingUrls = { ...currentUrls }
+        delete remainingUrls[selectedPlayer.id]
+        photoPreviewUrlsRef.current = remainingUrls
+        return remainingUrls
+      })
       setFormNotice('Profilfoto entfernt.')
       triggerHapticFeedback('success')
     } catch (caughtError) {
@@ -343,7 +383,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
               type="button"
               onClick={() => openPlayerSheet(player)}
             >
-              <PlayerAvatar player={player} />
+              <PlayerAvatar player={player} previewUrl={photoPreviewUrls[player.id]} />
               <span>
                 <strong>{player.name}</strong>
                 <small>
@@ -390,7 +430,11 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
 
         {selectedPlayer ? (
           <div className="player-profile-strip">
-            <PlayerAvatar onPhotoLoadError={markPhotoLoadError} player={selectedPlayer} />
+            <PlayerAvatar
+              onPhotoLoadError={markPhotoLoadError}
+              player={selectedPlayer}
+              previewUrl={photoPreviewUrls[selectedPlayer.id]}
+            />
             <div>
               <strong>{selectedPlayer.name}</strong>
               <p>{selectedPlayer.syncStatus === 'error' ? selectedPlayer.syncError : selectedPlayer.syncStatus}</p>

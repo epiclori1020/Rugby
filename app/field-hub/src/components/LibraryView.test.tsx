@@ -23,4 +23,13 @@ describe('LibraryView empty states', () => {
 
     expect(markup).toContain('PDF wird geladen')
   })
+
+  it('shows a direct PDF fallback when the in-app viewer times out', () => {
+    const markup = renderToStaticMarkup(
+      <LibraryView initialPdfHref="/library/2_COACH_SCRIPT_di_do.pdf" initialPdfTimedOut />,
+    )
+
+    expect(markup).toContain('Direkt oeffnen')
+    expect(markup).toContain('href="/library/2_COACH_SCRIPT_di_do.pdf"')
+  })
 })

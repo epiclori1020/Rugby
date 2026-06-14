@@ -4,6 +4,8 @@ import type { Player } from '../domain/players'
 import type { PlayerSyncOverview } from '../domain/sync'
 import { defaultPlayerSyncOverview } from '../domain/sync'
 import type { SessionDefinition } from '../content/types'
+import { scheduleBackgroundSync } from '../lib/backgroundSync'
+import { mergeRecordIntoList } from '../lib/optimisticUpdates'
 import {
   buildEmptyEntry,
   ensureSessionLog,
@@ -17,6 +19,10 @@ import {
   syncCheckIns,
   type SessionLogPatch,
 } from '../lib/checkInRepository'
+
+type SaveEntryResult =
+  | { ok: true; entry: PlayerSessionEntry }
+  | { ok: false; error: string }
 
 export function useCheckIns(userId: string | null, sessionDefinition: SessionDefinition, players: Player[]) {
   const [entries, setEntries] = useState<PlayerSessionEntry[]>([])
@@ -141,7 +147,11 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
     }
   }, [refreshLocalCheckIns, runSync, userId])
 
-  async function saveEntry(player: Player, patch: CheckInEntryPatch, manualTrafficLight?: TrafficLight | 'auto') {
+  async function saveEntry(
+    player: Player,
+    patch: CheckInEntryPatch,
+    manualTrafficLight?: TrafficLight | 'auto',
+  ): Promise<SaveEntryResult> {
     if (!userId) {
       throw new Error('Login erforderlich.')
     }
@@ -154,25 +164,16 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
 
       const savedEntry = await saveCheckInEntry(userId, sessionLog.id, player, patch, manualTrafficLight)
       setSessionLogId(sessionLog.id)
-      setEntries((currentEntries) => {
-        const existingEntryIndex = currentEntries.findIndex((entry) => entry.id === savedEntry.id)
-        if (existingEntryIndex === -1) {
-          return [...currentEntries, savedEntry]
-        }
-
-        const nextEntries = [...currentEntries]
-        nextEntries[existingEntryIndex] = savedEntry
-        return nextEntries
-      })
+      setEntries((currentEntries) => mergeRecordIntoList(currentEntries, savedEntry))
       setSyncOverview(await getCheckInSyncOverview(userId))
       if (typeof navigator === 'undefined' || navigator.onLine) {
-        void runBackgroundSync()
+        scheduleBackgroundSync(userId, 'check-ins', runBackgroundSync)
       }
-      return true
+      return { ok: true, entry: savedEntry }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Check-in konnte nicht gespeichert werden.'
       setErrorMessage(message)
-      return false
+      return { ok: false, error: message }
     }
   }
 
@@ -188,7 +189,7 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
       setSessionLog(savedSessionLog)
       setSyncOverview(await getCheckInSyncOverview(userId))
       if (typeof navigator === 'undefined' || navigator.onLine) {
-        void runBackgroundSync()
+        scheduleBackgroundSync(userId, 'check-ins', runBackgroundSync)
       }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Training-Notiz konnte nicht gespeichert werden.'
@@ -207,6 +208,10 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
 
     return {
       ...preview,
+      id: `preview:${sessionDefinition.id}:${player.id}`,
+      clientUpdatedAt: sessionDefinition.date,
+      createdAt: sessionDefinition.date,
+      updatedAt: sessionDefinition.date,
       syncStatus: 'synced' as const,
       syncError: null,
     }

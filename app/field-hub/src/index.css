@@ -896,6 +896,21 @@ button {
   color: var(--brand);
 }
 
+.pwa-update-notice {
+  align-items: center;
+  background: #fff9e8;
+  border: 1px solid #e8c56b;
+  border-radius: 8px;
+  color: #53370d;
+  display: flex;
+  flex-wrap: wrap;
+  font-size: 0.9rem;
+  font-weight: 850;
+  gap: 10px;
+  justify-content: space-between;
+  padding: 10px 12px;
+}
+
 .sync-pill {
   border-radius: 999px;
   background: var(--brand-soft);
@@ -1484,6 +1499,7 @@ code {
 }
 
 .pdf-loading {
+  align-items: center;
   position: absolute;
   inset: 12px 12px auto 12px;
   z-index: 1;
@@ -1491,8 +1507,12 @@ code {
   border-radius: 8px;
   background: rgba(255, 255, 255, 0.94);
   color: var(--muted);
+  display: flex;
+  flex-wrap: wrap;
   font-size: 0.88rem;
   font-weight: 800;
+  gap: 10px;
+  justify-content: space-between;
   padding: 12px;
 }
 

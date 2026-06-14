@@ -16,6 +16,8 @@ import type { useCheckIns } from '../hooks/useCheckIns'
 import type { usePlayers } from '../hooks/usePlayers'
 import type { AuthSessionState } from '../lib/auth'
 import { triggerHapticFeedback } from '../lib/interactionFeedback'
+import { applyOptimisticCheckInPatch } from '../lib/optimisticUpdates'
+import { measureInteraction } from '../lib/performanceTrace'
 import { AuthPanel } from './AuthPanel'
 import { SessionPicker } from './SessionPicker'
 
@@ -51,6 +53,10 @@ const returnerOptions: Array<{ value: ReturnerFlag; label: string }> = [
   { value: 'ja', label: 'Ja' },
   { value: 'offen', label: 'Offen' },
 ]
+
+function entryRenderKey(entry: PlayerSessionEntry) {
+  return `${entry.id}:${entry.clientUpdatedAt}:${entry.syncStatus}`
+}
 
 function formatTrafficLight(trafficLight: TrafficLight | null) {
   return trafficLight ? trafficLabels[trafficLight] : 'Offen'
@@ -117,20 +123,29 @@ function CheckInPlayerRow({
   entry: PlayerSessionEntry
   isExpected: boolean
   isSavingDisabled: boolean
-  onSave: (player: Player, patch: CheckInEntryPatch, manualTrafficLight?: TrafficLight | 'auto') => Promise<boolean>
+  onSave: (
+    player: Player,
+    patch: CheckInEntryPatch,
+    manualTrafficLight?: TrafficLight | 'auto',
+  ) => Promise<{ ok: true; entry: PlayerSessionEntry } | { ok: false; error: string }>
   player: Player
   returnerCap: ReturnerCapSummary | undefined
   warning: PlayerWarning | undefined
 }) {
   const [saveFeedback, setSaveFeedback] = useState<string | null>(null)
-  const [isRowSaving, setIsRowSaving] = useState(false)
-  const isRowSavingRef = useRef(false)
+  const [savingActionKey, setSavingActionKey] = useState<string | null>(null)
+  const [localEntryOverride, setLocalEntryOverride] = useState<{ baseKey: string; entry: PlayerSessionEntry } | null>(
+    null,
+  )
+  const savingActionRef = useRef<string | null>(null)
   const saveFeedbackTimeoutRef = useRef<number | null>(null)
-  const controlsDisabled = isSavingDisabled || isRowSaving
+  const controlsDisabled = isSavingDisabled
+  const sourceEntryKey = entryRenderKey(entry)
+  const displayEntry = localEntryOverride?.baseKey === sourceEntryKey ? localEntryOverride.entry : entry
 
   useEffect(() => {
     return () => {
-      isRowSavingRef.current = false
+      savingActionRef.current = null
       if (saveFeedbackTimeoutRef.current !== null) {
         window.clearTimeout(saveFeedbackTimeoutRef.current)
       }
@@ -139,34 +154,41 @@ function CheckInPlayerRow({
 
   async function saveWithFeedback(
     label: string,
+    actionKey: string,
     patch: CheckInEntryPatch,
     manualTrafficLight?: TrafficLight | 'auto',
   ) {
-    if (isSavingDisabled || isRowSavingRef.current) {
+    if (isSavingDisabled || savingActionRef.current === actionKey) {
       return
     }
 
-    isRowSavingRef.current = true
+    const previousEntry = displayEntry
+    const optimisticEntry = applyOptimisticCheckInPatch(displayEntry, patch, manualTrafficLight)
+    savingActionRef.current = actionKey
     triggerHapticFeedback('selection')
+    setLocalEntryOverride({ baseKey: sourceEntryKey, entry: optimisticEntry })
     setSaveFeedback('Speichert...')
-    setIsRowSaving(true)
+    setSavingActionKey(actionKey)
 
     try {
-      const didSave = await onSave(player, patch, manualTrafficLight)
+      const result = await measureInteraction(`check-in:${actionKey}`, () => onSave(player, patch, manualTrafficLight))
 
-      if (didSave) {
+      if (result.ok) {
         triggerHapticFeedback('success')
+        setLocalEntryOverride({ baseKey: sourceEntryKey, entry: result.entry })
         setSaveFeedback(`${label} gespeichert`)
       } else {
         triggerHapticFeedback('warning')
+        setLocalEntryOverride({ baseKey: sourceEntryKey, entry: previousEntry })
         setSaveFeedback(`${label} nicht gespeichert`)
       }
     } catch {
       triggerHapticFeedback('warning')
+      setLocalEntryOverride({ baseKey: sourceEntryKey, entry: previousEntry })
       setSaveFeedback(`${label} nicht gespeichert`)
     } finally {
-      isRowSavingRef.current = false
-      setIsRowSaving(false)
+      savingActionRef.current = null
+      setSavingActionKey(null)
     }
 
     if (typeof window !== 'undefined') {
@@ -181,7 +203,7 @@ function CheckInPlayerRow({
   }
 
   return (
-    <article className={`checkin-row traffic-${entry.trafficLight ?? entry.trafficLightSuggestion ?? 'open'}`}>
+    <article className={`checkin-row traffic-${displayEntry.trafficLight ?? displayEntry.trafficLightSuggestion ?? 'open'}`}>
       <div className="checkin-player-head">
         <div>
           <div className="player-name-line">
@@ -190,7 +212,7 @@ function CheckInPlayerRow({
           </div>
           <p>{player.position} · {player.cluster}</p>
         </div>
-        <span className={`sync-pill ${entry.syncStatus}`}>{entry.syncStatus}</span>
+        <span className={`sync-pill ${displayEntry.syncStatus}`}>{displayEntry.syncStatus}</span>
       </div>
 
       <WarningNote warning={warning} />
@@ -198,18 +220,18 @@ function CheckInPlayerRow({
 
       <div className="checkin-controls">
         <button
-          className={entry.present ? 'segmented active' : 'segmented'}
+          className={displayEntry.present ? 'segmented active' : 'segmented'}
           type="button"
-          disabled={controlsDisabled}
+          disabled={controlsDisabled || savingActionKey === 'present'}
           onClick={() =>
-            void saveWithFeedback('Anwesenheit', {
-              present: !entry.present,
+            void saveWithFeedback('Anwesenheit', 'present', {
+              present: !displayEntry.present,
               previousWarning: Boolean(warning),
             })
           }
         >
           <UserCheck className="nav-icon" aria-hidden />
-          <span>{entry.present ? 'Anwesend' : 'Abwesend'}</span>
+          <span>{displayEntry.present ? 'Anwesend' : 'Abwesend'}</span>
         </button>
 
         <div className="control-group" aria-label={`Readiness ${player.name}`}>
@@ -217,12 +239,12 @@ function CheckInPlayerRow({
           <div className="button-row compact">
             {[1, 2, 3, 4, 5].map((value) => (
               <button
-                className={entry.readiness === value ? 'number-chip active' : 'number-chip'}
+                className={displayEntry.readiness === value ? 'number-chip active' : 'number-chip'}
                 key={value}
                 type="button"
-                disabled={controlsDisabled}
+                disabled={controlsDisabled || savingActionKey === `readiness:${value}`}
                 onClick={() =>
-                  void saveWithFeedback('Readiness', { readiness: value, previousWarning: Boolean(warning) })
+                  void saveWithFeedback('Readiness', `readiness:${value}`, { readiness: value, previousWarning: Boolean(warning) })
                 }
               >
                 {value}
@@ -234,11 +256,11 @@ function CheckInPlayerRow({
         <label className="inline-field">
           <span>Life</span>
           <input
-            defaultValue={entry.lifeFlag}
+            defaultValue={displayEntry.lifeFlag}
             disabled={controlsDisabled}
             placeholder="Schlaf, Stress, Muskelkater"
             onBlur={(event) =>
-              void saveWithFeedback('Eingabe', {
+              void saveWithFeedback('Eingabe', 'lifeFlag', {
                 lifeFlag: event.currentTarget.value,
                 previousWarning: Boolean(warning),
               })
@@ -251,12 +273,12 @@ function CheckInPlayerRow({
           <div className="button-row compact pain-scale">
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
               <button
-                className={entry.painScore === value ? 'number-chip active' : 'number-chip'}
+                className={displayEntry.painScore === value ? 'number-chip active' : 'number-chip'}
                 key={value}
                 type="button"
-                disabled={controlsDisabled}
+                disabled={controlsDisabled || savingActionKey === `pain:${value}`}
                 onClick={() =>
-                  void saveWithFeedback('Schmerz', { painScore: value, previousWarning: Boolean(warning) })
+                  void saveWithFeedback('Schmerz', `pain:${value}`, { painScore: value, previousWarning: Boolean(warning) })
                 }
               >
                 {value}
@@ -268,11 +290,11 @@ function CheckInPlayerRow({
         <label className="inline-field">
           <span>Ort</span>
           <input
-            defaultValue={entry.painLocation}
+            defaultValue={displayEntry.painLocation}
             disabled={controlsDisabled}
             placeholder="z. B. Wade rechts"
             onBlur={(event) =>
-              void saveWithFeedback('Eingabe', {
+              void saveWithFeedback('Eingabe', 'painLocation', {
                 painLocation: event.currentTarget.value,
                 previousWarning: Boolean(warning),
               })
@@ -285,12 +307,12 @@ function CheckInPlayerRow({
           <div className="button-row">
             {returnerOptions.map((option) => (
               <button
-                className={entry.returnerFlag === option.value ? 'segmented active' : 'segmented'}
+                className={displayEntry.returnerFlag === option.value ? 'segmented active' : 'segmented'}
                 key={option.value}
                 type="button"
-                disabled={controlsDisabled}
+                disabled={controlsDisabled || savingActionKey === `returner:${option.value}`}
                 onClick={() =>
-                  void saveWithFeedback('Returner', {
+                  void saveWithFeedback('Returner', `returner:${option.value}`, {
                     returnerFlag: option.value,
                     previousWarning: Boolean(warning),
                   })
@@ -306,16 +328,16 @@ function CheckInPlayerRow({
           <span>Safety</span>
           <div className="button-row">
             {redFlagOptions.map((option) => {
-              const isActiveDanger = option.value !== 'none' && entry.redFlag === option.value
+              const isActiveDanger = option.value !== 'none' && displayEntry.redFlag === option.value
 
               return (
                 <button
                   className={isActiveDanger ? 'segmented active danger' : 'segmented'}
                   key={option.value}
                   type="button"
-                  disabled={controlsDisabled}
+                  disabled={controlsDisabled || savingActionKey === `safety:${option.value}`}
                   onClick={() =>
-                    void saveWithFeedback('Safety', {
+                    void saveWithFeedback('Safety', `safety:${option.value}`, {
                       redFlag: option.value,
                       previousWarning: Boolean(warning),
                     })
@@ -331,10 +353,10 @@ function CheckInPlayerRow({
         <label className="toggle-row checkin-toggle">
           <input
             type="checkbox"
-            checked={entry.movementConcern}
+            checked={displayEntry.movementConcern}
             disabled={controlsDisabled}
             onChange={(event) =>
-              void saveWithFeedback('Bewegung', {
+              void saveWithFeedback('Bewegung', 'movementConcern', {
                 movementConcern: event.currentTarget.checked,
                 previousWarning: Boolean(warning),
               })
@@ -345,34 +367,34 @@ function CheckInPlayerRow({
 
         <div className="traffic-control">
           <span>
-            Vorschlag: <strong>{formatTrafficLight(entry.trafficLightSuggestion)}</strong>
-            {entry.trafficLightWasManual ? ' · Coach korrigiert' : ''}
+            Vorschlag: <strong>{formatTrafficLight(displayEntry.trafficLightSuggestion)}</strong>
+            {displayEntry.trafficLightWasManual ? ' · Coach korrigiert' : ''}
           </span>
           <div className="button-row">
             {(['green', 'yellow', 'red'] as TrafficLight[]).map((trafficLight) => {
-              const isManualSelection = entry.trafficLightWasManual && entry.trafficLight === trafficLight
+              const isManualSelection = displayEntry.trafficLightWasManual && displayEntry.trafficLight === trafficLight
 
               return (
                 <button
                   className={isManualSelection ? `traffic-chip ${trafficLight} active` : `traffic-chip ${trafficLight}`}
                   key={trafficLight}
                   type="button"
-                  disabled={controlsDisabled}
+                  disabled={controlsDisabled || savingActionKey === `traffic:${trafficLight}`}
                   onClick={() =>
-                    void saveWithFeedback('Ampel', { previousWarning: Boolean(warning) }, trafficLight)
+                    void saveWithFeedback('Ampel', `traffic:${trafficLight}`, { previousWarning: Boolean(warning) }, trafficLight)
                   }
                 >
                   {trafficLabels[trafficLight]}
                 </button>
               )
             })}
-            {entry.trafficLightWasManual ? (
+            {displayEntry.trafficLightWasManual ? (
               <button
                 className="secondary-action compact-action traffic-auto-reset"
                 type="button"
-                disabled={controlsDisabled}
+                disabled={controlsDisabled || savingActionKey === 'traffic:auto'}
                 title="Coach-Korrektur verwerfen und automatischen Vorschlag wieder aktivieren"
-                onClick={() => void saveWithFeedback('Ampel', { previousWarning: Boolean(warning) }, 'auto')}
+                onClick={() => void saveWithFeedback('Ampel', 'traffic:auto', { previousWarning: Boolean(warning) }, 'auto')}
               >
                 Automatisch
               </button>
@@ -383,12 +405,12 @@ function CheckInPlayerRow({
         <label className="inline-field wide">
           <span>Notiz, keine Diagnose</span>
           <textarea
-            defaultValue={entry.observation}
+            defaultValue={displayEntry.observation}
             disabled={controlsDisabled}
             rows={2}
             placeholder="z. B. Hinken, Leiste 3/10, Technik auffaellig"
             onBlur={(event) =>
-              void saveWithFeedback('Notiz', {
+              void saveWithFeedback('Notiz', 'observation', {
                 observation: event.currentTarget.value,
                 previousWarning: Boolean(warning),
               })

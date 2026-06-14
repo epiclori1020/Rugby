@@ -1,5 +1,5 @@
 import { AlertTriangle, HeartPulse, History, RefreshCw, ShieldAlert, UserCheck } from 'lucide-react'
-import type { FormEvent } from 'react'
+import { useRef, useState } from 'react'
 import type { HubTab } from '../App'
 import type { SessionDefinition } from '../content/types'
 import {
@@ -14,6 +14,8 @@ import {
 import type { Player } from '../domain/players'
 import type { useReturners } from '../hooks/useReturners'
 import type { AuthSessionState } from '../lib/auth'
+import { applyOptimisticReturnerPatch } from '../lib/optimisticUpdates'
+import { measureInteraction } from '../lib/performanceTrace'
 import { returnerEntryKeyBase } from '../lib/returnerEntryKey'
 import { AuthPanel } from './AuthPanel'
 import { SessionPicker } from './SessionPicker'
@@ -28,12 +30,6 @@ type ReturnerViewProps = {
   selectedSession: SessionDefinition
   selectedSessionId: string
   sessions: SessionDefinition[]
-}
-
-function textBlurHandler(field: keyof Omit<ReturnerEntryPatch, 'decision'>, onSave: (patch: ReturnerEntryPatch) => void) {
-  return (event: FormEvent<HTMLInputElement | HTMLTextAreaElement | HTMLSelectElement>) => {
-    onSave({ [field]: event.currentTarget.value })
-  }
 }
 
 function ReturnerHistory({ entries }: { entries: ReturnerEntry[] }) {
@@ -60,6 +56,10 @@ function ReturnerHistory({ entries }: { entries: ReturnerEntry[] }) {
   )
 }
 
+function returnerEntryRenderKey(entry: ReturnerEntry) {
+  return `${entry.id}:${entry.clientUpdatedAt}:${entry.syncStatus}`
+}
+
 function ReturnerPlayerCard({
   entry,
   history,
@@ -71,17 +71,44 @@ function ReturnerPlayerCard({
   entry: ReturnerEntry
   history: ReturnerEntry[]
   isSavingDisabled: boolean
-  onSave: (player: Player, patch: ReturnerEntryPatch) => void
+  onSave: (player: Player, patch: ReturnerEntryPatch) => Promise<{ ok: true; entry: ReturnerEntry } | { ok: false; error: string }>
   player: Player
   selectedSessionId: string
 }) {
   const keyBase = returnerEntryKeyBase(player.id, selectedSessionId)
-  const suggestedDecision = suggestReturnerDecision(entry)
-  const canProgress = canConsiderReturnerProgression(entry)
-  const isConservative = suggestedDecision === 'rueckmelden' || entry.decision === 'rueckmelden'
+  const [localEntryOverride, setLocalEntryOverride] = useState<{ baseKey: string; entry: ReturnerEntry } | null>(null)
+  const [savingActionKey, setSavingActionKey] = useState<string | null>(null)
+  const savingActionRef = useRef<string | null>(null)
+  const sourceEntryKey = returnerEntryRenderKey(entry)
+  const displayEntry = localEntryOverride?.baseKey === sourceEntryKey ? localEntryOverride.entry : entry
+  const suggestedDecision = suggestReturnerDecision(displayEntry)
+  const canProgress = canConsiderReturnerProgression(displayEntry)
+  const isConservative = suggestedDecision === 'rueckmelden' || displayEntry.decision === 'rueckmelden'
 
-  function savePatch(patch: ReturnerEntryPatch) {
-    onSave(player, patch)
+  async function savePatch(patch: ReturnerEntryPatch, actionKey = 'field') {
+    if (isSavingDisabled || savingActionRef.current === actionKey) {
+      return
+    }
+
+    const previousEntry = displayEntry
+    const optimisticEntry = applyOptimisticReturnerPatch(displayEntry, patch)
+    savingActionRef.current = actionKey
+    setSavingActionKey(actionKey)
+    setLocalEntryOverride({ baseKey: sourceEntryKey, entry: optimisticEntry })
+
+    try {
+      const result = await measureInteraction(`returner:${actionKey}`, () => onSave(player, patch))
+      if (result.ok) {
+        setLocalEntryOverride({ baseKey: sourceEntryKey, entry: result.entry })
+      } else {
+        setLocalEntryOverride({ baseKey: sourceEntryKey, entry: previousEntry })
+      }
+    } catch {
+      setLocalEntryOverride({ baseKey: sourceEntryKey, entry: previousEntry })
+    } finally {
+      savingActionRef.current = null
+      setSavingActionKey(null)
+    }
   }
 
   return (
@@ -91,11 +118,11 @@ function ReturnerPlayerCard({
           <div className="player-name-line">
             <strong>{player.name}</strong>
             <span className="tag compact">{player.returnerStatus === 'ja' ? 'Returner' : 'Returner/offen'}</span>
-            {entry.decision ? <span className="tag compact">{entry.decision}</span> : null}
+            {displayEntry.decision ? <span className="tag compact">{displayEntry.decision}</span> : null}
           </div>
           <p>{player.position} · {player.cluster}</p>
         </div>
-        <span className={`sync-pill ${entry.syncStatus}`}>{entry.syncStatus}</span>
+        <span className={`sync-pill ${displayEntry.syncStatus}`}>{displayEntry.syncStatus}</span>
       </div>
 
       <div className={isConservative ? 'warning-note danger' : 'warning-note'}>
@@ -109,10 +136,10 @@ function ReturnerPlayerCard({
         <label className="inline-field">
           <span>Aktuelle Stufe</span>
           <select
-            defaultValue={entry.currentStage}
+            defaultValue={displayEntry.currentStage}
             disabled={isSavingDisabled}
             key={`${keyBase}::stage`}
-            onBlur={textBlurHandler('currentStage', savePatch)}
+            onBlur={(event) => void savePatch({ currentStage: event.currentTarget.value })}
           >
             {returnerStageOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -125,113 +152,113 @@ function ReturnerPlayerCard({
         <label className="inline-field">
           <span>Medical/Physio Kontakt</span>
           <input
-            defaultValue={entry.medicalContactNote}
+            defaultValue={displayEntry.medicalContactNote}
             disabled={isSavingDisabled}
             key={`${keyBase}::medical`}
             placeholder="z. B. Physio: non-contact"
-            onBlur={textBlurHandler('medicalContactNote', savePatch)}
+            onBlur={(event) => void savePatch({ medicalContactNote: event.currentTarget.value })}
           />
         </label>
 
         <label className="inline-field">
           <span>Speed-Cap</span>
           <input
-            defaultValue={entry.speedCap}
+            defaultValue={displayEntry.speedCap}
             disabled={isSavingDisabled}
             key={`${keyBase}::speed`}
             placeholder="z. B. 4x10 m smooth"
-            onBlur={textBlurHandler('speedCap', savePatch)}
+            onBlur={(event) => void savePatch({ speedCap: event.currentTarget.value })}
           />
         </label>
 
         <label className="inline-field">
           <span>COD/Decel-Cap</span>
           <input
-            defaultValue={entry.codDecelCap}
+            defaultValue={displayEntry.codDecelCap}
             disabled={isSavingDisabled}
             key={`${keyBase}::cod`}
             placeholder="geplant, keine offenen Cuts"
-            onBlur={textBlurHandler('codDecelCap', savePatch)}
+            onBlur={(event) => void savePatch({ codDecelCap: event.currentTarget.value })}
           />
         </label>
 
         <label className="inline-field">
           <span>Conditioning-Cap</span>
           <input
-            defaultValue={entry.conditioningCap}
+            defaultValue={displayEntry.conditioningCap}
             disabled={isSavingDisabled}
             key={`${keyBase}::conditioning`}
             placeholder="kurz / extensiv / gestrichen"
-            onBlur={textBlurHandler('conditioningCap', savePatch)}
+            onBlur={(event) => void savePatch({ conditioningCap: event.currentTarget.value })}
           />
         </label>
 
         <label className="inline-field">
           <span>Kontakt-Cap</span>
           <input
-            defaultValue={entry.contactCap}
+            defaultValue={displayEntry.contactCap}
             disabled={isSavingDisabled}
             key={`${keyBase}::contact`}
             placeholder="kein Kontakt / Bags / controlled"
-            onBlur={textBlurHandler('contactCap', savePatch)}
+            onBlur={(event) => void savePatch({ contactCap: event.currentTarget.value })}
           />
         </label>
 
         <label className="inline-field wide">
           <span>Heute erlaubt</span>
           <textarea
-            defaultValue={entry.allowedToday}
+            defaultValue={displayEntry.allowedToday}
             disabled={isSavingDisabled}
             key={`${keyBase}::allowed`}
             rows={2}
             placeholder="z. B. Team-Warm-up plus individuelle Speed-Caps"
-            onBlur={textBlurHandler('allowedToday', savePatch)}
+            onBlur={(event) => void savePatch({ allowedToday: event.currentTarget.value })}
           />
         </label>
 
         <label className="inline-field wide">
           <span>Geplante Caps</span>
           <textarea
-            defaultValue={entry.plannedCaps}
+            defaultValue={displayEntry.plannedCaps}
             disabled={isSavingDisabled}
             key={`${keyBase}::planned`}
             rows={2}
             placeholder="z. B. Speed submax, kein Contact Prep"
-            onBlur={textBlurHandler('plannedCaps', savePatch)}
+            onBlur={(event) => void savePatch({ plannedCaps: event.currentTarget.value })}
           />
         </label>
 
         <label className="inline-field wide">
           <span>Tatsaechlich absolviert</span>
           <textarea
-            defaultValue={entry.completed}
+            defaultValue={displayEntry.completed}
             disabled={isSavingDisabled}
             key={`${keyBase}::completed`}
             rows={2}
             placeholder="kurz und sachlich, keine Diagnose"
-            onBlur={textBlurHandler('completed', savePatch)}
+            onBlur={(event) => void savePatch({ completed: event.currentTarget.value })}
           />
         </label>
 
         <label className="inline-field">
           <span>Symptome Training</span>
           <input
-            defaultValue={entry.symptomsDuring}
+            defaultValue={displayEntry.symptomsDuring}
             disabled={isSavingDisabled}
             key={`${keyBase}::symptoms`}
             placeholder="ok / keine / Schmerzprovokation"
-            onBlur={textBlurHandler('symptomsDuring', savePatch)}
+            onBlur={(event) => void savePatch({ symptomsDuring: event.currentTarget.value })}
           />
         </label>
 
         <label className="inline-field">
           <span>Naechster Morgen</span>
           <input
-            defaultValue={entry.nextMorning}
+            defaultValue={displayEntry.nextMorning}
             disabled={isSavingDisabled}
             key={`${keyBase}::morning`}
             placeholder="stabil / schlechter / offen"
-            onBlur={textBlurHandler('nextMorning', savePatch)}
+            onBlur={(event) => void savePatch({ nextMorning: event.currentTarget.value })}
           />
         </label>
 
@@ -240,20 +267,20 @@ function ReturnerPlayerCard({
           <div className="button-row">
             {returnerDecisionOptions.map((option) => (
               <button
-                className={entry.decision === option.value ? 'segmented active' : 'segmented'}
-                disabled={isSavingDisabled}
+                className={displayEntry.decision === option.value ? 'segmented active' : 'segmented'}
+                disabled={isSavingDisabled || savingActionKey === `decision:${option.value}`}
                 key={option.value}
                 type="button"
-                onClick={() => savePatch({ decision: option.value })}
+                onClick={() => void savePatch({ decision: option.value }, `decision:${option.value}`)}
               >
                 {option.label}
               </button>
             ))}
             <button
               className={isConservative ? 'segmented danger' : 'segmented'}
-              disabled={isSavingDisabled}
+              disabled={isSavingDisabled || savingActionKey === `decision:${suggestedDecision}`}
               type="button"
-              onClick={() => savePatch({ decision: suggestedDecision })}
+              onClick={() => void savePatch({ decision: suggestedDecision }, `decision:${suggestedDecision}`)}
             >
               Vorschlag: {suggestedDecision}
             </button>

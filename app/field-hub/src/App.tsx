@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useRegisterSW } from 'virtual:pwa-register/react'
 import { AppShell } from './components/AppShell'
 import { AuthPanel } from './components/AuthPanel'
 import { BackupReminderBanner } from './components/BackupReminderBanner'
@@ -6,6 +7,7 @@ import { CheckInView } from './components/CheckInView'
 import { ExportView } from './components/ExportView'
 import { LibraryView } from './components/LibraryView'
 import { PostSessionView } from './components/PostSessionView'
+import { PwaUpdateNotice } from './components/PwaUpdateNotice'
 import { PlayersView } from './components/PlayersView'
 import { ReturnerView } from './components/ReturnerView'
 import { TodayDashboard } from './components/TodayDashboard'
@@ -51,6 +53,10 @@ function App() {
   const [dismissedBackupReminderKey, setDismissedBackupReminderKey] = useState<string | null>(null)
   const [isManualSyncing, setIsManualSyncing] = useState(false)
   const [manualSyncNotice, setManualSyncNotice] = useState<string | null>(null)
+  const {
+    needRefresh: [needsAppRefresh],
+    updateServiceWorker,
+  } = useRegisterSW()
   const [lastExportAt, setLastExportAtState] = useState<string | null>(null)
   const [latestCompletedSession, setLatestCompletedSession] = useState<SessionLog | null>(null)
   const storagePersistence = useStoragePersistence()
@@ -155,7 +161,7 @@ function App() {
     Promise.resolve()
       .then(refreshAllLocalData)
       .catch(() => undefined)
-  }, [refreshAllLocalData, syncOverview.pendingCount])
+  }, [refreshAllLocalData])
 
   useEffect(() => {
     if (!manualSyncNotice) {
@@ -184,6 +190,7 @@ function App() {
           sessionLog={latestCompletedSession}
         />
       ) : null}
+      {needsAppRefresh ? <PwaUpdateNotice onReload={() => void updateServiceWorker(true)} /> : null}
       {activeTab === 'heute' ? (
         <>
           {authState.status !== 'signed-in' ? <AuthPanel authState={authState} /> : null}

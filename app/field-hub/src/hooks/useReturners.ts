@@ -4,7 +4,9 @@ import type { PlayerSessionEntry } from '../domain/checkIn'
 import type { Player } from '../domain/players'
 import type { ReturnerCapSummary, ReturnerEntry, ReturnerEntryPatch } from '../domain/returners'
 import { defaultPlayerSyncOverview, type PlayerSyncOverview } from '../domain/sync'
+import { scheduleBackgroundSync } from '../lib/backgroundSync'
 import { ensureSessionLog, findSessionLog, syncCheckIns } from '../lib/checkInRepository'
+import { mergeRecordIntoList } from '../lib/optimisticUpdates'
 import {
   buildEmptyReturnerEntry,
   getReturnerSyncOverview,
@@ -13,6 +15,10 @@ import {
   listReturnerEntriesForSession,
   saveReturnerEntry,
 } from '../lib/returnerRepository'
+
+type SaveReturnerResult =
+  | { ok: true; entry: ReturnerEntry }
+  | { ok: false; error: string }
 
 export function useReturners(
   userId: string | null,
@@ -130,7 +136,7 @@ export function useReturners(
       .catch(() => undefined)
   }, [refreshReturners])
 
-  async function savePlayerReturner(player: Player, patch: ReturnerEntryPatch) {
+  async function savePlayerReturner(player: Player, patch: ReturnerEntryPatch): Promise<SaveReturnerResult> {
     if (!userId) {
       throw new Error('Login erforderlich.')
     }
@@ -139,14 +145,23 @@ export function useReturners(
       setErrorMessage(null)
       const sessionLog = sessionLogId ? { id: sessionLogId } : await ensureSessionLog(userId, sessionDefinition)
       setSessionLogId(sessionLog.id)
-      await saveReturnerEntry(userId, sessionLog.id, player.id, patch)
-      await refreshReturners()
+      const savedEntry = await saveReturnerEntry(userId, sessionLog.id, player.id, patch)
+      setEntries((currentEntries) => mergeRecordIntoList(currentEntries, savedEntry))
+      setHistoryByPlayerId((currentHistory) => ({
+        ...currentHistory,
+        [player.id]: mergeRecordIntoList(currentHistory[player.id] ?? [], savedEntry).sort((a, b) =>
+          b.createdAt.localeCompare(a.createdAt),
+        ),
+      }))
+      setSyncOverview(await getReturnerSyncOverview(userId))
       if (typeof navigator === 'undefined' || navigator.onLine) {
-        void runBackgroundSync()
+        scheduleBackgroundSync(userId, 'returners', runBackgroundSync)
       }
+      return { ok: true, entry: savedEntry }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Returner-Eintrag konnte nicht gespeichert werden.'
       setErrorMessage(message)
+      return { ok: false, error: message }
     }
   }
 
@@ -159,6 +174,10 @@ export function useReturners(
 
     return {
       ...buildEmptyReturnerEntry(userId ?? 'local-preview', sessionLogId ?? 'session-preview', player.id),
+      id: `preview:${sessionDefinition.id}:${player.id}`,
+      clientUpdatedAt: sessionDefinition.date,
+      createdAt: sessionDefinition.date,
+      updatedAt: sessionDefinition.date,
       syncStatus: 'synced' as const,
       syncError: null,
     }

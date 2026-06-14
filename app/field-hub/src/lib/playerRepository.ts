@@ -14,6 +14,7 @@ import { supabase } from './supabaseClient'
 
 const PLAYER_PHOTOS_BUCKET = 'player-photos'
 const pendingPlayerSyncs = new Map<string, Promise<PlayerSyncOverview>>()
+const playerPhotoUrlCache = new Map<string, string>()
 
 type PlayerRow = {
   id: string
@@ -250,16 +251,9 @@ export async function deactivatePlayer(player: Player) {
 
 export async function deletePlayer(player: Player) {
   const timestamp = nowIso()
-  const cleanupResult = await removeStoredPlayerPhoto(player.photoPath)
-  if (cleanupResult.errorMessage) {
-    throw new Error(cleanupResult.errorMessage)
-  }
-
   const updatedPlayer: Player = {
     ...player,
     active: false,
-    photoPath: cleanupResult.removed ? null : player.photoPath,
-    photoUpdatedAt: cleanupResult.removed ? null : player.photoUpdatedAt,
     updatedAt: timestamp,
     deletedAt: timestamp,
     clientUpdatedAt: timestamp,
@@ -516,9 +510,26 @@ export async function removePlayerPhoto(player: Player) {
   return updatedPlayer
 }
 
-export async function downloadPlayerPhotoUrl(photoPath: string) {
+function playerPhotoCacheKey(photoPath: string, photoUpdatedAt: string | null = null) {
+  return `${photoPath}::${photoUpdatedAt ?? ''}`
+}
+
+export function clearPlayerPhotoUrlCache() {
+  for (const url of playerPhotoUrlCache.values()) {
+    URL.revokeObjectURL(url)
+  }
+  playerPhotoUrlCache.clear()
+}
+
+export async function downloadPlayerPhotoUrl(photoPath: string, photoUpdatedAt: string | null = null) {
   if (!supabase) {
     return null
+  }
+
+  const cacheKey = playerPhotoCacheKey(photoPath, photoUpdatedAt)
+  const cachedUrl = playerPhotoUrlCache.get(cacheKey)
+  if (cachedUrl) {
+    return cachedUrl
   }
 
   const { data, error } = await supabase.storage.from(PLAYER_PHOTOS_BUCKET).download(photoPath)
@@ -526,5 +537,7 @@ export async function downloadPlayerPhotoUrl(photoPath: string) {
     return null
   }
 
-  return URL.createObjectURL(data)
+  const objectUrl = URL.createObjectURL(data)
+  playerPhotoUrlCache.set(cacheKey, objectUrl)
+  return objectUrl
 }

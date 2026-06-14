@@ -3,12 +3,14 @@ import { useEffect, useMemo, useState } from 'react'
 import { libraryCategories, libraryItems } from '../content/library'
 import { activePdfRefs } from '../content/pdfRefs'
 import type { LibraryCategory, LibraryItem, PdfRef } from '../content/types'
+import { prewarmPdfAssets } from '../lib/pdfAssets'
 
 const allCategoriesLabel = 'Alle'
 
 type LibraryViewProps = {
   initialQuery?: string
   initialPdfHref?: string
+  initialPdfTimedOut?: boolean
 }
 
 function searchableText(item: LibraryItem) {
@@ -32,7 +34,7 @@ function findPdfByHref(href: string | undefined) {
   return activePdfRefs.find((pdf) => pdf.href === href) ?? null
 }
 
-export function LibraryView({ initialQuery = '', initialPdfHref }: LibraryViewProps = {}) {
+export function LibraryView({ initialQuery = '', initialPdfHref, initialPdfTimedOut = false }: LibraryViewProps = {}) {
   const [selectedCategory, setSelectedCategory] = useState<LibraryCategory | typeof allCategoriesLabel>(
     allCategoriesLabel,
   )
@@ -40,6 +42,7 @@ export function LibraryView({ initialQuery = '', initialPdfHref }: LibraryViewPr
   const [selectedItemId, setSelectedItemId] = useState(libraryItems[0]?.id)
   const [selectedPdf, setSelectedPdf] = useState<PdfRef | null>(() => findPdfByHref(initialPdfHref))
   const [isPdfLoading, setIsPdfLoading] = useState(Boolean(initialPdfHref))
+  const [hasPdfTimedOut, setHasPdfTimedOut] = useState(initialPdfTimedOut)
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -72,12 +75,18 @@ export function LibraryView({ initialQuery = '', initialPdfHref }: LibraryViewPr
 
     setSelectedPdf(pdf)
     setIsPdfLoading(true)
+    setHasPdfTimedOut(false)
   }
 
   function closePdf() {
     setSelectedPdf(null)
     setIsPdfLoading(false)
+    setHasPdfTimedOut(false)
   }
+
+  useEffect(() => {
+    void prewarmPdfAssets(activePdfRefs.map((pdf) => pdf.href))
+  }, [])
 
   useEffect(() => {
     if (!selectedPdf) {
@@ -93,6 +102,15 @@ export function LibraryView({ initialQuery = '', initialPdfHref }: LibraryViewPr
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [selectedPdf])
+
+  useEffect(() => {
+    if (!selectedPdf || !isPdfLoading) {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => setHasPdfTimedOut(true), 8000)
+    return () => window.clearTimeout(timeoutId)
+  }, [isPdfLoading, selectedPdf])
 
   return (
     <section className="library-layout" aria-labelledby="library-heading">
@@ -238,7 +256,16 @@ export function LibraryView({ initialQuery = '', initialPdfHref }: LibraryViewPr
             <div className="pdf-viewer-body">
               {isPdfLoading ? (
                 <div className="pdf-loading" role="status">
-                  PDF wird geladen...
+                  {hasPdfTimedOut ? (
+                    <>
+                      PDF braucht laenger.
+                      <a className="secondary-action compact-action" href={selectedPdf.href} target="_blank" rel="noreferrer">
+                        Direkt oeffnen
+                      </a>
+                    </>
+                  ) : (
+                    'PDF wird geladen...'
+                  )}
                 </div>
               ) : null}
               <iframe
@@ -246,7 +273,10 @@ export function LibraryView({ initialQuery = '', initialPdfHref }: LibraryViewPr
                 src={selectedPdf.href}
                 title={selectedPdf.label}
                 referrerPolicy="no-referrer"
-                onLoad={() => setIsPdfLoading(false)}
+                onLoad={() => {
+                  setIsPdfLoading(false)
+                  setHasPdfTimedOut(false)
+                }}
               />
             </div>
           </section>
