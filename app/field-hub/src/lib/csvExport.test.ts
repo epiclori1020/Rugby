@@ -41,8 +41,14 @@ describe('csvExport', () => {
   it('exports player rows for spreadsheet use without photo blobs', () => {
     const csv = buildPlayersCsv([player])
 
-    expect(csv).toContain('Name;Position;Cluster;Aktiv;Consent;Foto-Erlaubnis;Returner;Notizen')
-    expect(csv).toContain('"Muster; Spieler";Back Row;back_row;ja;vorhanden;allowed;nein;')
+    expect(csv).toContain('Name;Position;Cluster;Aktiv;Geloescht am;Consent;Foto-Erlaubnis;Returner;Notizen')
+    expect(csv).toContain('"Muster; Spieler";Back Row;back_row;ja;;vorhanden;allowed;nein;')
     expect(csv).not.toContain('profile.webp')
+  })
+
+  it('marks soft-deleted players in player CSV exports', () => {
+    const csv = buildPlayersCsv([{ ...player, active: false, deletedAt: '2026-06-18T19:00:00.000Z' }])
+
+    expect(csv).toContain('"Muster; Spieler";Back Row;back_row;nein;2026-06-18T19:00:00.000Z;')
   })
 })

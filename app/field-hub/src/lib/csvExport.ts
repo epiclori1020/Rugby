@@ -44,12 +44,13 @@ function playerName(playerId: string, playerNameById: Map<string, string>) {
 
 export function buildPlayersCsv(players: Player[]) {
   return buildCsv(
-    ['Name', 'Position', 'Cluster', 'Aktiv', 'Consent', 'Foto-Erlaubnis', 'Returner', 'Notizen'],
+    ['Name', 'Position', 'Cluster', 'Aktiv', 'Geloescht am', 'Consent', 'Foto-Erlaubnis', 'Returner', 'Notizen'],
     players.map((player) => [
       player.name,
       player.position,
       player.cluster,
       player.active,
+      player.deletedAt,
       player.consentStatus,
       player.photoConsentStatus,
       player.returnerStatus,

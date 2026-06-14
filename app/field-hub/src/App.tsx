@@ -159,7 +159,6 @@ function App() {
       isManualSyncing={isManualSyncing}
       onManualSync={runManualSync}
       onTabChange={setActiveTab}
-      storagePersistence={storagePersistence}
       authState={authState}
       playerSync={syncOverview}
     >

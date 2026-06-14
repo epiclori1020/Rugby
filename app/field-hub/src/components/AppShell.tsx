@@ -1,9 +1,7 @@
 import type { ReactNode } from 'react'
 import type { HubTab } from '../App'
 import type { PlayerSyncOverview } from '../domain/sync'
-import type { StoragePersistenceState } from '../hooks/useStoragePersistence'
 import type { AuthSessionState } from '../lib/auth'
-import { InstallHint } from './InstallHint'
 import { MainNavigation } from './MainNavigation'
 import { SyncStatusBadge } from './SyncStatusBadge'
 
@@ -13,7 +11,6 @@ type AppShellProps = {
   isManualSyncing: boolean
   onManualSync: () => void
   onTabChange: (tab: HubTab) => void
-  storagePersistence: StoragePersistenceState
   authState: AuthSessionState
   playerSync: PlayerSyncOverview
 }
@@ -24,7 +21,6 @@ export function AppShell({
   isManualSyncing,
   onManualSync,
   onTabChange,
-  storagePersistence,
   authState,
   playerSync,
 }: AppShellProps) {
@@ -56,7 +52,6 @@ export function AppShell({
 
         <div className="content-stack">
           {children}
-          <InstallHint storagePersistence={storagePersistence} />
         </div>
       </main>
     </div>

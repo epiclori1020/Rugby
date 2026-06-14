@@ -1,5 +1,5 @@
 import { Camera, RefreshCw, Save, Trash2, UserMinus, UserPlus, Users } from 'lucide-react'
-import { useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
+import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { sprint30mOptionalLabel } from '../domain/baseline'
 import {
   clusterOptions,
@@ -31,7 +31,13 @@ type PlayersViewProps = {
   playerActions: PlayerActions
 }
 
-function PlayerAvatar({ player }: { player: Player }) {
+function PlayerAvatar({
+  onPhotoLoadError,
+  player,
+}: {
+  onPhotoLoadError?: () => void
+  player: Player
+}) {
   const [photoState, setPhotoState] = useState<{ path: string; url: string } | null>(null)
 
   useEffect(() => {
@@ -43,13 +49,25 @@ function PlayerAvatar({ player }: { player: Player }) {
     let isMounted = true
     let objectUrl: string | null = null
 
-    downloadPlayerPhotoUrl(photoPath).then((url) => {
-      if (!isMounted || !url) {
-        return
-      }
-      objectUrl = url
-      setPhotoState({ path: photoPath, url })
-    })
+    downloadPlayerPhotoUrl(photoPath)
+      .then((url) => {
+        if (!isMounted) {
+          return
+        }
+
+        if (!url) {
+          onPhotoLoadError?.()
+          return
+        }
+
+        objectUrl = url
+        setPhotoState({ path: photoPath, url })
+      })
+      .catch(() => {
+        if (isMounted) {
+          onPhotoLoadError?.()
+        }
+      })
 
     return () => {
       isMounted = false
@@ -57,7 +75,7 @@ function PlayerAvatar({ player }: { player: Player }) {
         URL.revokeObjectURL(objectUrl)
       }
     }
-  }, [player.photoConsentStatus, player.photoPath])
+  }, [onPhotoLoadError, player.photoConsentStatus, player.photoPath, player.photoUpdatedAt])
 
   if (player.photoConsentStatus !== 'allowed' || !player.photoPath) {
     return <span className="player-avatar placeholder-avatar">{getPlayerInitials(player.name) || '?'}</span>
@@ -70,14 +88,29 @@ function PlayerAvatar({ player }: { player: Player }) {
   return <span className="player-avatar placeholder-avatar">{getPlayerInitials(player.name) || '?'}</span>
 }
 
+function usePhotoLoadError() {
+  const [photoLoadError, setPhotoLoadError] = useState(false)
+
+  const clearPhotoLoadError = useCallback(() => {
+    setPhotoLoadError(false)
+  }, [])
+
+  const markPhotoLoadError = useCallback(() => {
+    setPhotoLoadError(true)
+  }, [])
+
+  return { clearPhotoLoadError, markPhotoLoadError, photoLoadError }
+}
+
 export function PlayersView({ authState, baselineActions, playerActions }: PlayersViewProps) {
-  const { players, syncOverview, isLoading, runSync, savePlayer, deactivatePlayer, uploadPlayerPhoto } =
+  const { players, syncOverview, isLoading, runSync, savePlayer, deactivatePlayer, deletePlayer, uploadPlayerPhoto } =
     playerActions
   const { removePlayerPhoto } = playerActions
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
   const [formValues, setFormValues] = useState<PlayerFormValues>(emptyPlayerFormValues)
   const [formError, setFormError] = useState<string | null>(null)
   const [formNotice, setFormNotice] = useState<string | null>(null)
+  const { clearPhotoLoadError, markPhotoLoadError, photoLoadError } = usePhotoLoadError()
 
   const selectedPlayer = useMemo(
     () => players.find((player) => player.id === selectedPlayerId) ?? null,
@@ -106,6 +139,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
     event.preventDefault()
     setFormError(null)
     setFormNotice(null)
+    clearPhotoLoadError()
 
     try {
       await savePlayer(formValues, selectedPlayer ?? undefined)
@@ -125,12 +159,39 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
 
     setFormError(null)
     setFormNotice(null)
+    clearPhotoLoadError()
 
     try {
       await deactivatePlayer(selectedPlayer)
       setFormNotice('Spieler deaktiviert.')
     } catch (caughtError) {
       setFormError(caughtError instanceof Error ? caughtError.message : 'Spieler konnte nicht deaktiviert werden.')
+    }
+  }
+
+  async function handleDelete() {
+    if (!selectedPlayer) {
+      return
+    }
+
+    const confirmed = window.confirm(
+      `${selectedPlayer.name} wirklich loeschen? Der Spieler verschwindet aus der App. Historische Eintraege bleiben fuer Backups und Verlauf erhalten.`,
+    )
+    if (!confirmed) {
+      return
+    }
+
+    setFormError(null)
+    setFormNotice(null)
+    clearPhotoLoadError()
+
+    try {
+      await deletePlayer(selectedPlayer)
+      setSelectedPlayerId(null)
+      setFormValues(emptyPlayerFormValues)
+      setFormNotice('Spieler geloescht.')
+    } catch (caughtError) {
+      setFormError(caughtError instanceof Error ? caughtError.message : 'Spieler konnte nicht geloescht werden.')
     }
   }
 
@@ -144,6 +205,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
 
     setFormError(null)
     setFormNotice(null)
+    clearPhotoLoadError()
 
     try {
       await uploadPlayerPhoto(selectedPlayer, file)
@@ -160,6 +222,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
 
     setFormError(null)
     setFormNotice(null)
+    clearPhotoLoadError()
 
     try {
       await removePlayerPhoto(selectedPlayer)
@@ -183,11 +246,12 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
             className="secondary-action"
             type="button"
             onClick={() => {
-              setSelectedPlayerId(null)
-              setFormValues(emptyPlayerFormValues)
-              setFormError(null)
-              setFormNotice(null)
-            }}
+                setSelectedPlayerId(null)
+                setFormValues(emptyPlayerFormValues)
+                setFormError(null)
+                setFormNotice(null)
+                clearPhotoLoadError()
+              }}
           >
             <UserPlus className="nav-icon" aria-hidden />
             <span>Neu</span>
@@ -215,6 +279,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
                 setFormValues(playerToFormValues(player))
                 setFormError(null)
                 setFormNotice(null)
+                clearPhotoLoadError()
               }}
             >
               <PlayerAvatar player={player} />
@@ -239,7 +304,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
 
         {selectedPlayer ? (
           <div className="player-profile-strip">
-            <PlayerAvatar player={selectedPlayer} />
+            <PlayerAvatar onPhotoLoadError={markPhotoLoadError} player={selectedPlayer} />
             <div>
               <strong>{selectedPlayer.name}</strong>
               <p>{selectedPlayer.syncStatus === 'error' ? selectedPlayer.syncError : selectedPlayer.syncStatus}</p>
@@ -390,6 +455,12 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
                 <span>Deaktivieren</span>
               </button>
             ) : null}
+            {selectedPlayer ? (
+              <button className="secondary-action danger" type="button" onClick={handleDelete}>
+                <Trash2 className="nav-icon" aria-hidden />
+                <span>Loeschen</span>
+              </button>
+            ) : null}
           </div>
 
           {selectedPlayer && selectedPlayer.photoConsentStatus === 'allowed' ? (
@@ -409,6 +480,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
           ) : null}
 
           {formNotice ? <p className="form-notice">{formNotice}</p> : null}
+          {photoLoadError ? <p className="form-error">Profilfoto konnte nicht geladen werden.</p> : null}
           {formError ? <p className="form-error">{formError}</p> : null}
         </form>
       </article>

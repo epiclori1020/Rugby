@@ -4,6 +4,7 @@ import type { PlayerSyncOverview } from '../domain/sync'
 import { defaultPlayerSyncOverview } from '../domain/sync'
 import {
   deactivatePlayer,
+  deletePlayer,
   getPlayerSyncOverview,
   listLocalPlayers,
   removePlayerPhoto,
@@ -100,6 +101,14 @@ export function usePlayers(userId: string | null) {
     }
   }
 
+  async function remove(player: Player) {
+    await deletePlayer(player)
+    await refreshLocalPlayers()
+    if (navigator.onLine) {
+      await runSync()
+    }
+  }
+
   async function uploadPhoto(player: Player, file: File) {
     await uploadPlayerPhoto(player, file)
     await refreshLocalPlayers()
@@ -124,6 +133,7 @@ export function usePlayers(userId: string | null) {
     runSync,
     savePlayer: save,
     deactivatePlayer: deactivate,
+    deletePlayer: remove,
     uploadPlayerPhoto: uploadPhoto,
     removePlayerPhoto: removePhoto,
   }

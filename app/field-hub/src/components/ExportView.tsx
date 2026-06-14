@@ -69,9 +69,11 @@ export function ExportView({
   onExportComplete,
 }: ExportViewProps) {
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [exportErrorMessage, setExportErrorMessage] = useState<string | null>(null)
   const [importPayload, setImportPayload] = useState<unknown>(null)
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
   const [importResult, setImportResult] = useState<string | null>(null)
+  const [exportResult, setExportResult] = useState<string | null>(null)
   const [summary, setSummary] = useState<ExportSummary>(emptySummary)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
 
@@ -112,9 +114,17 @@ export function ExportView({
       return
     }
 
-    const backup = await createFieldHubBackup(userId)
-    downloadJson(`field-hub-backup-${todayStamp()}.json`, backup)
-    await markExportComplete(userId)
+    setExportErrorMessage(null)
+    setExportResult(null)
+
+    try {
+      const backup = await createFieldHubBackup(userId)
+      downloadJson(`field-hub-backup-${todayStamp()}.json`, backup)
+      await markExportComplete(userId)
+      setExportResult('JSON-Backup: Download gestartet.')
+    } catch (caughtError) {
+      setExportErrorMessage(caughtError instanceof Error ? caughtError.message : 'JSON-Backup konnte nicht exportiert werden.')
+    }
   }
 
   async function handleCsvExport(kind: 'players' | 'checkIns' | 'progress' | 'baseline') {
@@ -122,19 +132,27 @@ export function ExportView({
       return
     }
 
-    const backup = await createFieldHubBackup(userId)
-    const filename = `field-hub-${kind}-${todayStamp()}.csv`
-    const content =
-      kind === 'players'
-        ? buildPlayersCsv(backup.data.players)
-        : kind === 'checkIns'
-          ? buildCheckInsCsv(backup.data.playerSessionEntries, backup.data.players, backup.data.sessionLogs)
-          : kind === 'progress'
-            ? buildProgressCsv(backup.data.progressEntries, backup.data.players, backup.data.sessionLogs)
-            : buildBaselineCsv(backup.data.baselineEntries, backup.data.players, backup.data.sessionLogs)
+    setExportErrorMessage(null)
+    setExportResult(null)
 
-    downloadTextFile(filename, content, 'text/csv;charset=utf-8')
-    await markExportComplete(userId)
+    try {
+      const backup = await createFieldHubBackup(userId)
+      const filename = `field-hub-${kind}-${todayStamp()}.csv`
+      const content =
+        kind === 'players'
+          ? buildPlayersCsv(backup.data.players)
+          : kind === 'checkIns'
+            ? buildCheckInsCsv(backup.data.playerSessionEntries, backup.data.players, backup.data.sessionLogs)
+            : kind === 'progress'
+              ? buildProgressCsv(backup.data.progressEntries, backup.data.players, backup.data.sessionLogs)
+              : buildBaselineCsv(backup.data.baselineEntries, backup.data.players, backup.data.sessionLogs)
+
+      downloadTextFile(filename, content, 'text/csv;charset=utf-8')
+      await markExportComplete(userId)
+      setExportResult(`CSV ${kind === 'checkIns' ? 'Check-ins' : kind === 'players' ? 'Spieler' : kind === 'progress' ? 'Progression' : 'Baseline/Testwerte'}: Download gestartet.`)
+    } catch (caughtError) {
+      setExportErrorMessage(caughtError instanceof Error ? caughtError.message : 'CSV konnte nicht exportiert werden.')
+    }
   }
 
   async function handleImportFile(file: File) {
@@ -187,7 +205,8 @@ export function ExportView({
           <div>
             <h3 id="export-heading">Export und Backup</h3>
             <p>
-              Vollstaendiges JSON-Backup fuer Wiederherstellung; CSV-Dateien fuer Weiterverarbeitung.
+              JSON ist das vollstaendige Wiederherstellungsbackup. CSV-Dateien sind Tabellen fuer
+              Spieler, Check-ins, Progression oder Baseline/Testwerte und funktionieren auch mit leeren Daten.
               Profilfotos bleiben im privaten Supabase-Storage und werden nicht als Bilddatei exportiert.
             </p>
           </div>
@@ -242,6 +261,9 @@ export function ExportView({
             <span>CSV Baseline/Testwerte</span>
           </button>
         </div>
+
+        {exportResult ? <p className="form-success">{exportResult}</p> : null}
+        {exportErrorMessage ? <p className="form-error">{exportErrorMessage}</p> : null}
 
         <div className="warning-note">
           <AlertTriangle className="nav-icon" aria-hidden />

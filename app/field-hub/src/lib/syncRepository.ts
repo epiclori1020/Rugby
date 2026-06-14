@@ -2,7 +2,7 @@ import type { PlayerSyncOverview } from '../domain/sync'
 import { getBaselineSyncOverview } from './baselineRepository'
 import { getCheckInSyncOverview, syncCheckIns } from './checkInRepository'
 import { localDb } from './localDb'
-import { getPlayerSyncOverview } from './playerRepository'
+import { getPlayerSyncOverview, syncPlayers } from './playerRepository'
 import { getReturnerSyncOverview } from './returnerRepository'
 
 export function combineSyncOverviews(overviews: PlayerSyncOverview[]): PlayerSyncOverview {
@@ -100,8 +100,13 @@ export async function resetErroredPendingWritesForRetry(userId: string) {
 
 export async function syncAllUserData(userId: string): Promise<PlayerSyncOverview> {
   await resetErroredPendingWritesForRetry(userId)
+  const playerSyncOverview = await syncPlayers(userId)
   const syncOverview = await syncCheckIns(userId)
   const refreshedOverview = await getCombinedSyncOverview(userId)
+
+  if (playerSyncOverview.status === 'error') {
+    return mergeManualSyncOverview(playerSyncOverview, refreshedOverview)
+  }
 
   if (syncOverview.status === 'error') {
     return mergeManualSyncOverview(syncOverview, refreshedOverview)

@@ -32,6 +32,11 @@ type PlayerRow = {
   client_updated_at: string
 }
 
+type PhotoCleanupResult = {
+  removed: boolean
+  errorMessage: string | null
+}
+
 function nowIso() {
   return new Date().toISOString()
 }
@@ -112,6 +117,38 @@ async function queuePlayerWrite(player: Player) {
   })
 }
 
+function isOffline() {
+  return typeof navigator !== 'undefined' && !navigator.onLine
+}
+
+function needsStoredPhotoCleanup(player: Player) {
+  return Boolean(player.photoPath && (player.deletedAt || player.photoConsentStatus !== 'allowed'))
+}
+
+async function removeStoredPlayerPhoto(photoPath: string | null): Promise<PhotoCleanupResult> {
+  if (!photoPath || !supabase) {
+    return { removed: true, errorMessage: null }
+  }
+
+  if (isOffline()) {
+    return { removed: false, errorMessage: null }
+  }
+
+  try {
+    const { error } = await supabase.storage.from(PLAYER_PHOTOS_BUCKET).remove([photoPath])
+    if (error) {
+      return { removed: false, errorMessage: error.message }
+    }
+  } catch (caughtError) {
+    return {
+      removed: false,
+      errorMessage: caughtError instanceof Error ? caughtError.message : 'Profilfoto konnte nicht geloescht werden.',
+    }
+  }
+
+  return { removed: true, errorMessage: null }
+}
+
 export async function listLocalPlayers(userId: string) {
   const players = await localDb.players.where('userId').equals(userId).toArray()
   return players
@@ -148,7 +185,23 @@ export async function savePlayer(userId: string, values: PlayerFormValues, exist
     throw new Error('Name ist erforderlich.')
   }
 
+  const photoAllowed = normalized.photoConsentStatus === 'allowed'
   const timestamp = nowIso()
+  let photoPath = photoAllowed ? (existing?.photoPath ?? null) : null
+  let photoUpdatedAt = photoAllowed ? (existing?.photoUpdatedAt ?? null) : null
+
+  if (existing?.photoPath && !photoAllowed) {
+    const cleanupResult = await removeStoredPlayerPhoto(existing.photoPath)
+    if (cleanupResult.errorMessage) {
+      throw new Error(cleanupResult.errorMessage)
+    }
+
+    if (!cleanupResult.removed) {
+      photoPath = existing.photoPath
+      photoUpdatedAt = existing.photoUpdatedAt
+    }
+  }
+
   const player: Player = {
     id: existing?.id ?? createId(),
     userId,
@@ -158,8 +211,8 @@ export async function savePlayer(userId: string, values: PlayerFormValues, exist
     active: normalized.active,
     consentStatus: normalized.consentStatus,
     photoConsentStatus: normalized.photoConsentStatus,
-    photoPath: normalized.photoConsentStatus === 'allowed' ? (existing?.photoPath ?? null) : null,
-    photoUpdatedAt: normalized.photoConsentStatus === 'allowed' ? (existing?.photoUpdatedAt ?? null) : null,
+    photoPath,
+    photoUpdatedAt,
     returnerStatus: normalized.returnerStatus,
     notes: normalized.notes,
     createdAt: existing?.createdAt ?? timestamp,
@@ -182,6 +235,31 @@ export async function deactivatePlayer(player: Player) {
     ...player,
     active: false,
     updatedAt: timestamp,
+    clientUpdatedAt: timestamp,
+    syncStatus: 'pending',
+    syncError: null,
+  }
+
+  await localDb.players.put(updatedPlayer)
+  await queuePlayerWrite(updatedPlayer)
+
+  return updatedPlayer
+}
+
+export async function deletePlayer(player: Player) {
+  const timestamp = nowIso()
+  const cleanupResult = await removeStoredPlayerPhoto(player.photoPath)
+  if (cleanupResult.errorMessage) {
+    throw new Error(cleanupResult.errorMessage)
+  }
+
+  const updatedPlayer: Player = {
+    ...player,
+    active: false,
+    photoPath: cleanupResult.removed ? null : player.photoPath,
+    photoUpdatedAt: cleanupResult.removed ? null : player.photoUpdatedAt,
+    updatedAt: timestamp,
+    deletedAt: timestamp,
     clientUpdatedAt: timestamp,
     syncStatus: 'pending',
     syncError: null,
@@ -216,10 +294,36 @@ export async function syncPlayers(userId: string): Promise<PlayerSyncOverview> {
     .toArray()
 
   for (const write of pendingWrites) {
-    const player = await localDb.players.get(write.recordId)
+    let player = await localDb.players.get(write.recordId)
     if (!player) {
       await localDb.pendingWrites.delete(write.localId ?? 0)
       continue
+    }
+
+    if (needsStoredPhotoCleanup(player)) {
+      const cleanupResult = await removeStoredPlayerPhoto(player.photoPath)
+      if (!cleanupResult.removed) {
+        const errorMessage = cleanupResult.errorMessage ?? 'Profilfoto wird geloescht, sobald das Geraet online ist.'
+        await localDb.players.put({
+          ...player,
+          syncStatus: 'error',
+          syncError: errorMessage,
+        })
+
+        return {
+          ...(await getPlayerSyncOverview(userId)),
+          status: 'error',
+          errorMessage,
+        }
+      }
+
+      player = {
+        ...player,
+        photoPath: null,
+        photoUpdatedAt: null,
+        syncError: null,
+      }
+      await localDb.players.put(player)
     }
 
     const { error } = await supabase.from('players').upsert(rowFromPlayer(player)).select('id').single()
@@ -251,7 +355,6 @@ export async function syncPlayers(userId: string): Promise<PlayerSyncOverview> {
       'id,user_id,name,position,cluster,active,consent_status,photo_consent_status,photo_path,photo_updated_at,returner_status,notes,created_at,updated_at,deleted_at,client_updated_at',
     )
     .eq('user_id', userId)
-    .is('deleted_at', null)
     .order('name', { ascending: true })
 
   if (error) {
