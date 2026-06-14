@@ -1,0 +1,6 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="512" height="512" viewBox="0 0 512 512" role="img" aria-label="Field Hub icon">
+  <rect width="512" height="512" rx="74" fill="#0f2f2e"/>
+  <path d="M116 144h280v224H116z" fill="#f6f4ef"/>
+  <path d="M160 196h192M160 256h192M160 316h112" stroke="#0f2f2e" stroke-width="28" stroke-linecap="round"/>
+  <circle cx="368" cy="324" r="38" fill="#b75a2a"/>
+</svg>

@@ -1,0 +1,32 @@
+# macOS / local editor noise
+.DS_Store
+*.swp
+*.swo
+
+# Environment and secrets
+.env
+.env.*
+!.env.example
+!.env.supabase.local.example
+
+# Node / Vite / frontend build output
+node_modules/
+dist/
+build/
+.vite/
+*.tsbuildinfo
+
+# Test and coverage output
+coverage/
+playwright-report/
+test-results/
+
+# Local Codex / temporary logs
+.codex-log/
+.tmp/
+tmp/
+
+# Local player data exports or imported club data.
+# Keep the folder available, but do not commit real player/health data by default.
+data/*
+!data/.gitkeep

@@ -1,0 +1,208 @@
+
+
+
+
+Rugby-spezifischer Strength-and-Conditioning Exercise- und Drill-Pool für eine U22- und Development-Gruppe im Rugby Union
+Leitplanken für Donau Wien
+Für eine U22-/Development-Gruppe im Amateur- bis Semi-Pro-Kontext sind Verfügbarkeit, Belastungsverträglichkeit und Robustheit wichtiger als eine „profiartige“ Übungsvielfalt. Rugby Union ist ein hochintensiver, intermittierender Kollisionssport. Backs decken in Spielphasen mit Ball im Spiel in der Regel mehr High-Speed- und High-Metabolic-Load-Distanz ab, während Forwards mehr Kollisionen absolvieren; zugleich zeigen Academy-/U20-Daten klare Positionsunterschiede in Sprint- und High-Intensity-Running-Profilen. Der Übergang von Junior- zu Senior-Rugby wird besonders durch Körpermasse, Sprintgeschwindigkeit und Sprintmomentum geprägt. 
+
+Für die Praxis von Rugby Union Donau Wien heißt das:
+Dienstag sollte in der Regel der höhere neuromuskuläre Tag sein, an dem Speed, Beschleunigung, COD-Qualität, Hauptkraft und – je nach Saison – auch härtere Contact-Prep-Elemente Platz haben. Donnerstag ist im Saisonbetrieb meist besser als Primer-/Qualitätstag mit niedrigerem Volumen, etwas Max-Velocity-Exposition, Power-Priming, Erhalt von Kraft und zielgenauen Top-ups für Low-Minute-Spieler. Diese High-/Low-Logik passt sowohl zu World-Rugby-Empfehlungen für Tempo- und Conditioning-Struktur als auch zu den Belastungsrealitäten von Spielern, die arbeiten oder studieren. 
+
+Die Verletzungsseite ist im Community-Rugby zu wichtig, um sie als Nebenprodukt zu behandeln. Im Amateur-Rugby ist die Verletzungsinzidenz substanziell, und World Rugby hat mit Activate ein community-taugliches, progressives Vorbereitungsprogramm, das in Studien Verletzungen und Gehirnerschütterungen reduziert hat. Nach eingeschränkten Trainingsphasen oder ungleichmäßiger Teilnahme ist eine graduelle Progression von Sprint, Agility und Kontakt besonders wichtig. 
+
+Im Bericht verwende ich folgende Kürzel:
+
+Positionscluster
+CF = Collision Forwards
+HY = Hybrid
+SB = Speed/Space Backs
+
+Evidenzcode
+RU = direkte Rugby-Union-Evidenz
+RC = andere Rugby-Codes mit guter Transfernähe
+TS = allgemeine Team-Sport-/S&C-Evidenz
+S = stark
+M = moderat
+L = limitiert
+CI = Coaching-Inference
+
+Grosse Übungs- und Drill-Bibliothek
+Die folgende Bibliothek ist absichtlich als Übungsfamilie aufgebaut. Das ist für schwankende Anwesenheit, begrenzten Platz im Gym und Rotationsarbeit zwischen Feld und Gym deutlich robuster als ein starres „nur diese eine Übung“-System. Die Progressionen sind so formuliert, dass daraus später Offseason-, Preseason- und Inseason-Blöcke gebaut werden können.
+
+Kategorie	Übung/Drill	Ziel	Equipment	Coaching Cues	Progression	Regression	Positionscluster	Beste Saisonphase	Evidenz
+Warm-up / Prep	RAMP-Locomotion mit Shuffle, Skip, Backpedal, Curves	Temperatur, Puls, Bewegungsvorbereitung, Rugby-Lokomotion	Hütchen	„Rhythmus“, „groß werden“, „locker in Schultern“, „saubere Fußkontakte“	Ball aufnehmen/passen; kleine Richtungswechsel	Gehen/Marching statt Laufen	CF/HY/SB	Alle	RU+TS / S. Activate ist community-tauglich; dynamische Warm-ups verbessern Explosivleistung, kürzere 10–15-Minuten-Warm-ups sind oft günstig.
+Warm-up / Prep	Hip-lock march, A-march, dribble-run	Haltung, Fußaufsatz, Front-Side-Mechanik, Hüftstabilität	Feld/Hütchen	„Hüfte hoch“, „Druck nach unten“, „Rippen unten“, „Fuß aktiv“	A-skip, dribble zu schnell, Build-up	Wall march oder marching in place	CF/HY/SB	Alle	RU+TS / M. World Rugby nutzt March-/Drill-Progressionen in Speed-Sessions; Sprintmechanik ist für Beschleunigung und MaxV relevant. 
+Warm-up / Prep	Ankling, pogo jumps, line hops	Ankle stiffness, Soleus, elastische Reaktivität	Linien/Hütchen	„Kurzer Kontakt“, „steifer Knöchel“, „hoch über dem Mittelfuß“	Einbeinig; vor Cut/Decel kombinieren	Isometrischer Wadenhalt, bilaterale Pogo	CF/HY/SB	Alle	RU+TS / M. Activate integriert Hop-/Plyo-Elemente; Plantarflexor-Qualitäten hängen mit Sprintleistung zusammen.
+Warm-up / Prep	Snap-down + stick	Landung, trunk stiffness, Bremsmechanik	Körpergewicht	„Leise landen“, „Brust über Mitte“, „Hüfte nach hinten“, „ruhiger Rumpf“	Einbeinig; Drop aus kleiner Höhe	Squat-to-stick	CF/HY/SB	Offseason, Preseason, Inseason-Prep	RU+TS / M. Activate enthält Landing-/Plyo-Training; Deceleration hat eigene hohe Bremslasten. 
+Warm-up / Prep	Plant-and-hold 45° / 90°	Schneideposition, Beinachse, laterale Bremsung	Hütchen	„Sinken vor dem Kontakt“, „Nase über Knie“, „Fuß außerhalb COM, aber nicht zu weit“	Walk-in → jog-in → accel-in; später reaktiv	Seitlicher Schritt + Halt ohne Anlauf	CF/HY/SB	Offseason, Preseason, Inseason	RU+TS / M. Activate enthält „Plant and Cut“; Cutting-Biomechanik beeinflusst Leistung und Verletzungsrisiko. 
+Warm-up / Prep	Neck + shoulder mini-circuit	Hals, Schultergürtel, Scapula, Kontaktbereitschaft	Band, Partner, ggf. Neck Harness	„Kinn leicht einziehen“, „Schultern tief“, „Rippen unten“, „Druck 360°“	Partnerresistance; längere Holds; dynamischer Plus	Nur Band-ER + Push-up plus + leichte Selbstwiderstände	CF>HY>SB	Alle	RU+TS / M. Neck- und Schulterarbeit ist in Activate eingebettet; kurze neuromuskuläre Schulter-Warm-ups und Neck-Programme sind praktikabel und relevant. 
+Speed & Acceleration	Wall drill single exchange / wall march	Shin angle, Projektion, Force direction	Wand/Zaun	„Winkel halten“, „wegdrücken“, „dorsalflex“, „ruhiger Oberkörper“	Switch series; band resisted	March ohne Wand	CF/HY/SB	Offseason, Preseason	RU / M. World Rugby nutzt Wall-Drive in Acceleration-Sessions. 
+Speed & Acceleration	Falling start / rocker start 5–10 m	Erste Schritte, schnelle Projektion	Feld/Hütchen	„Fallen, nicht springen“, „3 harte Schritte“, „Arme aggressiv“	2-Punkt- / Split-stance-Start; Reaktionssignal	Start aus Stand ohne Vorfall	CF/HY/SB	Offseason, Preseason, Inseason	RU+TS / M. Für Rugby sind 5–30 m die wichtigsten Beschleunigungsstrecken.
+Speed & Acceleration	2-point / split-stance / 3-point starts 10–20 m	Rugby-spezifische Beschleunigung, Startvariabilität	Feld/Hütchen	„Vorwärts schieben“, „Winkel gewinnen“, „nicht zu früh aufrichten“	Reaktiv starten; Ball oder Gegenspielerreferenz	Nur 5–10 m Starts	CF/HY/SB	Alle, v. a. Offseason/Preseason	RU+TS / M. Kurze Sprints sind häufig und leistungsrelevant; Beschleunigung ist der zentrale Speed-Anker im Rugby. 
+Speed & Acceleration	Heavy sled acceleration 10–20 m	Horizontal force, frühe Beschleunigung	Schlitten	„Lehnen und drücken“, „große Schubphase“, „Arme schlagen“	Schwerer; 15–20 m; free sprint nachher	Leichter Schlitten oder band-resisted march	CF>HY>SB	Offseason, Preseason; inseason dosiert	RU+TS / M. Resisted-Sprint-Studien zeigen v. a. Vorteile für frühe Beschleunigung.
+Speed & Acceleration	Build-up + Fly 10+20 / 20+20	MaxV ohne brutalen Start, Hamstring-Exposure	Feld, Hütchen	„Geduldig aufbauen“, „Rumpf hoch“, „Schrittlänge natürlich“	Längerer Fly; leichter Curve/Fly	Build-up bis 80–90% ohne Fly	HY/SB, CF dosiert	Preseason, Inseason	RU+TS / M. MaxV-Training profitiert von graduellem Build-up; regelmäßige Exposition nahe Top-Speed ist relevant. 
+Speed & Acceleration	Wickets / dribble wickets	Rhythmus, Step-over, Top-Speed-Mechanik	Minihürden/Hütchen	„Über den Knöchel steigen“, „unten schnell“, „Hüfte stabil“	Build-up in Wickets → Fly out	Dribble runs ohne Wickets	HY/SB	Offseason, Preseason, Inseason-Primer	TS / M. Direkte Rugby-Evidenz ist limitiert, die Mechanik-Logik und Team-Sport-Praxis sind aber solide. 
+Speed & Acceleration	MaxV exposure 30–50 m / arc sprint	Hamstring-Robustheit, Top-Speed-Kompetenz	Feld	„Locker schnell“, „nicht pressen“, „volle Erholung“	2–4 Reps >90%; arc → straight	20–30 m Build-up bis 85–90%	SB>HY>CF	Preseason, Inseason	RU+TS / M. Team-Sport-Spieler brauchen MaxV-Exposure; im Rugby wird echte Maximalgeschwindigkeit oft jenseits von 30 m erreicht.
+Deceleration, COD & Agility	Decel zone 5–8 m to stop	Bremswinkel, kontrollierter Stopp	Hütchen	„Früh sinken“, „kleine finale Schritte“, „Brust über Knie“	Höhere Anlaufgeschwindigkeit	Kürzere Anläufe, vorgegebenes Stop-Fenster größer	CF/HY/SB	Offseason → Preseason	TS / M. Deceleration ist biomechanisch eigenständig und hoch belastend. 
+Deceleration, COD & Agility	Accel–decel–hold 10 m in / 2 m stop box	Sprint in Bremsung übertragen	Hütchen	„Sprinten bis zur Bremse“, „dann sitzen, nicht collapse“	Reaktionssignal für Stop-Distanz	5 m in, 3 m stop box	CF/HY/SB	Offseason, Preseason	TS / M. Sinnvoll als Brücke zwischen Linear Speed und COD. 
+Deceleration, COD & Agility	Lateral shuffle to plant-and-hold	Frontalebene, vorbereitendes Cut-Pattern	Hütchen	„Becken ruhig“, „Schulter über Fuß“, „starker Stütz“	Shuffle → crossover → plant	Schritt langsamer, kleiner Winkel	HY/SB, CF nützlich	Offseason	RU+TS / M. Planned COD ist nützlich, um Technik zuerst zu schulen. 
+Deceleration, COD & Agility	45° cut progression	flacherer Cut, Weiterlaufen nach Bremsung	Hütchen	„Außenfuß trifft“, „ein Plant, raus beschleunigen“	Ball fangen/passen; höheres Tempo	Walk-in statt run-in	CF/HY/SB	Offseason, Preseason, Inseason	RU+TS / M. Sharper momentum management wird im Rugby wichtig, aber zuerst mit kleineren Winkeln lernen. 
+Deceleration, COD & Agility	90° cut progression	härterer Richtungswechsel, trunk control	Hütchen	„Sinken vor dem Cut“, „Hüfte nach Ziel drehen“, „2 harte Schritte raus“	größerer Approach speed; reaktiv 2-option	45° statt 90°	HY/SB, CF dosiert	Preseason, Inseason	RU+TS / M. Rugby-Spieler mit höherem Sprintmomentum sind oft weniger COD-effizient; 90°-Cuts brauchen systematische Progression.
+Deceleration, COD & Agility	180° turn / 505-entry / pro-agility	harte Bremsung, Umkehr, repeated effort	Hütchen	„Bremsen vor Wendepunkt“, „tiefer Hüftschwerpunkt“, „nicht rotieren vor der Bremse“	505 mit Wettkampf; Ball aufnehmen	90°-Cut oder halbierter 5-0-5	HY/SB, CF selektiv	Preseason, Inseason	RU+TS / M. 180°-lastige COD-Aufgaben verstärken Defizite bei schnellen, schweren Rugby-Spielern.
+Deceleration, COD & Agility	Reactive mirror / colour-cue / 2-option evade	Wahrnehmung + Entscheidung ohne „Chaos-Zirkus“	Hütchen, Farbcue, Coachsignal	„Lesen dann gehen“, „ein klares Signal“, „saubere erste Reaktion“	Verteidiger/Angreifer; Ball; kleiner Raum	Nur 2 Optionen und langsameres Tempo	HY/SB, CF situativ	Preseason, Inseason	RU+TS / M. World Rugby empfiehlt von planned zu reactive/open skill zu gehen; volle Chaotik ist nicht nötig.
+Strength	Back squat / front squat family	Maxkraft Unterkörper, trunk stiffness	Rack, Langhantel	„Bracen“, „Tripod-Fuß“, „Kontrolle in Tiefe“	schwerer; Pause; Kontrast mit Jump	Goblet squat / box squat	CF>HY>SB	Offseason, Preseason; inseason Erhalt	RU+TS / M. Höhere Kraft-/Power-Werte unterscheiden höhere Spielniveaus; relative Kraft ist sprintrelevant. 
+Strength	Trap bar deadlift	Hinge-Kraft, robuste Belastbarkeit, gym-effizient	Trap Bar	„Druck in Boden“, „lange Wirbelsäule“, „explosiv hoch“	schwerer; ISO am Knie; fast concentric	Kettlebell deadlift	CF/HY/SB	Offseason, Preseason, Inseason-Erhalt	TS / M. Praktisch, lernbar, günstiges Kosten-Nutzen-Verhältnis im Amateursetting. Unterstützt horizontale und vertikale Kraftentwicklung. 
+Strength	RDL / staggered RDL	Hamstrings, Hinge-Pattern, posterior chain	Langhantel, DB, KB	„Hüfte zurück“, „Spannung in Hamstrings“, „Rippen unten“	einbeinig; Iso unten; Tempo	kurze ROM, DB-RDL	CF/HY/SB	Alle	RU+TS / M. Posterior-chain-Stärke unterstützt Sprint und Injury-Risk-Reduction.
+Strength	Split squat / RFESS	Unilateral strength, pelvis control, COD-Transfer	DB, Rack, Box	„Vorderfuß verwurzelt“, „Becken gerade“, „sauber hoch“	Front-foot elevated; ISO mid-range	Split squat bodyweight	HY/SB, CF ebenfalls	Alle	TS / M. Unilaterale Kraft ist für COD und asymmetrieärmere Belastung sinnvoll. 
+Strength	Bench press / DB floor press	horizontales Drücken, Kontaktbeitrag	Bank, LH/DB	„Obere Rücken fest“, „Füße aktiv“, „schnelle Konzentrik“	Pause bench, neutral DB, contrast	Push-up / incline push-up	CF/HY/SB	Offseason, Preseason; inseason dosiert	RC+TS / M. Oberkörperkraft und -power tragen zur Tackle-Leistung bei; floor press ist oft schulterfreundlicher. 
+Strength	Pull-up / chest-supported row / inverted row	Zugkraft, Schultergürtel, Gegenspieler zum Push	Stange, DB, Rack	„Schulterblatt zuerst“, „Brust stolz“, „Ellbogen kontrolliert“	exzentrisch/langsam; Zusatzlast	Band-assist / TRX row	CF/HY/SB	Alle	TS / M. Sinnvoll für Schulterbalance und Kontaktrobustheit; direkte Rugby-Evidenz limitiert, Praxis sehr stark. 
+Strength	Carry family: farmer, front rack, suitcase	trunk stiffness, brace, Griff, Kontaktübertrag	schwere DB/KB/Trap Bar	„Groß werden“, „nicht wackeln“, „Atem unter Spannung“	schwerer; asymmetrisch; länger	kürzere Distanz, beidbeinig symmetrisch	CF>HY>SB	Alle	TS+CI / M. Trunk-Training verbessert ausgewählte Leistungsmaße; Carries sind praktisch und robust. 
+Strength	Isometric split squat / pin squat / mid-thigh pull against pins	Isometrische / quasi-isometrische Kontaktkraft, Brems- und Bracefähigkeit	Rack, Pins	„Harte Spannung“, „den Boden wegdrücken“, „keine Leckage“	längere Holds; sportnähere Winkel	kürzere Holds, weniger Intensität	CF>HY>SB	Offseason, Preseason; inseason Microdose	RU+TS / M. Isometrische Kraft korreliert mit Sprint/Agility; Rugby nutzt hohe statische und quasi-statische Kraftanteile im Scrum/Kontakt. 
+Strength	Horizontal push ISO vs wall / sled / scrum-shape	Scrum-/ruck-/collision-relevante horizontale Kraft	Wand, Schlitten	„Neutraler Hals“, „Hüfte unter dir“, „lang drücken“	team-/unit-orientiert; längere Holds	kürzere Winkel, weniger Last	CF>HY	Offseason, Preseason	RU / M. Scrum-Leistung hängt mit Kraft, Technik und horizontaler Kraftproduktion zusammen. 
+Power	CMJ + stick / repeated low-volume jumps	vertikale Power, readiness, Primer	Körpergewicht / Jump Mat optional	„Schnell runter, schnell hoch“, „sauber landen“	Zusatzlast leicht; Serien	squat jump / submax hops	CF/HY/SB	Alle	RU+TS / M. Plyometrische Arbeit verbessert Sprint/Jump/Agility; CMJ ist im Rugby breit einsetzbar.
+Power	Broad jump / bounds	horizontale Power, Beschleunigungsübertrag	Feld	„Hinter dir drücken“, „im Ziel stabil“	Mehrfachbounds	einzelner Broad Jump mit Hold	HY/SB, CF dosiert	Offseason, Preseason	TS / M. Horizontale Power ist für kürzere Sprintphasen relevant. 
+Power	Trap bar jump / DB jump squat / loaded CMJ	loaded power ohne hohe technische Komplexität	Trap Bar, DB	„Max intent“, „nicht grind“, „Landung kontrollieren“	Last graduell; Kontrast mit Sprint	unloaded CMJ	CF/HY/SB	Offseason, Preseason; inseason Primer	RU / M. Loaded jump training und Hex-Bar-Jump-Modelle zeigen in Rugby gute Praxistauglichkeit. 
+Power	Med-ball chest pass / kneeling punch throw	Upper-body power für Kontakt, Pass-/Hit-Intent	Medizinball, Wand/Partner	„Bracen und schlagen“, „Ball wegstoßen, nicht nur werfen“	Rotationsanteil; Schritt dazu	kniend leicht	CF>HY>SB	Alle	RC+TS / M. Oberkörperpower hängt mit Tackle-Leistung zusammen; MB-Tests/-Throws sind praktikabel. 
+Power	Rotational scoop / shot-put throw	trunk-rotation power, Pass-/Collision-Transfer	Medizinball	„Hüfte startet“, „Rumpf steif, dann feuern“	reaktiv aus Shuffle/COD	halbkniend statisch	HY/SB, CF situativ	Offseason, Preseason, Inseason-Primer	TS / M. Rotatorische Kraft/Power ist leistungsrelevant, direkte RU-Evidenz aber begrenzt.
+Power	Jump shrug / high pull from hang	explosive triple extension ohne Full-Oly-Komplexität	LH/Trap Bar	„Lang und schnell“, „Ellbogen hoch außen“, „keine Catch-Pflicht“	schwerer / vom Hang	med-ball jump throw / loaded jump	CF/HY, SB optional	Offseason, Preseason	TS+CI / M. Derivative sind meist praktikabler als volle Oly-Lifts. 
+Contact Prep / Robustness	Sled march / low march in forward lean	Kontaktwinkel, horizontale Füße, trunk brace	Schlitten	„45°-Lean“, „kurze harte Schritte“, „Rippen unten“	schwerer / länger / Split stance	Körpergewichts-march	CF>HY>SB	Alle	RU+CI / M. World Rugby nutzt field-based strength inkl. pulls/carries; horizontale Lean-Muster sind rugby-nah. 
+Contact Prep / Robustness	Heavy sled push / resisted drive	horizontale Kraft, Beintrieb, Brace	Schlitten	„Studs in den Boden“, „weiter treiben“, „Hals neutral“	schwerer; kürzere harte Reps	leichter push	CF>HY, SB dosiert	Offseason, Preseason	RU+CI / M. Relevanz aus Scrum-/Tackle-Mechanik und horizontaler Kraft. 
+Contact Prep / Robustness	Backward sled drag	Knieextensoren, trunk brace, robuste Arbeit ohne große Exzentrik	Schlitten	„Kleine Schritte“, „Brust hoch“, „konstanter Zug“	schwerer / länger	leichter / kürzer	CF/HY/SB	Alle	CI / M. Sehr praktikabel im Amateurkontext, v. a. wenn Spieler belastet sind. Unterstützt konditionierende Kraftarbeit. 
+Contact Prep / Robustness	Loaded carries: farmer / front rack / bear-hug	Ganzkörper-Brace, Griff, Kontaktrobustheit	DB/KB/Sandbag-Ersatz	„Steif und stabil“, „nicht seitlich kippen“	asymmetrisch; uneben; länger	leichter / kürzer	CF>HY>SB	Alle	TS+CI / M. Loaded carries passen gut zu trunk- und contact-orientierter Vorbereitung. 
+Contact Prep / Robustness	1v1 grapple / stay square / body-fight	Nahkontakt, Balance, Körperhöhe, connection	Partner, 5x5 m Feld	„Tief aber stolz“, „Square bleiben“, „Druck aus Beinen“	enger Raum → 1v1 live; 1→2 Aufgaben	statischer Kontakt, kürzere Bouts	CF>HY>SB	Preseason, Inseason	RU / M. World Rugby Competition Ready beginnt Kontakt mit Grappling/Low-Intensity-Drills. 
+Contact Prep / Robustness	Shield connection 1 m → 2 m	Tackle-entry prep, Körperhöhe, Schulter-/Bein-Anbindung	Shield/Bag	„same foot/same shoulder“, „wrap and drive“, „Kopf sicher“	Angle in; up/down; 2 m entry	statische Verbindung am Shield	CF/HY/SB	Preseason, Inseason	RU / M. World Rugby beschreibt genau diese Shield-/Connection-Progressionen als Kontaktrelearning. 
+Contact Prep / Robustness	Controlled contact progression low → medium	graduelle Exposition, nicht Coaching-Chaos	Shields, Matten, Raumsteuerung	„Technik vor Intensität“, „RPE steuern“, „wenige hochqualitative Kontakte“	Low → medium → wettkampfnäher	bei Unsicherheit eine Stufe zurück	CF/HY/SB	Preseason; inseason dosiert	RU / S. World Rugby empfiehlt Kontakt am konservativsten zu progressieren und High-Intensity-Drills in frühen Wochen zu meiden. 
+Injury-Risk-Reduction Microdoses	Nordic hamstring	exzentrische Hamstringkraft, HSI-Risiko	Partner/Anchor	„Körper als Brett“, „so spät wie möglich bremsen“	exzentrisch länger; Zusatzwiederholungen	assisted Nordic / iso-fall	CF/HY/SB	Offseason, Preseason; inseason low dose	TS / S. NHE halbiert in Metaanalysen ungefähr Hamstringverletzungen; Leistungseffekte sind meist positiv oder neutral. 
+Injury-Risk-Reduction Microdoses	Slider leg curl / long-length hamstring curl	längenorientierte Hamstrings, weniger DOMS als Nordics	Slider/Towel	„Hüfte oben“, „langsam raus“, „unter Spannung rein“	exzentrisch 2-beinig → konzentrisch 1-beinig	kurze Range	CF/HY/SB	Alle	TS / M. Ergänzt Nordics sinnvoll, wenn Verfügbarkeit/Verträglichkeit schwankt. 
+Injury-Risk-Reduction Microdoses	Copenhagen short lever / adductor squeeze / lateral lunge ISO	Adduktorenkraft, Groin-Risiko, laterale Kapazität	Bank/Partner/Ball	„Körper gerade“, „nicht einknicken“, „aktiv ziehen“	Short → long lever; dynamisch; lateral load	squeeze oder side-lying adduction	CF/HY/SB	Offseason, Preseason; inseason microdose	TS+RU / M. CAE erhöht adductor strength; Präventionsevidenz ist positiv, aber weniger eindeutig als bei NHE. 
+Injury-Risk-Reduction Microdoses	Straight-knee + bent-knee calf raise	Gastrocnemius, Soleus, Achilles/Ankle	Box, DB	„volle ROM“, „oben stoppen“, „ruhig runter“	einbeinig; load erhöhen; pogo-Superset	bilateral bodyweight	CF/HY/SB	Alle	RU+TS / M. Plantarflexor-Funktion ist im Rugby relevant; Soleus-/Calf-Thema ist praxisrelevant, direkte Präventionsevidenz aber begrenzt. 
+Injury-Risk-Reduction Microdoses	Ankle balance / perturbation / low pogo	Sprunggelenk, Propriozeption, Reaktivität	Balance pad optional	„Tripod-Fuß“, „Knie über Fuß“, „ruhiger Körper“	perturbation, eyes closed, cut-entry	einfacher Einbeinstand	CF/HY/SB	Alle	TS / S. Propriozeptive Programme reduzieren Sprunggelenksverletzungen in Sportpopulationen. 
+Injury-Risk-Reduction Microdoses	Band ER + pull-apart + push-up plus / wall slide	Cuff, Scapula, Serratus	Band, Wand	„Schulterblatt dreht, nicht nur Arm“, „lange Arme“, „Brustkorb ruhig“	längere Hebel, langsam exzentrisch	nur 1–2 Übungen	CF/HY/SB	Alle	RU+TS / L-M. Rugby-spezifische Schulterprävention ist noch jung; RASIP ist machbar, Schulterfunktion und Cuff-/Scap-Faktoren sind plausibel. 
+Injury-Risk-Reduction Microdoses	Neck isometrics all directions / harness extension	Halsrobustheit, HAE-Toleranz, Kontaktvorbereitung	Selbstwiderstand, Band, Harness	„Kinn leicht ein“, „aus Rumpf stabil“, „ruhiger Druck“	längere Holds, Partner/Harness	Selbstwiderstand kurz	CF>HY>SB	Alle	RU / M. Neck-Programme verbessern Nackenstärke; direkte Concussion-Reduktion ist vielversprechend, aber noch nicht endgültig. 
+Injury-Risk-Reduction Microdoses	Dead bug / side plank / hip airplane	trunk/hip control, anti-rotation, pelvis control	Körpergewicht/Band	„Rippen unten“, „Becken level“, „langsam sauber“	längere Hebel; Band-Widerstand	kürzere Hebel	CF/HY/SB	Alle	TS / M. Trunk-Training verbessert ausgewählte Leistungs- und Kontrollmaße. 
+Conditioning	Ball-in-play inspired wave shuttles	rugby-nahe Arbeit-Ruhe-Struktur, Worst-Case-ähnliche Reize	Feld, Hütchen	„saubere Technik unter Last“, „Qualität vor völliger Zerstörung“	längere Waves; mehr Richtungswechsel; Kontakt-Tag für Forwards	kürzere On-Phasen, weniger Cuts	CF/HY/SB	Preseason, Inseason	RU / M. Ball-in-play-Daten zeigen höhere Intensität als Whole-Match-Averages; WCS-orientierte Konditionierung ist sinnvoll.
+Conditioning	30-15IFT-/MAS-basierte Intervalle	individualisierte HIIT-Steuerung	Bahn/Feld, Timer	„Tempo treffen“, „nicht überpacen“, „saubere Wenden“	mehr Sets; kleine Geschwindigkeitssteigerung	kürzere Sets / geringere %VIFT	CF/HY/SB	Offseason, Preseason; Inseason-Top-up	TS+RC / S-M. 30-15IFT ist reliabel und für HIIT-Preskription entwickelt; MAS-Rechtecke sind teampraktisch. 
+Conditioning	Bronco broken reps / Bronco repeats	Shuttle-Ausdauer, Richtungswechsel, einfache Klublogistik	Feld, Hütchen	„gleichmäßig aggressiv“, „saubere Ecken“, „nicht sterben in Set 1“	2–4 gebrochene Wiederholungen; kürzere Pausen	halbe Bronco-Abschnitte	HY/SB, CF dosiert	Offseason, Preseason	RU / M-L. Bronco ist praktisch und im Rugby etabliert; als alleiniger Goldstandard der Match-Fitness sollte er aber nicht überhöht werden. 
+Conditioning	Extensive tempo 50–200 m @ 65–75%	extensive Kapazität, aktive Erholung, submax Mechanik	Feld, Hütchen, Uhr	„ruhig flüssig“, „Mechanik halten“, „keine Laktat-Schlacht“	Volumen 1000–1500 m; Abstand 50–200 m	weniger Volumen, 50–80 m	SB/HY, CF selektiv	Offseason, Low-minute, Return-to-load	RU / M. World Rugby empfiehlt Rugby eher sprintorientiertes Tempo als threshold-artige schwere Tempoläufe. 
+Conditioning	Forwards RHIE block: 10–20 s effort + Kontakt-/Carry-Komponente	repeat contact + high intensity, nicht nur Lauf-RSA	Feld, Bags/Shields, ggf. Schlitten	„kurz brutal sauber“, „Kontaktqualität“, „aus Erholung wieder scharf“	mehr Reps; Kontakt vor oder in Lauf integrieren	nur Lauf ohne Kontakt	CF>HY	Preseason, Inseason-Top-up	RU+RC / M. RHIE ist im Rugby zentral; Fitnessdeterminanten unterscheiden sich nach Position. 
+Conditioning	Backs RSA / speed-endurance block	repeated sprint, hohe Laufgeschwindigkeit	Feld, Hütchen	„alle Reps gleich schnell“, „volle Technik“, „Rest ernst nehmen“	mehr Reps / längere Distanz	weniger Reps / 15–20 m statt 30–40 m	SB>HY	Preseason, Inseason-Top-up	RU+TS / M. Repeated-sprint training verbessert Speed/RSA/Endurance; für Backs ist stärkerer Speed-Fokus plausibel. 
+Conditioning	Low-minute-player top-up	zwischen Startern und Reservisten Belastung angleichen	Feld, Bikes, Airbike	„kurz, zielgenau, nicht willkürlich hart“	spielpositionsspezifisch; Lauf + Bike mix	nur extensive kurze Repeats	CF/HY/SB	Inseason	TS+CI / M. Top-ups sind in Team-Sport-Praxis Standard; Inhalt soll das fehlende Matchprofil abbilden. 
+
+Ein paar wichtige Ableitungen aus der Tabelle
+Für Collision Forwards sollte die Bibliothek relativ mehr Zeit in absolute Kraft, horizontale Kraft, isometrische/quasi-isometrische Arbeit, Neck/Shoulder Robustness, Sleds und RHIE mit Kontaktkomponente investieren. Für Hybrid-Spieler ist die Mitte sinnvoll: genug MaxV und COD, aber weiterhin robuste Kraft- und Kontaktarbeit. Speed/Space Backs brauchen die klar höchste Priorität auf Maximalgeschwindigkeit, Fly-In-/Build-up-Exposition, COD-Effizienz und repeated sprint/speed-endurance, ohne die Kontaktvorbereitung zu vernachlässigen. Das passt zu den Positionsunterschieden in Sprint-, HSR- und Kollisionsprofilen. 
+
+Bei COD/Agility sollte die Progression von geschlossen und technisch zu semi-reaktiv und rugby-nah verlaufen: zuerst Decel und Plant-and-Hold, dann 45°/90°/180°-Cuts mit höheren Approach-Geschwindigkeiten, dann 2-Option-Reaktivität, Mirror-Drills oder kleine Evasion-Lanes. World Rugby betont bei Rückkehr-/Progressionslogik, dass Agility und Sprinting am Anfang modifiziert und dann schrittweise normalisiert werden sollten; die kontaktbezogenen Elemente sollen noch konservativer wachsen. 
+
+Priorisierung und Mikro-Module
+Must-have, Useful und Optional pro Kategorie
+Kategorie	Must-have	Useful	Optional	Begründung für diesen Kontext
+Warm-up / Prep	Activate-/RAMP-inspirierte 10–15-Min-Prep mit Landung, Cut-Pattern, Neck/Shoulder	Erweiterte 15–20-Min-Variante vor härteren Dienstagseinheiten	Lange Mobilitätsflows ohne klare Funktion	Activate reduziert Verletzungen im Community-Rugby; Warm-up darf praktisch, kurz und regelmäßig sein.
+Speed & Acceleration	5–10 m Starts, 10–20 m Beschleunigung, 1 organisierte MaxV-Exposition pro Woche oder 10 Tage	Wickets, sled load individualisieren, Flys	Overspeed als Standardmethode	Rugby verlangt Beschleunigung; MaxV-Exposure ist für Leistung und Hamstring-Robustheit relevant, aber kontrolliert. 
+Deceleration / COD / Agility	Decel-to-stick, 45°/90° geplant, kleine reaktive 2-Option-Drills	180°/505, ballintegrierte Evasion-Lanes	sehr chaotische „random agility“	Rugby-Spieler mit hohem Sprintmomentum sind oft weniger effizient in COD; Technik muss vor Chaos kommen. 
+Strength	1 Squat-/1 Hinge-Muster, 1 unilateraler Lift, 1 horizontaler Push, 1 Pull, Carry/Isometric	Landmine/DB-Varianten, Pin-Isos, frontsquat-spezifische Cluster	große Menüvielfalt, häufiges 1RM-Fokussieren	Mit kleiner Gym-Kapazität sind robuste Grundmuster klar überlegen. Kraft/Power differenzieren Rugby-Niveau.
+Power	Loaded/unloaded jumps, med-ball throws	Jump shrug/high pull, bounds	volle Oly-Lifts für den ganzen Kader	Loaded jumps und med-ball-Arbeit liefern viel Power-Transfer bei geringerer technischer Hürde. 
+Contact Prep / Robustness	Neck, brace, sleds, carries, low-level grappling, shield connection	Medium-intensity controlled contact	hohe Mengen Live-Wrestling oder harte Vollkontakt-S&C	Kontakt muss graduell und konservativ wachsen; Technik bleibt Aufgabe des Rugby-Coachs.
+Injury-Risk-Reduction Microdoses	NHE, Copenhagen short lever, calf/soleus, shoulder/scap, neck, trunk/hip	ankle perturbation, hip airplane, sliders	sehr große Prehab-Zirkel	Die stärkste Basis gibt es für Hamstrings und Sprunggelenk; anderes ist sinnvoll, aber kleiner dosiert.
+Conditioning	Ball-in-play-Intervalle, individuelle 30-15-/MAS-Blöcke, Low-minute-top-ups	Bronco broken reps, positionsspezifische RHIE/RSA	häufige generische Laktat-„Becherläufe“	Rugby-Konditionierung sollte eher WCS-/Spielstruktur und individuelle Geschwindigkeit als bloß harte generische Ermüdung reflektieren. 
+
+Konkrete 5- bis 15-Minuten-Module für Dienstag und Donnerstag
+Die Module unten sind Coaching-Inference aus Activate, World-Rugby-Speed-/Conditioning-Guidelines, Sprint-Exposure-Literatur, Decel/COD-Biomechanik und den Injury-Reduction-Klassikern (Nordic, Copenhagen, ankle proprioception, neck). Sie sind auf einen Amateur-/Development-Kontext mit zwei Abendterminen, begrenzter Gym-Kapazität und schwankender Anwesenheit zugeschnitten. 
+
+Tag	Modul	Dauer	Inhalt	Dosierung	Cluster-Fokus	Saisonphase	Notiz
+Dienstag	Standard-Prep	12 Min	RAMP-Locomotion → A-march/dribble → snap-down/stick → plant-and-hold → neck/shoulder	je 1–2 kurze Bahnen / 2–4 Reps	Alle	Alle	Default-Modul für fast jede Dienstagseinheit. Activate-kompatibel.
+Dienstag	Accel-Microdose	8–10 Min	2×2×10 m Starts + 3×15 m freie Beschleunigung	volle Pause, Qualität	Alle; CF etwas mehr Projektionsfokus	Alle	Klein, aber hochwirksam bei schwankender Anwesenheit. 
+Dienstag	Sled-Accel-Block	8–12 Min	heavy sled 4–6×10–20 m, danach 2 freie Sprints	60–120 s Pause	CF>HY>SB	Offseason, Preseason	Sehr hoher Return bei kleiner Ausrüstungsliste. 
+Dienstag	COD-Tech-Block	10–12 Min	decel zone → 45° → 90° cut	2–3 Reps pro Muster pro Seite	HY/SB, CF sauber mitführen	Offseason, Preseason	Technik zuerst, dann Geschwindigkeit. 
+Dienstag	Contact-Prep-Block	8–10 Min	grapple/stay square + shield connection + kurze sled march	2–4 hochwertige Bouts / Kontakte	CF>HY>SB	Preseason, Inseason	Keine Technikorgien; nur vorbereitende Kontaktarbeit. 
+Dienstag	Strength-Rotation	12–15 Min	A: Trap bar/Squat; B: Bench/Floor press + row; C: Split squat + carry	2–4 Arbeitssätze	Alle	Offseason, Preseason, Inseason-Erhalt	Ideal für kleines Gym mit Halbgruppenrotation.
+Dienstag	Hamstring/Adductor-Microdose	5–8 Min	Nordic 2×3–5 + Copenhagen 2×10–20 s	klein, regelmäßig	Alle	Alle	Höhere Adhärenz als große Prehab-Blöcke. 
+Dienstag	Ball-in-play Conditioning	10–12 Min	2–3 Waves à 3–5×20–40 s Arbeit / 20–40 s Float	2–3 Min Serienpause	CF kontaktiger, SB lauflastiger	Preseason, Inseason	Spielnäher als willkürliche Shuttle-Strafen. 
+Donnerstag	Primer-Prep	8–10 Min	kurze RAMP-Variante mit pogo, dribble, stick, neck/shoulder	niedriges Volumen, schnelle Qualität	Alle	Inseason	Vor einem Samstag eher kurz und frisch.
+Donnerstag	MaxV-Primer	6–8 Min	2–4 Build-up/Fly oder 2–3 30–40 m smooth fast reps	volle Erholung	SB>HY>CF	Inseason	Backs etwas mehr Volumen, Forwards meist weniger. 
+Donnerstag	Power-Primer	6–8 Min	2–3×2 jump squat/CMJ + 2–3×3 med-ball chest pass	niedrige Gesamtzahl Kontakte	Alle	Inseason	Ziel ist readiness, nicht Ermüdung. 
+Donnerstag	Neck/Shoulder-Microdose	5–6 Min	neck iso + band ER + push-up plus	1–2 Runden	CF>HY>SB	Alle	Einfache, wiederholbare Abendroutine. 
+Donnerstag	Low-minute Top-up	10–15 Min	Wahlweise 30-15-/MAS-Block, Tempo, RHIE oder RSA	nach Spielzeitprofil	gruppenspezifisch	Inseason	Starter primern, Reservisten belasten nach. 
+Donnerstag	Extensives Tempo-Flush	8–12 Min	6–10×60–100 m @ 65–75%	Walk-/jog-back oder 1:2 Rest	HY/SB, CF selektiv	Offseason, Low-minute, Return-to-load	Nützlich, wenn Donnerstag kein Match-Primer ist. 
+
+Beispielhafte Session-Bausteine
+Die drei Bausteine unten sind Praxisvorschläge, keine direkte 1:1-Abbildung einer einzelnen Studie. Sie sind abgeleitet aus den Demand-Daten, World-Rugby-Guidelines, Speed-/Power-Prinzipien, der Community-Injury-Prevention-Literatur und der besonderen Logik eines U22-/Development-Kaders mit zwei Abendterminen pro Woche. 
+
+Offseason Dienstag
+Ziel: Acceleration + Hauptkraft + extensive bis mittlere Konditionierung.
+Charakter: Höherer neuraler Tag; viel Qualität, aber noch genügend Gesamtarbeit.
+
+Block	Dauer	Inhalt	Praktische Dosierung
+Prep	12 Min	RAMP: locomotion, A-march/dribble, pogo, snap-down, plant-and-hold, neck/shoulder	1–2 Bahnen pro Drill, 2–4 Reps/Holds
+Speed	12 Min	Falling starts 2×2×10 m; 3×15 m accel; 4×15 m heavy sled; 2×20 m free sprint	volle Pausen, Gruppen nach Cluster
+Power	10 Min	3×3 loaded jumps oder trap-bar jumps; 3×4 med-ball chest pass / scoop throw	HY/SB etwas mehr horizontal/rotational; CF mehr chest/punch
+Strength Rotation	25 Min	Station A: trap bar 4×4; Station B: bench/floor press 4×5 + row 4×6; Station C: RFESS 3×6/Seite + suitcase carry 3×20 m	3 Gruppen rotieren, 75–90 s Satzpause
+Microdose	6 Min	Nordic 2×4; Copenhagen short lever 2×15 s/Seite	klein, sauber
+Conditioning	10 Min	Extensive tempo 8×80–100 m @ 65–75% oder 2×5 Min MAS-Rechtecke	je nach Kaderzustand und Attendance
+Cool-down	3 Min	lockeres Auslaufen / Atemregulation	optional
+
+Cluster-Anpassung:
+CF bekommt bei Sleds und Carries etwas mehr Last, dafür weniger Tempo-Volumen. SB bekommt etwas mehr freie Sprints oder einen zusätzlichen Fly-Out. HY bleibt am balanciertesten. Diese Verteilung spiegelt die höheren HSR-/MaxV-Anforderungen der Backs und die höhere horizontale/Collision-Last der Forwards. 
+
+Preseason Dienstag
+Ziel: Spielnähere Beschleunigung, COD, Contact-Prep und RHIE.
+Charakter: Noch immer Haupttag, aber deutlich rugby-näher als Offseason.
+
+Block	Dauer	Inhalt	Praktische Dosierung
+Prep	10 Min	Activate-inspirierte Kurzversion mit plant-and-hold und neck/shoulder	kompakter als Offseason
+Speed to COD	12 Min	2×10 m start; 3×15 m accel; 2 Runden 45° + 90° cut progression	geschlossen → halb-offen
+Contact Prep	12 Min	1v1 grapple/stay square; shield connection 1 m → 2 m; kurze sled march	2–4 hochwertige Kontakte pro Drill
+Power + Strength	18 Min	3×3 jump squat/CMJ; 3×4 med-ball chest pass; 3×3 trap bar oder front squat fast; 2×5 pull-up/row	weniger Volumen als Offseason
+Rugby-nahe COD/Agility	10 Min	2-option reactive evade lane mit Pass-/Catch-Element	keine unnötige Vollchaotik
+Conditioning	12 Min	2–3 RHIE-Waves: 20 m acceleration + get-up/carry/shield + back-pedal/turn + 20 m sprint	CF kontaktiger; SB lauffokussierter
+Microdose	5 Min	calf raise + ankle pogo + Copenhagen	kurz und regelmäßig
+
+Warum so aufgebaut:
+Preseason sollte laut World Rugby Sprint, Agility und Kontakt nicht abrupt „voll normal“ machen, sondern über kontrollierte Steigerungen in Richtung spielnaher Aktionen gehen. Gleichzeitig zeigen RHIE- und Ball-in-Play-Daten, dass Rugby-Conditioning nicht nur wiederholte lineare Shuttles sein sollte, sondern wiederkehrende hochintensive Aktionen mit kurzen Erholungen und – je nach Position – auch Kontaktkomponente. 
+
+Inseason Donnerstag Primer
+Ziel: Frische erhalten, Geschwindigkeit „anschalten“, minimale, aber wirksame Kraft-/Power-Erhaltung.
+Charakter: Sehr niedrige Ermüdung, hohe Qualität. Für Starter ein Primer; für Low-Minute-Spieler danach optional Top-up.
+
+Block	Dauer	Inhalt	Praktische Dosierung
+Primer Prep	8 Min	kurze RAMP-Variante, vor allem ankle/pogo, dribble, stick, neck/shoulder	knapp, ohne Leerlauf
+MaxV / Speed	6–8 Min	SB: 3–4 Reps build 20 + fly 15–20; HY: 2–3 Reps; CF: 2–3 smooth 20–30 m fast	volle Pausen
+Power Primer	6 Min	2×2 loaded jump oder CMJ; 2×3 med-ball chest pass	geringe Gesamtzahl
+COD / Contact Readiness	6–8 Min	2–3 plant-and-go oder 2-option reactive reps; 2–3 shield connections im niedrigen Volumen	nur Qualität
+Strength Maintenance	8–10 Min	trap bar oder squat 2×3 @ moderat-schnell; row/pull 2×4–6; carry 2×15–20 m	kein Grinding
+Microdose	5 Min	neck iso + band ER + 1 Satz calf/soleus	kurz
+Optional Top-up für Low-Minute-Spieler	10–12 Min	30-15-/MAS-Intervallblock oder 6–10×60–80 m Tempo oder 2 kurze RSA-Sets	abhängig vom nicht erreichten Matchprofil
+
+Warum so aufgebaut:
+Ein Primer profitiert eher von niedrigen Volumina mit klarer Speed-/Power-Qualität als von schweren, ermüdenden Einheiten. Studien zu Jump-/Ballistic-Priming in Rugby zeigen, dass kleine neuromuskuläre Reize praktische Vorteile gegenüber klassischer schwerer PAP-Logik haben können, während MaxV-Exposition bei kontrollierter Dosierung erhalten bleiben sollte. 
+
+Was im Amateur- und Semi-Pro-Kontext eher zu riskant, zu komplex oder nicht nötig ist
+Für euren Kontext sind nicht die theoretisch „coolsten“ Übungen entscheidend, sondern die mit dem besten Return on Time, Learning and Recovery. Die folgende Liste ist überwiegend Coaching-Inference, aber direkt aus den zitierten Risiko-, Progressions- und Belastungsprinzipien abgeleitet. 
+
+Übung / Ansatz	Warum im Kontext fraglich	Bessere Alternative
+Volle Oly-Lifts vom Boden für den ganzen Kader	Hohe technische Lehrzeit, kleine Gym-Kapazität, begrenzte Wochenfrequenz; Nutzen ist oft auch mit Derivaten erreichbar.	Jump shrug, high pull from hang, trap-bar jump, med-ball throws
+Assisted/overspeed sprinting als Standard	World Rugby zeigt solche Methoden in Sample-Sessions, aber für eine Development-Gruppe ohne konstante Speed-Exposition ist das meist unnötig und potenziell riskanter.	Build-ups, flys, wickets, organisierte MaxV-Exposition
+Sehr schwere oder sehr hohe Depth-Jumps in Volumen	Hohe exzentrische Kosten, v. a. auf Kunstrasen und bei Spielern mit Arbeit/Studium am Folgetag	CMJ, low box jumps, snap-down + stick, moderate bounds
+Exhaustive „Laktat“-Shuttletests als Standard-Conditioning	Hoher Ermüdungs- und oft geringer Transfernutzen; Rugby profitiert stark von alaktischer und aerober Qualität plus spielnahem Intervallbau.	Ball-in-play waves, 30-15-/MAS-Blöcke, tempo, RHIE/RSA
+MaxV-Sprints unter Müdigkeit oder ohne Build-up	Höheres Weichteil-Risiko, schlechtere Qualität	frische Reps, graduelle Build-ups, volle Erholung
+Neck bridges / Wrestler’s bridges als Pflichtprogramm	Hohe Kompressionslast, wenig zwingender Mehrwert gegenüber sichereren isometrischen/harness-basierten Varianten	Selbstwiderstands-Isos, Partner-Isos, Harness dosiert
+Große Mengen Live-Wrestling/Full-contact-S&C spät in der Woche	Kontaktlast und Verletzungsrisiko steigen; World Rugby empfiehlt konservative Kontaktprogression	low-/medium-intensity controlled contact, wenige hochwertige Kontakte
+Zu viele isolierte „Prehab“-Übungen pro Session	Adhärenz sinkt; in Amateursettings schlägt Konstanz die Vollständigkeit	2–4 feste Microdoses, jede Woche wiederholt
+Komplizierte COD-Drills mit zu viel Chaos zu früh	Technikfokus geht verloren, Brems- und Fußarbeitsqualität sinken	45°/90° geplant → 2-option reaktiv → rugby-näher
+Häufiges maximales 1RM-Testen	Unnötiger Organisierungs- und Regenerationsaufwand	3–5RM, subjektive Geschwindigkeit, wenige Reps mit hoher Intent
+
+Wichtig ist auch die klare Grenze beim Kontaktblock: S&C kann körperliche Positionen, Bracing, Tracking, graduelle Kontaktgewöhnung, Neck/Shoulder-Readiness und organisierte Shield-/Grapple-Drills vorbereiten. Tackle-Technik, Entry-Details, Kopfposition, legale Zielzonen und Coaching der Kontakttechnik bleiben beim Rugby-Coach und sollten mit World-Rugby-Tackle-Ready-Standards verknüpft werden. 
+
+Evidenzbewertung und Quellenbild
+Die stärkste direkte Rugby-Union-Evidenz in diesem Report liegt bei drei Bereichen:
+erstens bei Activate / movement-control-orientierter Warm-up- und Prep-Arbeit zur Verletzungsreduktion im Community-Kontext; zweitens bei den Demand-Daten zu Positionen, Ball-in-Play und High-Speed-/Collision-Profilen; drittens bei Teilen der Neck- und Speed-/Power-Literatur im Rugby selbst. Für diese Bereiche ist die Übertragbarkeit auf eine U22-/Development-Gruppe in einem Verein sehr gut. 
+
+Die stärkste allgemeine Team-Sport-Evidenz betrifft Nordic Hamstring, dynamische Warm-ups, Ankle-Propriozeption, resisted sprint training und große Teile der Deceleration-/COD-Biomechanik. Diese Bereiche sind nicht immer rugby-exklusiv untersucht, aber die mechanische Logik und die Interventionseffekte sind stark genug, dass die Übertragung in Rugby-Union-S&C sehr plausibel ist. 
+
+Moderat ist die Evidenz für Copenhagen/Adduktorenprävention, Shoulder-/Scap-/Cuff-Microdoses, Bronco als Trainingsanker, Upper-body power für Kontaktperformance und RHIE-spezifische Sessiongestaltung. In diesen Bereichen gibt es positive Signale, aber weniger eindeutige oder weniger direkt community- bzw. union-spezifische Interventionsdaten. Deshalb habe ich sie bewusst als hoch sinnvoll, aber nicht dogmatisch eingeordnet. 
+
+Limitiert bleibt die direkte Evidenz für einige sehr praktische Coaching-Fragen:
+welches exakte COD-Drill-Set in welcher Woche am besten ist, wie viele Shield-Contacts in einer U22-Development-Gruppe optimal sind, oder welche Donnerstag-Primer-Dosierung bei eurer exakten Kaderstruktur am besten funktioniert. Hier basiert der Report bewusst auf Coaching-Inference aus Demand-Daten, Belastungsprinzipien, Biomechanik, World-Rugby-Guidelines und praktikabler Umsetzbarkeit. Das ist kein Mangel, sondern die realistische Art, wie gute Rugby-S&C-Planung meist entstehen muss.
+
+Unterm Strich ist für euren Kontext nicht die exotische Übung entscheidend. Entscheidend ist ein kleiner, stabiler Kern aus:
+Activate-inspirierter Prep, wöchentlicher Speed-Exposition, systematischer Decel/COD-Progression, einfachen, großen Kraftmustern, praktischer Power-Arbeit, dosierter Contact-Prep, kleinen Injury-Microdoses und positionsnaher Konditionierung. Genau daraus lässt sich anschließend sauber ein 1-Jahresplan mit Mesozyklen und Dienstag-/Donnerstag-Templates bauen. 

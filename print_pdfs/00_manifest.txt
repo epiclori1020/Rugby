@@ -1,0 +1,47 @@
+# print_pdfs - Uebersicht
+
+Diese Mappe wird von scripts/export_print_pdfs.py erzeugt.
+ACHTUNG: Jeder Export-Lauf loescht print_pdfs/ komplett und baut es neu auf.
+Lege hier KEINE eigenen Dateien von Hand ab - sie waeren beim naechsten Export weg.
+Inhalt aendern = die Markdown-Quelle bearbeiten, dann das Skript neu laufen lassen.
+
+Ordner-Logik (nach Zeitachse):
+- 1_DIESE_WOCHE_drucken/        = Di 16.06 + Do 18.06 ausdrucken
+- 2_NACHSCHLAGEN_ipad_nicht_drucken/ = Rueckhand am iPad, nicht drucken
+- 3_AB_KW26_BIS_URLAUB/         = laufende Trainingstage bis zum Urlaub
+- 4_URLAUB_AUGUST/              = 3.-24. August (Arwin weg)
+- 5_NACH_URLAUB_ab_kw35/        = Platzhalter, Block wird noch erstellt
+- _ARCHIV_nicht_drucken/        = alte Testtag-/Langfassungen, ignorieren
+
+PDF -> Quelle:
+
+1_DIESE_WOCHE_drucken/1_DIENSTAG_trainingsplan.pdf <- plans/offseason_coach_sheets/KW25_tuesday_training_plan_clear_2026-06-16.md
+1_DIESE_WOCHE_drucken/2_COACH_SCRIPT_di_do.pdf <- templates/kw25_coach_script_2026-06-16_18.md
+1_DIESE_WOCHE_drucken/3_DIENSTAG_checkin_3x.pdf <- templates/unit_1_simplified_player_checkin_values_2026-06-16.md
+1_DIESE_WOCHE_drucken/4_DONNERSTAG_trainingsplan.pdf <- plans/offseason_coach_sheets/KW25_thursday_training_plan_clear_2026-06-18.md
+1_DIESE_WOCHE_drucken/5_OPTIONAL_einwilligung_20x.pdf <- templates/unit_1_slim_consent_2026-06-16.md
+1_DIESE_WOCHE_drucken/6_NOTFALL_admin_vor_dienstag.pdf <- templates/unit_1_admin_field_packet.md
+2_NACHSCHLAGEN_ipad_nicht_drucken/coach_card_dienstag.pdf <- templates/unit_1_simplified_coach_card_2026-06-16.md
+2_NACHSCHLAGEN_ipad_nicht_drucken/detail_briefing.pdf <- templates/unit_1_coach_briefing_detailed_2026-06-16.md
+2_NACHSCHLAGEN_ipad_nicht_drucken/spieler_briefing_handout.pdf <- templates/unit_1_player_briefing_2026-06-16.md
+2_NACHSCHLAGEN_ipad_nicht_drucken/donnerstag_kompaktkarte.pdf <- plans/offseason_coach_sheets/KW25_unit_2_thursday_intro_simplified.md
+2_NACHSCHLAGEN_ipad_nicht_drucken/variantenkarte_ABCD.pdf <- templates/session_variants_abcd_quick_card.md
+2_NACHSCHLAGEN_ipad_nicht_drucken/exercise_pool_mapping.pdf <- templates/exercise_pool_offseason_mapping.md
+3_AB_KW26_BIS_URLAUB/kw25_27_field_cards.pdf <- plans/offseason_coach_sheets/kw25_27_one_page_field_cards.md
+3_AB_KW26_BIS_URLAUB/kw28_31_field_cards.pdf <- plans/offseason_coach_sheets/kw28_31_one_page_field_cards.md
+3_AB_KW26_BIS_URLAUB/progression_tracker_3x.pdf <- templates/progression_tracker_field_compact.md
+3_AB_KW26_BIS_URLAUB/variantenkarte_ABCD.pdf <- templates/session_variants_abcd_quick_card.md
+3_AB_KW26_BIS_URLAUB/exercise_pool_mapping.pdf <- templates/exercise_pool_offseason_mapping.md
+3_AB_KW26_BIS_URLAUB/pre_august_gesamtueberblick.pdf <- plans/07_offseason_pre_august_quick_sheet.md
+3_AB_KW26_BIS_URLAUB/detail_coach_cards_kw25_27_optional.pdf <- plans/offseason_coach_sheets/kw25_27_active_detailed_coach_cards.md
+3_AB_KW26_BIS_URLAUB/detail_coach_cards_kw28_31_optional.pdf <- plans/offseason_coach_sheets/kw28_31_active_detailed_coach_cards.md
+4_URLAUB_AUGUST/august_ablauf.pdf <- plans/08_august_transition_quick_sheet.md
+4_URLAUB_AUGUST/august_remote_feedback.pdf <- templates/august_remote_feedback_sheet.md
+_ARCHIV_nicht_drucken/alt_unit_1_one_pager.pdf <- templates/unit_1_one_pager.md
+_ARCHIV_nicht_drucken/alt_baseline_test_data_sheet.pdf <- templates/baseline_test_data_sheet.md
+_ARCHIV_nicht_drucken/alt_lange_datenschutzvorlage.pdf <- templates/data_protection_consent_template.md
+_ARCHIV_nicht_drucken/alt_kw25_31_field_cards_compact.pdf <- plans/offseason_coach_sheets/kw25_31_field_cards_compact.md
+_ARCHIV_nicht_drucken/alt_kw25_27_workbook.pdf <- plans/offseason_coach_sheets/kw25_27_print_workbook.md
+_ARCHIV_nicht_drucken/alt_kw28_31_workbook.pdf <- plans/offseason_coach_sheets/kw28_31_print_workbook.md
+_ARCHIV_nicht_drucken/alt_baseline_protokoll_field.pdf <- templates/baseline_test_protocol_unit_1_field_sheet.md
+_ARCHIV_nicht_drucken/alt_baseline_protokoll_detail.pdf <- templates/baseline_test_protocol_unit_1.md

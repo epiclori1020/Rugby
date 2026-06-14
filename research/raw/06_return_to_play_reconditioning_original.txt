@@ -1,0 +1,181 @@
+
+
+
+
+Reconditioning und Returner-Integration im Rugby Union
+Leitbild und Abgrenzung
+Dieser Rahmen beschreibt die Rolle des Strength-and-Conditioning-Coachs nach medizinischer beziehungsweise physiotherapeutischer Freigabe. Er ersetzt keine Diagnose, keine Therapieplanung und keine medizinische Return-to-Play-Entscheidung. Für Rugby gilt ausdrücklich: Verletzungsmanagement ist interdisziplinär; World Rugby beschreibt Rehabilitation als Aufgabe von medizinischem Personal, Physiotherapie und Fitness-/Conditioning-Funktion, während die Rückkehr ins Spiel erst nach Tests der Rugby-Tauglichkeit erfolgen soll. Außerdem betont die allgemeine RTP-Literatur, dass Rückkehr nicht als singulärer Moment, sondern als Kontinuum von Return to Participation über Return to Sport bis Return to Performance verstanden werden sollte. 
+
+Für den Vereinskontext bedeutet das: Der S&C-Coach steuert Belastung, Progression, Monitoring und Re-Integration in athletische sowie rugby-nahe Inhalte, aber nicht die medizinische Freigabe. Diese Trennung ist bei Concussion besonders strikt: World Rugby verlangt Recognise-and-Remove, keine Rückkehr am selben Tag und einen individualisierten medizinisch geführten Return-to-Sport-Prozess; vor der Stufe mit Vollkontakt ist medizinische Freigabe erforderlich. Stand 31. Mai 2026 nennt World Rugby Regulation 10 zudem eine Mindest-Rückkehrzeit von 21 Tagen nach diagnostizierter Concussion für Erwachsene wie auch für Kinder/Jugendliche, sofern nicht festgestellt wird, dass gar keine Concussion vorlag und die zuständige medizinische Person dies dokumentiert. 
+
+Für U22-, Development- und Amateur-/Semi-Pro-Kontexte ist die Belastungssteuerung zusätzlich dadurch erschwert, dass Spieler oft arbeiten oder studieren, unregelmäßig trainieren und weniger Regenerationskapazität haben. World Rugby empfiehlt deshalb, neben Training und Spiel auch nicht-physische Belastungen sowie Lebensstressoren zu berücksichtigen, bei Risikogruppen konservativer zu planen und abrupte Belastungssprünge zu vermeiden. Das ist die wissenschaftliche Grundlage für drei praktische Vereinsprinzipien: verpasste Einheiten werden nicht nachgeholt, Returner bekommen eigene Limits, und Kontaktlast läuft separat zur Lauf- und Konditionslast. 
+
+Was die Evidenz für Return to Play im Rugby und Kontaktsport sagt
+Das robuste Muster über Rugby, Kontaktsport und die breitere RTP-Literatur ist: Zeit allein reicht nicht. Return to Play sollte kriterienbasiert, multidisziplinär und kontextsensitiv verlaufen. Die wichtigsten Modelle dazu sind das RTP-Kontinuum von Ardern et al., das StARRT-Framework von Shrier und die Shared-Decision-Making-Perspektive von Dijkstra et al. Zusammengenommen sagen sie: Man muss Gesundheitsstatus, Belastungsanforderungen des Sports und Risikomodifikatoren wie Position, Saisonphase, Wettkampfdruck und individuelle Lebensumstände gemeinsam betrachten. 
+
+Für die praktische Feldarbeit sind zwei Konzepte besonders wertvoll. Erstens die On-field Rehabilitation mit ihren vier Pfeilern: Bewegungsqualität, körperliche Kondition, sportspezifische Fertigkeiten und progressiver Aufbau chronischer Trainingslast. Zweitens das Control-Chaos-Continuum, das den Übergang von planbaren, kontrollierten Bewegungen zu offenen, reaktiven und spielähnlichen Situationen strukturiert. Das ist für Rugby besonders wichtig, weil sich die Rückkehr nicht nur an linearem Laufen entscheidet, sondern an der Belastbarkeit gegenüber Beschleunigung, Abbremsen, Richtungswechsel, Wahrnehmung/Entscheidung und Kontakt. 
+
+Rugby-spezifisch ist außerdem wichtig, dass Rückkehr ins Training nicht automatisch Rückkehr zur Leistung bedeutet. World Rugby Rugby Ready empfiehlt, Rückkehrer wieder an prä-saisonähnlichen Fitness- und Rugby-Tests zu messen, einschließlich rugbytypischer Bewegungen wie Tackling, Sidestep und Jumping. Passend dazu zeigte eine Studie an Elite-Rugbyspielern nach schweren Knieverletzungen, dass Spieler bei RTP gegenüber ihren Prä-Verletzungswerten unter anderem über 10 m langsamer und in reaktiven Entscheidungszeiten schlechter sein konnten. Eine aktuelle Pilotstudie im Profi-Rugby fand zudem, dass sich biomechanische Kennzahlen und Selbstwirksamkeit über die Reha-Phasen verändern und beide Informationsquellen relevant bleiben. Praktisch heißt das: Medizinische Vollfreigabe ist der Startpunkt für Reconditioning, nicht sein Endpunkt. 
+
+Für den S&C-Alltag ohne High-End-Technologie bleibt die Kernlogik trotzdem gut umsetzbar. In Rugby ist session-RPE eine praktikable Methode zur internen Laststeuerung, und World Rugby stellt für die Lastüberwachung ausdrücklich auch einfache Systeme wie Zeitaufzeichnung, RPE und Tabellen/Spreadsheets neben GPS-Technik in den Vordergrund. In einem kleinen Verein ist deshalb ein gutes System aus Minuten, Belastungsart, subjektiver Anstrengung, nächste-Morgen-Reaktion und Ampelstatus wertvoller als seltene, komplexe Messungen. 
+
+Ampelsystem für Trainingsteilnahme
+Die folgende Stufenlogik ist eine praktische Ableitung aus dem World-Rugby-Rahmen, dem RTP-Kontinuum, dem Control-Chaos-Ansatz und kriterienbasierten S&C-Prinzipien. Sie ist bewusst rollenorientiert: Welche Belastungen darf der Spieler heute machen, und welche nicht. 
+
+Ampel	Belastungsstufe	Was erlaubt ist	Was noch nicht erlaubt ist	Typische Eintrittskriterien	Typische Austrittskriterien
+🔴 Rot	Nur Gym	Krafttraining, Bike/Rower/ergometerbasierte Kondition, low-risk isometrics, trunk/neck prep, ggf. med.-freigegebene Reha-Kondition	Feldspeed, offene CODs, Teamtraining, Kontakt	Medizinisch für Belastung freigegeben, aber Feld oder Rugby-bezogene Last noch nicht frei	Gym-Last gut vertragen, keine relevante Verschlechterung bis zum nächsten Morgen, Freigabe für lineare Feldinhalte
+🟠 Orange	Gym + individuelles Field	Lineares Laufen, Lauftechnik, submaximale Beschleunigungen, geplante Decels, extensive Conditioning-Arbeit	Teamchaos, ungeplante CODs, Kontakt	Solide Reaktion auf Gym, technisch sauberes Joggen/Run-up, klare Feldfreigabe vom Physio	Geplante lineare Speed- und Basis-Decel-Inhalte werden stabil toleriert
+🟡 Gelb	Non-contact Teamtraining	Warm-up mit Team, Handling, Shape, Walkthroughs, Set-Piece ohne Kontakt, technische Rollenarbeit, dosierte individuelle Speed-/COD-Einschübe	Live Breakdown, Live Scrum/Maul, chaotische Small-Sided-Formen, Fitness-Punisher	Individuelle Feldlast vertragen; Belastungsgrenzen für Speed, COD und Conditioning sind definiert	Teamumfeld ohne Symptomanstieg möglich, rugbynahe Technik unter Tempo stabil
+🟡🟢 Gelb-Grün	Controlled Contact	Bags/Shields, Kontaktvorbereitung, kontrolliertes Wrestling/Cleanout-Entry, dosierte Tackleeinstiege, positionsspezifische Kontakttechnik	Chaotischer Mehrfachkontakt, lange Live-Kontaktblöcke, volle Matchdichte	Non-contact Teamtraining stabil; medizinische Freigabe für Kontaktstufe; klar definierter Kontaktcap	Mehrere kontrollierte Kontakt-Expositionen ohne symptomatische oder funktionelle Rückschritte
+🟢 Grün	Full Training	Normale Teaminhalte inklusive Kontakt, volle technische Rolle, normale Geschwindigkeit und Reaktivität	Match ist noch nicht automatisch freigegeben	Speed-, COD-, Conditioning- und Kontaktziele im Training weitgehend erreicht	Volle Trainingswoche mit Teamdichte wird stabil vertragen
+🟢➕ Grün Plus	Match Exposure	Kader-/Spieleinsatz, ggf. mit Minuten- oder Rollenlimit	—	Medizinisch freigegeben, volle Trainingswoche toleriert, Coach kennt Rolle/Minutenplan	Reibungsfreier Übergang zurück zum normalen Wochenmodell
+
+Wesentlich ist: Ein Returner bekommt nicht einfach “mehr oder weniger Teamtraining”, sondern eigene Obergrenzen für vier getrennte Regler: Speed, COD/Deceleration, Conditioning und Kontakt. Diese Trennung ist evidenzlogisch, weil Rugby-Kontaktlast separat gesteuert werden sollte und weil moderne RTS-Modelle gerade den sportartspezifischen Belastungsaufbau ins Zentrum rücken. 
+
+Praxisrahmen für Dienstag und Donnerstag
+In einem Amateur- oder Development-Umfeld mit zwei Haupt-Teamsessions pro Woche funktioniert Returner-Integration am besten als Parallelspur und nicht als “alles oder nichts”. Der Returner startet möglichst oft mit der Mannschaft, verlässt aber einzelne Blöcke vor dem Chaos- oder Kontaktpeak, oder bekommt in denselben Minuten eine alternative Aufgabe. Das stützt Kommunikation, Motivationslage und rugbynahe Entscheidungsfähigkeit, ohne die Gruppe aufzuhalten oder den Spieler zu überlasten. Genau diese Brücke zwischen Standard-Reha und Teamumfeld ist der Kern von On-field Rehabilitation und Return-to-Team-Training. 
+
+Für eine typische Dienstagseinheit sollte der größte Arbeitsschwerpunkt des Returners meist auf einem Hauptregler liegen: entweder höhere lineare Geschwindigkeiten, geplante COD/Decel-Belastung, kontrollierter Kontakt oder Konditionsblöcke. Nicht sinnvoll ist, in derselben Session mehrere Regler gleichzeitig stark anzuheben. World Rugby empfiehlt für Wochenmodelle grundsätzlich eine vorsichtige Verteilung der Belastung, zwei begrenzte Kontaktfenster und konservative Steuerung bei Risikoathleten; für Returner sollte das eher als Obergrenze als als Ziel verstanden werden. 
+
+Für eine typische Donnerstagseinheit ist die bessere Rolle meist: schärfen statt stapeln. Das heißt für Returner eher kurze, hochwertige Expositionen in ihrer erlaubten Stufe, aber kein doppelter Peak aus Kontakt plus extra Kondition plus zusätzlichen Top-Speed-Läufen. Wenn am Donnerstag noch eine relevante Speed-Exposition nötig ist, dann kurz, sauber und frisch genug. Fehlende Dienstagmeter werden nicht nachgeholt, weil genau solche Nachholaktionen die Lastsprünge erzeugen, vor denen World Rugby warnt. 
+
+Praktisch lässt sich eine Team-Session für Returner in drei Zonen teilen:
+
+Bereich	Meist mitmachbar	Modifiziert	Meist auszulassen bis später
+Warm-up und technische Vorbereitung	Team-Warm-up, Lauf-ABC, Handling, Walkthroughs	Einzelne Sprünge/Landungen oder Beschleunigungen nach Cap	—
+Hauptteil	Shape, Unit-Skills, Set-Piece-Organisation ohne Kontakt	Spielformen mit Raum-/Wiederholungsgrenze, Script statt Chaos, individuelle Speed-/COD-Spur am Rand	Live Breakdown, Live Multi-Phase-Contact, unkontrollierte Reaktionsspiele
+Abschluss	Kurze technische Reps, Positionsrollen	Dosiertes Conditioning oder kurze RSA-ähnliche Arbeit, wenn das der Tagesregler ist	Strafläufe, Zusatzfitness, “weil er etwas verpasst hat”
+
+Diese Logik ist für Rugby besonders wertvoll, weil die vier Returner-Regler getrennt ansprechbar sind: Speed kann über lineare Läufe und Spielereinstiege exponiert werden, COD über geplante Brems- und Umlenkmuster, Kontakt über klar definierte Kontaktformen und Conditioning über eigenständige Tempoläufe, Shuttle-Strukturen oder positionsspezifische Wiederholungseffekte. Die Gruppe trainiert weiter, der Returner bekommt trotzdem rugbynahe Reize. 
+
+Allgemeine Reconditioning-Progression
+Die folgende allgemeine 4- bis 8-Wochen-Progression ist keine diagnosespezifische Therapie. Sie ist ein S&C-Rahmen nach Freigabe. Minor Returner können in vier Wochen durchkommen; moderatere oder schwere Verletzungen brauchen oft sechs bis acht Wochen, insbesondere wenn Speed, COD oder Kontakt länger fehlten. Das Prinzip ist immer gleich: kontrolliert aufbauen, Kriterien prüfen, nur so schnell steigern, wie die Reaktion es zulässt. 
+
+Die sinnvollste Progressionsordnung ist fast immer:
+
+Gym-Kapazität → lineare Feldbelastung → Deceleration/COD → rugbynahe Skills → kontrollierter Kontakt → volles Teamtraining → Match Exposure. Diese Reihenfolge folgt dem RTS-Kontinuum, der On-field-Reha und World Rugby Rugby Ready. 
+
+Die praktische Wochenlogik unten ist eine S&C-Synthese auf Basis dieser Modelle sowie der Literatur zu Return to Sprinting, Hamstring- und ACL-RTS, Rugby-Load-Management und Contact-Load-Guidelines. 
+
+Phase	Hauptziel	Kraft	Speed	COD und Decel	Conditioning	Kontakt	Teamintegration
+Woche eins	Belastung wieder aufnehmen	2–3 strukturierte Krafteinheiten, Fokus Qualität, unilateral soweit erlaubt	Technik, Dribbles, 60–70% MSS	nur geplant, großräumig, geringe Winkel	extensive Intervalle, niedrige Dichte	keiner	Warm-up/Technik nur
+Woche zwei	lineare Feldtoleranz	Kraft weiter normalisieren, exzentrische und isometrische Qualität	70–80% MSS, erste längere Beschleunigungen	lineare Bremsungen, erste sanfte Richtungswechsel	mehr Minuten oder etwas höhere Dichte	ggf. nur Kontaktvorbereitung ohne Impact	Teilblöcke non-contact
+Woche drei	Feldlast festigen	Kraft mindestens auf stabiles Teamniveau für die erlaubten Muster bringen	80–85% MSS	geplante CODs, 45°-Muster, kurze Decel-Serien	extensive bis gemischt, rugbynäher	Bags/Shields bei Freigabe	non-contact Team, Capped
+Woche vier	Übergang zu rugbynah	Kraft + Power, erste schnellere Übergänge	85–90% MSS	45–90°, decel-lastiger, erste reaktive Vorgaben	intensiver, mehr Spielnähe	kontrollierter Kontakt möglich	größere Teile Teamtraining
+Woche fünf	Nähe zu Trainingsrealität	normale Team-Kraft mit individuellen Limits	90–95% MSS	reaktiver, dichter, unter Wahrnehmungsdruck	repeated-effort-naher	kontrollierter bis moderater Live-Kontakt	Training fast voll, aber mit Caps
+Woche sechs	Volltraining vorbereiten	volle Struktur, keine Nachholvolumina	>95% MSS-Exposition, frisch und sauber	chaotischer, spielähnlich	teamnahe Dichte	volle Kontaktinhalte mit Wochenlimit	volle Trainingswoche
+Woche sieben bis acht	Konsolidierung oder schwerer Fall	volle Kapazität stabilisieren	wiederholte Top-Speed-Expositionen	spiel-/positionsspezifische Chaosreize	volle Rollenanforderung	normale Kontaktrolle	Match Exposure oder Minutenanhebung
+
+Drei praktische Regeln sind dafür zentral. Erstens: nur einen Regler pro 48 Stunden deutlich hochfahren. Zweitens: missed work is gone – verpasste Inhalte werden nicht addiert. Drittens: Progression ist nur gültig, wenn die Reaktion bis zum nächsten Morgen stabil bleibt. Das folgt der World-Rugby-Logik zu Lastspitzen, dem Control-Chaos-Ansatz und dem Konsens, dass RTS ein fortlaufender Entscheidungsprozess ist und keine Kalendersache. 
+
+Beispielpfade für häufige Verletzungen
+Hamstring Return to Speed
+Bei Hamstring-Returnern ist die entscheidende S&C-Frage nicht nur, ob sie “wieder laufen können”, sondern ob sie wieder hohe und sehr hohe Geschwindigkeiten sauber tolerieren. Die Hamstring-Literatur beschreibt eine progressive Rückkehr zu High-Speed-Running und Sprinting als zentralen Teil der Rehabilitation, weil genau dort Leistung und Reinjury-Risiko zusammenlaufen. Außerdem zeigen Beobachtungsdaten aus dem Elitefußball, dass Expositionen nahe der Maximalgeschwindigkeit in der Trainingswoche mit geringerer Hamstring-Verletzungsrate im Spiel assoziiert waren; die Literatur mahnt daher, Hochgeschwindigkeit nicht zu überspringen, sondern geplant zurückzubringen. 
+
+Praktisch heißt das für den S&C-Coach: Zuerst lineare Technik und Rhythmus, dann submaximale Beschleunigungen, dann längere lineare Läufe, dann kontrollierte Expositionen über 85–90% MSS, und erst danach >95% MSS sowie rugbynahe Chases, Kick-Chases oder Defensiv-Backfield-Sprints. Parallel bleibt die Gym-Arbeit auf posterior chain force production, besonders in längeren Muskellängen und bei höheren Geschwindigkeitsanforderungen. Wenn der Spieler die Lineargeschwindigkeit zwar toleriert, aber COD oder Kontakt noch nicht, wird nur dieser Regler offen gehalten. Hamstring-Returner sollten nicht in chaotische Richtungswechsel oder Kontaktformen “hineingezogen” werden, nur weil die gerade im Teamblock stattfinden. 
+
+Sofortige Rücksprache ist angezeigt bei wiederkehrendem posterior-thigh-Schmerz während der Speedarbeit, sichtbar verändertem Laufbild, deutlichem Schutzmuster, Verlust von Schrittlänge/Frequenz unter Tempo oder Beschwerden, die bis zum Folgetag nicht zurückgehen. Diese Regeln leiten sich direkt aus der hamstringspezifischen RTS-Logik und dem kriterienbasierten Sprintaufbau ab. 
+
+Knie und ACL Return to COD
+Nach ACL oder schwereren Knieverletzungen darf der S&C-Coach lineares Laufen nicht mit Spielbereitschaft verwechseln. Der ACL-Konsens beschreibt RTS als dynamisches Kontinuum, fordert objektive Tests plus psychologische Readiness und wendet sich gegen rein zeitbasierte Entscheidungen. Rugby-spezifisch ist zusätzlich relevant, dass Elite-Rugbyspieler nach schweren Knieverletzungen am Punkt RTP noch Defizite in 10-m-Speed und reaktiver Entscheidungszeit zeigen konnten. Gerade deshalb ist die Phase zwischen “medizinisch wieder trainierbar” und “rugbyspezifisch belastbar” so wichtig. 
+
+Die S&C-Progression für COD ist hier typischerweise: Landing und Dämpfen, dann lineare Deceleration, dann geplante Umlenkung, erst danach engere Winkel, mehr Geschwindigkeit, reaktive Aufgaben und schließlich spielnahe Chaosbedingungen. Buckthorpe und Kollegen haben sowohl für Bewegungs-Re-Training als auch für Plyometrie nach ACLR betont, dass Aufgabenintensität und Spezifität schrittweise steigen sollen und dass Bewegungsausführung die Gelenkbelastung stark beeinflusst. Für Rugby bedeutet das: Erst wenn Landen, Stoppen, erneutes Beschleunigen und Richtungswechsel unter Geschwindigkeit technisch stabil sind, wird die Brücke zu Step-, Sidestep-, Jackal-Entry- oder Tackleeinstiegs-Fußarbeit sinnvoll. 
+
+Rückfragelicht besteht bei erneutem Gelenkerguss, Wärme, Extensionsverlust, Instabilitätsgefühl, “giving way”, deutlicher Beinausweichung bei Landungen oder spürbar schlechterer Bewegungsausführung unter Müdigkeit. Für ACL- und schwere Knie-Returner ist COD fast immer später und vorsichtiger als lineares Speed-Exposure – und Match Exposure noch einmal später als Full Training. 
+
+Sprunggelenk Return to COD und Landing
+Beim Sprunggelenk ist das praktische Problem oft die scheinbar schnelle Rückkehr. Genau hier ist die Evidenz warnend: Nach akuter lateraler Sprain nennen Experten für RTS-Entscheidungen fünf zentrale Domänen – Schmerz, ankle impairments, sensorimotor control, athlete perception/readiness und sport/functional performance. Gleichzeitig zeigt die neuere Literatur, dass Lateral-Ankle-Sprains in der Praxis häufig zu schnell und zu zeitbasiert rückgeführt werden, obwohl unzureichende Rehabilitation und verfrühte Rückkehr wichtige Reinjury-Treiber sind. 
+
+Für den S&C-Coach ist die sinnvolle Progression daher: Mobilität und Waden-/Peroneus-Funktion, dann beid- zu einbeinige Landekontrolle, dann lineare Läufe, danach Line-Hops und diagonale Landungen, dann geplante Cuts, schließlich reaktive CODs unter höherer Geschwindigkeit. Das passt zur Evidenz, dass Hop-Stabilization-Training die Landebiomechanik und funktionelle Ankle-Stabilität verbessern kann. Wichtig ist außerdem, dass bei einem Rugbyspieler die unilaterale Brems- und Landequalität oft aussagekräftiger ist als isoliertes Joggen. 
+
+Rücksprache ist nötig bei wiederkehrender Schwellung nach Feldarbeit, Instabilitätsgefühl, deutlichem Kollaps im Fuß-/Unterschenkelkomplex, anhaltender Einschränkung der Dorsalflexion oder Beschwerden bei Sprung-Lande-Aufgaben, obwohl lineares Laufen noch geht. Gerade das ist die klassische Stelle, an der Spieler “eigentlich schon wieder trainieren” wollen, ohne für COD und Rugby-Fußarbeit wirklich bereit zu sein. 
+
+Schulter Return to Contact
+Für die Schulter ist die Evidenz klarer in den Prinzipien als in exakten Schwellenwerten: Die Bern Consensus Statement 2022 betont, dass für Rehabilitation und RTS nach Schulterverletzungen trotz begrenzter Evidenz ein prinzipienbasierter, lastgesteuerter Ansatz nötig ist. Reviews zur Schulterstabilisierung schlagen außerdem vor, RTS-Tests mit graduierter Sportexposition zu verbinden. Für Rugby heißt das: “pain free gym” ist nicht gleich “contact ready shoulder”. Eine Schulter kann Hantelarbeit tolerieren, aber noch nicht Boden-Kontakt, Arm-Hebel, Cleanout-Positionen, Tackle-Entry oder Wrestling-Lasten. 
+
+Die S&C-Logik sollte hier von closed-chain load acceptance, scapulärer Kontrolle, Push-/Pull-Toleranz, Körperkontakt über Pads/Bags und Kraftübertragung über Rumpf und Hals zu kontrolliertem Kontakt und erst spät zu live contact führen. Praktisch bewährt sich die Reihenfolge: statische isometrische und geschlossene Ketten, dann dynamischere Druck-/Zugmuster, dann Bodenkontakt und Stützvarianten, dann Bag Hits und kontrollierte Schulterkontakte, danach Wrestling-/Cleanout-Formen in klaren Rollen und schließlich Tackle/Live Ruck unter klarer Dosis. Für Development-Spieler ist das oft sicherer als ein sofortiger Sprung von Krafttraining zu vollwertigem Kontakttraining. 
+
+Red Flags sind hier besonders: Apprehension, “dead arm”, neues Instabilitätsgefühl, nächtlicher Schmerz nach Kontakt, deutlicher Kraftverlust im Vergleich zum Vortag oder Unsicherheit im Armhebel bei Rugbypositionen. All das gehört sofort zurück an Physio/Arzt, bevor der Kontaktregler weiter angehoben wird. 
+
+Adduktor und Hüfte Return to COD und Kicking
+Für Adduktor-/Hüftreturner ist die Literatur relativ konsistent: progressives Krafttraining und sportartspezifisches Loading haben die beste Evidenzbasis, und in der prospektiven Kohorte von Serner et al. verlief die Rückkehr entlang der Meilensteine klinisch schmerzfrei, kontrolliertes Sporttraining abgeschlossen und Rückkehr ins volle Teamtraining. Wichtig ist dabei, dass das Erreichen der klinisch schmerzfreien Kriterien mit weniger Reinjuries verbunden war. In der Praxis ist also nicht die Frage “läuft er wieder?”, sondern: verträgt er Adduktionslast, Schneiden und Kicken in der nötigen Reihenfolge? 
+
+Die S&C-Spur ist meist: adductor-dominante Kraft und Rumpf-/Beckenstabilität, dann lineares Laufen, danach laterale Muster und geplante Cuts, anschließend Kick-Progression von kurzen, kontrollierten Kicks zu längeren und schnelleren Ballkontakten, und erst danach reaktives COD plus hochintensives Kicken. Gerade Kicken sollte nicht implizit mitlaufen, sondern separat gesteuert werden, weil es die Leiste/Hüfte trotz “ordentlichem Laufgefühl” noch deutlich reizen kann. 
+
+Nicht steigern sollte man bei erneutem Schmerzprovokationsmuster in Squeeze-/Adduktionsaufgaben, bei Reizung am Folgetag nach COD oder Kicking, bei Zunahme lokaler Palpationsschmerzen oder wenn COD nur über deutliche Ausweichmuster möglich ist. Gerade bei Adduktoren ist der klinische Verlauf oft besser, wenn die Rückkehr zu COD und Kicking sauber getrennt wird. 
+
+Nacken und HWS
+Bei Nacken- beziehungsweise HWS-Themen ist die S&C-Rolle eng begrenzt. Für Return to Contact nach zervikalen Problemen gilt in der breiteren Sportmedizin als Grundlinie: asymptomatisch, volle aktive Beweglichkeit, volle Kraft und keine neurologischen Defizite. Im Rugby-Kontext ist gleichzeitig relevant, dass einfach umsetzbare Neck-Strength-Programme bei Altersklassen-Spielern die isometrische Nackenstärke verbessern können und wenig Infrastruktur brauchen. Für einen kleinen Club ist das wichtig, weil Kontaktvorbereitung nicht zwingend High-End-Equipment erfordert.
+
+Praktisch heißt das: Nach medizinischer Freigabe kann der S&C-Coach isometrische Mehr-Richtungs-Nackenarbeit, Trunk-Bracing, Kontaktpostur und graduierte Körperkontaktvorbereitung einbauen. Sofortige medizinische Rücksprache ist aber Pflicht bei Kopfschmerz, Schwindel, ausstrahlendem Schmerz, Taubheit/Kribbeln, Kraftverlust in Arm/Hand oder jeder neurologischen Veränderung unter Training. 
+
+Concussion mit klarer S&C-Grenze
+Bei Concussion gilt für den S&C-Coach ein hartes Stoppschild. World Rugby verlangt Recognise and Remove: Wer eine Concussion oder auch nur eine vermutete Concussion hat, wird sofort und dauerhaft aus Spiel oder Training genommen, darf am selben Tag nicht zurückkehren und durchläuft anschließend einen individualisierten, medizinisch geführten Return-to-Sport-Prozess. Vor dem Übergang zu Full Contact Training ist medizinische Freigabe erforderlich. Stand 31. Mai 2026 nennt Regulation 10 im World-Rugby-Regelwerk für Erwachsene wie Jugendliche eine Mindest-Rückkehrzeit von 21 Tagen nach diagnostizierter Concussion. 
+
+Für den S&C-Coach bedeutet das konkret: keine Diagnose, keine Freigabe, keine eigene Progression. Die einzige zulässige Rolle ist, medizinisch freigegebene Belastung exakt umzusetzen. World Rugby und die Amsterdam-2022-Konsenslinie betonen heute zwar “relative rest” statt völliger Inaktivität, aber die Trainingsstufen werden medizinisch geführt. In den frühen Stufen sind leichte bis moderate aerobe Belastungen erlaubt, solange Symptome nicht relevant provoziert werden; in den rugbybezogenen Stufen vier bis sechs darf nur weitergegangen werden, wenn der Spieler zur Baseline zurückgekehrt ist. Kommen Symptome in diesen Stufen wieder, geht es zurück auf eine frühere Stufe. 
+
+Die S&C-Praxisregel ist deshalb einfach: Bei Concussion ist der S&C-Coach Durchführender, nicht Entscheider. Sobald während oder nach einer Einheit wieder Kopfschmerz, Druckgefühl, Schwindel, Konzentrationsstörung, visuelle Symptome, Übelkeit, Reizbarkeit oder auffällige Müdigkeit auftreten, wird nicht weitertrainiert, sondern an Physio/Arzt zurückgespielt. 
+
+Abstimmung, Red Flags und Dokumentation
+Objektive Kriterien und subjektive Readiness
+Die beste verfügbare Evidenz spricht gegen ein Entweder-oder. Der Panther-ACL-Konsens fordert objektive körperliche Untersuchung und validierte RTS-Tests zusammen mit psychologischer Readiness. Die aktuelle Rugby-Pilotstudie von McCarthy-Ryan et al. zeigt passend dazu, dass biomechanische Marker und Selbstwirksamkeit über die Reha hinweg zwar zusammenhängen, aber jeweils eigene Information liefern. Für den Verein heißt das: Ein Spieler mit guten Splitzeiten, aber geringer Zuversicht oder hoher Apprehension ist noch nicht gleich vollständig ready; umgekehrt reicht Selbstvertrauen ohne Belastungsnachweis ebenfalls nicht. 
+
+Ein praxistaugliches Set für kleine Vereine sieht so aus:
+
+Objektiv	Subjektiv
+tolerierte Gym-Lasten	Schmerzverlauf
+tolerierte Speed-Stufe	Sicherheitsgefühl bei Tempo
+tolerierte COD-/Decel-Stufe	Angst/Apprehension bei Richtungswechsel oder Kontakt
+tolerierte Kontaktstufe	Selbstvertrauen in Rugbyaktionen
+Conditioning-Minuten und Dichte	Schlaf, Stress aus Arbeit/Studium
+Nächster-Morgen-Response	Gesamtbereitschaft “ready to train”
+
+Entscheidend ist nicht Perfektion, sondern Konsistenz: dieselben Marker jede Woche, dieselbe Sprache zwischen Physio, S&C, Coach und Spieler. 
+
+Checkliste für S&C und Physio
+Die folgende Checkliste ist eine praktische Umsetzung aus Shared-Decision-Making, dem World-Rugby-Rahmen und der aktuellen Rugby-Literatur. 
+
+Frage	Wer liefert die Info	Muss vor jeder Teamwoche klar sein
+Was ist medizinisch freigegeben, was nicht	Physio/Arzt	Ja
+Welche Ampelstufe gilt aktuell	Physio + S&C	Ja
+Welche Caps gelten für Speed, COD, Kontakt, Conditioning	S&C	Ja
+Welche Inhalte sind am Dienstag erlaubt, modifiziert, verboten	S&C + Rugby-Coach	Ja
+Welche Inhalte sind am Donnerstag erlaubt, modifiziert, verboten	S&C + Rugby-Coach	Ja
+Gibt es Red Flags seit der letzten Session	Spieler + Physio	Ja
+Wie war die Reaktion am nächsten Morgen	Spieler + S&C	Ja
+Wird Match Exposure angestrebt oder nur Trainingsintegration	Coach + Physio + S&C	Ja
+Welche externen Stressoren liegen vor	Spieler + S&C	Ja
+Wann ist die nächste formelle Review	Physio/Arzt	Ja
+
+Red Flags für keine Progression oder sofortige Rückkopplung
+Die robustesten Red Flags sind die, die auf erneute Gewebereizung, Instabilität, neurologische Beteiligung oder mangelnde Belastungstoleranz hinweisen. World Rugby fordert generell, bei Verschlechterung, anhaltendem Schmerz oder Schwellung medizinisch rückzukoppeln; für Concussion und HWS ist die Schwelle noch niedriger. 
+
+Red Flag	Konsequenz
+neue oder zunehmende Schwellung/Effusion nach Belastung	keine Steigerung, Rückmeldung an Physio
+deutlicher Verlust von Beweglichkeit oder Extension	keine Steigerung, Rückmeldung an Physio
+Instabilitätsgefühl, Wegknicken, Subluxationsgefühl	Training abbrechen, medizinisch klären
+verändertes Laufbild oder Schutzmuster unter Speed	auf letzte tolerierte Stufe zurück
+ungeplante Schmerzprovokation bei COD, Kicking oder Kontakt	Regler zurückdrehen, Rückmeldung
+neurologische Symptome, Schwindel, ausstrahlender Schmerz, Taubheit, Kribbeln	sofort medizinisch abklären
+jede vermutete Concussion oder Rückkehr von Concussion-Symptomen	sofort Recognise-and-Remove, keine S&C-Fortsetzung
+nächste-Morgen-Reaktion deutlich schlechter als erwartet	keine Progression, Plan anpassen
+
+Einfache Dokumentationsvorlage für Returner
+Für kleine Vereine genügt oft eine einzige Zeile pro Session. Die Vorlage unten bildet die World-Rugby-Logik aus Last, Kontakt und Monitoring in einfacher Form ab. 
+
+Datum	Ampelstufe	Medizinstatus	Heute erlaubt	Geplante Caps	Tatsächlich absolviert	sRPE x Minuten	Speed-Stufe	COD-Stufe	Kontakt-Stufe	Symptome im Training	Nächster Morgen	Entscheidung
+Gym / Field / Team / Contact	z. B. max. Speed, COD, Kontakt, Conditioning	kurz notieren	interne Last	z. B. bis 85% MSS	geplant / reaktiv	none / controlled / full	ja/nein + kurz	besser / gleich / schlechter	bleiben / steigern / rückmelden
+
+Der eigentliche Gewinn entsteht, wenn diese Vorlage immer dieselben vier Regler sichtbar macht: Speed, COD, Conditioning, Kontakt. Dann lassen sich Returner in die Mannschaft integrieren, ohne die Woche gefühlt “neu zu erfinden”. 
+
+Quellen und Grenzen
+Offizielle Rugby- und medizinische Kernressourcen
+Die wichtigsten offiziellen Grundlagen für diesen Rahmen sind World Rugbys Rugby Ready Injury Management, Recognise and Remove, Return to Sport im Concussion-Bereich, Regulation 10 Medical sowie die Player Load- und Contact Load Guidelines. Diese Dokumente definieren die medizinischen Grenzen, die Kontaktsteuerung, die Belastungsüberwachung und die grundsätzliche Rugby-Tauglichkeit nach Verletzungen. 
+
+Peer-reviewed Kernliteratur
+Für die allgemeine RTP-Logik stützt sich dieser Rahmen vor allem auf Ardern et al. zum RTS-Kontinuum, Shrier zum StARRT-Framework und Dijkstra et al. zur Shared Decision. Für die Feld- und Teamintegration sind Buckthorpe et al. zu On-field Rehabilitation und Taberner et al. zum Control-Chaos-Continuum zentral. Für Rugby-spezifische Aspekte wurden World-Rugby-nahe Übersichten und aktuelle Rugbystudien zu Knieverletzungen sowie zur interdisziplinären Bewertung nach lower-limb injury einbezogen. Für die Beispielpfade wurden zusätzlich die Literatur zu Hamstring-RTS und Return to Sprinting, die Panther-ACL-Konsensarbeit, die Schulter-Konsenspapiere, die Ankle-RTS-Konsensliteratur und die adductor-spezifischen Kriterienarbeiten genutzt. 
+
+Offene Fragen und Grenzen
+Die stärkste Evidenz für späte Feld-Progression, Control-Chaos und manche injury-spezifischen Expositionsmodelle kommt bislang eher aus Fußball als aus Rugby Union. Für Rugby wurden diese Modelle hier deshalb konservativ und mit separater Kontaktsteuerung übersetzt. Für Schulter-, Nacken- und Ankle-Progressionen fehlen außerdem sportartspezifisch-rugbyexakte Schwellenwerte häufiger als für ACL oder allgemeine RTS-Modelle; dort ist ein prinzipienbasiertes Vorgehen derzeit belastbarer als scheinpräzise Zahlen. Schließlich ersetzen auch gute S&C-Rahmen keine formal saubere medizinische Diagnostik, und insbesondere bei Concussion, HWS-Problemen, Instabilitätsereignissen oder anhaltender Symptomatik muss die Steuerung unmittelbar an Physio/Arzt zurückgegeben werden. 
+
+Kurzform für die Praxis: Der Returner ist kein halber Teamspieler und kein halber Reha-Patient, sondern ein Athlet mit eigener Lastspur. Wenn der Verein jede Woche sauber vier Regler steuert – Speed, COD, Conditioning, Kontakt – und diese mit einer einfachen Ampellogik, klaren Red Flags und enger Physio-Abstimmung verbindet, lässt sich Rückkehr im Rugby Union deutlich sicherer und praktikabler organisieren. 
