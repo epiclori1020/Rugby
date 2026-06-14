@@ -46,13 +46,15 @@ export function TodayDashboard({
   const { upcomingSessions } = getRelevantSessions()
   const featuredSession = selectedSession
   const activePlayers = players.filter((player) => player.active)
+  const activePlayerIds = new Set(activePlayers.map((player) => player.id))
+  const activeWarnings = checkInActions.warnings.filter((warning) => activePlayerIds.has(warning.playerId))
   const expectedPlayerSet = new Set(checkInActions.expectedPlayerIds)
   const expectedCount =
     expectedPlayerSet.size > 0 ? activePlayers.filter((player) => expectedPlayerSet.has(player.id)).length : activePlayers.length
   const expectedMetricLabel = expectedPlayerSet.size > 0 ? 'Zuletzt dabei' : 'Aktiv'
   const presentCount = checkInActions.entries.filter((entry) => entry.present).length
-  const warningCount = checkInActions.warnings.length
-  const postSessionFollowUpCount = checkInActions.warnings.filter(
+  const warningCount = activeWarnings.length
+  const postSessionFollowUpCount = activeWarnings.filter(
     (warning) =>
       (warning.e2Decision !== null && warning.e2Decision !== 'normal') ||
       warning.nextStep === 'reduzieren' ||

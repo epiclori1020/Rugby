@@ -1,0 +1,212 @@
+import { renderToStaticMarkup } from 'react-dom/server'
+import { describe, expect, it } from 'vitest'
+import type { SessionDefinition } from '../content/types'
+import type { PlayerSessionEntry, PlayerWarning } from '../domain/checkIn'
+import type { Player } from '../domain/players'
+import type { PlayerSyncOverview } from '../domain/sync'
+import type { useCheckIns } from '../hooks/useCheckIns'
+import type { usePlayers } from '../hooks/usePlayers'
+import type { AuthSessionState } from '../lib/auth'
+import { CheckInView } from './CheckInView'
+
+const authState = {
+  status: 'signed-in',
+  session: {
+    access_token: 'test-token',
+    refresh_token: 'test-refresh',
+    expires_in: 3600,
+    token_type: 'bearer',
+    user: {
+      id: 'user-1',
+      email: 'coach@example.test',
+      app_metadata: {},
+      user_metadata: {},
+      aud: 'authenticated',
+      created_at: '2026-06-16T18:00:00.000Z',
+    },
+  },
+  user: {
+    id: 'user-1',
+    email: 'coach@example.test',
+    app_metadata: {},
+    user_metadata: {},
+    aud: 'authenticated',
+    created_at: '2026-06-16T18:00:00.000Z',
+  },
+  error: null,
+} satisfies AuthSessionState
+
+const syncOverview: PlayerSyncOverview = {
+  isOnline: true,
+  status: 'synced',
+  pendingCount: 0,
+  lastSuccessfulSyncAt: null,
+  errorMessage: null,
+}
+
+const selectedSession: SessionDefinition = {
+  id: 'session-1',
+  date: '2026-06-16',
+  kw: 'KW25',
+  title: 'Dienstag',
+  type: 'training',
+  summary: '',
+  primarySource: '',
+  pdfRefs: [],
+  goals: [],
+  timeline: [],
+  materials: [],
+  safetyNotes: [],
+  coachNotes: [],
+  libraryRefs: [],
+}
+
+const deletedPlayerEntry: PlayerSessionEntry = {
+  id: 'entry-deleted-player',
+  userId: 'user-1',
+  sessionLogId: 'session-log-1',
+  playerId: 'deleted-player',
+  present: true,
+  readiness: 2,
+  lifeFlag: '',
+  painScore: 5,
+  painLocation: '',
+  returnerFlag: 'ja',
+  redFlag: 'none',
+  movementConcern: false,
+  previousWarning: false,
+  trafficLight: 'red',
+  trafficLightSuggestion: 'red',
+  trafficLightWasManual: false,
+  trainingVariant: null,
+  limits: [],
+  observation: '',
+  sessionRpe: null,
+  durationMinutes: null,
+  sessionLoad: null,
+  postPainScore: null,
+  postPainLocation: '',
+  e2Decision: null,
+  nextStep: null,
+  createdAt: '2026-06-16T18:00:00.000Z',
+  updatedAt: '2026-06-16T18:00:00.000Z',
+  deletedAt: null,
+  clientUpdatedAt: '2026-06-16T18:00:00.000Z',
+  syncStatus: 'synced',
+  syncError: null,
+}
+
+const deletedPlayerWarning: PlayerWarning = {
+  playerId: 'deleted-player',
+  trafficLight: 'red',
+  returnerFlag: 'ja',
+  limits: [],
+  observation: 'stale warning',
+  e2Decision: null,
+  nextStep: null,
+  postPainScore: null,
+  postPainLocation: '',
+  sessionLoad: null,
+  sessionDate: '2026-06-13',
+}
+
+describe('CheckInView active player metrics', () => {
+  it('does not count stale entries for deleted players', () => {
+    const checkInActions = {
+      activePlayers: [],
+      entries: [deletedPlayerEntry],
+      errorMessage: null,
+      expectedPlayerIds: [],
+      warnings: [],
+      syncOverview,
+      isLoading: false,
+      sessionLogId: 'session-log-1',
+      refreshLocalCheckIns: async () => undefined,
+      runSync: async () => syncOverview,
+      saveEntry: async () => undefined,
+      saveSessionPatch: async () => undefined,
+      getEntryForPlayer: (player: Player) => ({ ...deletedPlayerEntry, playerId: player.id }),
+      sessionLog: null,
+      clearError: () => undefined,
+    } satisfies ReturnType<typeof useCheckIns>
+    const playerActions = {
+      players: [],
+      syncOverview,
+      isLoading: false,
+      refreshLocalPlayers: async () => undefined,
+      runSync: async () => undefined,
+      savePlayer: async () => undefined,
+      deactivatePlayer: async () => undefined,
+      deletePlayer: async () => undefined,
+      uploadPlayerPhoto: async () => undefined,
+      removePlayerPhoto: async () => undefined,
+    } satisfies ReturnType<typeof usePlayers>
+
+    const markup = renderToStaticMarkup(
+      <CheckInView
+        authState={authState}
+        checkInActions={checkInActions}
+        onNavigate={() => undefined}
+        onSessionChange={() => undefined}
+        playerActions={playerActions}
+        returnerCaps={[]}
+        selectedSession={selectedSession}
+        selectedSessionId={selectedSession.id}
+        sessions={[selectedSession]}
+      />,
+    )
+
+    expect(markup).toContain('<span>Anwesend</span><strong>0</strong>')
+    expect(markup).toContain('<span>Gelb / Rot</span><strong>0 / 0</strong>')
+    expect(markup).toContain('<span>Returner/offen</span><strong>0</strong>')
+  })
+
+  it('does not show stale warnings for deleted players', () => {
+    const checkInActions = {
+      activePlayers: [],
+      entries: [],
+      errorMessage: null,
+      expectedPlayerIds: [],
+      warnings: [deletedPlayerWarning],
+      syncOverview,
+      isLoading: false,
+      sessionLogId: 'session-log-1',
+      refreshLocalCheckIns: async () => undefined,
+      runSync: async () => syncOverview,
+      saveEntry: async () => undefined,
+      saveSessionPatch: async () => undefined,
+      getEntryForPlayer: (player: Player) => ({ ...deletedPlayerEntry, playerId: player.id }),
+      sessionLog: null,
+      clearError: () => undefined,
+    } satisfies ReturnType<typeof useCheckIns>
+    const playerActions = {
+      players: [],
+      syncOverview,
+      isLoading: false,
+      refreshLocalPlayers: async () => undefined,
+      runSync: async () => undefined,
+      savePlayer: async () => undefined,
+      deactivatePlayer: async () => undefined,
+      deletePlayer: async () => undefined,
+      uploadPlayerPhoto: async () => undefined,
+      removePlayerPhoto: async () => undefined,
+    } satisfies ReturnType<typeof usePlayers>
+
+    const markup = renderToStaticMarkup(
+      <CheckInView
+        authState={authState}
+        checkInActions={checkInActions}
+        onNavigate={() => undefined}
+        onSessionChange={() => undefined}
+        playerActions={playerActions}
+        returnerCaps={[]}
+        selectedSession={selectedSession}
+        selectedSessionId={selectedSession.id}
+        sessions={[selectedSession]}
+      />,
+    )
+
+    expect(markup).not.toContain('Offene Warnungen aus letzter Einheit')
+    expect(markup).not.toContain('stale warning')
+  })
+})

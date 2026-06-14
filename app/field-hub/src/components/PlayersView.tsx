@@ -1,4 +1,4 @@
-import { Camera, RefreshCw, Save, Trash2, UserMinus, UserPlus, Users } from 'lucide-react'
+import { Camera, RefreshCw, Save, Trash2, UserMinus, UserPlus, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState, type ChangeEvent, type FormEvent } from 'react'
 import { sprint30mOptionalLabel } from '../domain/baseline'
 import {
@@ -107,6 +107,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
     playerActions
   const { removePlayerPhoto } = playerActions
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
+  const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [formValues, setFormValues] = useState<PlayerFormValues>(emptyPlayerFormValues)
   const [formError, setFormError] = useState<string | null>(null)
   const [formNotice, setFormNotice] = useState<string | null>(null)
@@ -117,6 +118,46 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
     [players, selectedPlayerId],
   )
   const latestBaseline = selectedPlayer ? baselineActions.getLatestBaselineForPlayer(selectedPlayer) : null
+
+  function openNewPlayerSheet() {
+    setSelectedPlayerId(null)
+    setFormValues(emptyPlayerFormValues)
+    setFormError(null)
+    setFormNotice(null)
+    clearPhotoLoadError()
+    setIsEditorOpen(true)
+  }
+
+  function openPlayerSheet(player: Player) {
+    setSelectedPlayerId(player.id)
+    setFormValues(playerToFormValues(player))
+    setFormError(null)
+    setFormNotice(null)
+    clearPhotoLoadError()
+    setIsEditorOpen(true)
+  }
+
+  const closePlayerSheet = useCallback(() => {
+    setIsEditorOpen(false)
+    setFormError(null)
+    setFormNotice(null)
+    clearPhotoLoadError()
+  }, [clearPhotoLoadError])
+
+  useEffect(() => {
+    if (!isEditorOpen) {
+      return undefined
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        closePlayerSheet()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [closePlayerSheet, isEditorOpen])
 
   if (authState.status !== 'signed-in') {
     return (
@@ -147,6 +188,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
       if (!selectedPlayer) {
         setFormValues(emptyPlayerFormValues)
       }
+      setIsEditorOpen(false)
     } catch (caughtError) {
       setFormError(caughtError instanceof Error ? caughtError.message : 'Spieler konnte nicht gespeichert werden.')
     }
@@ -190,6 +232,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
       setSelectedPlayerId(null)
       setFormValues(emptyPlayerFormValues)
       setFormNotice('Spieler geloescht.')
+      setIsEditorOpen(false)
     } catch (caughtError) {
       setFormError(caughtError instanceof Error ? caughtError.message : 'Spieler konnte nicht geloescht werden.')
     }
@@ -245,13 +288,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
           <button
             className="secondary-action"
             type="button"
-            onClick={() => {
-                setSelectedPlayerId(null)
-                setFormValues(emptyPlayerFormValues)
-                setFormError(null)
-                setFormNotice(null)
-                clearPhotoLoadError()
-              }}
+            onClick={openNewPlayerSheet}
           >
             <UserPlus className="nav-icon" aria-hidden />
             <span>Neu</span>
@@ -274,13 +311,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
               className={selectedPlayer?.id === player.id ? 'player-list-item active' : 'player-list-item'}
               key={player.id}
               type="button"
-              onClick={() => {
-                setSelectedPlayerId(player.id)
-                setFormValues(playerToFormValues(player))
-                setFormError(null)
-                setFormNotice(null)
-                clearPhotoLoadError()
-              }}
+              onClick={() => openPlayerSheet(player)}
             >
               <PlayerAvatar player={player} />
               <span>
@@ -295,12 +326,37 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
         </div>
       </aside>
 
-      <article className="panel player-detail">
-        <div className="library-heading">
-          <p className="eyebrow">{selectedPlayer ? 'Bearbeiten' : 'Neu anlegen'}</p>
-          <h3>{selectedPlayer?.name ?? 'Spieler-Stammdaten'}</h3>
-          <p>Position, Cluster, Consent, Returner-Status und Foto-Erlaubnis.</p>
-        </div>
+      {isEditorOpen ? (
+        <div
+          className="player-editor-backdrop"
+          role="presentation"
+          onClick={(event) => {
+            if (event.currentTarget === event.target) {
+              closePlayerSheet()
+            }
+          }}
+        >
+          <article
+            className="panel player-detail player-editor-sheet"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="player-editor-heading"
+          >
+            <div className="library-heading player-editor-heading">
+              <div>
+                <p className="eyebrow">{selectedPlayer ? 'Bearbeiten' : 'Neu anlegen'}</p>
+                <h3 id="player-editor-heading">{selectedPlayer?.name ?? 'Spieler-Stammdaten'}</h3>
+                <p>Position, Cluster, Consent, Returner-Status und Foto-Erlaubnis.</p>
+              </div>
+              <button
+                className="icon-button"
+                type="button"
+                aria-label="Spielerformular schliessen"
+                onClick={closePlayerSheet}
+              >
+                <X className="nav-icon" aria-hidden />
+              </button>
+            </div>
 
         {selectedPlayer ? (
           <div className="player-profile-strip">
@@ -483,7 +539,21 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
           {photoLoadError ? <p className="form-error">Profilfoto konnte nicht geladen werden.</p> : null}
           {formError ? <p className="form-error">{formError}</p> : null}
         </form>
-      </article>
+          </article>
+        </div>
+      ) : (
+        <article className="panel player-detail player-empty-detail">
+          <div className="library-heading">
+            <p className="eyebrow">Spielerformular</p>
+            <h3>Spieler auswaehlen oder neu anlegen</h3>
+            <p>Das Formular oeffnet sich als Sheet, damit die Liste auf iPad und iPhone stabil bleibt.</p>
+          </div>
+          <button className="primary-action" type="button" onClick={openNewPlayerSheet}>
+            <UserPlus className="nav-icon" aria-hidden />
+            <span>Neuen Spieler anlegen</span>
+          </button>
+        </article>
+      )}
     </section>
   )
 }

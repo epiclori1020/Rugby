@@ -2,6 +2,7 @@ import type { BaselineEntry, BaselineEntryPatch } from '../domain/baseline'
 import type { PlayerSyncOverview, SyncStatus } from '../domain/sync'
 import { defaultPlayerSyncOverview } from '../domain/sync'
 import { getSyncMeta, localDb, setSyncMeta } from './localDb'
+import { markSyncedIfUnchanged, markSyncErrorIfUnchanged } from './pendingWriteSync'
 import { supabase } from './supabaseClient'
 
 export type BaselineEntryRow = {
@@ -231,12 +232,11 @@ export async function syncPendingBaselineEntries(userId: string) {
       .select('id')
       .single()
     if (error) {
-      await localDb.baselineEntries.put({ ...entry, syncStatus: 'error', syncError: error.message })
+      await markSyncErrorIfUnchanged(localDb.baselineEntries, entry, error.message)
       throw new Error(error.message)
     }
 
-    await localDb.baselineEntries.put({ ...entry, syncStatus: 'synced', syncError: null })
-    await localDb.pendingWrites.delete(write.localId ?? 0)
+    await markSyncedIfUnchanged(localDb.baselineEntries, entry, write.localId)
   }
 }
 

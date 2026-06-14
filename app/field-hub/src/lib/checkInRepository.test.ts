@@ -46,6 +46,8 @@ const remoteEntryRow: PlayerSessionEntryRow = {
   pain_score: 0,
   pain_location: '',
   returner_flag: 'nein',
+  red_flag: 'head_neck_neuro',
+  movement_concern: true,
   traffic_light: 'yellow',
   traffic_light_suggestion: 'green',
   traffic_light_was_manual: true,
@@ -322,10 +324,14 @@ describe('checkInRepository session logs', () => {
     expect(entry.observation).toBe('manual override smoke')
   })
 
-  it('writes traffic-light suggestion and manual override metadata to Supabase rows', () => {
+  it('writes safety flags, traffic-light suggestion and manual override metadata to Supabase rows', () => {
     const entry = entryFromRow(remoteEntryRow)
     const row = rowFromEntry(entry)
 
+    expect(entry.redFlag).toBe('head_neck_neuro')
+    expect(entry.movementConcern).toBe(true)
+    expect(row.red_flag).toBe('head_neck_neuro')
+    expect(row.movement_concern).toBe(true)
     expect(row.traffic_light_suggestion).toBe('green')
     expect(row.traffic_light).toBe('yellow')
     expect(row.traffic_light_was_manual).toBe(true)

@@ -102,6 +102,10 @@ export function AppShell({
           {children}
         </div>
       </main>
+
+      <div className="bottom-tab-bar" aria-label="Bottom Tab Navigation">
+        <MainNavigation activeTab={activeTab} onTabChange={onTabChange} />
+      </div>
     </div>
   )
 }

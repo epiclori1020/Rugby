@@ -102,6 +102,28 @@ export function useReturners(
     }
   }, [refreshReturners, userId])
 
+  const runBackgroundSync = useCallback(async () => {
+    if (!userId || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+      return
+    }
+
+    try {
+      const overview = await syncCheckIns(userId)
+      const returnerOverview = await getReturnerSyncOverview(userId)
+      setSyncOverview(returnerOverview)
+      setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Returner-Sync fehlgeschlagen.' : null)
+      await refreshReturners()
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : 'Returner-Sync fehlgeschlagen.'
+      setSyncOverview({
+        ...(await getReturnerSyncOverview(userId)),
+        status: 'error',
+        errorMessage: message,
+      })
+      setErrorMessage(`Lokal gespeichert, Sync offen: ${message}`)
+    }
+  }, [refreshReturners, userId])
+
   useEffect(() => {
     Promise.resolve()
       .then(refreshReturners)
@@ -116,13 +138,11 @@ export function useReturners(
     try {
       setErrorMessage(null)
       const sessionLog = sessionLogId ? { id: sessionLogId } : await ensureSessionLog(userId, sessionDefinition)
+      setSessionLogId(sessionLog.id)
       await saveReturnerEntry(userId, sessionLog.id, player.id, patch)
       await refreshReturners()
-      if (navigator.onLine) {
-        const overview = await runSync()
-        if (overview?.status === 'error') {
-          setErrorMessage(`Lokal gespeichert, Sync offen: ${overview.errorMessage ?? 'Unbekannter Sync-Fehler.'}`)
-        }
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        void runBackgroundSync()
       }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Returner-Eintrag konnte nicht gespeichert werden.'

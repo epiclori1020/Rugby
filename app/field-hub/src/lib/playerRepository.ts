@@ -9,9 +9,11 @@ import type {
 import type { PlayerSyncOverview, SyncStatus } from '../domain/sync'
 import { defaultPlayerSyncOverview } from '../domain/sync'
 import { getSyncMeta, localDb, setSyncMeta } from './localDb'
+import { markSyncedIfUnchanged, markSyncErrorIfUnchanged } from './pendingWriteSync'
 import { supabase } from './supabaseClient'
 
 const PLAYER_PHOTOS_BUCKET = 'player-photos'
+const pendingPlayerSyncs = new Map<string, Promise<PlayerSyncOverview>>()
 
 type PlayerRow = {
   id: string
@@ -271,7 +273,7 @@ export async function deletePlayer(player: Player) {
   return updatedPlayer
 }
 
-export async function syncPlayers(userId: string): Promise<PlayerSyncOverview> {
+async function syncPlayersOnce(userId: string): Promise<PlayerSyncOverview> {
   if (!supabase) {
     return {
       ...(await getPlayerSyncOverview(userId)),
@@ -304,11 +306,7 @@ export async function syncPlayers(userId: string): Promise<PlayerSyncOverview> {
       const cleanupResult = await removeStoredPlayerPhoto(player.photoPath)
       if (!cleanupResult.removed) {
         const errorMessage = cleanupResult.errorMessage ?? 'Profilfoto wird geloescht, sobald das Geraet online ist.'
-        await localDb.players.put({
-          ...player,
-          syncStatus: 'error',
-          syncError: errorMessage,
-        })
+        await markSyncErrorIfUnchanged(localDb.players, player, errorMessage)
 
         return {
           ...(await getPlayerSyncOverview(userId)),
@@ -317,8 +315,14 @@ export async function syncPlayers(userId: string): Promise<PlayerSyncOverview> {
         }
       }
 
+      const latestPlayer = await localDb.players.get(player.id)
+      if (!latestPlayer || latestPlayer.clientUpdatedAt !== player.clientUpdatedAt) {
+        await localDb.pendingWrites.delete(write.localId ?? 0)
+        continue
+      }
+
       player = {
-        ...player,
+        ...latestPlayer,
         photoPath: null,
         photoUpdatedAt: null,
         syncError: null,
@@ -328,11 +332,7 @@ export async function syncPlayers(userId: string): Promise<PlayerSyncOverview> {
 
     const { error } = await supabase.from('players').upsert(rowFromPlayer(player)).select('id').single()
     if (error) {
-      await localDb.players.put({
-        ...player,
-        syncStatus: 'error',
-        syncError: error.message,
-      })
+      await markSyncErrorIfUnchanged(localDb.players, player, error.message)
 
       return {
         ...(await getPlayerSyncOverview(userId)),
@@ -341,12 +341,7 @@ export async function syncPlayers(userId: string): Promise<PlayerSyncOverview> {
       }
     }
 
-    await localDb.players.put({
-      ...player,
-      syncStatus: 'synced',
-      syncError: null,
-    })
-    await localDb.pendingWrites.delete(write.localId ?? 0)
+    await markSyncedIfUnchanged(localDb.players, player, write.localId)
   }
 
   const { data, error } = await supabase
@@ -387,6 +382,20 @@ export async function syncPlayers(userId: string): Promise<PlayerSyncOverview> {
     lastSuccessfulSyncAt: timestamp,
     errorMessage: null,
   }
+}
+
+export async function syncPlayers(userId: string): Promise<PlayerSyncOverview> {
+  const pendingSync = pendingPlayerSyncs.get(userId)
+  if (pendingSync) {
+    return pendingSync
+  }
+
+  const syncPromise = syncPlayersOnce(userId).finally(() => {
+    pendingPlayerSyncs.delete(userId)
+  })
+  pendingPlayerSyncs.set(userId, syncPromise)
+
+  return syncPromise
 }
 
 export async function resizeImageForUpload(file: File) {

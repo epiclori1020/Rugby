@@ -104,6 +104,10 @@ button {
   gap: 8px;
 }
 
+.bottom-tab-bar {
+  display: none;
+}
+
 .nav-button,
 .quick-action {
   min-height: 52px;
@@ -437,6 +441,11 @@ button {
 .export-panel {
   display: grid;
   gap: 14px;
+}
+
+.player-editor-heading {
+  grid-template-columns: minmax(0, 1fr) auto;
+  align-items: start;
 }
 
 .search-box {
@@ -1354,6 +1363,7 @@ code {
   justify-content: space-between;
   gap: 10px;
   padding: 12px;
+  text-align: left;
   text-decoration: none;
   transition:
     background-color 140ms ease,
@@ -1364,6 +1374,110 @@ code {
 
 .pdf-link:hover {
   border-color: var(--brand);
+}
+
+.pdf-link small {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+}
+
+.pdf-viewer-backdrop,
+.player-editor-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: rgba(15, 33, 31, 0.46);
+  display: grid;
+  padding:
+    calc(16px + env(safe-area-inset-top))
+    calc(16px + env(safe-area-inset-right))
+    calc(16px + env(safe-area-inset-bottom))
+    calc(16px + env(safe-area-inset-left));
+}
+
+.pdf-viewer-backdrop {
+  place-items: stretch;
+}
+
+.player-editor-backdrop {
+  place-items: start center;
+  overflow: auto;
+}
+
+.pdf-viewer-sheet,
+.player-editor-sheet {
+  min-width: 0;
+  border-radius: 8px;
+  background: var(--surface);
+  box-shadow: 0 18px 48px rgba(12, 24, 22, 0.22);
+}
+
+.pdf-viewer-sheet {
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  min-height: 0;
+  overflow: hidden;
+}
+
+.player-editor-sheet {
+  width: min(720px, 100%);
+  max-height: calc(100svh - 32px - env(safe-area-inset-top) - env(safe-area-inset-bottom));
+  overflow: auto;
+}
+
+.pdf-viewer-toolbar {
+  min-height: 58px;
+  border-bottom: 1px solid var(--line);
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 10px 12px;
+}
+
+.pdf-viewer-toolbar > div {
+  min-width: 0;
+  display: grid;
+  gap: 2px;
+}
+
+.pdf-viewer-toolbar span {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  text-transform: uppercase;
+}
+
+.pdf-viewer-toolbar strong {
+  overflow-wrap: anywhere;
+}
+
+.pdf-viewer-body {
+  position: relative;
+  min-height: 0;
+  background: #ffffff;
+}
+
+.pdf-loading {
+  position: absolute;
+  inset: 12px 12px auto 12px;
+  z-index: 1;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: rgba(255, 255, 255, 0.94);
+  color: var(--muted);
+  font-size: 0.88rem;
+  font-weight: 800;
+  padding: 12px;
+}
+
+.pdf-viewer-frame {
+  width: 100%;
+  min-height: 0;
+  height: 100%;
+  border: 0;
+  background: #ffffff;
 }
 
 .sr-only {
@@ -1444,6 +1558,75 @@ code {
   }
 }
 
+@media (max-width: 1180px) {
+  .app-shell {
+    display: block;
+    padding-bottom: calc(76px + env(safe-area-inset-bottom));
+  }
+
+  .sidebar {
+    min-height: auto;
+    border-right: 0;
+    border-bottom: 1px solid var(--line);
+    padding: 14px 16px;
+  }
+
+  .sidebar .main-nav {
+    display: none;
+  }
+
+  .brand-block p:last-child {
+    display: none;
+  }
+
+  .bottom-tab-bar {
+    position: fixed;
+    right: 0;
+    bottom: 0;
+    left: 0;
+    z-index: 30;
+    border-top: 1px solid var(--line);
+    background: rgba(255, 253, 248, 0.96);
+    box-shadow: 0 -10px 30px rgba(18, 30, 25, 0.12);
+    display: block;
+    padding: 8px max(8px, env(safe-area-inset-right)) calc(8px + env(safe-area-inset-bottom)) max(8px, env(safe-area-inset-left));
+  }
+
+  .bottom-tab-bar .main-nav {
+    display: grid;
+    grid-auto-flow: column;
+    grid-auto-columns: minmax(76px, 1fr);
+    gap: 6px;
+    overflow-x: auto;
+    overscroll-behavior-x: contain;
+    scrollbar-width: none;
+  }
+
+  .bottom-tab-bar .main-nav::-webkit-scrollbar {
+    display: none;
+  }
+
+  .bottom-tab-bar .nav-button {
+    min-height: 58px;
+    justify-content: center;
+    gap: 4px;
+    padding: 7px 8px;
+    text-align: center;
+    flex-direction: column;
+    font-size: 0.76rem;
+    line-height: 1.05;
+  }
+
+  .bottom-tab-bar .nav-icon {
+    width: 21px;
+    height: 21px;
+  }
+
+  .shell-main {
+    padding: 18px;
+  }
+}
+
 @media (max-width: 560px) {
   .sidebar,
   .shell-main {
@@ -1481,6 +1664,23 @@ code {
   .primary-action,
   .secondary-action {
     width: 100%;
+  }
+
+  .player-editor-heading {
+    align-items: start;
+  }
+
+  .player-editor-heading .icon-button {
+    width: 44px;
+  }
+
+  .pdf-viewer-backdrop,
+  .player-editor-backdrop {
+    padding:
+      calc(8px + env(safe-area-inset-top))
+      calc(8px + env(safe-area-inset-right))
+      calc(8px + env(safe-area-inset-bottom))
+      calc(8px + env(safe-area-inset-left));
   }
 }
 

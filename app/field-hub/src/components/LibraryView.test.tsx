@@ -10,4 +10,17 @@ describe('LibraryView empty states', () => {
     expect(markup).toContain('Waehle eine andere Suche oder Kategorie.')
     expect(markup).not.toContain('Coach-Skript KW25: Was sage ich?')
   })
+
+  it('opens PDFs through the in-app viewer instead of a new browser tab', () => {
+    const markup = renderToStaticMarkup(<LibraryView />)
+
+    expect(markup).toContain('PDF in App oeffnen')
+    expect(markup).not.toContain('target="_blank"')
+  })
+
+  it('shows loading feedback while the in-app PDF viewer initializes', () => {
+    const markup = renderToStaticMarkup(<LibraryView initialPdfHref="/library/2_COACH_SCRIPT_di_do.pdf" />)
+
+    expect(markup).toContain('PDF wird geladen')
+  })
 })

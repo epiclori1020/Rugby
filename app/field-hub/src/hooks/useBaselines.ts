@@ -72,6 +72,28 @@ export function useBaselines(userId: string | null, sessionDefinition: SessionDe
     }
   }, [refreshBaselines, userId])
 
+  const runBackgroundSync = useCallback(async () => {
+    if (!userId || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+      return
+    }
+
+    try {
+      const overview = await syncCheckIns(userId)
+      const baselineOverview = await getBaselineSyncOverview(userId)
+      setSyncOverview(baselineOverview)
+      setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Baseline-Sync fehlgeschlagen.' : null)
+      await refreshBaselines()
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : 'Baseline-Sync fehlgeschlagen.'
+      setSyncOverview({
+        ...(await getBaselineSyncOverview(userId)),
+        status: 'error',
+        errorMessage: message,
+      })
+      setErrorMessage(`Lokal gespeichert, Sync offen: ${message}`)
+    }
+  }, [refreshBaselines, userId])
+
   useEffect(() => {
     Promise.resolve()
       .then(refreshBaselines)
@@ -86,13 +108,11 @@ export function useBaselines(userId: string | null, sessionDefinition: SessionDe
     try {
       setErrorMessage(null)
       const sessionLog = sessionLogId ? { id: sessionLogId } : await ensureSessionLog(userId, sessionDefinition)
+      setSessionLogId(sessionLog.id)
       await saveBaselineEntry(userId, sessionLog.id, player.id, patch)
       await refreshBaselines()
-      if (navigator.onLine) {
-        const overview = await runSync()
-        if (overview?.status === 'error') {
-          setErrorMessage(`Lokal gespeichert, Sync offen: ${overview.errorMessage ?? 'Unbekannter Sync-Fehler.'}`)
-        }
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        void runBackgroundSync()
       }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Baseline-Wert konnte nicht gespeichert werden.'

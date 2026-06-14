@@ -734,6 +734,38 @@ Halte dich strikt an die MVP-Grenzen:
 Dokumentiere ehrlich, was auf echten Geraeten bestanden hat und was noch offen ist.
 ```
 
+## App-Nachbesserung: iPad/iPhone UX, PDF und lokales Feedback (2026-06-14)
+
+Umgesetzt in `app/field-hub/`:
+- Bibliotheks-PDFs oeffnen jetzt in einem In-App-Sheet mit `iframe`, X-Button, Escape- und Backdrop-Schliessen. Bewusste MVP-Entscheidung: kein `@react-pdf-viewer`, weil das Repo archiviert/kommerziell ist und PDF.js/`react-pdf` fuer diesen Scope mehr Worker-/Bundle-Komplexitaet bringt. Die App nutzt den nativen Browser-PDF-Renderer im Sheet.
+- Responsive Navigation: unterhalb Tablet-Breite wird die Sidebar-Navigation ausgeblendet und als horizontale Bottom-Tab-Bar angezeigt.
+- Spielerformular oeffnet als Sheet/Modal mit X, Escape und Backdrop-Schliessen.
+- Spieler-, Check-in-, Nachbereitungs-, Baseline- und Returner-Speicherpfade aktualisieren zuerst lokal sichtbar und starten Supabase-Sync danach im Hintergrund. Das ist eine absichtliche Local-first-MVP-Entscheidung gegen iPad-Lag bei kalter/langsamer Verbindung.
+- `syncPlayers` und `syncCheckIns` coalescen parallele Sync-Aufrufe pro User. Mehrere schnelle Taps loesen damit nicht mehrere identische Remote-Syncs gleichzeitig aus.
+- Sync-Pending-Writes markieren lokale Datensaetze nur noch dann als `synced` oder `error`, wenn `clientUpdatedAt` weiterhin zum hochgeladenen Snapshot passt. Damit kann ein spaeter Hintergrund-Sync keine frischere lokale iPad-Eingabe als synchronisiert ueberschreiben.
+- Check-in-Zaehlungen, `useCheckIns().entries`, `useCheckIns().warnings` und Dashboard-Warnungen filtern geloeschte/inaktive Spieler aus, damit alte Eintraege nicht weiter als aktive Ampel-/Returner-/Anwesenheitswerte erscheinen.
+- Das PDF-Sheet zeigt waehrend der nativen PDF-Initialisierung sofort `PDF wird geladen...`; das reduziert den wahrgenommenen White-Screen beim ersten Oeffnen.
+- Supabase-Migration `20260614202745_add_checkin_safety_fields.sql` ergaenzt `red_flag` und `movement_concern` auf `public.player_session_entries`; Repository-Mapping und Tests schreiben/lesen diese Safety-Felder remote mit.
+
+Verifiziert:
+- `npm test` am 2026-06-14: 24 Testdateien, 127 Tests.
+- `npm run typecheck`
+- `npm run lint`
+- `npm run build`
+- `npm audit --audit-level=moderate`: 0 bekannte npm-Vulnerabilities.
+- `supabase db push --dry-run`: nur `20260614202745_add_checkin_safety_fields.sql` vorgesehen.
+- `supabase db push --yes`: Migration remote angewendet.
+- Remote-DB-Check per `psql`: `red_flag` und `movement_concern` auf `public.player_session_entries` vorhanden.
+- `supabase db advisors --db-url ... --fail-on error`: keine Issues.
+- In-App-Browser mit `http://localhost:5174/`: iPad-Viewport, iPhone-10-aehnlicher Viewport, Bottom-Tabs, PDF-Sheet und Spieler-Sheet.
+- Puppeteer-Smoke-QA mit `http://127.0.0.1:5175/`: iPad-Bottom-Tabs sichtbar, Sidebar-Nav ausgeblendet, kein horizontaler Overflow; PDF-Sheet mit Dialog, X-Button und lokalem iframe; iPhone-Bottom-Tabs sichtbar, kein horizontaler Overflow.
+
+Wichtige Browser/PWA-Erkenntnis:
+- Der In-App-Browser zeigte bei `127.0.0.1:5173` trotz laufendem Vite-Server zeitweise alte PWA-Produktionsassets. Direkte Serverpruefung zeigte aktuellen Dev-Code; `localhost:5174` lud korrekt den Vite-Dev-Einstieg. Folgesessions sollen bei PWA/UI-QA auf alte Service-Worker-/Cache-Scope-Effekte achten und bei merkwuerdig alten UI-Texten `localhost` plus frischen Port oder Cache-/Service-Worker-Cleanup verwenden.
+
+Offene Grenze:
+- Physische Home-Screen-PWA-Abnahme auf echtem iPad/iPhone, Offline/Pending/Retry ueber echte Netzunterbrechung und Cross-Device-Sync bleiben weiterhin praktische Abnahmepunkte.
+
 ## Archivierter Startprompt: Field Hub Sprint 10
 
 ```text

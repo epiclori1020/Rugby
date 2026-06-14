@@ -89,6 +89,27 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
     }
   }, [refreshPostSession, userId])
 
+  const runBackgroundSync = useCallback(async () => {
+    if (!userId || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+      return
+    }
+
+    try {
+      const overview = await syncCheckIns(userId)
+      setSyncOverview(overview)
+      setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Nachbereitungs-Sync fehlgeschlagen.' : null)
+      await refreshPostSession()
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : 'Nachbereitungs-Sync fehlgeschlagen.'
+      setSyncOverview({
+        ...(await getCheckInSyncOverview(userId)),
+        status: 'error' as const,
+        errorMessage: message,
+      })
+      setErrorMessage(`Lokal gespeichert, Sync offen: ${message}`)
+    }
+  }, [refreshPostSession, userId])
+
   useEffect(() => {
     Promise.resolve()
       .then(refreshPostSession)
@@ -102,13 +123,12 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
 
     try {
       setErrorMessage(null)
-      await saveSessionLogPatch(userId, sessionDefinition, patch)
+      const savedSessionLog = await saveSessionLogPatch(userId, sessionDefinition, patch)
+      setSessionLogId(savedSessionLog.id)
+      setSessionLog(savedSessionLog)
       await refreshPostSession()
-      if (navigator.onLine) {
-        const overview = await runSync()
-        if (overview?.status === 'error') {
-          setErrorMessage(`Lokal gespeichert, Sync offen: ${overview.errorMessage ?? 'Unbekannter Sync-Fehler.'}`)
-        }
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        void runBackgroundSync()
       }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Nachbereitung konnte nicht gespeichert werden.'
@@ -126,13 +146,11 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
       const sessionLog = sessionLogId
         ? { id: sessionLogId }
         : await ensureSessionLog(userId, sessionDefinition)
+      setSessionLogId(sessionLog.id)
       await savePostSessionEntry(userId, sessionLog.id, player, patch)
       await refreshPostSession()
-      if (navigator.onLine) {
-        const overview = await runSync()
-        if (overview?.status === 'error') {
-          setErrorMessage(`Lokal gespeichert, Sync offen: ${overview.errorMessage ?? 'Unbekannter Sync-Fehler.'}`)
-        }
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        void runBackgroundSync()
       }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Spieler-Nachbereitung konnte nicht gespeichert werden.'
@@ -151,16 +169,14 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
         ? { id: sessionLogId }
         : await ensureSessionLog(userId, sessionDefinition)
       const { nextStep, ...progressPatch } = patch
+      setSessionLogId(sessionLog.id)
       await saveProgressEntry(userId, sessionLog.id, player.id, progressPatch)
       if (nextStep !== undefined) {
         await savePostSessionEntry(userId, sessionLog.id, player, { nextStep })
       }
       await refreshPostSession()
-      if (navigator.onLine) {
-        const overview = await runSync()
-        if (overview?.status === 'error') {
-          setErrorMessage(`Lokal gespeichert, Sync offen: ${overview.errorMessage ?? 'Unbekannter Sync-Fehler.'}`)
-        }
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        void runBackgroundSync()
       }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Progression konnte nicht gespeichert werden.'

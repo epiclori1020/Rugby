@@ -319,9 +319,12 @@ export function CheckInView({
     getEntryForPlayer,
     clearError,
   } = checkInActions
-  const warningByPlayerId = new Map(warnings.map((warning) => [warning.playerId, warning]))
   const returnerCapByPlayerId = new Map(returnerCaps.map((cap) => [cap.playerId, cap]))
   const expectedPlayerSet = new Set(expectedPlayerIds)
+  const activePlayerIdSet = new Set(activePlayers.map((player) => player.id))
+  const activeEntries = entries.filter((entry) => activePlayerIdSet.has(entry.playerId))
+  const activeWarnings = warnings.filter((warning) => activePlayerIdSet.has(warning.playerId))
+  const warningByPlayerId = new Map(activeWarnings.map((warning) => [warning.playerId, warning]))
   const orderedPlayers = [...activePlayers].sort((a, b) => {
     const aExpected = expectedPlayerSet.has(a.id)
     const bExpected = expectedPlayerSet.has(b.id)
@@ -332,10 +335,10 @@ export function CheckInView({
 
     return aExpected ? -1 : 1
   })
-  const checkedInCount = entries.filter((entry) => entry.present).length
-  const yellowCount = entries.filter((entry) => entry.trafficLight === 'yellow').length
-  const redCount = entries.filter((entry) => entry.trafficLight === 'red').length
-  const returnerCount = entries.filter((entry) => entry.returnerFlag !== 'nein').length
+  const checkedInCount = activeEntries.filter((entry) => entry.present).length
+  const yellowCount = activeEntries.filter((entry) => entry.trafficLight === 'yellow').length
+  const redCount = activeEntries.filter((entry) => entry.trafficLight === 'red').length
+  const returnerCount = activeEntries.filter((entry) => entry.returnerFlag !== 'nein').length
 
   if (authState.status !== 'signed-in') {
     return (
@@ -414,14 +417,14 @@ export function CheckInView({
         {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
       </div>
 
-      {warnings.length > 0 ? (
+      {activeWarnings.length > 0 ? (
         <aside className="panel warning-panel" aria-label="Offene Warnungen">
           <div className="status-line">
             <ShieldAlert className="nav-icon" aria-hidden />
             <h3>Offene Warnungen aus letzter Einheit</h3>
           </div>
           <div className="warning-list">
-            {warnings.map((warning) => {
+            {activeWarnings.map((warning) => {
               const player = playerActions.players.find((item) => item.id === warning.playerId)
               return (
                 <div className="warning-note" key={`${warning.playerId}-${warning.sessionDate}`}>

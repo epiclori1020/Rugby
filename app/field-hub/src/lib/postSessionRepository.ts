@@ -1,6 +1,7 @@
 import type { ProgressEntry } from '../domain/postSession'
 import type { SyncStatus } from '../domain/sync'
 import { localDb } from './localDb'
+import { markSyncedIfUnchanged, markSyncErrorIfUnchanged } from './pendingWriteSync'
 import { supabase } from './supabaseClient'
 
 export type ProgressEntryRow = {
@@ -170,12 +171,11 @@ export async function syncPendingProgressEntries(userId: string) {
       .select('id')
       .single()
     if (error) {
-      await localDb.progressEntries.put({ ...entry, syncStatus: 'error', syncError: error.message })
+      await markSyncErrorIfUnchanged(localDb.progressEntries, entry, error.message)
       throw new Error(error.message)
     }
 
-    await localDb.progressEntries.put({ ...entry, syncStatus: 'synced', syncError: null })
-    await localDb.pendingWrites.delete(write.localId ?? 0)
+    await markSyncedIfUnchanged(localDb.progressEntries, entry, write.localId)
   }
 }
 

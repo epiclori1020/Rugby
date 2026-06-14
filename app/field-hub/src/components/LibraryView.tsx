@@ -1,12 +1,14 @@
-import { ExternalLink, Search } from 'lucide-react'
-import { useMemo, useState } from 'react'
+import { FileText, Search, X } from 'lucide-react'
+import { useEffect, useMemo, useState } from 'react'
 import { libraryCategories, libraryItems } from '../content/library'
-import type { LibraryCategory, LibraryItem } from '../content/types'
+import { activePdfRefs } from '../content/pdfRefs'
+import type { LibraryCategory, LibraryItem, PdfRef } from '../content/types'
 
 const allCategoriesLabel = 'Alle'
 
 type LibraryViewProps = {
   initialQuery?: string
+  initialPdfHref?: string
 }
 
 function searchableText(item: LibraryItem) {
@@ -22,12 +24,22 @@ function searchableText(item: LibraryItem) {
     .toLowerCase()
 }
 
-export function LibraryView({ initialQuery = '' }: LibraryViewProps = {}) {
+function findPdfByHref(href: string | undefined) {
+  if (!href || !href.startsWith('/library/')) {
+    return null
+  }
+
+  return activePdfRefs.find((pdf) => pdf.href === href) ?? null
+}
+
+export function LibraryView({ initialQuery = '', initialPdfHref }: LibraryViewProps = {}) {
   const [selectedCategory, setSelectedCategory] = useState<LibraryCategory | typeof allCategoriesLabel>(
     allCategoriesLabel,
   )
   const [query, setQuery] = useState(initialQuery)
   const [selectedItemId, setSelectedItemId] = useState(libraryItems[0]?.id)
+  const [selectedPdf, setSelectedPdf] = useState<PdfRef | null>(() => findPdfByHref(initialPdfHref))
+  const [isPdfLoading, setIsPdfLoading] = useState(Boolean(initialPdfHref))
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -52,6 +64,35 @@ export function LibraryView({ initialQuery = '' }: LibraryViewProps = {}) {
       setSelectedItemId(firstMatching.id)
     }
   }
+
+  function openPdf(pdf: PdfRef) {
+    if (!pdf.href.startsWith('/library/')) {
+      return
+    }
+
+    setSelectedPdf(pdf)
+    setIsPdfLoading(true)
+  }
+
+  function closePdf() {
+    setSelectedPdf(null)
+    setIsPdfLoading(false)
+  }
+
+  useEffect(() => {
+    if (!selectedPdf) {
+      return undefined
+    }
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        closePdf()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [selectedPdf])
 
   return (
     <section className="library-layout" aria-labelledby="library-heading">
@@ -141,13 +182,14 @@ export function LibraryView({ initialQuery = '' }: LibraryViewProps = {}) {
           {selectedItem.pdfRefs && selectedItem.pdfRefs.length > 0 ? (
             <div className="pdf-list" aria-label="PDF-Fallbacks">
               <h4>PDF-Fallback</h4>
-              <p className="pdf-note">Oeffnet PDF in neuem Tab.</p>
+              <p className="pdf-note">Oeffnet PDF direkt in der App mit eigener Schliessen-Option.</p>
               <div className="pdf-link-grid">
                 {selectedItem.pdfRefs.map((pdf) => (
-                  <a className="pdf-link" href={pdf.href} key={pdf.href} target="_blank" rel="noreferrer">
+                  <button className="pdf-link" key={pdf.href} type="button" onClick={() => openPdf(pdf)}>
                     <span>{pdf.label}</span>
-                    <ExternalLink className="nav-icon" aria-hidden />
-                  </a>
+                    <FileText className="nav-icon" aria-hidden />
+                    <small>PDF in App oeffnen</small>
+                  </button>
                 ))}
               </div>
             </div>
@@ -162,6 +204,54 @@ export function LibraryView({ initialQuery = '' }: LibraryViewProps = {}) {
           </div>
         </article>
       )}
+
+      {selectedPdf ? (
+        <div
+          className="pdf-viewer-backdrop"
+          role="presentation"
+          onClick={(event) => {
+            if (event.currentTarget === event.target) {
+              closePdf()
+            }
+          }}
+        >
+          <section
+            className="pdf-viewer-sheet"
+            role="dialog"
+            aria-label={`${selectedPdf.label} PDF Viewer`}
+            aria-modal="true"
+          >
+            <div className="pdf-viewer-toolbar">
+              <div>
+                <span>PDF</span>
+                <strong>{selectedPdf.label}</strong>
+              </div>
+              <button
+                className="icon-button"
+                type="button"
+                aria-label="PDF schliessen"
+                onClick={closePdf}
+              >
+                <X className="nav-icon" aria-hidden />
+              </button>
+            </div>
+            <div className="pdf-viewer-body">
+              {isPdfLoading ? (
+                <div className="pdf-loading" role="status">
+                  PDF wird geladen...
+                </div>
+              ) : null}
+              <iframe
+                className="pdf-viewer-frame"
+                src={selectedPdf.href}
+                title={selectedPdf.label}
+                referrerPolicy="no-referrer"
+                onLoad={() => setIsPdfLoading(false)}
+              />
+            </div>
+          </section>
+        </div>
+      ) : null}
     </section>
   )
 }

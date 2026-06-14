@@ -29,6 +29,15 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const activePlayers = useMemo(() => players.filter((player) => player.active), [players])
+  const activePlayerIds = useMemo(() => new Set(activePlayers.map((player) => player.id)), [activePlayers])
+  const activeEntries = useMemo(
+    () => entries.filter((entry) => activePlayerIds.has(entry.playerId)),
+    [activePlayerIds, entries],
+  )
+  const activeWarnings = useMemo(
+    () => warnings.filter((warning) => activePlayerIds.has(warning.playerId)),
+    [activePlayerIds, warnings],
+  )
 
   const refreshLocalCheckIns = useCallback(async () => {
     if (!userId) {
@@ -84,6 +93,27 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
     }
   }, [refreshLocalCheckIns, userId])
 
+  const runBackgroundSync = useCallback(async () => {
+    if (!userId || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+      return
+    }
+
+    try {
+      const overview = await syncCheckIns(userId)
+      setSyncOverview(overview)
+      setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Check-in-Sync fehlgeschlagen.' : null)
+      await refreshLocalCheckIns()
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : 'Check-in-Sync fehlgeschlagen.'
+      setSyncOverview({
+        ...(await getCheckInSyncOverview(userId)),
+        status: 'error' as const,
+        errorMessage: message,
+      })
+      setErrorMessage(`Lokal gespeichert, Sync offen: ${message}`)
+    }
+  }, [refreshLocalCheckIns, userId])
+
   useEffect(() => {
     Promise.resolve()
       .then(refreshLocalCheckIns)
@@ -122,13 +152,21 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
         ? { id: sessionLogId }
         : await ensureSessionLog(userId, sessionDefinition)
 
-      await saveCheckInEntry(userId, sessionLog.id, player, patch, manualTrafficLight)
-      await refreshLocalCheckIns()
-      if (navigator.onLine) {
-        const overview = await runSync()
-        if (overview?.status === 'error') {
-          setErrorMessage(`Lokal gespeichert, Sync offen: ${overview.errorMessage ?? 'Unbekannter Sync-Fehler.'}`)
+      const savedEntry = await saveCheckInEntry(userId, sessionLog.id, player, patch, manualTrafficLight)
+      setSessionLogId(sessionLog.id)
+      setEntries((currentEntries) => {
+        const existingEntryIndex = currentEntries.findIndex((entry) => entry.id === savedEntry.id)
+        if (existingEntryIndex === -1) {
+          return [...currentEntries, savedEntry]
         }
+
+        const nextEntries = [...currentEntries]
+        nextEntries[existingEntryIndex] = savedEntry
+        return nextEntries
+      })
+      setSyncOverview(await getCheckInSyncOverview(userId))
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        void runBackgroundSync()
       }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Check-in konnte nicht gespeichert werden.'
@@ -143,13 +181,12 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
 
     try {
       setErrorMessage(null)
-      await saveSessionLogPatch(userId, sessionDefinition, patch)
-      await refreshLocalCheckIns()
-      if (navigator.onLine) {
-        const overview = await runSync()
-        if (overview?.status === 'error') {
-          setErrorMessage(`Lokal gespeichert, Sync offen: ${overview.errorMessage ?? 'Unbekannter Sync-Fehler.'}`)
-        }
+      const savedSessionLog = await saveSessionLogPatch(userId, sessionDefinition, patch)
+      setSessionLogId(savedSessionLog.id)
+      setSessionLog(savedSessionLog)
+      setSyncOverview(await getCheckInSyncOverview(userId))
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        void runBackgroundSync()
       }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Training-Notiz konnte nicht gespeichert werden.'
@@ -175,10 +212,10 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
 
   return {
     activePlayers,
-    entries,
+    entries: activeEntries,
     errorMessage,
     expectedPlayerIds,
-    warnings,
+    warnings: activeWarnings,
     syncOverview,
     isLoading,
     sessionLogId,

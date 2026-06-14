@@ -2,6 +2,7 @@ import type { ReturnerCapSummary, ReturnerDecision, ReturnerEntry, ReturnerEntry
 import type { PlayerSyncOverview, SyncStatus } from '../domain/sync'
 import { defaultPlayerSyncOverview } from '../domain/sync'
 import { getSyncMeta, localDb, setSyncMeta } from './localDb'
+import { markSyncedIfUnchanged, markSyncErrorIfUnchanged } from './pendingWriteSync'
 import { supabase } from './supabaseClient'
 
 export type ReturnerEntryRow = {
@@ -304,12 +305,11 @@ export async function syncPendingReturnerEntries(userId: string) {
       .select('id')
       .single()
     if (error) {
-      await localDb.returnerEntries.put({ ...entry, syncStatus: 'error', syncError: error.message })
+      await markSyncErrorIfUnchanged(localDb.returnerEntries, entry, error.message)
       throw new Error(error.message)
     }
 
-    await localDb.returnerEntries.put({ ...entry, syncStatus: 'synced', syncError: null })
-    await localDb.pendingWrites.delete(write.localId ?? 0)
+    await markSyncedIfUnchanged(localDb.returnerEntries, entry, write.localId)
   }
 }
 

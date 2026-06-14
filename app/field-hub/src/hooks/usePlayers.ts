@@ -48,6 +48,20 @@ export function usePlayers(userId: string | null) {
     }
   }, [userId])
 
+  const runBackgroundSync = useCallback(async () => {
+    if (!userId || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+      return
+    }
+
+    try {
+      const overview = await syncPlayers(userId)
+      setSyncOverview(overview)
+      setPlayers(await listLocalPlayers(userId))
+    } catch {
+      setSyncOverview(await getPlayerSyncOverview(userId))
+    }
+  }, [userId])
+
   useEffect(() => {
     Promise.resolve()
       .then(refreshLocalPlayers)
@@ -88,40 +102,40 @@ export function usePlayers(userId: string | null) {
 
     await savePlayer(userId, values, existing)
     await refreshLocalPlayers()
-    if (navigator.onLine) {
-      await runSync()
+    if (typeof navigator === 'undefined' || navigator.onLine) {
+      void runBackgroundSync()
     }
   }
 
   async function deactivate(player: Player) {
     await deactivatePlayer(player)
     await refreshLocalPlayers()
-    if (navigator.onLine) {
-      await runSync()
+    if (typeof navigator === 'undefined' || navigator.onLine) {
+      void runBackgroundSync()
     }
   }
 
   async function remove(player: Player) {
     await deletePlayer(player)
     await refreshLocalPlayers()
-    if (navigator.onLine) {
-      await runSync()
+    if (typeof navigator === 'undefined' || navigator.onLine) {
+      void runBackgroundSync()
     }
   }
 
   async function uploadPhoto(player: Player, file: File) {
     await uploadPlayerPhoto(player, file)
     await refreshLocalPlayers()
-    if (navigator.onLine) {
-      await runSync()
+    if (typeof navigator === 'undefined' || navigator.onLine) {
+      void runBackgroundSync()
     }
   }
 
   async function removePhoto(player: Player) {
     await removePlayerPhoto(player)
     await refreshLocalPlayers()
-    if (navigator.onLine) {
-      await runSync()
+    if (typeof navigator === 'undefined' || navigator.onLine) {
+      void runBackgroundSync()
     }
   }
 

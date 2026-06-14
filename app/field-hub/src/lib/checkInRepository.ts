@@ -10,6 +10,7 @@ import {
   type PlayerSessionEntry,
   type PostSessionEntryPatch,
   type PlayerWarning,
+  type RedFlag,
   type ReturnerFlag,
   type SessionLog,
   type TrainingVariant,
@@ -24,6 +25,7 @@ import { refreshRemoteBaselineEntries, syncPendingBaselineEntries } from './base
 import { getSyncMeta, localDb, setSyncMeta } from './localDb'
 import { syncPlayers } from './playerRepository'
 import { refreshRemoteProgressEntries, syncPendingProgressEntries } from './postSessionRepository'
+import { markSyncedIfUnchanged, markSyncErrorIfUnchanged } from './pendingWriteSync'
 import { refreshRemoteReturnerEntries, syncPendingReturnerEntries } from './returnerRepository'
 import { supabase } from './supabaseClient'
 
@@ -58,6 +60,8 @@ export type PlayerSessionEntryRow = {
   pain_score: number | null
   pain_location: string
   returner_flag: ReturnerFlag
+  red_flag: RedFlag
+  movement_concern: boolean
   traffic_light: TrafficLight | null
   traffic_light_suggestion: TrafficLight | null
   traffic_light_was_manual: boolean
@@ -92,6 +96,7 @@ function createId() {
 }
 
 const pendingSessionLogEnsures = new Map<string, Promise<SessionLog>>()
+const pendingCheckInSyncs = new Map<string, Promise<PlayerSyncOverview>>()
 
 function sessionLogEnsureKey(userId: string, sessionDefinitionId: string) {
   return `${userId}:${sessionDefinitionId}`
@@ -152,6 +157,8 @@ export function entryFromRow(row: PlayerSessionEntryRow, syncStatus: SyncStatus 
     painScore: row.pain_score,
     painLocation: row.pain_location,
     returnerFlag: row.returner_flag,
+    redFlag: row.red_flag,
+    movementConcern: row.movement_concern,
     trafficLight: row.traffic_light,
     trafficLightSuggestion: row.traffic_light_suggestion,
     trafficLightWasManual: row.traffic_light_was_manual,
@@ -203,6 +210,8 @@ export function rowFromEntry(entry: PlayerSessionEntry): PlayerSessionEntryUpser
     pain_score: entry.painScore,
     pain_location: entry.painLocation,
     returner_flag: entry.returnerFlag,
+    red_flag: entry.redFlag,
+    movement_concern: entry.movementConcern,
     traffic_light: entry.trafficLight,
     traffic_light_suggestion: entry.trafficLightSuggestion,
     traffic_light_was_manual: entry.trafficLightWasManual,
@@ -613,12 +622,11 @@ async function syncPendingSessionLogs(userId: string) {
 
     const { error } = await supabase!.from('session_logs').upsert(rowFromSessionLog(sessionLog)).select('id').single()
     if (error) {
-      await localDb.sessionLogs.put({ ...sessionLog, syncStatus: 'error', syncError: error.message })
+      await markSyncErrorIfUnchanged(localDb.sessionLogs, sessionLog, error.message)
       throw new Error(error.message)
     }
 
-    await localDb.sessionLogs.put({ ...sessionLog, syncStatus: 'synced', syncError: null })
-    await localDb.pendingWrites.delete(write.localId ?? 0)
+    await markSyncedIfUnchanged(localDb.sessionLogs, sessionLog, write.localId)
   }
 }
 
@@ -642,12 +650,11 @@ async function syncPendingPlayerSessionEntries(userId: string) {
       .select('id')
       .single()
     if (error) {
-      await localDb.playerSessionEntries.put({ ...entry, syncStatus: 'error', syncError: error.message })
+      await markSyncErrorIfUnchanged(localDb.playerSessionEntries, entry, error.message)
       throw new Error(error.message)
     }
 
-    await localDb.playerSessionEntries.put({ ...entry, syncStatus: 'synced', syncError: null })
-    await localDb.pendingWrites.delete(write.localId ?? 0)
+    await markSyncedIfUnchanged(localDb.playerSessionEntries, entry, write.localId)
   }
 }
 
@@ -678,7 +685,7 @@ async function refreshRemoteCheckIns(userId: string) {
   const { data: entryRows, error: entryError } = await supabase!
     .from('player_session_entries')
     .select(
-      'id,user_id,session_log_id,player_id,present,readiness,life_flag,pain_score,pain_location,returner_flag,traffic_light,traffic_light_suggestion,traffic_light_was_manual,training_variant,limits,observation,session_rpe,duration_minutes,session_load,post_pain_score,post_pain_location,e2_decision,next_step,created_at,updated_at,deleted_at,client_updated_at',
+      'id,user_id,session_log_id,player_id,present,readiness,life_flag,pain_score,pain_location,returner_flag,red_flag,movement_concern,traffic_light,traffic_light_suggestion,traffic_light_was_manual,training_variant,limits,observation,session_rpe,duration_minutes,session_load,post_pain_score,post_pain_location,e2_decision,next_step,created_at,updated_at,deleted_at,client_updated_at',
     )
     .eq('user_id', userId)
     .is('deleted_at', null)
@@ -699,7 +706,7 @@ async function refreshRemoteCheckIns(userId: string) {
   }
 }
 
-export async function syncCheckIns(userId: string): Promise<PlayerSyncOverview> {
+async function syncCheckInsOnce(userId: string): Promise<PlayerSyncOverview> {
   if (!supabase) {
     return {
       ...(await getCheckInSyncOverview(userId)),
@@ -744,4 +751,18 @@ export async function syncCheckIns(userId: string): Promise<PlayerSyncOverview> 
       errorMessage: caughtError instanceof Error ? caughtError.message : 'Check-in-Sync fehlgeschlagen.',
     }
   }
+}
+
+export async function syncCheckIns(userId: string): Promise<PlayerSyncOverview> {
+  const pendingSync = pendingCheckInSyncs.get(userId)
+  if (pendingSync) {
+    return pendingSync
+  }
+
+  const syncPromise = syncCheckInsOnce(userId).finally(() => {
+    pendingCheckInSyncs.delete(userId)
+  })
+  pendingCheckInSyncs.set(userId, syncPromise)
+
+  return syncPromise
 }
