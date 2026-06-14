@@ -14,6 +14,7 @@ node_modules/
 dist/
 build/
 .vite/
+.vercel/
 *.tsbuildinfo
 
 # Test and coverage output
