@@ -1,0 +1,86 @@
+# Aktives Set fuer KW25-31
+
+Ordnerstruktur:
+- 00_DRUCK_REIHENFOLGE = praktische Druckreihenfolge mit Kopienzahl im Dateinamen
+- 00_start_here_druck_guide = zuerst oeffnen; Druck- und Nutzungsreihenfolge
+- 01_aktiv_einheit_1_dienstag_2026-06-16 = erster Dienstag, direkt drucken/oeffnen
+- 02_aktiv_kw25_donnerstag_2026-06-18 = naechste Einheit, falls Dienstag Einheit 1 war
+- 03_aktiv_trainingstage_kw25_31_klemmbrett = aktive One-Page-Karten fuer alle weiteren Trainingstage
+- 04_detail_backup_vorbereitung = vorab lesen oder am iPad/iPod als Nachschlagewerk
+- 05_spaeter_august_optional = erst fuer August-Uebergang/Abwesenheit relevant
+- 99_alt_backup_referenz_nicht_parallel_aktiv = alte/optionale Unterlagen, nicht parallel ausfuellen
+
+Direkt drucken fuer naechste Woche:
+- print_pdfs/00_DRUCK_REIHENFOLGE/01_naechste_woche_unbedingt_drucken
+
+Vorher lesen / Rueckhand:
+- print_pdfs/00_DRUCK_REIHENFOLGE/02_naechste_woche_rueckhand_lesen_ipad
+
+Ab KW26 bis Urlaub:
+- print_pdfs/00_DRUCK_REIHENFOLGE/03_ab_kw26_bis_urlaub_klemmbrett
+
+Zuerst lesen:
+- 00_pdf_usage_briefing_2026-06-12.pdf
+
+Aktiv fuer Dienstag 16. Juni 2026:
+- 01a_unit_1_simplified_coach_card_2026-06-16.pdf
+- 01b_unit_1_simplified_player_checkin_values_2026-06-16.pdf (Check-in + Beobachtung; Werte erst Donnerstag optional)
+- 01c_unit_1_slim_consent_2026-06-16.pdf, falls Einwilligung vor Ort gebraucht wird
+- 01d_unit_1_coach_briefing_detailed_2026-06-16.pdf als Vorbereitungs-/Nachschlageblatt
+- 01e_unit_1_player_briefing_2026-06-16.pdf fuer Spielererklaerung/Handout
+- 01g_kw25_tuesday_training_plan_clear_2026-06-16.pdf (uebersichtlicher Trainingsplan)
+- 01h_kw25_coach_script_2026-06-16_18.pdf (was du sagst und warum)
+
+Aktiv fuer Donnerstag 18. Juni 2026, falls Dienstag Einheit 1 war:
+- 01f_kw25_unit_2_thursday_intro_simplified.pdf (Training + optionale Mini-Baseline, kein Testtag)
+- 01i_kw25_thursday_training_plan_clear_2026-06-18.pdf (uebersichtlicher Trainingsplan)
+
+Aktiv fuer den restlichen Pre-August-Block:
+- 05c_kw25_27_one_page_field_cards.pdf (Klemmbrett, eine Seite pro Einheit)
+- 05d_kw28_31_one_page_field_cards.pdf (Klemmbrett, eine Seite pro Einheit)
+- 08_progression_tracker_field_compact.pdf (ab Einheit 2/KW26, wenn Lasten/RPE verfolgt werden)
+- 05a_kw25_27_active_detailed_coach_cards.pdf (Detail-Backup)
+- 05b_kw28_31_active_detailed_coach_cards.pdf (Detail-Backup)
+
+Backup/Archiv, nicht parallel aktiv ausfuellen:
+- 01_unit_1_one_pager.pdf
+- 02_baseline_test_data_sheet.pdf
+- 03_unit_1_admin_field_packet.pdf
+- 04_data_protection_consent_template.pdf
+- 11_optional_baseline_test_protocol_unit_1_field_sheet.pdf
+- 12_optional_baseline_test_protocol_unit_1.pdf
+- 05_kw25_31_field_cards_compact.pdf
+- 06_kw25_27_print_workbook.pdf
+- 07_kw28_31_print_workbook.pdf
+
+# Vollstaendige Exportliste
+
+00_pdf_usage_briefing_2026-06-12.pdf <- docs/13_pdf_usage_briefing_2026-06-11.md
+01a_unit_1_simplified_coach_card_2026-06-16.pdf <- templates/unit_1_simplified_coach_card_2026-06-16.md
+01b_unit_1_simplified_player_checkin_values_2026-06-16.pdf <- templates/unit_1_simplified_player_checkin_values_2026-06-16.md
+01c_unit_1_slim_consent_2026-06-16.pdf <- templates/unit_1_slim_consent_2026-06-16.md
+01d_unit_1_coach_briefing_detailed_2026-06-16.pdf <- templates/unit_1_coach_briefing_detailed_2026-06-16.md
+01e_unit_1_player_briefing_2026-06-16.pdf <- templates/unit_1_player_briefing_2026-06-16.md
+01f_kw25_unit_2_thursday_intro_simplified.pdf <- plans/offseason_coach_sheets/KW25_unit_2_thursday_intro_simplified.md
+01g_kw25_tuesday_training_plan_clear_2026-06-16.pdf <- plans/offseason_coach_sheets/KW25_tuesday_training_plan_clear_2026-06-16.md
+01h_kw25_coach_script_2026-06-16_18.pdf <- templates/kw25_coach_script_2026-06-16_18.md
+01i_kw25_thursday_training_plan_clear_2026-06-18.pdf <- plans/offseason_coach_sheets/KW25_thursday_training_plan_clear_2026-06-18.md
+05a_kw25_27_active_detailed_coach_cards.pdf <- plans/offseason_coach_sheets/kw25_27_active_detailed_coach_cards.md
+05b_kw28_31_active_detailed_coach_cards.pdf <- plans/offseason_coach_sheets/kw28_31_active_detailed_coach_cards.md
+05c_kw25_27_one_page_field_cards.pdf <- plans/offseason_coach_sheets/kw25_27_one_page_field_cards.md
+05d_kw28_31_one_page_field_cards.pdf <- plans/offseason_coach_sheets/kw28_31_one_page_field_cards.md
+01_unit_1_one_pager.pdf <- templates/unit_1_one_pager.md
+02_baseline_test_data_sheet.pdf <- templates/baseline_test_data_sheet.md
+03_unit_1_admin_field_packet.pdf <- templates/unit_1_admin_field_packet.md
+04_data_protection_consent_template.pdf <- templates/data_protection_consent_template.md
+05_kw25_31_field_cards_compact.pdf <- plans/offseason_coach_sheets/kw25_31_field_cards_compact.md
+06_kw25_27_print_workbook.pdf <- plans/offseason_coach_sheets/kw25_27_print_workbook.md
+07_kw28_31_print_workbook.pdf <- plans/offseason_coach_sheets/kw28_31_print_workbook.md
+08_progression_tracker_field_compact.pdf <- templates/progression_tracker_field_compact.md
+09_session_variants_abcd_quick_card.pdf <- templates/session_variants_abcd_quick_card.md
+10_exercise_pool_offseason_mapping.pdf <- templates/exercise_pool_offseason_mapping.md
+11_optional_baseline_test_protocol_unit_1_field_sheet.pdf <- templates/baseline_test_protocol_unit_1_field_sheet.md
+12_optional_baseline_test_protocol_unit_1.pdf <- templates/baseline_test_protocol_unit_1.md
+13_optional_offseason_pre_august_quick_sheet.pdf <- plans/07_offseason_pre_august_quick_sheet.md
+14_optional_august_transition_quick_sheet.pdf <- plans/08_august_transition_quick_sheet.md
+15_optional_august_remote_feedback_sheet.pdf <- templates/august_remote_feedback_sheet.md
