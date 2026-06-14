@@ -1,5 +1,11 @@
 import { describe, expect, test } from 'vitest'
-import { applyManualTrafficLight, applySuggestedTrafficLight, suggestTrafficLight, type CheckInDraft } from './checkIn'
+import {
+  applyAutoTrafficLight,
+  applyManualTrafficLight,
+  applySuggestedTrafficLight,
+  suggestTrafficLight,
+  type CheckInDraft,
+} from './checkIn'
 
 function baseDraft(overrides: Partial<CheckInDraft> = {}): CheckInDraft {
   return {
@@ -91,5 +97,23 @@ describe('applyManualTrafficLight', () => {
     expect(overridden.trafficLightSuggestion).toBe('green')
     expect(overridden.trafficLight).toBe('yellow')
     expect(overridden.trafficLightWasManual).toBe(true)
+  })
+})
+
+describe('applyAutoTrafficLight', () => {
+  test('clears a coach override and returns to the live suggestion', () => {
+    // Coach pins green while the situation is calm.
+    const pinned = applyManualTrafficLight(baseDraft({ painScore: 0, readiness: 5 }), 'green')
+    expect(pinned.trafficLightWasManual).toBe(true)
+
+    // Pain later rises to 8. A manual override stays frozen on green (the bug we guard against).
+    const raised = { ...pinned, painScore: 8 }
+    expect(applySuggestedTrafficLight(raised).trafficLight).toBe('green')
+
+    // Resetting to auto unfreezes the signal and recomputes it to red.
+    const auto = applyAutoTrafficLight(raised)
+    expect(auto.trafficLightWasManual).toBe(false)
+    expect(auto.trafficLightSuggestion).toBe('red')
+    expect(auto.trafficLight).toBe('red')
   })
 })

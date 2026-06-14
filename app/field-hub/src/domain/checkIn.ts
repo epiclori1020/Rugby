@@ -190,6 +190,20 @@ export function applySuggestedTrafficLight(draft: CheckInDraft): CheckInDraft {
   }
 }
 
+// Clears a coach override and re-arms the automatic suggestion. Without this a manual
+// traffic-light correction stays frozen forever (e.g. pain rising to 8 never turns the
+// light red), which is a safety-relevant signal that the coach could not recover.
+export function applyAutoTrafficLight(draft: CheckInDraft): CheckInDraft {
+  const suggestion = suggestTrafficLight(draft)
+
+  return {
+    ...draft,
+    trafficLightSuggestion: suggestion,
+    trafficLight: suggestion,
+    trafficLightWasManual: false,
+  }
+}
+
 export function deriveLimits(draft: CheckInDraft): CheckInLimit[] {
   const limits = new Set(draft.limits)
   const suggestion = suggestTrafficLight(draft)

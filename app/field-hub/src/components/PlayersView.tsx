@@ -236,7 +236,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
     <section className="players-layout" aria-labelledby="players-heading">
       <aside className="panel players-sidebar">
         <div className="library-heading">
-          <p className="eyebrow">Sprint 3</p>
+          <p className="eyebrow">Kader</p>
           <h3 id="players-heading">Spieler</h3>
           <p>{players.length} Spieler lokal erfasst.</p>
         </div>

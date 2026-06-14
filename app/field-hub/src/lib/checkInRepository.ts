@@ -1,4 +1,5 @@
 import {
+  applyAutoTrafficLight,
   applyManualTrafficLight,
   applySuggestedTrafficLight,
   deriveLimits,
@@ -515,7 +516,7 @@ export async function saveCheckInEntry(
   sessionLogId: string,
   player: Player,
   patch: CheckInEntryPatch,
-  manualTrafficLight?: TrafficLight,
+  manualTrafficLight?: TrafficLight | 'auto',
 ) {
   const existing = await localDb.playerSessionEntries
     .where('userId')
@@ -531,11 +532,17 @@ export async function saveCheckInEntry(
     painLocation: patch.painLocation !== undefined ? patch.painLocation.trim() : baseEntry.painLocation,
     observation: patch.observation !== undefined ? patch.observation.trim() : baseEntry.observation,
   }
-  const suggestedDraft = applySuggestedTrafficLight({
+  const draftWithLimits = {
     ...patchedDraft,
     limits: deriveLimits(patchedDraft),
-  })
-  const finalDraft = manualTrafficLight ? applyManualTrafficLight(suggestedDraft, manualTrafficLight) : suggestedDraft
+  }
+  const suggestedDraft = applySuggestedTrafficLight(draftWithLimits)
+  const finalDraft =
+    manualTrafficLight === 'auto'
+      ? applyAutoTrafficLight(draftWithLimits)
+      : manualTrafficLight
+        ? applyManualTrafficLight(suggestedDraft, manualTrafficLight)
+        : suggestedDraft
   const entry: PlayerSessionEntry = {
     ...baseEntry,
     ...finalDraft,

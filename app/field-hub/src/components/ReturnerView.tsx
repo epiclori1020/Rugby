@@ -14,6 +14,7 @@ import {
 import type { Player } from '../domain/players'
 import type { useReturners } from '../hooks/useReturners'
 import type { AuthSessionState } from '../lib/auth'
+import { returnerEntryKeyBase } from '../lib/returnerEntryKey'
 import { AuthPanel } from './AuthPanel'
 import { SessionPicker } from './SessionPicker'
 
@@ -65,13 +66,16 @@ function ReturnerPlayerCard({
   isSavingDisabled,
   onSave,
   player,
+  selectedSessionId,
 }: {
   entry: ReturnerEntry
   history: ReturnerEntry[]
   isSavingDisabled: boolean
   onSave: (player: Player, patch: ReturnerEntryPatch) => void
   player: Player
+  selectedSessionId: string
 }) {
+  const keyBase = returnerEntryKeyBase(player.id, selectedSessionId)
   const suggestedDecision = suggestReturnerDecision(entry)
   const canProgress = canConsiderReturnerProgression(entry)
   const isConservative = suggestedDecision === 'rueckmelden' || entry.decision === 'rueckmelden'
@@ -107,7 +111,7 @@ function ReturnerPlayerCard({
           <select
             defaultValue={entry.currentStage}
             disabled={isSavingDisabled}
-            key={`${entry.id}-stage`}
+            key={`${keyBase}::stage`}
             onBlur={textBlurHandler('currentStage', savePatch)}
           >
             {returnerStageOptions.map((option) => (
@@ -123,7 +127,7 @@ function ReturnerPlayerCard({
           <input
             defaultValue={entry.medicalContactNote}
             disabled={isSavingDisabled}
-            key={`${entry.id}-medical`}
+            key={`${keyBase}::medical`}
             placeholder="z. B. Physio: non-contact"
             onBlur={textBlurHandler('medicalContactNote', savePatch)}
           />
@@ -134,7 +138,7 @@ function ReturnerPlayerCard({
           <input
             defaultValue={entry.speedCap}
             disabled={isSavingDisabled}
-            key={`${entry.id}-speed`}
+            key={`${keyBase}::speed`}
             placeholder="z. B. 4x10 m smooth"
             onBlur={textBlurHandler('speedCap', savePatch)}
           />
@@ -145,7 +149,7 @@ function ReturnerPlayerCard({
           <input
             defaultValue={entry.codDecelCap}
             disabled={isSavingDisabled}
-            key={`${entry.id}-cod`}
+            key={`${keyBase}::cod`}
             placeholder="geplant, keine offenen Cuts"
             onBlur={textBlurHandler('codDecelCap', savePatch)}
           />
@@ -156,7 +160,7 @@ function ReturnerPlayerCard({
           <input
             defaultValue={entry.conditioningCap}
             disabled={isSavingDisabled}
-            key={`${entry.id}-conditioning`}
+            key={`${keyBase}::conditioning`}
             placeholder="kurz / extensiv / gestrichen"
             onBlur={textBlurHandler('conditioningCap', savePatch)}
           />
@@ -167,7 +171,7 @@ function ReturnerPlayerCard({
           <input
             defaultValue={entry.contactCap}
             disabled={isSavingDisabled}
-            key={`${entry.id}-contact`}
+            key={`${keyBase}::contact`}
             placeholder="kein Kontakt / Bags / controlled"
             onBlur={textBlurHandler('contactCap', savePatch)}
           />
@@ -178,7 +182,7 @@ function ReturnerPlayerCard({
           <textarea
             defaultValue={entry.allowedToday}
             disabled={isSavingDisabled}
-            key={`${entry.id}-allowed`}
+            key={`${keyBase}::allowed`}
             rows={2}
             placeholder="z. B. Team-Warm-up plus individuelle Speed-Caps"
             onBlur={textBlurHandler('allowedToday', savePatch)}
@@ -190,7 +194,7 @@ function ReturnerPlayerCard({
           <textarea
             defaultValue={entry.plannedCaps}
             disabled={isSavingDisabled}
-            key={`${entry.id}-planned`}
+            key={`${keyBase}::planned`}
             rows={2}
             placeholder="z. B. Speed submax, kein Contact Prep"
             onBlur={textBlurHandler('plannedCaps', savePatch)}
@@ -202,7 +206,7 @@ function ReturnerPlayerCard({
           <textarea
             defaultValue={entry.completed}
             disabled={isSavingDisabled}
-            key={`${entry.id}-completed`}
+            key={`${keyBase}::completed`}
             rows={2}
             placeholder="kurz und sachlich, keine Diagnose"
             onBlur={textBlurHandler('completed', savePatch)}
@@ -214,7 +218,7 @@ function ReturnerPlayerCard({
           <input
             defaultValue={entry.symptomsDuring}
             disabled={isSavingDisabled}
-            key={`${entry.id}-symptoms`}
+            key={`${keyBase}::symptoms`}
             placeholder="ok / keine / Schmerzprovokation"
             onBlur={textBlurHandler('symptomsDuring', savePatch)}
           />
@@ -225,7 +229,7 @@ function ReturnerPlayerCard({
           <input
             defaultValue={entry.nextMorning}
             disabled={isSavingDisabled}
-            key={`${entry.id}-morning`}
+            key={`${keyBase}::morning`}
             placeholder="stabil / schlechter / offen"
             onBlur={textBlurHandler('nextMorning', savePatch)}
           />
@@ -313,7 +317,7 @@ export function ReturnerView({
     <section className="checkin-layout returner-layout" aria-labelledby="returner-heading">
       <div className="panel checkin-header">
         <div className="library-heading">
-          <p className="eyebrow">Sprint 7</p>
+          <p className="eyebrow">Returner-Steuerung</p>
           <h3 id="returner-heading">Returner-Modul</h3>
           <p>{selectedSession.title}: Speed, COD/Decel, Conditioning und Kontakt getrennt dokumentieren.</p>
         </div>
@@ -384,6 +388,7 @@ export function ReturnerView({
             key={player.id}
             onSave={savePlayerReturner}
             player={player}
+            selectedSessionId={selectedSessionId}
           />
         ))}
       </div>

@@ -567,7 +567,7 @@ export function PostSessionView({
     <section className="checkin-layout post-session-layout" aria-labelledby="post-session-heading">
       <div className="panel checkin-header">
         <div className="library-heading">
-          <p className="eyebrow">Sprint 6</p>
+          <p className="eyebrow">Nach dem Training</p>
           <h3 id="post-session-heading">Nachbereitung</h3>
           <p>{selectedSession.title}: sRPE, Pain/Issue, E2, Progression und Follow-ups sichern.</p>
         </div>
@@ -677,7 +677,7 @@ export function PostSessionView({
 
       <section className="panel baseline-panel" aria-labelledby="baseline-heading">
         <div className="library-heading">
-          <p className="eyebrow">Sprint 8</p>
+          <p className="eyebrow">Optionaler Re-Check</p>
           <h3 id="baseline-heading">Mini-Baseline / Re-Check</h3>
           <p>Optional erfassen, wenn Gruppe und Ablauf ruhig sind. 30 m bleibt spaeter/optional und wird nicht erzwungen.</p>
         </div>

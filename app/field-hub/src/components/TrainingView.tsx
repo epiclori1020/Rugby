@@ -278,7 +278,7 @@ export function TrainingView({
     <section className="training-layout" aria-labelledby="training-heading">
       <div className="panel checkin-header">
         <div className="library-heading">
-          <p className="eyebrow">Sprint 5</p>
+          <p className="eyebrow">Am Feld</p>
           <h3 id="training-heading">Training-Ansicht</h3>
           <p>{selectedSession.title}: Plan, Varianten, Quick Actions, Kontaktindex und Speed-Exposure.</p>
         </div>

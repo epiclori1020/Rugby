@@ -170,7 +170,7 @@ export function TodayDashboard({
                 className="upcoming-session"
                 key={session.id}
                 type="button"
-                onClick={() => onNavigate('bibliothek')}
+                onClick={() => onSessionChange(session.id)}
               >
                 <span>{formatSessionDate(session.date)}</span>
                 <strong>{session.title}</strong>

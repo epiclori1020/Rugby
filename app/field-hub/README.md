@@ -232,6 +232,14 @@ Die App ist code-seitig als Sprint-1-bis-10-MVP gebaut. Fuer die praktische Nutz
 
 Sprint 11 umfasst GitHub/Versionierung, HTTPS-Deploy, Supabase-Coach-Account, PWA-Installation auf echten iPad/iPhone-Geraeten, echten Sync-/Offline-Test, Spieler-Startliste, Export-Backup und Print-Fallbacks.
 
+## Sprint-11 UX-Cleanup
+
+Am 14. Juni 2026 wurde ein MVP-gerechter UX/UI-Cleanup umgesetzt: tab-spezifische Header, entfernte Sprint-/Dev-Labels in der sichtbaren UI, Coach-Sprache im Sync-/Export-Bereich, korrigierter Sync-Icon-Status, Login auf `Heute`, Bibliothek-Empty-State bei 0 Treffern, iPad-Nav-Labels, iPad-Landscape-Zweispaltigkeit, iPhone-Overflow-Fixes, Safe-Area-Meta und groessere Touch-Ziele.
+
+Diese UX-Aenderungen betreffen nur Frontend/UI. Es ist keine Supabase-Migration, kein RLS-/Storage-Policy-Push und kein Datenbank-Deploy notwendig.
+
+Hinweis fuer lokale Browser-QA: Die PWA/Service-Worker-Cache-Schicht kann auf `127.0.0.1` alten Build-Code anzeigen. Fuer aktuelle Vite-Dev-Pruefungen entweder Service Worker/Cache loeschen oder `http://localhost:5173/` verwenden.
+
 ## Sprint-2-Quellen
 
 - `templates/kw25_coach_script_2026-06-16_18.md`

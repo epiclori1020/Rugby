@@ -281,8 +281,9 @@ export function ExportView({
           <div>
             <h3 id="import-heading">JSON-Import</h3>
             <p>
-              Import fuehrt einen Merge aus: neue IDs werden ergaenzt, vorhandene IDs werden erst nach Warnung
-              per client_updated_at / last-write-wins uebernommen. Es wird nichts automatisch geloescht.
+              Import fuehrt Daten zusammen: neue Eintraege werden ergaenzt, vorhandene Eintraege werden erst
+              nach Warnung uebernommen. Bei Unterschieden zwischen Geraeten zaehlt die zuletzt gespeicherte
+              Version. Es wird nichts automatisch geloescht.
             </p>
           </div>
         </div>

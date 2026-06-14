@@ -1,4 +1,4 @@
-import { CloudOff } from 'lucide-react'
+import { AlertTriangle, Cloud, CloudOff } from 'lucide-react'
 import type { PlayerSyncOverview } from '../domain/sync'
 import type { AuthSessionState } from '../lib/auth'
 
@@ -7,6 +7,7 @@ type SyncStatusBadgeProps = {
   isManualSyncing: boolean
   onManualSync: () => void
   playerSync: PlayerSyncOverview
+  syncNotice?: string | null
 }
 
 export function SyncStatusBadge({
@@ -14,25 +15,36 @@ export function SyncStatusBadge({
   isManualSyncing,
   onManualSync,
   playerSync,
+  syncNotice = null,
 }: SyncStatusBadgeProps) {
   const syncLabel =
     authState.status === 'missing-config'
       ? 'Setup offen'
       : authState.status === 'signed-in'
-        ? playerSync.isOnline
-          ? playerSync.status
-          : 'offline'
+        ? !playerSync.isOnline
+          ? 'lokal gespeichert'
+          : playerSync.status === 'error' || playerSync.errorMessage
+            ? 'Sync-Fehler'
+            : playerSync.status === 'pending' || playerSync.pendingCount > 0
+              ? 'Aenderungen offen'
+              : 'synchronisiert'
         : 'Login offen'
 
   const detail =
     authState.status === 'missing-config'
       ? 'Supabase URL und publishable key fehlen lokal.'
       : authState.status === 'signed-in'
-        ? `${playerSync.pendingCount} pending${
+        ? `${playerSync.pendingCount} Aenderungen offen${
             playerSync.lastSuccessfulSyncAt ? ` · letzter Sync ${new Date(playerSync.lastSuccessfulSyncAt).toLocaleString('de-AT')}` : ''
           }`
         : 'Dynamische Daten werden erst nach Login geladen.'
   const canSync = authState.status === 'signed-in' && playerSync.isOnline && !isManualSyncing
+  const StatusIcon =
+    authState.status === 'signed-in' && (playerSync.status === 'error' || playerSync.errorMessage)
+      ? AlertTriangle
+      : playerSync.isOnline
+        ? Cloud
+        : CloudOff
 
   return (
     <section className="sync-status" aria-label="Sync Status">
@@ -41,13 +53,14 @@ export function SyncStatusBadge({
           className={playerSync.isOnline && playerSync.status !== 'error' ? 'status-dot online' : 'status-dot'}
           aria-hidden
         />
-        <CloudOff className="nav-icon" aria-hidden />
+        <StatusIcon className="nav-icon" aria-hidden />
         <span>{playerSync.isOnline ? 'Online' : 'Offline'} · {syncLabel}</span>
       </div>
       <p>{playerSync.errorMessage ?? detail}</p>
+      {syncNotice ? <p className="form-success sync-notice">{syncNotice}</p> : null}
       {authState.status === 'signed-in' ? (
         <p className="sync-conflict-note">
-          Konflikt-MVP: Bei iPad/iPhone-Abweichungen gewinnt der neuere client_updated_at-Stand.
+          Sync-Hinweis: Bei Unterschieden zwischen Geraeten zaehlt die zuletzt gespeicherte Version.
         </p>
       ) : null}
       {authState.status === 'signed-in' ? (

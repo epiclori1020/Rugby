@@ -111,7 +111,7 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
     }
   }, [refreshLocalCheckIns, runSync, userId])
 
-  async function saveEntry(player: Player, patch: CheckInEntryPatch, manualTrafficLight?: TrafficLight) {
+  async function saveEntry(player: Player, patch: CheckInEntryPatch, manualTrafficLight?: TrafficLight | 'auto') {
     if (!userId) {
       throw new Error('Login erforderlich.')
     }

@@ -109,7 +109,7 @@ function CheckInPlayerRow({
   entry: PlayerSessionEntry
   isExpected: boolean
   isSavingDisabled: boolean
-  onSave: (player: Player, patch: Parameters<CheckInActions['saveEntry']>[1], manualTrafficLight?: TrafficLight) => void
+  onSave: (player: Player, patch: Parameters<CheckInActions['saveEntry']>[1], manualTrafficLight?: TrafficLight | 'auto') => void
   player: Player
   returnerCap: ReturnerCapSummary | undefined
   warning: PlayerWarning | undefined
@@ -144,7 +144,7 @@ function CheckInPlayerRow({
           onClick={() => onSave(player, { present: !entry.present, previousWarning: Boolean(warning) })}
         >
           <UserCheck className="nav-icon" aria-hidden />
-          <span>{entry.present ? 'Anwesend' : 'Nicht da'}</span>
+          <span>{entry.present ? 'Anwesend' : 'Abwesend'}</span>
         </button>
 
         <div className="control-group" aria-label={`Readiness ${player.name}`}>
@@ -266,6 +266,17 @@ function CheckInPlayerRow({
                 {trafficLabels[trafficLight]}
               </button>
             ))}
+            {entry.trafficLightWasManual ? (
+              <button
+                className="secondary-action compact-action traffic-auto-reset"
+                type="button"
+                disabled={isSavingDisabled}
+                title="Coach-Korrektur verwerfen und automatischen Vorschlag wieder aktivieren"
+                onClick={() => onSave(player, { previousWarning: Boolean(warning) }, 'auto')}
+              >
+                Automatisch
+              </button>
+            ) : null}
           </div>
         </div>
 
@@ -343,7 +354,7 @@ export function CheckInView({
     <section className="checkin-layout" aria-labelledby="checkin-heading">
       <div className="panel checkin-header">
         <div className="library-heading">
-          <p className="eyebrow">Sprint 4</p>
+          <p className="eyebrow">Vor dem Training</p>
           <h3 id="checkin-heading">Pre-Session Check-in</h3>
           <p>
             {selectedSession.title}: Anwesenheit, Readiness, Life-Flag, Schmerz, Returner und Ampel vor dem

@@ -11,7 +11,7 @@
   --warning: #8a5a12;
   --warning-bg: #fff3ce;
   --ok: #276749;
-  --shadow: 0 18px 38px rgba(18, 30, 25, 0.09);
+  --shadow: 0 8px 22px rgba(18, 30, 25, 0.06);
   font-family:
     Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
   color: var(--ink);
@@ -45,6 +45,11 @@ button {
   display: grid;
   grid-template-columns: minmax(220px, 280px) minmax(0, 1fr);
   background: var(--bg);
+  padding:
+    env(safe-area-inset-top)
+    env(safe-area-inset-right)
+    env(safe-area-inset-bottom)
+    env(safe-area-inset-left);
 }
 
 .sidebar {
@@ -112,6 +117,11 @@ button {
   gap: 10px;
   padding: 12px 14px;
   text-align: left;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 120ms ease;
 }
 
 .nav-button:hover,
@@ -129,6 +139,20 @@ button {
   background: var(--brand);
   border-color: var(--brand);
   color: #ffffff;
+}
+
+.nav-button:active,
+.quick-action:active,
+.primary-action:active,
+.secondary-action:active,
+.filter-chip:active,
+.segmented:active,
+.number-chip:active,
+.traffic-chip:active,
+.icon-button:active,
+.pdf-link:active,
+.upcoming-session:active {
+  transform: translateY(1px);
 }
 
 .nav-icon {
@@ -167,6 +191,10 @@ button {
   padding: 12px;
   display: grid;
   gap: 8px;
+}
+
+.sync-notice {
+  font-weight: 800;
 }
 
 .backup-reminder {
@@ -373,6 +401,11 @@ button {
   gap: 4px;
   padding: 12px;
   text-align: left;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 120ms ease;
 }
 
 .upcoming-session:hover {
@@ -439,7 +472,7 @@ button {
 }
 
 .filter-chip {
-  min-height: 42px;
+  min-height: 44px;
   border: 1px solid var(--line);
   border-radius: 999px;
   background: #ffffff;
@@ -447,6 +480,11 @@ button {
   cursor: pointer;
   font-weight: 850;
   padding: 8px 12px;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 120ms ease;
 }
 
 .filter-chip.active,
@@ -770,6 +808,11 @@ button {
   font: inherit;
   font-weight: 850;
   padding: 10px 12px;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 120ms ease;
 }
 
 .segmented {
@@ -796,7 +839,7 @@ button {
 }
 
 .pain-scale .number-chip {
-  width: 42px;
+  width: 44px;
 }
 
 .traffic-chip.green.active,
@@ -1101,6 +1144,11 @@ button {
   text-decoration: none;
   font: inherit;
   font-weight: 850;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 120ms ease;
 }
 
 .primary-action {
@@ -1119,8 +1167,8 @@ button {
 }
 
 .compact-action {
-  min-height: 40px;
-  padding: 7px 10px;
+  min-height: 44px;
+  padding: 8px 12px;
 }
 
 .primary-action:disabled,
@@ -1130,8 +1178,8 @@ button {
 }
 
 .icon-button {
-  width: 42px;
-  height: 42px;
+  width: 44px;
+  height: 44px;
   border: 1px solid var(--line);
   border-radius: 8px;
   background: #ffffff;
@@ -1140,6 +1188,11 @@ button {
   display: inline-flex;
   align-items: center;
   justify-content: center;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 120ms ease;
 }
 
 .icon-button:focus-visible,
@@ -1155,6 +1208,8 @@ button {
 }
 
 .file-upload-control {
+  max-width: 100%;
+  min-width: 0;
   min-height: 58px;
   border: 1px dashed var(--brand);
   border-radius: 8px;
@@ -1168,8 +1223,11 @@ button {
 }
 
 .file-upload-control input {
+  max-width: 100%;
+  min-width: 0;
   color: var(--muted);
   font: inherit;
+  overflow-wrap: anywhere;
 }
 
 .import-preview {
@@ -1264,6 +1322,10 @@ code {
   font-size: 1rem;
 }
 
+.pdf-note {
+  font-size: 0.92rem;
+}
+
 .library-section ul {
   margin: 0;
   padding-left: 20px;
@@ -1293,6 +1355,11 @@ code {
   gap: 10px;
   padding: 12px;
   text-decoration: none;
+  transition:
+    background-color 140ms ease,
+    border-color 140ms ease,
+    color 140ms ease,
+    transform 120ms ease;
 }
 
 .pdf-link:hover {
@@ -1335,7 +1402,7 @@ code {
   color: var(--brand);
 }
 
-@media (max-width: 1240px) {
+@media (max-width: 900px) {
   .dashboard-grid {
     grid-template-columns: 1fr;
   }
@@ -1357,15 +1424,10 @@ code {
   }
 
   .nav-button {
-    justify-content: center;
-  }
-
-  .nav-button span {
-    display: none;
+    justify-content: flex-start;
   }
 
   .topbar,
-  .dashboard-grid,
   .library-layout,
   .players-layout,
   .training-grid,
@@ -1419,5 +1481,35 @@ code {
   .primary-action,
   .secondary-action {
     width: 100%;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .nav-button,
+  .quick-action,
+  .primary-action,
+  .secondary-action,
+  .filter-chip,
+  .segmented,
+  .number-chip,
+  .traffic-chip,
+  .icon-button,
+  .pdf-link,
+  .upcoming-session {
+    transition: none;
+  }
+
+  .nav-button:active,
+  .quick-action:active,
+  .primary-action:active,
+  .secondary-action:active,
+  .filter-chip:active,
+  .segmented:active,
+  .number-chip:active,
+  .traffic-chip:active,
+  .icon-button:active,
+  .pdf-link:active,
+  .upcoming-session:active {
+    transform: none;
   }
 }

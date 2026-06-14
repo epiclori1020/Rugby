@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import { AppShell } from './components/AppShell'
+import { AuthPanel } from './components/AuthPanel'
 import { BackupReminderBanner } from './components/BackupReminderBanner'
 import { CheckInView } from './components/CheckInView'
 import { ExportView } from './components/ExportView'
@@ -49,6 +50,7 @@ function App() {
   const [activeTab, setActiveTab] = useState<HubTab>('heute')
   const [dismissedBackupReminderKey, setDismissedBackupReminderKey] = useState<string | null>(null)
   const [isManualSyncing, setIsManualSyncing] = useState(false)
+  const [manualSyncNotice, setManualSyncNotice] = useState<string | null>(null)
   const [lastExportAt, setLastExportAtState] = useState<string | null>(null)
   const [latestCompletedSession, setLatestCompletedSession] = useState<SessionLog | null>(null)
   const storagePersistence = useStoragePersistence()
@@ -134,10 +136,12 @@ function App() {
       return
     }
 
+    setManualSyncNotice(null)
     setIsManualSyncing(true)
     try {
       await syncAllUserData(userId)
       await refreshAllLocalData()
+      setManualSyncNotice('Synchronisiert.')
     } finally {
       setIsManualSyncing(false)
     }
@@ -153,6 +157,15 @@ function App() {
       .catch(() => undefined)
   }, [refreshAllLocalData, syncOverview.pendingCount])
 
+  useEffect(() => {
+    if (!manualSyncNotice) {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => setManualSyncNotice(null), 4000)
+    return () => window.clearTimeout(timeoutId)
+  }, [manualSyncNotice])
+
   return (
     <AppShell
       activeTab={activeTab}
@@ -161,6 +174,7 @@ function App() {
       onTabChange={setActiveTab}
       authState={authState}
       playerSync={syncOverview}
+      syncNotice={manualSyncNotice}
     >
       {showBackupReminder && latestCompletedSession ? (
         <BackupReminderBanner
@@ -171,16 +185,19 @@ function App() {
         />
       ) : null}
       {activeTab === 'heute' ? (
-        <TodayDashboard
-          checkInActions={checkInActions}
-          onNavigate={setActiveTab}
-          onSessionChange={setSelectedSessionId}
-          players={playerActions.players}
-          selectedSession={selectedSession}
-          selectedSessionId={selectedSession.id}
-          sessions={sessionDefinitions}
-          storagePersistence={storagePersistence}
-        />
+        <>
+          {authState.status !== 'signed-in' ? <AuthPanel authState={authState} /> : null}
+          <TodayDashboard
+            checkInActions={checkInActions}
+            onNavigate={setActiveTab}
+            onSessionChange={setSelectedSessionId}
+            players={playerActions.players}
+            selectedSession={selectedSession}
+            selectedSessionId={selectedSession.id}
+            sessions={sessionDefinitions}
+            storagePersistence={storagePersistence}
+          />
+        </>
       ) : activeTab === 'spieler' ? (
         <PlayersView authState={authState} baselineActions={baselineActions} playerActions={playerActions} />
       ) : activeTab === 'check-in' ? (
