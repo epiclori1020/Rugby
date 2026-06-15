@@ -11,7 +11,7 @@ export const sessionDefinitions: SessionDefinition[] = [
     summary:
       'Kennenlernen, Ampel setzen, Schmerzen/Returner grob erfassen, Bewegung beobachten und leicht trainieren. Kein Testtag.',
     primarySource: 'plans/offseason_coach_sheets/KW25_tuesday_training_plan_clear_2026-06-16.md',
-    pdfRefs: [pdfRefs.kw25TuesdayPlan, pdfRefs.kw25CoachScript, pdfRefs.coachCardTuesday],
+    pdfRefs: [pdfRefs.kw25TuesdayPlan, pdfRefs.kw25TuesdayCoachScript, pdfRefs.coachCardTuesday],
     goals: [
       'Kennenlernen und Trainingskultur setzen',
       'Ampel, Schmerz, Life-Flag und Returnerstatus grob erfassen',

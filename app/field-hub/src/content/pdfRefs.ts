@@ -6,8 +6,13 @@ export const pdfRefs = {
     href: '/library/1_DIENSTAG_trainingsplan.pdf',
     sourcePath: 'plans/offseason_coach_sheets/KW25_tuesday_training_plan_clear_2026-06-16.md',
   },
+  kw25TuesdayCoachScript: {
+    label: 'Coach-Skript Dienstag V2',
+    href: '/library/coach_script_dienstag_2026-06-16_v2_deep_playbook.pdf',
+    sourcePath: 'docs/16_unit_1_v2_deep_playbook_2026-06-16.styled.pdf',
+  },
   kw25CoachScript: {
-    label: 'Coach-Skript Di/Do',
+    label: 'Coach-Skript Donnerstag/Backup',
     href: '/library/2_COACH_SCRIPT_di_do.pdf',
     sourcePath: 'templates/kw25_coach_script_2026-06-16_18.md',
   },

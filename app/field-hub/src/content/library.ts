@@ -15,11 +15,11 @@ export const libraryItems: LibraryItem[] = [
   {
     id: 'coach-script-kw25',
     category: 'Coach-Skript',
-    title: 'Coach-Skript KW25: Was sage ich?',
+    title: 'Coach-Skript KW25: Dienstag V2',
     summary:
-      'Fertige Sprache fuer Dienstag und Donnerstag: Testdruck rausnehmen, Ampel erklaeren, Returner vorsichtig steuern.',
-    sourcePath: 'templates/kw25_coach_script_2026-06-16_18.md',
-    tags: ['KW25', 'Wording', 'Ampel', 'Returner', 'Concussion'],
+      'Aktuelles Deep-Playbook fuer Dienstag 16. Juni: Onboarding, Ampel, Returnergrenzen und Coach-Wording.',
+    sourcePath: 'docs/16_unit_1_v2_deep_playbook_2026-06-16.styled.pdf',
+    tags: ['KW25', 'Dienstag', 'Wording', 'Ampel', 'Returner', 'Concussion'],
     sections: [
       {
         title: 'Dienstag Startansage',
@@ -43,6 +43,26 @@ export const libraryItems: LibraryItem[] = [
           'Heute trainieren wir normaler, aber weiter kontrolliert.',
           'Broad Jump und Med-Ball Chest Pass nur als einfache Startwerte, nur wenn Ablauf und Gruppe ruhig sind.',
           'Wenn es nicht passt, fallen Werte weg. Niemand holt irgendetwas nach.',
+        ],
+      },
+    ],
+    pdfRefs: [pdfRefs.kw25TuesdayCoachScript],
+  },
+  {
+    id: 'coach-script-donnerstag-backup',
+    category: 'Coach-Skript',
+    title: 'Coach-Skript Donnerstag/Backup',
+    summary:
+      'Aelteres Di/Do-Skript bleibt als Donnerstag- und Backup-Unterlage verfuegbar, getrennt vom neuen Dienstag-V2-Skript.',
+    sourcePath: 'templates/kw25_coach_script_2026-06-16_18.md',
+    tags: ['KW25', 'Donnerstag', 'Backup', 'Wording', 'Ampel'],
+    sections: [
+      {
+        title: 'Nutzung',
+        body: [
+          'Fuer Dienstag ist das neue V2-Deep-Playbook die aktive Unterlage.',
+          'Diese Datei bleibt fuer Donnerstag und als Rueckhand-Backup sichtbar.',
+          'Bei Widerspruch gilt fuer Dienstag das V2-Deep-Playbook.',
         ],
       },
     ],
