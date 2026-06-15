@@ -15,6 +15,7 @@ const supabaseState = vi.hoisted(() => ({
   removeError: null as { message: string } | null,
   removePaths: [] as string[],
   downloadCount: 0,
+  deletedPlayerIds: [] as string[],
   remoteRows: [] as unknown[],
   upsertRows: [] as unknown[],
 }))
@@ -25,11 +26,15 @@ vi.mock('./supabaseClient', () => ({
       upsert: vi.fn((row: unknown) => {
         supabaseState.upsertRows.push(row)
         return {
-          select: vi.fn(() => ({
-            single: vi.fn(async () => ({ data: { id: (row as { id: string }).id }, error: null })),
-          })),
+          select: vi.fn(async () => ({ data: Array.isArray(row) ? row.map((item) => ({ id: item.id })) : [{ id: (row as { id: string }).id }], error: null })),
         }
       }),
+      delete: vi.fn(() => ({
+        eq: vi.fn(async (_column: string, value: string) => {
+          supabaseState.deletedPlayerIds.push(value)
+          return { data: null, error: null }
+        }),
+      })),
       select: vi.fn(() => ({
         eq: vi.fn(() => ({
           is: vi.fn(() => ({
@@ -56,6 +61,7 @@ vi.mock('./supabaseClient', () => ({
           supabaseState.removePaths.push(...paths)
           return { error: null }
         }),
+        upload: vi.fn(async () => ({ data: null, error: null })),
       })),
     },
   },
@@ -93,6 +99,7 @@ describe('playerRepository', () => {
     supabaseState.removeError = null
     supabaseState.removePaths = []
     supabaseState.downloadCount = 0
+    supabaseState.deletedPlayerIds = []
     supabaseState.remoteRows = []
     supabaseState.upsertRows = []
     clearPlayerPhotoUrlCache()
@@ -108,7 +115,7 @@ describe('playerRepository', () => {
     await localDb.open()
   })
 
-  it('soft deletes players immediately and defers profile photo cleanup to sync', async () => {
+  it('hard deletes players locally and queues remote player/photo cleanup', async () => {
     const player = makePlayer()
     await localDb.players.put(player)
 
@@ -120,25 +127,30 @@ describe('playerRepository', () => {
     expect(deletedPlayer.photoUpdatedAt).toBe('2026-06-16T18:05:00.000Z')
     expect(supabaseState.removePaths).toEqual([])
     await expect(listLocalPlayers(userId)).resolves.toEqual([])
-    await expect(localDb.pendingWrites.count()).resolves.toBe(1)
+    await expect(localDb.players.get(player.id)).resolves.toBeUndefined()
+    await expect(localDb.pendingWrites.toArray()).resolves.toMatchObject([
+      {
+        table: 'players',
+        operation: 'delete',
+        recordId: player.id,
+        metadata: { photoPath: `${userId}/players/player-1/profile.webp` },
+      },
+    ])
   })
 
-  it('does not let storage cleanup failures block local player deletion', async () => {
+  it('does not let later storage cleanup failures block local player deletion', async () => {
     const player = makePlayer()
     await localDb.players.put(player)
     supabaseState.removeError = { message: 'Storage policy denied delete' }
 
     const deletedPlayer = await deletePlayer(player)
 
-    await expect(localDb.players.get(player.id)).resolves.toMatchObject({
-      deletedAt: deletedPlayer.deletedAt,
-      photoPath: `${userId}/players/player-1/profile.webp`,
-      syncStatus: 'pending',
-    })
+    expect(deletedPlayer.deletedAt).toBeTruthy()
+    await expect(localDb.players.get(player.id)).resolves.toBeUndefined()
     await expect(localDb.pendingWrites.count()).resolves.toBe(1)
   })
 
-  it('removes stored player photos when photo consent is revoked', async () => {
+  it('queues stored player photo cleanup when photo consent is revoked', async () => {
     const player = makePlayer()
     await localDb.players.put(player)
 
@@ -159,10 +171,18 @@ describe('playerRepository', () => {
 
     expect(savedPlayer.photoPath).toBeNull()
     expect(savedPlayer.photoUpdatedAt).toBeNull()
-    expect(supabaseState.removePaths).toEqual([`${userId}/players/player-1/profile.webp`])
+    expect(supabaseState.removePaths).toEqual([])
+    await expect(localDb.pendingWrites.toArray()).resolves.toMatchObject([
+      {
+        table: 'players',
+        operation: 'upsert',
+        recordId: player.id,
+        metadata: { removePhotoPath: `${userId}/players/player-1/profile.webp` },
+      },
+    ])
   })
 
-  it('defers stored photo cleanup while offline and clears it during the next player sync', async () => {
+  it('deletes queued remote players and stored photos during the next player sync', async () => {
     const player = makePlayer()
     await localDb.players.put(player)
     Object.defineProperty(globalThis.navigator, 'onLine', {
@@ -184,18 +204,40 @@ describe('playerRepository', () => {
     await syncPlayers(userId)
 
     expect(supabaseState.removePaths).toEqual([`${userId}/players/player-1/profile.webp`])
-    expect(supabaseState.upsertRows).toHaveLength(1)
-    expect(supabaseState.upsertRows[0]).toMatchObject({
-      deleted_at: deletedPlayer.deletedAt,
-      photo_path: null,
-      photo_updated_at: null,
-    })
-    await expect(localDb.players.get(player.id)).resolves.toMatchObject({
-      deletedAt: deletedPlayer.deletedAt,
-      photoPath: null,
-      photoUpdatedAt: null,
-      syncStatus: 'synced',
-    })
+    expect(supabaseState.deletedPlayerIds).toEqual([player.id])
+    expect(supabaseState.upsertRows).toHaveLength(0)
+    expect(deletedPlayer.deletedAt).toBeTruthy()
+    await expect(localDb.players.get(player.id)).resolves.toBeUndefined()
+    await expect(localDb.pendingWrites.count()).resolves.toBe(0)
+  })
+
+  it('does not reconcile a suspicious empty remote player response over multiple synced local players', async () => {
+    await localDb.players.bulkPut([
+      makePlayer({ id: 'player-1', name: 'Sabine' }),
+      makePlayer({ id: 'player-2', name: 'Marco' }),
+    ])
+    supabaseState.remoteRows = []
+
+    await syncPlayers(userId)
+
+    await expect(listLocalPlayers(userId)).resolves.toMatchObject([
+      { id: 'player-2', name: 'Marco' },
+      { id: 'player-1', name: 'Sabine' },
+    ])
+  })
+
+  it('keeps remaining local players when a queued delete is followed by an empty remote player response', async () => {
+    const deletedPlayer = makePlayer({ id: 'player-delete', name: 'Delete Me' })
+    const remainingPlayer = makePlayer({ id: 'player-remaining', name: 'Keep Me', photoPath: null, photoUpdatedAt: null })
+    await localDb.players.bulkPut([deletedPlayer, remainingPlayer])
+    await deletePlayer(deletedPlayer)
+    supabaseState.remoteRows = []
+
+    await syncPlayers(userId)
+
+    await expect(localDb.players.get(deletedPlayer.id)).resolves.toBeUndefined()
+    await expect(localDb.players.get(remainingPlayer.id)).resolves.toMatchObject({ id: remainingPlayer.id })
+    await expect(localDb.pendingWrites.count()).resolves.toBe(0)
   })
 
   it('pulls remote soft-deleted players so second devices hide them locally', async () => {
@@ -248,7 +290,7 @@ describe('playerRepository', () => {
     clearPlayerPhotoUrlCache()
 
     expect(URL.revokeObjectURL).toHaveBeenCalledWith('blob:5:1')
-    await expect(downloadPlayerPhotoUrl('photo-path', '2026-06-16T18:00:00.000Z')).resolves.toBe('blob:5:2')
-    expect(supabaseState.downloadCount).toBe(2)
+    await expect(downloadPlayerPhotoUrl('photo-path', '2026-06-16T18:00:00.000Z')).resolves.toBe('blob:5:1')
+    expect(supabaseState.downloadCount).toBe(1)
   })
 })

@@ -213,6 +213,21 @@ describe('checkInRepository session logs', () => {
       {
         ...emptyCheckInDraft,
         ...postSessionDefaults,
+        id: 'entry-null-player',
+        userId,
+        sessionLogId: 'latest-session',
+        playerId: null,
+        present: true,
+        createdAt: '2026-06-13T18:00:00.000Z',
+        updatedAt: '2026-06-13T18:00:00.000Z',
+        deletedAt: null,
+        clientUpdatedAt: '2026-06-13T18:00:00.000Z',
+        syncStatus: 'synced',
+        syncError: null,
+      },
+      {
+        ...emptyCheckInDraft,
+        ...postSessionDefaults,
         id: 'entry-c',
         userId,
         sessionLogId: 'latest-session',
@@ -323,6 +338,13 @@ describe('checkInRepository session logs', () => {
     expect(entry.trafficLight).toBe('yellow')
     expect(entry.trafficLightWasManual).toBe(true)
     expect(entry.observation).toBe('manual override smoke')
+  })
+
+  it('maps anonymized player session rows with nullable player ids', () => {
+    const entry = entryFromRow({ ...remoteEntryRow, player_id: null })
+
+    expect(entry.playerId).toBeNull()
+    expect(rowFromEntry(entry).player_id).toBeNull()
   })
 
   it('writes safety flags, traffic-light suggestion and manual override metadata to Supabase rows', () => {

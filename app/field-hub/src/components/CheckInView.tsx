@@ -18,6 +18,8 @@ import type { AuthSessionState } from '../lib/auth'
 import { triggerHapticFeedback } from '../lib/interactionFeedback'
 import { applyOptimisticCheckInPatch } from '../lib/optimisticUpdates'
 import { measureInteraction } from '../lib/performanceTrace'
+import { hasPlayerId } from '../lib/playerId'
+import { pendingCountLabel, syncStatusLabel } from '../lib/syncLabels'
 import { AuthPanel } from './AuthPanel'
 import { SessionPicker } from './SessionPicker'
 
@@ -212,7 +214,7 @@ function CheckInPlayerRow({
           </div>
           <p>{player.position} · {player.cluster}</p>
         </div>
-        <span className={`sync-pill ${displayEntry.syncStatus}`}>{displayEntry.syncStatus}</span>
+        <span className={`sync-pill ${displayEntry.syncStatus}`}>{syncStatusLabel(displayEntry.syncStatus)}</span>
       </div>
 
       <WarningNote warning={warning} />
@@ -449,11 +451,11 @@ export function CheckInView({
     getEntryForPlayer,
     clearError,
   } = checkInActions
-  const returnerCapByPlayerId = new Map(returnerCaps.map((cap) => [cap.playerId, cap]))
+  const returnerCapByPlayerId = new Map(returnerCaps.filter(hasPlayerId).map((cap) => [cap.playerId, cap]))
   const expectedPlayerSet = new Set(expectedPlayerIds)
   const activePlayerIdSet = new Set(activePlayers.map((player) => player.id))
-  const activeEntries = entries.filter((entry) => activePlayerIdSet.has(entry.playerId))
-  const activeWarnings = warnings.filter((warning) => activePlayerIdSet.has(warning.playerId))
+  const activeEntries = entries.filter((entry) => hasPlayerId(entry) && activePlayerIdSet.has(entry.playerId))
+  const activeWarnings = warnings.filter((warning) => hasPlayerId(warning) && activePlayerIdSet.has(warning.playerId))
   const warningByPlayerId = new Map(activeWarnings.map((warning) => [warning.playerId, warning]))
   const orderedPlayers = [...activePlayers].sort((a, b) => {
     const aExpected = expectedPlayerSet.has(a.id)
@@ -542,8 +544,8 @@ export function CheckInView({
 
       <div className="panel checkin-sync-strip">
         <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
-        <strong>{syncOverview.status}</strong>
-        <span>{syncOverview.pendingCount} Check-in pending</span>
+        <strong>{syncStatusLabel(syncOverview.status)}</strong>
+        <span>{pendingCountLabel(syncOverview.pendingCount, 'Check-in-Aenderungen')}</span>
         {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
       </div>
 

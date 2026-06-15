@@ -20,6 +20,7 @@ import type { useBaselines } from '../hooks/useBaselines'
 import type { AuthSessionState } from '../lib/auth'
 import { triggerHapticFeedback } from '../lib/interactionFeedback'
 import { downloadPlayerPhotoUrl } from '../lib/playerRepository'
+import { pendingCountLabel, syncStatusLabel } from '../lib/syncLabels'
 import type { usePlayers } from '../hooks/usePlayers'
 import { AuthPanel } from './AuthPanel'
 
@@ -243,7 +244,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
     }
 
     const confirmed = window.confirm(
-      `${selectedPlayer.name} wirklich loeschen? Der Spieler verschwindet aus der App. Historische Eintraege bleiben fuer Backups und Verlauf erhalten.`,
+      `${selectedPlayer.name} wirklich loeschen? Der Spieler wird lokal entfernt und aus der Datenbank geloescht. Historische Eintraege bleiben anonymisiert fuer Backups und Verlauf erhalten.`,
     )
     if (!confirmed) {
       return
@@ -366,8 +367,8 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
 
         <div className="sync-mini">
           <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
-          <strong>{syncOverview.status}</strong>
-          <span>{syncOverview.pendingCount} pending</span>
+          <strong>{syncStatusLabel(syncOverview.status)}</strong>
+          <span>{pendingCountLabel(syncOverview.pendingCount)}</span>
         </div>
         {viewNotice ? (
           <p className="form-success player-view-notice" aria-live="polite">
@@ -437,7 +438,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
             />
             <div>
               <strong>{selectedPlayer.name}</strong>
-              <p>{selectedPlayer.syncStatus === 'error' ? selectedPlayer.syncError : selectedPlayer.syncStatus}</p>
+              <p>{selectedPlayer.syncStatus === 'error' ? selectedPlayer.syncError : syncStatusLabel(selectedPlayer.syncStatus)}</p>
             </div>
           </div>
         ) : null}

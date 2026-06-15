@@ -53,7 +53,7 @@ export type PlayerSessionEntry = CheckInDraft & {
   id: string
   userId: string
   sessionLogId: string
-  playerId: string
+  playerId: string | null
   sessionRpe: number | null
   durationMinutes: number | null
   sessionLoad: number | null
@@ -95,7 +95,7 @@ export type CheckInEntryPatch = Partial<
 >
 
 export type PlayerWarning = {
-  playerId: string
+  playerId: string | null
   trafficLight: TrafficLight | null
   returnerFlag: ReturnerFlag
   limits: CheckInLimit[]

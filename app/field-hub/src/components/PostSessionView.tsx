@@ -17,6 +17,8 @@ import type { Player } from '../domain/players'
 import type { useBaselines } from '../hooks/useBaselines'
 import type { usePostSession } from '../hooks/usePostSession'
 import type { AuthSessionState } from '../lib/auth'
+import { hasPlayerId } from '../lib/playerId'
+import { pendingCountLabel, syncStatusLabel } from '../lib/syncLabels'
 import { AuthPanel } from './AuthPanel'
 import { SessionPicker } from './SessionPicker'
 
@@ -161,7 +163,7 @@ function PostSessionPlayerRow({
           </div>
           <p>{player.position} · {player.cluster}</p>
         </div>
-        <span className={`sync-pill ${entry.syncStatus}`}>{entry.syncStatus}</span>
+        <span className={`sync-pill ${entry.syncStatus}`}>{syncStatusLabel(entry.syncStatus)}</span>
       </div>
 
       <WarningSummary warning={warning} />
@@ -413,7 +415,7 @@ function BaselinePlayerRow({
           </div>
           <p>{player.position} · {player.cluster}</p>
         </div>
-        <span className={`sync-pill ${baseline.syncStatus}`}>{baseline.syncStatus}</span>
+        <span className={`sync-pill ${baseline.syncStatus}`}>{syncStatusLabel(baseline.syncStatus)}</span>
       </div>
 
       <div className="baseline-fields">
@@ -508,9 +510,11 @@ export function PostSessionView({
     getProgressForPlayer,
     clearError,
   } = postSessionActions
-  const baselineCompletedCount = baselineActions.entries.filter(hasBaselineContent).length
-  const warningByPlayerId = new Map(warnings.map((warning) => [warning.playerId, warning]))
-  const presentPlayerIds = new Set(entries.filter((entry) => entry.present).map((entry) => entry.playerId))
+  const baselineCompletedCount = baselineActions.entries.filter(
+    (entry) => hasPlayerId(entry) && hasBaselineContent(entry),
+  ).length
+  const warningByPlayerId = new Map(warnings.filter(hasPlayerId).map((warning) => [warning.playerId, warning]))
+  const presentPlayerIds = new Set(entries.filter((entry) => hasPlayerId(entry) && entry.present).map((entry) => entry.playerId))
   const orderedPlayers = [...activePlayers].sort((a, b) => {
     const aPresent = presentPlayerIds.has(a.id)
     const bPresent = presentPlayerIds.has(b.id)
@@ -522,14 +526,15 @@ export function PostSessionView({
     return aPresent ? -1 : 1
   })
   const completedCount = entries.filter(
-    (entry) => entry.sessionRpe !== null || entry.e2Decision !== null || entry.nextStep !== null,
+    (entry) => hasPlayerId(entry) && (entry.sessionRpe !== null || entry.e2Decision !== null || entry.nextStep !== null),
   ).length
   const followUpCount = entries.filter(
     (entry) =>
-      entry.e2Decision !== null && entry.e2Decision !== 'normal' ||
-      entry.nextStep === 'reduzieren' ||
-      entry.nextStep === 'klaeren' ||
-      (entry.postPainScore !== null && entry.postPainScore >= 3),
+      hasPlayerId(entry) &&
+      ((entry.e2Decision !== null && entry.e2Decision !== 'normal') ||
+        entry.nextStep === 'reduzieren' ||
+        entry.nextStep === 'klaeren' ||
+        (entry.postPainScore !== null && entry.postPainScore >= 3)),
   ).length
 
   function handleSessionNumberBlur(field: 'durationMinutes' | 'groupSize') {
@@ -624,8 +629,8 @@ export function PostSessionView({
 
       <div className="panel checkin-sync-strip">
         <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
-        <strong>{syncOverview.status}</strong>
-        <span>{syncOverview.pendingCount} Nachbereitung/Check-in pending</span>
+        <strong>{syncStatusLabel(syncOverview.status)}</strong>
+        <span>{pendingCountLabel(syncOverview.pendingCount, 'Nachbereitung/Check-in-Aenderungen')}</span>
         {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
       </div>
 
@@ -684,8 +689,8 @@ export function PostSessionView({
 
         <div className="panel checkin-sync-strip">
           <span className={`status-dot ${baselineActions.syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
-          <strong>{baselineActions.syncOverview.status}</strong>
-          <span>{baselineActions.syncOverview.pendingCount} Baseline pending</span>
+          <strong>{syncStatusLabel(baselineActions.syncOverview.status)}</strong>
+          <span>{pendingCountLabel(baselineActions.syncOverview.pendingCount, 'Baseline-Aenderungen')}</span>
           <span>{baselineCompletedCount} Spieler mit Testwerten in dieser Einheit</span>
           {baselineActions.syncOverview.errorMessage ? <span>{baselineActions.syncOverview.errorMessage}</span> : null}
         </div>

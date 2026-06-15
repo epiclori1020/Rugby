@@ -4,6 +4,7 @@ import type { PlayerSessionEntry, PlayerWarning, PostSessionEntryPatch } from '.
 import type { Player } from '../domain/players'
 import type { ProgressEntry, NextStep } from '../domain/postSession'
 import { defaultPlayerSyncOverview, type PlayerSyncOverview } from '../domain/sync'
+import { scheduleBackgroundSync } from '../lib/backgroundSync'
 import {
   buildEmptyEntry,
   ensureSessionLog,
@@ -11,6 +12,7 @@ import {
   getCheckInSyncOverview,
   listCheckInEntries,
   listLatestWarnings,
+  pushPendingCheckIns,
   savePostSessionEntry,
   saveSessionLogPatch,
   syncCheckIns,
@@ -95,10 +97,30 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
     }
 
     try {
-      const overview = await syncCheckIns(userId)
+      const overview = await pushPendingCheckIns(userId)
       setSyncOverview(overview)
+      if (overview.status !== 'error') {
+        setSessionLog((currentSessionLog) =>
+          currentSessionLog?.syncStatus === 'pending' || currentSessionLog?.syncStatus === 'error'
+            ? { ...currentSessionLog, syncStatus: 'synced', syncError: null }
+            : currentSessionLog,
+        )
+        setEntries((currentEntries) =>
+          currentEntries.map((entry) =>
+            entry.syncStatus === 'pending' || entry.syncStatus === 'error'
+              ? { ...entry, syncStatus: 'synced', syncError: null }
+              : entry,
+          ),
+        )
+        setProgressEntries((currentEntries) =>
+          currentEntries.map((entry) =>
+            entry.syncStatus === 'pending' || entry.syncStatus === 'error'
+              ? { ...entry, syncStatus: 'synced', syncError: null }
+              : entry,
+          ),
+        )
+      }
       setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Nachbereitungs-Sync fehlgeschlagen.' : null)
-      await refreshPostSession()
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Nachbereitungs-Sync fehlgeschlagen.'
       setSyncOverview({
@@ -108,7 +130,7 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
       })
       setErrorMessage(`Lokal gespeichert, Sync offen: ${message}`)
     }
-  }, [refreshPostSession, userId])
+  }, [userId])
 
   useEffect(() => {
     Promise.resolve()
@@ -128,7 +150,7 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
       setSessionLog(savedSessionLog)
       await refreshPostSession()
       if (typeof navigator === 'undefined' || navigator.onLine) {
-        void runBackgroundSync()
+        scheduleBackgroundSync(userId, 'post-session', runBackgroundSync)
       }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Nachbereitung konnte nicht gespeichert werden.'
@@ -150,7 +172,7 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
       await savePostSessionEntry(userId, sessionLog.id, player, patch)
       await refreshPostSession()
       if (typeof navigator === 'undefined' || navigator.onLine) {
-        void runBackgroundSync()
+        scheduleBackgroundSync(userId, 'post-session', runBackgroundSync)
       }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Spieler-Nachbereitung konnte nicht gespeichert werden.'
@@ -176,7 +198,7 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
       }
       await refreshPostSession()
       if (typeof navigator === 'undefined' || navigator.onLine) {
-        void runBackgroundSync()
+        scheduleBackgroundSync(userId, 'post-session', runBackgroundSync)
       }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Progression konnte nicht gespeichert werden.'

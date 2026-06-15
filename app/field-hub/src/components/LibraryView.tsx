@@ -1,8 +1,9 @@
 import { FileText, Search, X } from 'lucide-react'
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
 import { libraryCategories, libraryItems } from '../content/library'
 import { activePdfRefs } from '../content/pdfRefs'
 import type { LibraryCategory, LibraryItem, PdfRef } from '../content/types'
+import { measureInteraction } from '../lib/performanceTrace'
 import { prewarmPdfAssets } from '../lib/pdfAssets'
 
 const allCategoriesLabel = 'Alle'
@@ -43,6 +44,7 @@ export function LibraryView({ initialQuery = '', initialPdfHref, initialPdfTimed
   const [selectedPdf, setSelectedPdf] = useState<PdfRef | null>(() => findPdfByHref(initialPdfHref))
   const [isPdfLoading, setIsPdfLoading] = useState(Boolean(initialPdfHref))
   const [hasPdfTimedOut, setHasPdfTimedOut] = useState(initialPdfTimedOut)
+  const completePdfOpenMeasureRef = useRef<(() => void) | null>(null)
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
@@ -73,20 +75,28 @@ export function LibraryView({ initialQuery = '', initialPdfHref, initialPdfTimed
       return
     }
 
+    completePdfOpenMeasureRef.current?.()
+    completePdfOpenMeasureRef.current = null
     setSelectedPdf(pdf)
     setIsPdfLoading(true)
     setHasPdfTimedOut(false)
+    void measureInteraction(
+      'pdf:open',
+      () =>
+        new Promise<void>((resolve) => {
+          completePdfOpenMeasureRef.current = resolve
+        }),
+    )
+    void prewarmPdfAssets([pdf.href])
   }
 
   function closePdf() {
+    completePdfOpenMeasureRef.current?.()
+    completePdfOpenMeasureRef.current = null
     setSelectedPdf(null)
     setIsPdfLoading(false)
     setHasPdfTimedOut(false)
   }
-
-  useEffect(() => {
-    void prewarmPdfAssets(activePdfRefs.map((pdf) => pdf.href))
-  }, [])
 
   useEffect(() => {
     if (!selectedPdf) {
@@ -274,6 +284,8 @@ export function LibraryView({ initialQuery = '', initialPdfHref, initialPdfTimed
                 title={selectedPdf.label}
                 referrerPolicy="no-referrer"
                 onLoad={() => {
+                  completePdfOpenMeasureRef.current?.()
+                  completePdfOpenMeasureRef.current = null
                   setIsPdfLoading(false)
                   setHasPdfTimedOut(false)
                 }}

@@ -4,6 +4,13 @@ import { localDb } from './localDb'
 
 const syncPendingBaselineEntries = vi.fn()
 const refreshRemoteBaselineEntries = vi.fn()
+const syncPlayers = vi.fn(async () => ({
+  isOnline: true,
+  status: 'synced',
+  pendingCount: 0,
+  lastSuccessfulSyncAt: null,
+  errorMessage: null,
+}))
 
 vi.mock('./baselineRepository', () => ({
   syncPendingBaselineEntries,
@@ -11,13 +18,7 @@ vi.mock('./baselineRepository', () => ({
 }))
 
 vi.mock('./playerRepository', () => ({
-  syncPlayers: vi.fn(async () => ({
-    isOnline: true,
-    status: 'synced',
-    pendingCount: 0,
-    lastSuccessfulSyncAt: null,
-    errorMessage: null,
-  })),
+  syncPlayers,
 }))
 
 vi.mock('./postSessionRepository', () => ({
@@ -46,6 +47,7 @@ describe('syncCheckIns baseline integration', () => {
   beforeEach(async () => {
     syncPendingBaselineEntries.mockReset()
     refreshRemoteBaselineEntries.mockReset()
+    syncPlayers.mockClear()
     Object.defineProperty(globalThis.navigator, 'onLine', {
       configurable: true,
       value: true,
@@ -61,5 +63,15 @@ describe('syncCheckIns baseline integration', () => {
 
     expect(syncPendingBaselineEntries).toHaveBeenCalledWith('user-1')
     expect(refreshRemoteBaselineEntries).toHaveBeenCalledWith('user-1')
+  })
+
+  it('pushes pending field data without player sync or remote refresh', async () => {
+    const { pushPendingCheckIns } = await import('./checkInRepository')
+
+    await pushPendingCheckIns('user-1')
+
+    expect(syncPendingBaselineEntries).toHaveBeenCalledWith('user-1')
+    expect(syncPlayers).not.toHaveBeenCalled()
+    expect(refreshRemoteBaselineEntries).not.toHaveBeenCalled()
   })
 })

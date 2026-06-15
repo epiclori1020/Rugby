@@ -3,12 +3,13 @@ import type { PlayerSyncOverview, SyncStatus } from '../domain/sync'
 import { defaultPlayerSyncOverview } from '../domain/sync'
 import { getSyncMeta, localDb, setSyncMeta } from './localDb'
 import { markSyncedIfUnchanged, markSyncErrorIfUnchanged } from './pendingWriteSync'
+import { hasPlayerId } from './playerId'
 import { supabase } from './supabaseClient'
 
 export type ReturnerEntryRow = {
   id: string
   user_id: string
-  player_id: string
+  player_id: string | null
   session_log_id: string
   medical_contact_note: string
   current_stage: string
@@ -232,6 +233,10 @@ export async function listLatestReturnerCaps(
   const latestByPlayer = new Map<string, ReturnerCapSummary>()
 
   for (const entry of entries) {
+    if (!hasPlayerId(entry)) {
+      continue
+    }
+
     const sessionDate = dateBySessionLogId.get(entry.sessionLogId) ?? entry.createdAt
     const existing = latestByPlayer.get(entry.playerId)
 
@@ -292,6 +297,7 @@ export async function syncPendingReturnerEntries(userId: string) {
     .and((write) => write.table === 'returner_entries')
     .toArray()
 
+  const snapshots: Array<{ entry: ReturnerEntry; writeLocalId?: number }> = []
   for (const write of pendingWrites) {
     const entry = await localDb.returnerEntries.get(write.recordId)
     if (!entry) {
@@ -299,18 +305,27 @@ export async function syncPendingReturnerEntries(userId: string) {
       continue
     }
 
-    const { error } = await supabase
-      .from('returner_entries')
-      .upsert(rowFromReturnerEntry(entry))
-      .select('id')
-      .single()
-    if (error) {
-      await markSyncErrorIfUnchanged(localDb.returnerEntries, entry, error.message)
-      throw new Error(error.message)
-    }
-
-    await markSyncedIfUnchanged(localDb.returnerEntries, entry, write.localId)
+    snapshots.push({ entry, writeLocalId: write.localId })
   }
+
+  if (snapshots.length === 0) {
+    return
+  }
+
+  const { error } = await supabase
+    .from('returner_entries')
+    .upsert(snapshots.map(({ entry }) => rowFromReturnerEntry(entry)))
+    .select('id')
+  if (error) {
+    for (const { entry } of snapshots) {
+      await markSyncErrorIfUnchanged(localDb.returnerEntries, entry, error.message)
+    }
+    throw new Error(error.message)
+  }
+
+  await Promise.all(
+    snapshots.map(({ entry, writeLocalId }) => markSyncedIfUnchanged(localDb.returnerEntries, entry, writeLocalId)),
+  )
 }
 
 export async function refreshRemoteReturnerEntries(userId: string) {

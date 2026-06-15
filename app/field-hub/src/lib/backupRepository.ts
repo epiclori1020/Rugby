@@ -167,7 +167,7 @@ function hasValidRecordShape(collectionKey: BackupCollectionKey, record: unknown
   if (collectionKey === 'playerSessionEntries') {
     return (
       hasString(record, 'sessionLogId') &&
-      hasString(record, 'playerId') &&
+      hasNullableString(record, 'playerId') &&
       hasBoolean(record, 'present') &&
       hasNullableNumber(record, 'readiness') &&
       hasNullableNumber(record, 'painScore') &&
@@ -178,7 +178,7 @@ function hasValidRecordShape(collectionKey: BackupCollectionKey, record: unknown
 
   if (collectionKey === 'progressEntries') {
     return (
-      hasString(record, 'playerId') &&
+      hasNullableString(record, 'playerId') &&
       hasString(record, 'sessionLogId') &&
       hasString(record, 'mainExercise') &&
       hasString(record, 'load') &&
@@ -189,7 +189,7 @@ function hasValidRecordShape(collectionKey: BackupCollectionKey, record: unknown
 
   if (collectionKey === 'baselineEntries') {
     return (
-      hasString(record, 'playerId') &&
+      hasNullableString(record, 'playerId') &&
       hasString(record, 'sessionLogId') &&
       hasNullableNumber(record, 'broadJumpCm') &&
       hasNullableNumber(record, 'medBallChestPassM') &&
@@ -199,7 +199,7 @@ function hasValidRecordShape(collectionKey: BackupCollectionKey, record: unknown
   }
 
   return (
-    hasString(record, 'playerId') &&
+    hasNullableString(record, 'playerId') &&
     hasString(record, 'sessionLogId') &&
     hasString(record, 'medicalContactNote') &&
     hasString(record, 'currentStage') &&

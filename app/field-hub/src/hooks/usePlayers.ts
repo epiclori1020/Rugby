@@ -137,7 +137,7 @@ export function usePlayers(userId: string | null) {
 
   async function remove(player: Player) {
     const deletedPlayer = await deletePlayer(player)
-    setPlayers((currentPlayers) => mergePlayer(currentPlayers, deletedPlayer))
+    setPlayers((currentPlayers) => currentPlayers.filter((candidate) => candidate.id !== deletedPlayer.id))
     setSyncOverview(await getPlayerSyncOverview(player.userId))
     if (typeof navigator === 'undefined' || navigator.onLine) {
       scheduleBackgroundSync(player.userId, 'players', runBackgroundSync)

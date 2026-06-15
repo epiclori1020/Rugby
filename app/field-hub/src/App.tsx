@@ -23,6 +23,7 @@ import { usePostSession } from './hooks/usePostSession'
 import { useReturners } from './hooks/useReturners'
 import { useStoragePersistence } from './hooks/useStoragePersistence'
 import { getLastExportAt, getLatestCompletedSession } from './lib/backupRepository'
+import { flushBackgroundSyncs } from './lib/backgroundSync'
 import { combineSyncOverviews, syncAllUserData } from './lib/syncRepository'
 
 export type HubTab =
@@ -171,6 +172,26 @@ function App() {
     const timeoutId = window.setTimeout(() => setManualSyncNotice(null), 4000)
     return () => window.clearTimeout(timeoutId)
   }, [manualSyncNotice])
+
+  useEffect(() => {
+    function flushBeforeHidden() {
+      void flushBackgroundSyncs()
+    }
+
+    function handleVisibilityChange() {
+      if (document.visibilityState === 'hidden') {
+        flushBeforeHidden()
+      }
+    }
+
+    window.addEventListener('pagehide', flushBeforeHidden)
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+
+    return () => {
+      window.removeEventListener('pagehide', flushBeforeHidden)
+      document.removeEventListener('visibilitychange', handleVisibilityChange)
+    }
+  }, [])
 
   return (
     <AppShell

@@ -3,12 +3,13 @@ import type { PlayerSyncOverview, SyncStatus } from '../domain/sync'
 import { defaultPlayerSyncOverview } from '../domain/sync'
 import { getSyncMeta, localDb, setSyncMeta } from './localDb'
 import { markSyncedIfUnchanged, markSyncErrorIfUnchanged } from './pendingWriteSync'
+import { hasPlayerId } from './playerId'
 import { supabase } from './supabaseClient'
 
 export type BaselineEntryRow = {
   id: string
   user_id: string
-  player_id: string
+  player_id: string | null
   session_log_id: string
   broad_jump_cm: number | null
   med_ball_chest_pass_m: number | null
@@ -169,6 +170,10 @@ export async function listLatestBaselineEntriesByPlayer(userId: string): Promise
   const latestByPlayer = new Map<string, LatestBaselineEntry>()
 
   for (const entry of entries) {
+    if (!hasPlayerId(entry)) {
+      continue
+    }
+
     const sessionDate = dateBySessionLogId.get(entry.sessionLogId) ?? entry.createdAt.slice(0, 10)
     const candidate = { ...entry, sessionDate }
     const existing = latestByPlayer.get(entry.playerId)
@@ -219,6 +224,7 @@ export async function syncPendingBaselineEntries(userId: string) {
     .and((write) => write.table === 'baseline_entries')
     .toArray()
 
+  const snapshots: Array<{ entry: BaselineEntry; writeLocalId?: number }> = []
   for (const write of pendingWrites) {
     const entry = await localDb.baselineEntries.get(write.recordId)
     if (!entry) {
@@ -226,18 +232,27 @@ export async function syncPendingBaselineEntries(userId: string) {
       continue
     }
 
-    const { error } = await supabase
-      .from('baseline_entries')
-      .upsert(rowFromBaselineEntry(entry))
-      .select('id')
-      .single()
-    if (error) {
-      await markSyncErrorIfUnchanged(localDb.baselineEntries, entry, error.message)
-      throw new Error(error.message)
-    }
-
-    await markSyncedIfUnchanged(localDb.baselineEntries, entry, write.localId)
+    snapshots.push({ entry, writeLocalId: write.localId })
   }
+
+  if (snapshots.length === 0) {
+    return
+  }
+
+  const { error } = await supabase
+    .from('baseline_entries')
+    .upsert(snapshots.map(({ entry }) => rowFromBaselineEntry(entry)))
+    .select('id')
+  if (error) {
+    for (const { entry } of snapshots) {
+      await markSyncErrorIfUnchanged(localDb.baselineEntries, entry, error.message)
+    }
+    throw new Error(error.message)
+  }
+
+  await Promise.all(
+    snapshots.map(({ entry, writeLocalId }) => markSyncedIfUnchanged(localDb.baselineEntries, entry, writeLocalId)),
+  )
 }
 
 export async function refreshRemoteBaselineEntries(userId: string) {

@@ -5,8 +5,9 @@ import type { Player } from '../domain/players'
 import type { ReturnerCapSummary, ReturnerEntry, ReturnerEntryPatch } from '../domain/returners'
 import { defaultPlayerSyncOverview, type PlayerSyncOverview } from '../domain/sync'
 import { scheduleBackgroundSync } from '../lib/backgroundSync'
-import { ensureSessionLog, findSessionLog, syncCheckIns } from '../lib/checkInRepository'
+import { ensureSessionLog, findSessionLog, pushPendingCheckIns, syncCheckIns } from '../lib/checkInRepository'
 import { mergeRecordIntoList } from '../lib/optimisticUpdates'
+import { hasPlayerId } from '../lib/playerId'
 import {
   buildEmptyReturnerEntry,
   getReturnerSyncOverview,
@@ -35,8 +36,10 @@ export function useReturners(
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
 
   const activeReturnerPlayers = useMemo(() => {
-    const flaggedPlayerIds = new Set(checkInEntries.filter((entry) => entry.returnerFlag !== 'nein').map((entry) => entry.playerId))
-    const capPlayerIds = new Set(returnerCaps.map((cap) => cap.playerId))
+    const flaggedPlayerIds = new Set(
+      checkInEntries.filter((entry) => hasPlayerId(entry) && entry.returnerFlag !== 'nein').map((entry) => entry.playerId),
+    )
+    const capPlayerIds = new Set(returnerCaps.filter(hasPlayerId).map((cap) => cap.playerId))
 
     return players
       .filter(
@@ -64,12 +67,24 @@ export function useReturners(
       listLatestReturnerCaps(userId, sessionLog?.id ?? null, sessionDefinition.date),
       getReturnerSyncOverview(userId),
     ])
-    const relevantPlayerIds = new Set([
-      ...players.filter((player) => player.active && player.returnerStatus !== 'nein').map((player) => player.id),
-      ...checkInEntries.filter((entry) => entry.returnerFlag !== 'nein').map((entry) => entry.playerId),
-      ...caps.map((cap) => cap.playerId),
-      ...localEntries.map((entry) => entry.playerId),
-    ])
+    const relevantPlayerIds = new Set<string>(
+      players.filter((player) => player.active && player.returnerStatus !== 'nein').map((player) => player.id),
+    )
+    for (const entry of checkInEntries) {
+      if (hasPlayerId(entry) && entry.returnerFlag !== 'nein') {
+        relevantPlayerIds.add(entry.playerId)
+      }
+    }
+    for (const cap of caps) {
+      if (hasPlayerId(cap)) {
+        relevantPlayerIds.add(cap.playerId)
+      }
+    }
+    for (const entry of localEntries) {
+      if (hasPlayerId(entry)) {
+        relevantPlayerIds.add(entry.playerId)
+      }
+    }
     const historyEntries = await Promise.all(
       [...relevantPlayerIds].map(async (playerId) => [playerId, await listReturnerEntriesForPlayer(userId, playerId)] as const),
     )
@@ -114,11 +129,31 @@ export function useReturners(
     }
 
     try {
-      const overview = await syncCheckIns(userId)
+      const overview = await pushPendingCheckIns(userId)
       const returnerOverview = await getReturnerSyncOverview(userId)
       setSyncOverview(returnerOverview)
+      if (overview.status !== 'error') {
+        setEntries((currentEntries) =>
+          currentEntries.map((entry) =>
+            entry.syncStatus === 'pending' || entry.syncStatus === 'error'
+              ? { ...entry, syncStatus: 'synced', syncError: null }
+              : entry,
+          ),
+        )
+        setHistoryByPlayerId((currentHistory) =>
+          Object.fromEntries(
+            Object.entries(currentHistory).map(([playerId, history]) => [
+              playerId,
+              history.map((entry) =>
+                entry.syncStatus === 'pending' || entry.syncStatus === 'error'
+                  ? { ...entry, syncStatus: 'synced', syncError: null }
+                  : entry,
+              ),
+            ]),
+          ),
+        )
+      }
       setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Returner-Sync fehlgeschlagen.' : null)
-      await refreshReturners()
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Returner-Sync fehlgeschlagen.'
       setSyncOverview({
@@ -128,7 +163,7 @@ export function useReturners(
       })
       setErrorMessage(`Lokal gespeichert, Sync offen: ${message}`)
     }
-  }, [refreshReturners, userId])
+  }, [userId])
 
   useEffect(() => {
     Promise.resolve()

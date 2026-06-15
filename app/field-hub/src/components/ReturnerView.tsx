@@ -17,6 +17,7 @@ import type { AuthSessionState } from '../lib/auth'
 import { applyOptimisticReturnerPatch } from '../lib/optimisticUpdates'
 import { measureInteraction } from '../lib/performanceTrace'
 import { returnerEntryKeyBase } from '../lib/returnerEntryKey'
+import { pendingCountLabel, syncStatusLabel } from '../lib/syncLabels'
 import { AuthPanel } from './AuthPanel'
 import { SessionPicker } from './SessionPicker'
 
@@ -122,7 +123,7 @@ function ReturnerPlayerCard({
           </div>
           <p>{player.position} · {player.cluster}</p>
         </div>
-        <span className={`sync-pill ${displayEntry.syncStatus}`}>{displayEntry.syncStatus}</span>
+        <span className={`sync-pill ${displayEntry.syncStatus}`}>{syncStatusLabel(displayEntry.syncStatus)}</span>
       </div>
 
       <div className={isConservative ? 'warning-note danger' : 'warning-note'}>
@@ -388,8 +389,8 @@ export function ReturnerView({
 
       <div className="panel checkin-sync-strip">
         <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
-        <strong>{syncOverview.status}</strong>
-        <span>{syncOverview.pendingCount} Returner pending</span>
+        <strong>{syncStatusLabel(syncOverview.status)}</strong>
+        <span>{pendingCountLabel(syncOverview.pendingCount, 'Returner-Aenderungen')}</span>
         {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
       </div>
 

@@ -10,6 +10,7 @@ import type { PlayerSyncOverview, SyncStatus } from '../domain/sync'
 import { defaultPlayerSyncOverview } from '../domain/sync'
 import { getSyncMeta, localDb, setSyncMeta } from './localDb'
 import { markSyncedIfUnchanged, markSyncErrorIfUnchanged } from './pendingWriteSync'
+import { measureInteraction } from './performanceTrace'
 import { supabase } from './supabaseClient'
 
 const PLAYER_PHOTOS_BUCKET = 'player-photos'
@@ -38,6 +39,16 @@ type PlayerRow = {
 type PhotoCleanupResult = {
   removed: boolean
   errorMessage: string | null
+}
+
+type ResizedPhoto = {
+  blob: Blob
+  extension: string
+  contentType: string
+  sourceBytes: number
+  outputBytes: number
+  width: number
+  height: number
 }
 
 function nowIso() {
@@ -109,7 +120,7 @@ function rowFromPlayer(player: Player): PlayerRow {
   }
 }
 
-async function queuePlayerWrite(player: Player) {
+async function queuePlayerWrite(player: Player, metadata?: Record<string, string | null>) {
   await localDb.pendingWrites.where('recordId').equals(player.id).delete()
   await localDb.pendingWrites.add({
     table: 'players',
@@ -117,6 +128,19 @@ async function queuePlayerWrite(player: Player) {
     recordId: player.id,
     userId: player.userId,
     createdAt: nowIso(),
+    metadata,
+  })
+}
+
+async function queuePlayerDelete(player: Player, metadata?: Record<string, string | null>) {
+  await localDb.pendingWrites.where('recordId').equals(player.id).delete()
+  await localDb.pendingWrites.add({
+    table: 'players',
+    operation: 'delete',
+    recordId: player.id,
+    userId: player.userId,
+    createdAt: nowIso(),
+    metadata,
   })
 }
 
@@ -190,20 +214,9 @@ export async function savePlayer(userId: string, values: PlayerFormValues, exist
 
   const photoAllowed = normalized.photoConsentStatus === 'allowed'
   const timestamp = nowIso()
-  let photoPath = photoAllowed ? (existing?.photoPath ?? null) : null
-  let photoUpdatedAt = photoAllowed ? (existing?.photoUpdatedAt ?? null) : null
-
-  if (existing?.photoPath && !photoAllowed) {
-    const cleanupResult = await removeStoredPlayerPhoto(existing.photoPath)
-    if (cleanupResult.errorMessage) {
-      throw new Error(cleanupResult.errorMessage)
-    }
-
-    if (!cleanupResult.removed) {
-      photoPath = existing.photoPath
-      photoUpdatedAt = existing.photoUpdatedAt
-    }
-  }
+  const photoPath = photoAllowed ? (existing?.photoPath ?? null) : null
+  const photoUpdatedAt = photoAllowed ? (existing?.photoUpdatedAt ?? null) : null
+  const removePhotoPath = existing?.photoPath && !photoAllowed ? existing.photoPath : null
 
   const player: Player = {
     id: existing?.id ?? createId(),
@@ -227,7 +240,7 @@ export async function savePlayer(userId: string, values: PlayerFormValues, exist
   }
 
   await localDb.players.put(player)
-  await queuePlayerWrite(player)
+  await queuePlayerWrite(player, removePhotoPath ? { removePhotoPath } : undefined)
 
   return player
 }
@@ -251,7 +264,7 @@ export async function deactivatePlayer(player: Player) {
 
 export async function deletePlayer(player: Player) {
   const timestamp = nowIso()
-  const updatedPlayer: Player = {
+  const deletedPlayer: Player = {
     ...player,
     active: false,
     updatedAt: timestamp,
@@ -261,10 +274,62 @@ export async function deletePlayer(player: Player) {
     syncError: null,
   }
 
-  await localDb.players.put(updatedPlayer)
-  await queuePlayerWrite(updatedPlayer)
+  await Promise.all([
+    localDb.players.delete(player.id),
+    localDb.pendingPhotoUploads.where('playerId').equals(player.id).delete(),
+    localDb.photoCache.where('photoPath').equals(player.photoPath ?? '').delete(),
+  ])
+  await queuePlayerDelete(deletedPlayer, player.photoPath ? { photoPath: player.photoPath } : undefined)
 
-  return updatedPlayer
+  return deletedPlayer
+}
+
+async function uploadQueuedPlayerPhoto(player: Player) {
+  if (!player.photoPath || !supabase) {
+    return
+  }
+  const supabaseClient = supabase
+
+  const pendingPhotoUpload = await localDb.pendingPhotoUploads.get(player.photoPath)
+  if (!pendingPhotoUpload) {
+    return
+  }
+
+  const { error } = await measureInteraction('player-photo:upload', () =>
+    supabaseClient.storage.from(PLAYER_PHOTOS_BUCKET).upload(player.photoPath!, pendingPhotoUpload.blob, {
+      contentType: pendingPhotoUpload.contentType,
+      upsert: true,
+    }),
+  )
+
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  await localDb.pendingPhotoUploads.delete(player.photoPath)
+}
+
+async function cleanupQueuedPhotoPath(photoPath: string | null | undefined) {
+  const cleanupResult = await removeStoredPlayerPhoto(photoPath ?? null)
+  if (!cleanupResult.removed) {
+    throw new Error(cleanupResult.errorMessage ?? 'Profilfoto wird geloescht, sobald das Geraet online ist.')
+  }
+}
+
+async function deleteRemotePlayer(write: { recordId: string; localId?: number; metadata?: Record<string, string | null> }) {
+  const photoPath = write.metadata?.photoPath ?? null
+  await cleanupQueuedPhotoPath(photoPath)
+
+  const { error } = await supabase!.from('players').delete().eq('id', write.recordId)
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  await Promise.all([
+    localDb.pendingWrites.delete(write.localId ?? 0),
+    localDb.players.delete(write.recordId),
+    photoPath ? localDb.photoCache.where('photoPath').equals(photoPath).delete() : Promise.resolve(),
+  ])
 }
 
 async function syncPlayersOnce(userId: string): Promise<PlayerSyncOverview> {
@@ -289,44 +354,74 @@ async function syncPlayersOnce(userId: string): Promise<PlayerSyncOverview> {
     .and((write) => write.table === 'players')
     .toArray()
 
-  for (const write of pendingWrites) {
+  let processedPlayerDeleteCount = 0
+  for (const write of pendingWrites.filter((pendingWrite) => pendingWrite.operation === 'delete')) {
+    try {
+      await deleteRemotePlayer(write)
+      processedPlayerDeleteCount += 1
+    } catch (caughtError) {
+      return {
+        ...(await getPlayerSyncOverview(userId)),
+        status: 'error',
+        errorMessage: caughtError instanceof Error ? caughtError.message : 'Spieler konnte nicht geloescht werden.',
+      }
+    }
+  }
+
+  const upsertWrites = pendingWrites.filter((pendingWrite) => pendingWrite.operation === 'upsert')
+  const upsertSnapshots: Array<{ player: Player; writeLocalId?: number }> = []
+
+  for (const write of upsertWrites) {
     let player = await localDb.players.get(write.recordId)
     if (!player) {
       await localDb.pendingWrites.delete(write.localId ?? 0)
       continue
     }
 
-    if (needsStoredPhotoCleanup(player)) {
-      const cleanupResult = await removeStoredPlayerPhoto(player.photoPath)
-      if (!cleanupResult.removed) {
-        const errorMessage = cleanupResult.errorMessage ?? 'Profilfoto wird geloescht, sobald das Geraet online ist.'
-        await markSyncErrorIfUnchanged(localDb.players, player, errorMessage)
+    try {
+      if (write.metadata?.removePhotoPath) {
+        await cleanupQueuedPhotoPath(write.metadata.removePhotoPath)
+      }
 
-        return {
-          ...(await getPlayerSyncOverview(userId)),
-          status: 'error',
-          errorMessage,
+      if (needsStoredPhotoCleanup(player)) {
+        await cleanupQueuedPhotoPath(player.photoPath)
+
+        const latestPlayer = await localDb.players.get(player.id)
+        if (!latestPlayer || latestPlayer.clientUpdatedAt !== player.clientUpdatedAt) {
+          await localDb.pendingWrites.delete(write.localId ?? 0)
+          continue
         }
+
+        player = {
+          ...latestPlayer,
+          photoPath: null,
+          photoUpdatedAt: null,
+          syncError: null,
+        }
+        await localDb.players.put(player)
       }
 
-      const latestPlayer = await localDb.players.get(player.id)
-      if (!latestPlayer || latestPlayer.clientUpdatedAt !== player.clientUpdatedAt) {
-        await localDb.pendingWrites.delete(write.localId ?? 0)
-        continue
-      }
+      await uploadQueuedPlayerPhoto(player)
+    } catch (caughtError) {
+      const errorMessage = caughtError instanceof Error ? caughtError.message : 'Spieler-Sync fehlgeschlagen.'
+      await markSyncErrorIfUnchanged(localDb.players, player, errorMessage)
 
-      player = {
-        ...latestPlayer,
-        photoPath: null,
-        photoUpdatedAt: null,
-        syncError: null,
+      return {
+        ...(await getPlayerSyncOverview(userId)),
+        status: 'error',
+        errorMessage,
       }
-      await localDb.players.put(player)
     }
 
-    const { error } = await supabase.from('players').upsert(rowFromPlayer(player)).select('id').single()
+    upsertSnapshots.push({ player, writeLocalId: write.localId })
+  }
+
+  if (upsertSnapshots.length > 0) {
+    const { error } = await supabase.from('players').upsert(upsertSnapshots.map(({ player }) => rowFromPlayer(player))).select('id')
     if (error) {
-      await markSyncErrorIfUnchanged(localDb.players, player, error.message)
+      for (const { player } of upsertSnapshots) {
+        await markSyncErrorIfUnchanged(localDb.players, player, error.message)
+      }
 
       return {
         ...(await getPlayerSyncOverview(userId)),
@@ -335,7 +430,7 @@ async function syncPlayersOnce(userId: string): Promise<PlayerSyncOverview> {
       }
     }
 
-    await markSyncedIfUnchanged(localDb.players, player, write.localId)
+    await Promise.all(upsertSnapshots.map(({ player, writeLocalId }) => markSyncedIfUnchanged(localDb.players, player, writeLocalId)))
   }
 
   const { data, error } = await supabase
@@ -355,6 +450,14 @@ async function syncPlayersOnce(userId: string): Promise<PlayerSyncOverview> {
   }
 
   const remoteRows = (data ?? []) as PlayerRow[]
+  const remoteIds = new Set(remoteRows.map((row) => row.id))
+  const pendingPlayerWritesAfterPush = await localDb.pendingWrites
+    .where('userId')
+    .equals(userId)
+    .and((write) => write.table === 'players')
+    .toArray()
+  const pendingLocalPlayerIds = new Set(pendingPlayerWritesAfterPush.map((write) => write.recordId))
+
   for (const row of remoteRows) {
     const localPlayer = await localDb.players.get(row.id)
     if (localPlayer?.syncStatus === 'pending') {
@@ -363,6 +466,23 @@ async function syncPlayersOnce(userId: string): Promise<PlayerSyncOverview> {
 
     if (!localPlayer || row.client_updated_at >= localPlayer.clientUpdatedAt) {
       await localDb.players.put(playerFromRow(row))
+    }
+  }
+
+  const localPlayers = await localDb.players.where('userId').equals(userId).toArray()
+  const syncedLocalPlayers = localPlayers.filter((player) => player.syncStatus !== 'pending' && !player.deletedAt)
+  const shouldReconcileMissingPlayers =
+    remoteRows.length > 0 || (syncedLocalPlayers.length <= 1 && processedPlayerDeleteCount === 0)
+
+  if (shouldReconcileMissingPlayers) {
+    for (const localPlayer of localPlayers) {
+      if (
+        !pendingLocalPlayerIds.has(localPlayer.id) &&
+        localPlayer.syncStatus !== 'pending' &&
+        !remoteIds.has(localPlayer.id)
+      ) {
+        await localDb.players.delete(localPlayer.id)
+      }
     }
   }
 
@@ -384,7 +504,7 @@ export async function syncPlayers(userId: string): Promise<PlayerSyncOverview> {
     return pendingSync
   }
 
-  const syncPromise = syncPlayersOnce(userId).finally(() => {
+  const syncPromise = measureInteraction('sync:players', () => syncPlayersOnce(userId)).finally(() => {
     pendingPlayerSyncs.delete(userId)
   })
   pendingPlayerSyncs.set(userId, syncPromise)
@@ -392,25 +512,39 @@ export async function syncPlayers(userId: string): Promise<PlayerSyncOverview> {
   return syncPromise
 }
 
-export async function resizeImageForUpload(file: File) {
-  if (!file.type.startsWith('image/')) {
-    throw new Error('Nur Bilddateien sind fuer Spielerfotos erlaubt.')
+async function decodeImage(file: File): Promise<ImageBitmap | HTMLImageElement> {
+  if (typeof createImageBitmap === 'function') {
+    return createImageBitmap(file)
   }
 
   const imageUrl = URL.createObjectURL(file)
   const image = new Image()
 
-  try {
-    await new Promise<void>((resolve, reject) => {
-      image.onload = () => resolve()
-      image.onerror = () => reject(new Error('Bild konnte nicht gelesen werden.'))
-      image.src = imageUrl
-    })
+  await new Promise<void>((resolve, reject) => {
+    image.onload = () => resolve()
+    image.onerror = () => reject(new Error('Bild konnte nicht gelesen werden.'))
+    image.src = imageUrl
+  })
 
-    const maxWidth = 800
-    const scale = Math.min(1, maxWidth / image.naturalWidth)
-    const width = Math.round(image.naturalWidth * scale)
-    const height = Math.round(image.naturalHeight * scale)
+  URL.revokeObjectURL(imageUrl)
+  return image
+}
+
+export async function resizeImageForUpload(file: File): Promise<ResizedPhoto> {
+  if (!file.type.startsWith('image/')) {
+    throw new Error('Nur Bilddateien sind fuer Spielerfotos erlaubt.')
+  }
+
+  return measureInteraction('player-photo:resize', async () => {
+    const image = await decodeImage(file)
+    const isHtmlImage = typeof HTMLImageElement !== 'undefined' && image instanceof HTMLImageElement
+    const sourceWidth = isHtmlImage ? image.naturalWidth : image.width
+    const sourceHeight = isHtmlImage ? image.naturalHeight : image.height
+
+    const maxWidth = 320
+    const scale = Math.min(1, maxWidth / sourceWidth)
+    const width = Math.round(sourceWidth * scale)
+    const height = Math.round(sourceHeight * scale)
     const canvas = document.createElement('canvas')
     canvas.width = width
     canvas.height = height
@@ -421,49 +555,45 @@ export async function resizeImageForUpload(file: File) {
     }
 
     context.drawImage(image, 0, 0, width, height)
+    if ('close' in image && typeof image.close === 'function') {
+      image.close()
+    }
 
     const blob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, 'image/webp', 0.82)
+      canvas.toBlob(resolve, 'image/webp', 0.72)
     })
 
     if (blob) {
-      return { blob, extension: 'webp', contentType: 'image/webp' }
+      return { blob, extension: 'webp', contentType: 'image/webp', sourceBytes: file.size, outputBytes: blob.size, width, height }
     }
 
     const fallbackBlob = await new Promise<Blob | null>((resolve) => {
-      canvas.toBlob(resolve, 'image/jpeg', 0.82)
+      canvas.toBlob(resolve, 'image/jpeg', 0.72)
     })
 
     if (!fallbackBlob) {
       throw new Error('Bild konnte nicht komprimiert werden.')
     }
 
-    return { blob: fallbackBlob, extension: 'jpg', contentType: 'image/jpeg' }
-  } finally {
-    URL.revokeObjectURL(imageUrl)
-  }
+    return {
+      blob: fallbackBlob,
+      extension: 'jpg',
+      contentType: 'image/jpeg',
+      sourceBytes: file.size,
+      outputBytes: fallbackBlob.size,
+      width,
+      height,
+    }
+  })
 }
 
 export async function uploadPlayerPhoto(player: Player, file: File) {
-  if (!supabase) {
-    throw new Error('Supabase ist noch nicht konfiguriert.')
-  }
-
   if (player.photoConsentStatus !== 'allowed') {
     throw new Error('Profilfoto ist nur mit Foto-Erlaubnis erlaubt.')
   }
 
   const { blob, extension, contentType } = await resizeImageForUpload(file)
   const path = `${player.userId}/players/${player.id}/profile.${extension}`
-  const { error } = await supabase.storage.from(PLAYER_PHOTOS_BUCKET).upload(path, blob, {
-    contentType,
-    upsert: true,
-  })
-
-  if (error) {
-    throw new Error(error.message)
-  }
-
   const timestamp = nowIso()
   const updatedPlayer: Player = {
     ...player,
@@ -475,24 +605,31 @@ export async function uploadPlayerPhoto(player: Player, file: File) {
     syncError: null,
   }
 
-  await localDb.players.put(updatedPlayer)
+  const cacheKey = playerPhotoCacheKey(path, timestamp)
+  await Promise.all([
+    localDb.players.put(updatedPlayer),
+    localDb.pendingPhotoUploads.put({
+      photoPath: path,
+      userId: player.userId,
+      playerId: player.id,
+      blob,
+      contentType,
+      createdAt: timestamp,
+    }),
+    localDb.photoCache.put({
+      cacheKey,
+      photoPath: path,
+      photoUpdatedAt: timestamp,
+      blob,
+      cachedAt: timestamp,
+    }),
+  ])
   await queuePlayerWrite(updatedPlayer)
 
   return updatedPlayer
 }
 
 export async function removePlayerPhoto(player: Player) {
-  if (!supabase) {
-    throw new Error('Supabase ist noch nicht konfiguriert.')
-  }
-
-  if (player.photoPath) {
-    const { error } = await supabase.storage.from(PLAYER_PHOTOS_BUCKET).remove([player.photoPath])
-    if (error) {
-      throw new Error(error.message)
-    }
-  }
-
   const timestamp = nowIso()
   const updatedPlayer: Player = {
     ...player,
@@ -504,8 +641,12 @@ export async function removePlayerPhoto(player: Player) {
     syncError: null,
   }
 
-  await localDb.players.put(updatedPlayer)
-  await queuePlayerWrite(updatedPlayer)
+  await Promise.all([
+    localDb.players.put(updatedPlayer),
+    player.photoPath ? localDb.pendingPhotoUploads.delete(player.photoPath) : Promise.resolve(),
+    player.photoPath ? localDb.photoCache.where('photoPath').equals(player.photoPath).delete() : Promise.resolve(),
+  ])
+  await queuePlayerWrite(updatedPlayer, player.photoPath ? { removePhotoPath: player.photoPath } : undefined)
 
   return updatedPlayer
 }
@@ -532,10 +673,25 @@ export async function downloadPlayerPhotoUrl(photoPath: string, photoUpdatedAt: 
     return cachedUrl
   }
 
+  const cachedPhoto = await localDb.photoCache.get(cacheKey)
+  if (cachedPhoto) {
+    const objectUrl = URL.createObjectURL(cachedPhoto.blob)
+    playerPhotoUrlCache.set(cacheKey, objectUrl)
+    return objectUrl
+  }
+
   const { data, error } = await supabase.storage.from(PLAYER_PHOTOS_BUCKET).download(photoPath)
   if (error || !data) {
     return null
   }
+
+  await localDb.photoCache.put({
+    cacheKey,
+    photoPath,
+    photoUpdatedAt,
+    blob: data,
+    cachedAt: nowIso(),
+  })
 
   const objectUrl = URL.createObjectURL(data)
   playerPhotoUrlCache.set(cacheKey, objectUrl)

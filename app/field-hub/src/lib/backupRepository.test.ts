@@ -175,6 +175,16 @@ describe('backupRepository', () => {
     })
   })
 
+  it('accepts anonymized historical records with nullable player ids', async () => {
+    const backup = await createFieldHubBackup(userId)
+    backup.data.progressEntries = [{ ...progressEntry, playerId: null }]
+
+    const preview = await previewFieldHubBackupImport(userId, backup)
+
+    expect(preview.valid).toBe(true)
+    expect(preview.errors).toEqual([])
+  })
+
   it('stores last export metadata locally per user', async () => {
     await setLastExportAt(userId, '2026-06-18T20:00:00.000Z')
 

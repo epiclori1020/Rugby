@@ -23,9 +23,10 @@ import { defaultPlayerSyncOverview } from '../domain/sync'
 import type { SessionDefinition } from '../content/types'
 import { refreshRemoteBaselineEntries, syncPendingBaselineEntries } from './baselineRepository'
 import { getSyncMeta, localDb, setSyncMeta } from './localDb'
-import { syncPlayers } from './playerRepository'
 import { refreshRemoteProgressEntries, syncPendingProgressEntries } from './postSessionRepository'
 import { markSyncedIfUnchanged, markSyncErrorIfUnchanged } from './pendingWriteSync'
+import { hasPlayerId } from './playerId'
+import { measureInteraction } from './performanceTrace'
 import { refreshRemoteReturnerEntries, syncPendingReturnerEntries } from './returnerRepository'
 import { supabase } from './supabaseClient'
 
@@ -53,7 +54,7 @@ export type PlayerSessionEntryRow = {
   id: string
   user_id: string
   session_log_id: string
-  player_id: string
+  player_id: string | null
   present: boolean
   readiness: number | null
   life_flag: string
@@ -392,7 +393,7 @@ export async function listExpectedPlayerIds(userId: string, currentSessionDate: 
     .and((entry) => entry.sessionLogId === latestPreviousSession.id && entry.present && !entry.deletedAt)
     .toArray()
 
-  return entries.map((entry) => entry.playerId)
+  return entries.filter(hasPlayerId).map((entry) => entry.playerId)
 }
 
 export async function listCheckInEntries(userId: string, sessionLogId: string) {
@@ -426,6 +427,10 @@ export async function listLatestWarnings(userId: string, currentSessionLogId: st
   const latestByPlayer = new Map<string, PlayerWarning>()
 
   for (const entry of entries) {
+    if (!hasPlayerId(entry)) {
+      continue
+    }
+
     const hasWarning =
       entry.trafficLight === 'yellow' ||
       entry.trafficLight === 'red' ||
@@ -642,6 +647,7 @@ async function syncPendingSessionLogs(userId: string) {
     .and((write) => write.table === 'session_logs')
     .toArray()
 
+  const snapshots: Array<{ sessionLog: SessionLog; writeLocalId?: number }> = []
   for (const write of pendingWrites) {
     const sessionLog = await localDb.sessionLogs.get(write.recordId)
     if (!sessionLog) {
@@ -649,14 +655,27 @@ async function syncPendingSessionLogs(userId: string) {
       continue
     }
 
-    const { error } = await supabase!.from('session_logs').upsert(rowFromSessionLog(sessionLog)).select('id').single()
-    if (error) {
-      await markSyncErrorIfUnchanged(localDb.sessionLogs, sessionLog, error.message)
-      throw new Error(error.message)
-    }
-
-    await markSyncedIfUnchanged(localDb.sessionLogs, sessionLog, write.localId)
+    snapshots.push({ sessionLog, writeLocalId: write.localId })
   }
+
+  if (snapshots.length === 0) {
+    return
+  }
+
+  const { error } = await supabase!
+    .from('session_logs')
+    .upsert(snapshots.map(({ sessionLog }) => rowFromSessionLog(sessionLog)))
+    .select('id')
+  if (error) {
+    for (const { sessionLog } of snapshots) {
+      await markSyncErrorIfUnchanged(localDb.sessionLogs, sessionLog, error.message)
+    }
+    throw new Error(error.message)
+  }
+
+  await Promise.all(
+    snapshots.map(({ sessionLog, writeLocalId }) => markSyncedIfUnchanged(localDb.sessionLogs, sessionLog, writeLocalId)),
+  )
 }
 
 async function syncPendingPlayerSessionEntries(userId: string) {
@@ -666,6 +685,7 @@ async function syncPendingPlayerSessionEntries(userId: string) {
     .and((write) => write.table === 'player_session_entries')
     .toArray()
 
+  const snapshots: Array<{ entry: PlayerSessionEntry; writeLocalId?: number }> = []
   for (const write of pendingWrites) {
     const entry = await localDb.playerSessionEntries.get(write.recordId)
     if (!entry) {
@@ -673,18 +693,29 @@ async function syncPendingPlayerSessionEntries(userId: string) {
       continue
     }
 
-    const { error } = await supabase!
-      .from('player_session_entries')
-      .upsert(rowFromEntry(entry))
-      .select('id')
-      .single()
-    if (error) {
-      await markSyncErrorIfUnchanged(localDb.playerSessionEntries, entry, error.message)
-      throw new Error(error.message)
-    }
-
-    await markSyncedIfUnchanged(localDb.playerSessionEntries, entry, write.localId)
+    snapshots.push({ entry, writeLocalId: write.localId })
   }
+
+  if (snapshots.length === 0) {
+    return
+  }
+
+  const { error } = await supabase!
+    .from('player_session_entries')
+    .upsert(snapshots.map(({ entry }) => rowFromEntry(entry)))
+    .select('id')
+  if (error) {
+    for (const { entry } of snapshots) {
+      await markSyncErrorIfUnchanged(localDb.playerSessionEntries, entry, error.message)
+    }
+    throw new Error(error.message)
+  }
+
+  await Promise.all(
+    snapshots.map(({ entry, writeLocalId }) =>
+      markSyncedIfUnchanged(localDb.playerSessionEntries, entry, writeLocalId),
+    ),
+  )
 }
 
 async function refreshRemoteCheckIns(userId: string) {
@@ -735,7 +766,7 @@ async function refreshRemoteCheckIns(userId: string) {
   }
 }
 
-async function syncCheckInsOnce(userId: string): Promise<PlayerSyncOverview> {
+async function pushPendingCheckInsOnce(userId: string): Promise<PlayerSyncOverview> {
   if (!supabase) {
     return {
       ...(await getCheckInSyncOverview(userId)),
@@ -752,16 +783,11 @@ async function syncCheckInsOnce(userId: string): Promise<PlayerSyncOverview> {
   }
 
   try {
-    await syncPlayers(userId)
     await syncPendingSessionLogs(userId)
     await syncPendingPlayerSessionEntries(userId)
     await syncPendingProgressEntries(userId)
     await syncPendingBaselineEntries(userId)
     await syncPendingReturnerEntries(userId)
-    await refreshRemoteCheckIns(userId)
-    await refreshRemoteProgressEntries(userId)
-    await refreshRemoteBaselineEntries(userId)
-    await refreshRemoteReturnerEntries(userId)
 
     const timestamp = nowIso()
     await setSyncMeta(`checkIns:lastSuccessfulSyncAt:${userId}`, timestamp)
@@ -782,16 +808,53 @@ async function syncCheckInsOnce(userId: string): Promise<PlayerSyncOverview> {
   }
 }
 
-export async function syncCheckIns(userId: string): Promise<PlayerSyncOverview> {
+export async function pushPendingCheckIns(userId: string): Promise<PlayerSyncOverview> {
   const pendingSync = pendingCheckInSyncs.get(userId)
   if (pendingSync) {
     return pendingSync
   }
 
-  const syncPromise = syncCheckInsOnce(userId).finally(() => {
-    pendingCheckInSyncs.delete(userId)
-  })
+  const syncPromise = measureInteraction('sync:field-data-push', () => pushPendingCheckInsOnce(userId)).finally(
+    () => {
+      pendingCheckInSyncs.delete(userId)
+    },
+  )
   pendingCheckInSyncs.set(userId, syncPromise)
 
   return syncPromise
+}
+
+export async function pullRemoteCheckIns(userId: string) {
+  if (!supabase) {
+    throw new Error('Supabase ist noch nicht konfiguriert.')
+  }
+
+  await refreshRemoteCheckIns(userId)
+  await refreshRemoteProgressEntries(userId)
+  await refreshRemoteBaselineEntries(userId)
+  await refreshRemoteReturnerEntries(userId)
+}
+
+export async function syncCheckIns(userId: string): Promise<PlayerSyncOverview> {
+  const overview = await pushPendingCheckIns(userId)
+  if (overview.status === 'error') {
+    return overview
+  }
+
+  try {
+    await pullRemoteCheckIns(userId)
+    return {
+      ...(await getCheckInSyncOverview(userId)),
+      status: 'synced',
+      pendingCount: 0,
+      lastSuccessfulSyncAt: overview.lastSuccessfulSyncAt,
+      errorMessage: null,
+    }
+  } catch (caughtError) {
+    return {
+      ...(await getCheckInSyncOverview(userId)),
+      status: 'error',
+      errorMessage: caughtError instanceof Error ? caughtError.message : 'Check-in-Pull fehlgeschlagen.',
+    }
+  }
 }

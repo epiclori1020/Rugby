@@ -5,7 +5,7 @@ export type ReturnerDecision = 'bleiben' | 'steigern' | 'reduzieren' | 'rueckmel
 export type ReturnerEntry = {
   id: string
   userId: string
-  playerId: string
+  playerId: string | null
   sessionLogId: string
   medicalContactNote: string
   currentStage: string

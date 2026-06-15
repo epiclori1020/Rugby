@@ -1,5 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
-import { measureInteraction } from './performanceTrace'
+import { isPerformanceTraceEnabled, measureInteraction } from './performanceTrace'
 
 describe('measureInteraction', () => {
   it('returns the wrapped action result', async () => {
@@ -13,5 +13,24 @@ describe('measureInteraction', () => {
     await measureInteraction('test', async () => 'ok', { clock, enabled: true, logger })
 
     expect(logger).toHaveBeenCalledWith('test', 32)
+  })
+
+  it('does not crash when localStorage is unavailable', () => {
+    const originalWindow = globalThis.window
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: {
+        get localStorage() {
+          throw new DOMException('blocked', 'SecurityError')
+        },
+      },
+    })
+
+    expect(() => isPerformanceTraceEnabled()).not.toThrow()
+
+    Object.defineProperty(globalThis, 'window', {
+      configurable: true,
+      value: originalWindow,
+    })
   })
 })

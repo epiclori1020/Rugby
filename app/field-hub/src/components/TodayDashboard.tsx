@@ -5,6 +5,8 @@ import type { SessionDefinition } from '../content/types'
 import type { Player } from '../domain/players'
 import type { useCheckIns } from '../hooks/useCheckIns'
 import type { StoragePersistenceState } from '../hooks/useStoragePersistence'
+import { hasPlayerId } from '../lib/playerId'
+import { pendingCountLabel } from '../lib/syncLabels'
 import { SessionPicker } from './SessionPicker'
 
 type TodayDashboardProps = {
@@ -47,12 +49,16 @@ export function TodayDashboard({
   const featuredSession = selectedSession
   const activePlayers = players.filter((player) => player.active)
   const activePlayerIds = new Set(activePlayers.map((player) => player.id))
-  const activeWarnings = checkInActions.warnings.filter((warning) => activePlayerIds.has(warning.playerId))
+  const activeWarnings = checkInActions.warnings.filter(
+    (warning) => hasPlayerId(warning) && activePlayerIds.has(warning.playerId),
+  )
   const expectedPlayerSet = new Set(checkInActions.expectedPlayerIds)
   const expectedCount =
     expectedPlayerSet.size > 0 ? activePlayers.filter((player) => expectedPlayerSet.has(player.id)).length : activePlayers.length
   const expectedMetricLabel = expectedPlayerSet.size > 0 ? 'Zuletzt dabei' : 'Aktiv'
-  const presentCount = checkInActions.entries.filter((entry) => entry.present).length
+  const presentCount = checkInActions.entries.filter(
+    (entry) => hasPlayerId(entry) && activePlayerIds.has(entry.playerId) && entry.present,
+  ).length
   const warningCount = activeWarnings.length
   const postSessionFollowUpCount = activeWarnings.filter(
     (warning) =>
@@ -217,7 +223,7 @@ export function TodayDashboard({
               ? `${postSessionFollowUpCount} E2-/Progressions-Follow-ups fuer die naechste Einheit.`
               : 'Keine lokalen E2-/Progressions-Follow-ups aus der Nachbereitung.'}
           </p>
-          <p>{pendingCount > 0 ? `${pendingCount} Check-in-Aenderungen sind noch pending.` : 'Check-in-Sync aktuell ohne pending Aenderungen.'}</p>
+          <p>{pendingCountLabel(pendingCount, 'Check-in-Aenderungen')}.</p>
         </article>
 
         <article className="panel">

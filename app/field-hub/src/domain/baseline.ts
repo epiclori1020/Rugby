@@ -5,7 +5,7 @@ export const sprint30mOptionalLabel = '30 m spaeter/optional'
 export type BaselineEntry = {
   id: string
   userId: string
-  playerId: string
+  playerId: string | null
   sessionLogId: string
   broadJumpCm: number | null
   medBallChestPassM: number | null

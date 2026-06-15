@@ -14,11 +14,13 @@ import {
   listCheckInEntries,
   listExpectedPlayerIds,
   listLatestWarnings,
+  pushPendingCheckIns,
   saveCheckInEntry,
   saveSessionLogPatch,
   syncCheckIns,
   type SessionLogPatch,
 } from '../lib/checkInRepository'
+import { hasPlayerId } from '../lib/playerId'
 
 type SaveEntryResult =
   | { ok: true; entry: PlayerSessionEntry }
@@ -37,11 +39,11 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
   const activePlayers = useMemo(() => players.filter((player) => player.active), [players])
   const activePlayerIds = useMemo(() => new Set(activePlayers.map((player) => player.id)), [activePlayers])
   const activeEntries = useMemo(
-    () => entries.filter((entry) => activePlayerIds.has(entry.playerId)),
+    () => entries.filter((entry) => hasPlayerId(entry) && activePlayerIds.has(entry.playerId)),
     [activePlayerIds, entries],
   )
   const activeWarnings = useMemo(
-    () => warnings.filter((warning) => activePlayerIds.has(warning.playerId)),
+    () => warnings.filter((warning) => hasPlayerId(warning) && activePlayerIds.has(warning.playerId)),
     [activePlayerIds, warnings],
   )
 
@@ -105,10 +107,23 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
     }
 
     try {
-      const overview = await syncCheckIns(userId)
+      const overview = await pushPendingCheckIns(userId)
       setSyncOverview(overview)
+      if (overview.status !== 'error') {
+        setSessionLog((currentSessionLog) =>
+          currentSessionLog?.syncStatus === 'pending' || currentSessionLog?.syncStatus === 'error'
+            ? { ...currentSessionLog, syncStatus: 'synced', syncError: null }
+            : currentSessionLog,
+        )
+        setEntries((currentEntries) =>
+          currentEntries.map((entry) =>
+            entry.syncStatus === 'pending' || entry.syncStatus === 'error'
+              ? { ...entry, syncStatus: 'synced', syncError: null }
+              : entry,
+          ),
+        )
+      }
       setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Check-in-Sync fehlgeschlagen.' : null)
-      await refreshLocalCheckIns()
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Check-in-Sync fehlgeschlagen.'
       setSyncOverview({
@@ -118,7 +133,7 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
       })
       setErrorMessage(`Lokal gespeichert, Sync offen: ${message}`)
     }
-  }, [refreshLocalCheckIns, userId])
+  }, [userId])
 
   useEffect(() => {
     Promise.resolve()

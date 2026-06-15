@@ -3,7 +3,8 @@ import type { SessionDefinition } from '../content/types'
 import type { BaselineEntry, BaselineEntryPatch } from '../domain/baseline'
 import type { Player } from '../domain/players'
 import { defaultPlayerSyncOverview, type PlayerSyncOverview } from '../domain/sync'
-import { ensureSessionLog, findSessionLog, syncCheckIns } from '../lib/checkInRepository'
+import { scheduleBackgroundSync } from '../lib/backgroundSync'
+import { ensureSessionLog, findSessionLog, pushPendingCheckIns, syncCheckIns } from '../lib/checkInRepository'
 import {
   getBaselineSyncOverview,
   listBaselineEntriesForSession,
@@ -78,11 +79,19 @@ export function useBaselines(userId: string | null, sessionDefinition: SessionDe
     }
 
     try {
-      const overview = await syncCheckIns(userId)
+      const overview = await pushPendingCheckIns(userId)
       const baselineOverview = await getBaselineSyncOverview(userId)
       setSyncOverview(baselineOverview)
+      if (overview.status !== 'error') {
+        setEntries((currentEntries) =>
+          currentEntries.map((entry) =>
+            entry.syncStatus === 'pending' || entry.syncStatus === 'error'
+              ? { ...entry, syncStatus: 'synced', syncError: null }
+              : entry,
+          ),
+        )
+      }
       setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Baseline-Sync fehlgeschlagen.' : null)
-      await refreshBaselines()
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Baseline-Sync fehlgeschlagen.'
       setSyncOverview({
@@ -92,7 +101,7 @@ export function useBaselines(userId: string | null, sessionDefinition: SessionDe
       })
       setErrorMessage(`Lokal gespeichert, Sync offen: ${message}`)
     }
-  }, [refreshBaselines, userId])
+  }, [userId])
 
   useEffect(() => {
     Promise.resolve()
@@ -112,7 +121,7 @@ export function useBaselines(userId: string | null, sessionDefinition: SessionDe
       await saveBaselineEntry(userId, sessionLog.id, player.id, patch)
       await refreshBaselines()
       if (typeof navigator === 'undefined' || navigator.onLine) {
-        void runBackgroundSync()
+        scheduleBackgroundSync(userId, 'baselines', runBackgroundSync)
       }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Baseline-Wert konnte nicht gespeichert werden.'

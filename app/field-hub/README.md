@@ -281,3 +281,14 @@ oder private Keys in `.env`, Code oder Chat kopieren.
 Die App fragt beim ersten Start `navigator.storage.persist()` an und zeigt das Ergebnis.
 Auf iPad/iPhone sollte die PWA zum Home-Bildschirm hinzugefuegt werden. Sobald Export
 existiert, bleibt vor laengeren Pausen ein JSON-Backup Pflicht.
+
+## Performance-Nachbesserung 15. Juni 2026
+
+Diese Entscheidungen sind fuer Folgesessions wichtig:
+
+- Check-in, Nachbereitung, Baseline und Returner speichern zuerst lokal und nutzen im Hintergrund nur Push-only-Sync. Voller Remote-Pull passiert bei manueller/globaler Sync-Aktion, nicht nach jedem Tap.
+- Es wird bewusst kein client-clock-basierter Delta-Pull verwendet. Damit vermeiden wir verpasste Zeilen durch Uhren-Drift; spaeter waere ein serverseitiges `updated_at`-Wasserzeichen der saubere naechste Schritt.
+- Spieler-Loeschen ist jetzt echtes Loeschen in `public.players`. Historische Eintraege bleiben ueber bestehende `on delete set null`-Foreign-Keys anonymisiert erhalten.
+- Profilfotos werden lokal resized, in IndexedDB gecacht und als Pending Upload synchronisiert. Die iOS-Foto-Anomalie muss auf echten iPad/iPhone-Geraeten mit aktiviertem Trace (`localStorage.fieldHub:performanceTrace = 1`) gemessen werden.
+- PDF-Assets werden nicht mehr beim Oeffnen der Bibliothek komplett vorgewaermt. Nur das konkret geoeffnete PDF wird priorisiert; Offline-Abdeckung bleibt Aufgabe des PWA-Precaches.
+- Die Supabase-Migration `../../supabase/migrations/20260615105306_performance_sync_indexes.sql` wurde remote angewendet und enthaelt nur Performance-Indizes, keine RLS-/Policy-Aenderung.

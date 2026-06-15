@@ -38,7 +38,11 @@ function dateForSession(sessionLogId: string, sessionDateById: Map<string, strin
   return sessionDateById.get(sessionLogId) ?? ''
 }
 
-function playerName(playerId: string, playerNameById: Map<string, string>) {
+function playerName(playerId: string | null, playerNameById: Map<string, string>) {
+  if (playerId === null) {
+    return 'Geloeschter Spieler'
+  }
+
   return playerNameById.get(playerId) ?? playerId
 }
 

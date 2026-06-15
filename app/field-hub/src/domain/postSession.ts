@@ -7,7 +7,7 @@ export type NextStep = 'steigern' | 'halten' | 'reduzieren' | 'klaeren'
 export type ProgressEntry = {
   id: string
   userId: string
-  playerId: string
+  playerId: string | null
   sessionLogId: string
   mainExercise: string
   load: string

@@ -17,6 +17,8 @@ import type { ReturnerCapSummary } from '../domain/returners'
 import { applyTrainingQuickAction, type TrainingQuickAction } from '../domain/training'
 import type { useCheckIns } from '../hooks/useCheckIns'
 import type { AuthSessionState } from '../lib/auth'
+import { hasPlayerId } from '../lib/playerId'
+import { pendingCountLabel, syncStatusLabel } from '../lib/syncLabels'
 import { AuthPanel } from './AuthPanel'
 import { SessionPicker } from './SessionPicker'
 
@@ -151,7 +153,7 @@ function TrainingPlayerRow({
             {player.position} · {player.cluster} · Ampel {formatTrafficLight(trafficLight)}
           </p>
         </div>
-        <span className={`sync-pill ${entry.syncStatus}`}>{entry.syncStatus}</span>
+        <span className={`sync-pill ${entry.syncStatus}`}>{syncStatusLabel(entry.syncStatus)}</span>
       </div>
 
       <WarningNote warning={warning} />
@@ -229,8 +231,8 @@ export function TrainingView({
     clearError,
   } = checkInActions
   const expectedPlayerSet = new Set(expectedPlayerIds)
-  const warningByPlayerId = new Map(warnings.map((warning) => [warning.playerId, warning]))
-  const returnerCapByPlayerId = new Map(returnerCaps.map((cap) => [cap.playerId, cap]))
+  const warningByPlayerId = new Map(warnings.filter(hasPlayerId).map((warning) => [warning.playerId, warning]))
+  const returnerCapByPlayerId = new Map(returnerCaps.filter(hasPlayerId).map((cap) => [cap.playerId, cap]))
   const orderedPlayers = [...activePlayers].sort((a, b) => {
     const aExpected = expectedPlayerSet.has(a.id)
     const bExpected = expectedPlayerSet.has(b.id)
@@ -330,8 +332,8 @@ export function TrainingView({
 
       <div className="panel checkin-sync-strip">
         <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
-        <strong>{syncOverview.status}</strong>
-        <span>{syncOverview.pendingCount} Training/Check-in pending</span>
+        <strong>{syncStatusLabel(syncOverview.status)}</strong>
+        <span>{pendingCountLabel(syncOverview.pendingCount, 'Training/Check-in-Aenderungen')}</span>
         {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
       </div>
 

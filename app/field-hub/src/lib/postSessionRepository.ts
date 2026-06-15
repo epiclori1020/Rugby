@@ -7,7 +7,7 @@ import { supabase } from './supabaseClient'
 export type ProgressEntryRow = {
   id: string
   user_id: string
-  player_id: string
+  player_id: string | null
   session_log_id: string
   main_exercise: string
   load: string
@@ -158,6 +158,7 @@ export async function syncPendingProgressEntries(userId: string) {
     .and((write) => write.table === 'progress_entries')
     .toArray()
 
+  const snapshots: Array<{ entry: ProgressEntry; writeLocalId?: number }> = []
   for (const write of pendingWrites) {
     const entry = await localDb.progressEntries.get(write.recordId)
     if (!entry) {
@@ -165,18 +166,27 @@ export async function syncPendingProgressEntries(userId: string) {
       continue
     }
 
-    const { error } = await supabase
-      .from('progress_entries')
-      .upsert(rowFromProgressEntry(entry))
-      .select('id')
-      .single()
-    if (error) {
-      await markSyncErrorIfUnchanged(localDb.progressEntries, entry, error.message)
-      throw new Error(error.message)
-    }
-
-    await markSyncedIfUnchanged(localDb.progressEntries, entry, write.localId)
+    snapshots.push({ entry, writeLocalId: write.localId })
   }
+
+  if (snapshots.length === 0) {
+    return
+  }
+
+  const { error } = await supabase
+    .from('progress_entries')
+    .upsert(snapshots.map(({ entry }) => rowFromProgressEntry(entry)))
+    .select('id')
+  if (error) {
+    for (const { entry } of snapshots) {
+      await markSyncErrorIfUnchanged(localDb.progressEntries, entry, error.message)
+    }
+    throw new Error(error.message)
+  }
+
+  await Promise.all(
+    snapshots.map(({ entry, writeLocalId }) => markSyncedIfUnchanged(localDb.progressEntries, entry, writeLocalId)),
+  )
 }
 
 export async function refreshRemoteProgressEntries(userId: string) {
