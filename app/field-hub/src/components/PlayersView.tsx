@@ -43,9 +43,50 @@ function PlayerAvatar({
   previewUrl?: string | null
 }) {
   const [photoState, setPhotoState] = useState<{ path: string; url: string } | null>(null)
+  const [visiblePhotoKey, setVisiblePhotoKey] = useState<string | null>(null)
+  const observerRef = useRef<IntersectionObserver | null>(null)
+  const photoKey =
+    player.photoConsentStatus === 'allowed' && player.photoPath
+      ? `${player.photoPath}::${player.photoUpdatedAt ?? ''}`
+      : null
+
+  const observePlaceholder = useCallback(
+    (placeholder: HTMLSpanElement | null) => {
+      observerRef.current?.disconnect()
+      observerRef.current = null
+      if (!placeholder || !photoKey) {
+        return
+      }
+
+      if (typeof IntersectionObserver === 'undefined') {
+        setVisiblePhotoKey(photoKey)
+        return
+      }
+
+      const observer = new IntersectionObserver(
+        (entries) => {
+          if (entries.some((entry) => entry.isIntersecting)) {
+            setVisiblePhotoKey(photoKey)
+            observer.disconnect()
+          }
+        },
+        { rootMargin: '160px' },
+      )
+      observerRef.current = observer
+      observer.observe(placeholder)
+    },
+    [photoKey],
+  )
+
+  useEffect(
+    () => () => {
+      observerRef.current?.disconnect()
+    },
+    [],
+  )
 
   useEffect(() => {
-    if (player.photoConsentStatus !== 'allowed' || !player.photoPath) {
+    if (!photoKey || visiblePhotoKey !== photoKey || !player.photoPath) {
       return undefined
     }
 
@@ -73,10 +114,10 @@ function PlayerAvatar({
     return () => {
       isMounted = false
     }
-  }, [onPhotoLoadError, player.photoConsentStatus, player.photoPath, player.photoUpdatedAt])
+  }, [onPhotoLoadError, photoKey, player.photoPath, player.photoUpdatedAt, visiblePhotoKey])
 
   if (previewUrl) {
-    return <img className="player-avatar" src={previewUrl} alt="" />
+    return <img className="player-avatar" src={previewUrl} alt="" loading="lazy" />
   }
 
   if (player.photoConsentStatus !== 'allowed' || !player.photoPath) {
@@ -84,10 +125,14 @@ function PlayerAvatar({
   }
 
   if (photoState?.path === player.photoPath) {
-    return <img className="player-avatar" src={photoState.url} alt="" />
+    return <img className="player-avatar" src={photoState.url} alt="" loading="lazy" />
   }
 
-  return <span className="player-avatar placeholder-avatar">{getPlayerInitials(player.name) || '?'}</span>
+  return (
+    <span className="player-avatar placeholder-avatar" ref={observePlaceholder}>
+      {getPlayerInitials(player.name) || '?'}
+    </span>
+  )
 }
 
 function usePhotoLoadError() {
@@ -359,10 +404,12 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
             <UserPlus className="nav-icon" aria-hidden />
             <span>Neu</span>
           </button>
-          <button className="secondary-action" type="button" onClick={runSync} disabled={isLoading}>
-            <RefreshCw className="nav-icon" aria-hidden />
-            <span>Sync</span>
-          </button>
+          {syncOverview.status === 'error' ? (
+            <button className="secondary-action" type="button" onClick={runSync} disabled={isLoading}>
+              <RefreshCw className="nav-icon" aria-hidden />
+              <span>Retry</span>
+            </button>
+          ) : null}
         </div>
 
         <div className="sync-mini">

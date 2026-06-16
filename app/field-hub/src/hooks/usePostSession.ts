@@ -71,7 +71,7 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
 
     setIsLoading(true)
     try {
-      const overview = await syncCheckIns(userId)
+      const overview = await syncCheckIns(userId, { sessionDefinitionId: sessionDefinition.id })
       setSyncOverview(overview)
       setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Nachbereitungs-Sync fehlgeschlagen.' : null)
       await refreshPostSession()
@@ -89,7 +89,7 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
     } finally {
       setIsLoading(false)
     }
-  }, [refreshPostSession, userId])
+  }, [refreshPostSession, sessionDefinition.id, userId])
 
   const runBackgroundSync = useCallback(async () => {
     if (!userId || (typeof navigator !== 'undefined' && !navigator.onLine)) {
@@ -98,27 +98,9 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
 
     try {
       const overview = await pushPendingCheckIns(userId)
-      setSyncOverview(overview)
+      setSyncOverview(await getCheckInSyncOverview(userId))
       if (overview.status !== 'error') {
-        setSessionLog((currentSessionLog) =>
-          currentSessionLog?.syncStatus === 'pending' || currentSessionLog?.syncStatus === 'error'
-            ? { ...currentSessionLog, syncStatus: 'synced', syncError: null }
-            : currentSessionLog,
-        )
-        setEntries((currentEntries) =>
-          currentEntries.map((entry) =>
-            entry.syncStatus === 'pending' || entry.syncStatus === 'error'
-              ? { ...entry, syncStatus: 'synced', syncError: null }
-              : entry,
-          ),
-        )
-        setProgressEntries((currentEntries) =>
-          currentEntries.map((entry) =>
-            entry.syncStatus === 'pending' || entry.syncStatus === 'error'
-              ? { ...entry, syncStatus: 'synced', syncError: null }
-              : entry,
-          ),
-        )
+        await refreshPostSession()
       }
       setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Nachbereitungs-Sync fehlgeschlagen.' : null)
     } catch (caughtError) {
@@ -130,7 +112,7 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
       })
       setErrorMessage(`Lokal gespeichert, Sync offen: ${message}`)
     }
-  }, [userId])
+  }, [refreshPostSession, userId])
 
   useEffect(() => {
     Promise.resolve()

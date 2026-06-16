@@ -552,47 +552,94 @@ export async function submitPublicCheckIn(token: string, input: PublicSubmission
   }
 }
 
-export async function refreshRemotePublicCheckIns(userId: string) {
+export type RefreshRemotePublicCheckInsOptions = {
+  sessionDefinitionId?: string
+}
+
+export async function refreshRemotePublicCheckIns(
+  userId: string,
+  options: RefreshRemotePublicCheckInsOptions = {},
+) {
   if (!supabase) {
     throw new Error('Supabase ist noch nicht konfiguriert.')
   }
 
-  const { data: linkRows, error: linkError } = await supabase
+  let linkQuery = supabase
     .from('public_checkin_links')
     .select('id,user_id,session_definition_id,session_title,session_date,token_hash,expires_at,closed_at,created_at,updated_at,deleted_at,client_updated_at')
     .eq('user_id', userId)
-    .is('deleted_at', null)
+  if (options.sessionDefinitionId) {
+    linkQuery = linkQuery.eq('session_definition_id', options.sessionDefinitionId)
+  }
+  const { data: linkRows, error: linkError } = await linkQuery.is('deleted_at', null)
   if (linkError) {
     throw new Error(linkError.message)
   }
 
-  for (const row of (linkRows ?? []) as PublicCheckInLinkRow[]) {
-    await localDb.publicCheckInLinks.put(linkFromRow(row))
+  const remoteLinks = (linkRows ?? []) as PublicCheckInLinkRow[]
+  const localLinks = await localDb.publicCheckInLinks.bulkGet(remoteLinks.map((row) => row.id))
+  const linksToPut = remoteLinks
+    .map((row, index) => ({ local: localLinks[index], remote: linkFromRow(row), row }))
+    .filter(({ local, row }) => {
+      if (local && local.syncStatus !== 'synced') {
+        return false
+      }
+
+      return !local || row.client_updated_at >= local.clientUpdatedAt
+    })
+    .map(({ remote }) => remote)
+  await localDb.publicCheckInLinks.bulkPut(linksToPut)
+
+  const linkIds = remoteLinks.map((row) => row.id)
+  if (linkIds.length === 0) {
+    return
   }
 
   const { data: playerRows, error: playerError } = await supabase
     .from('public_checkin_link_players')
     .select('id,user_id,link_id,player_id,display_name,sort_order,created_at,updated_at,deleted_at,client_updated_at')
     .eq('user_id', userId)
+    .in('link_id', linkIds)
     .is('deleted_at', null)
   if (playerError) {
     throw new Error(playerError.message)
   }
 
-  for (const row of (playerRows ?? []) as PublicCheckInLinkPlayerRow[]) {
-    await localDb.publicCheckInLinkPlayers.put(linkPlayerFromRow(row))
-  }
+  const remoteLinkPlayers = (playerRows ?? []) as PublicCheckInLinkPlayerRow[]
+  const localLinkPlayers = await localDb.publicCheckInLinkPlayers.bulkGet(remoteLinkPlayers.map((row) => row.id))
+  const linkPlayersToPut = remoteLinkPlayers
+    .map((row, index) => ({ local: localLinkPlayers[index], remote: linkPlayerFromRow(row), row }))
+    .filter(({ local, row }) => {
+      if (local && local.syncStatus !== 'synced') {
+        return false
+      }
+
+      return !local || row.client_updated_at >= local.clientUpdatedAt
+    })
+    .map(({ remote }) => remote)
+  await localDb.publicCheckInLinkPlayers.bulkPut(linkPlayersToPut)
 
   const { data: submissionRows, error: submissionError } = await supabase
     .from('public_checkin_submissions')
     .select('id,user_id,link_id,link_player_id,player_id,readiness,life_flag,pain_score,pain_location,returner_flag,player_note,status,submitted_at,imported_at,conflict_reason,created_at,updated_at,deleted_at,client_updated_at')
     .eq('user_id', userId)
+    .in('link_id', linkIds)
     .is('deleted_at', null)
   if (submissionError) {
     throw new Error(submissionError.message)
   }
 
-  for (const row of (submissionRows ?? []) as PublicCheckInSubmissionRow[]) {
-    await localDb.publicCheckInSubmissions.put(submissionFromRow(row))
-  }
+  const remoteSubmissions = (submissionRows ?? []) as PublicCheckInSubmissionRow[]
+  const localSubmissions = await localDb.publicCheckInSubmissions.bulkGet(remoteSubmissions.map((row) => row.id))
+  const submissionsToPut = remoteSubmissions
+    .map((row, index) => ({ local: localSubmissions[index], remote: submissionFromRow(row), row }))
+    .filter(({ local, row }) => {
+      if (local && local.syncStatus !== 'synced') {
+        return false
+      }
+
+      return !local || row.client_updated_at >= local.clientUpdatedAt
+    })
+    .map(({ remote }) => remote)
+  await localDb.publicCheckInSubmissions.bulkPut(submissionsToPut)
 }

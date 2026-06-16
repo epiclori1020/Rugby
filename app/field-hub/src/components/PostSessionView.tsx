@@ -582,15 +582,17 @@ export function PostSessionView({
             selectedSessionId={selectedSessionId}
             sessions={sessions}
           />
-          <button
-            className="secondary-action"
-            type="button"
-            onClick={() => void handleRunSync()}
-            disabled={isLoading || baselineActions.isLoading}
-          >
-            <RefreshCw className="nav-icon" aria-hidden />
-            <span>{isLoading || baselineActions.isLoading ? 'Sync laeuft...' : 'Sync'}</span>
-          </button>
+          {syncOverview.status === 'error' || baselineActions.syncOverview.status === 'error' ? (
+            <button
+              className="secondary-action"
+              type="button"
+              onClick={() => void handleRunSync()}
+              disabled={isLoading || baselineActions.isLoading}
+            >
+              <RefreshCw className="nav-icon" aria-hidden />
+              <span>{isLoading || baselineActions.isLoading ? 'Sync laeuft...' : 'Retry'}</span>
+            </button>
+          ) : null}
           <button className="secondary-action" type="button" onClick={() => onNavigate('training')}>
             <UserCheck className="nav-icon" aria-hidden />
             <span>Training</span>

@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { AppShell } from './components/AppShell'
 import { AuthPanel } from './components/AuthPanel'
@@ -80,7 +80,7 @@ function CoachApp() {
     authState.status === 'signed-in' ? authState.user.id : null,
     selectedSession,
     playerActions.players,
-    activeTab === 'heute' || activeTab === 'check-in',
+    activeTab === 'check-in',
   )
   const postSessionActions = usePostSession(
     authState.status === 'signed-in' ? authState.user.id : null,
@@ -119,6 +119,22 @@ function CoachApp() {
   const refreshPostSession = postSessionActions.refreshPostSession
   const refreshBaselines = baselineActions.refreshBaselines
   const refreshReturners = returnerActions.refreshReturners
+  const refreshLocalDataRef = useRef({
+    refreshBaselines,
+    refreshLocalCheckIns,
+    refreshLocalPlayers,
+    refreshPostSession,
+    refreshReturners,
+  })
+  useEffect(() => {
+    refreshLocalDataRef.current = {
+      refreshBaselines,
+      refreshLocalCheckIns,
+      refreshLocalPlayers,
+      refreshPostSession,
+      refreshReturners,
+    }
+  }, [refreshBaselines, refreshLocalCheckIns, refreshLocalPlayers, refreshPostSession, refreshReturners])
   const backupReminderKey = latestCompletedSession
     ? `${latestCompletedSession.id}:${latestCompletedSession.clientUpdatedAt}`
     : null
@@ -133,13 +149,20 @@ function CoachApp() {
     if (!userId) {
       return
     }
+    const {
+      refreshBaselines: refreshBaselinesNow,
+      refreshLocalCheckIns: refreshLocalCheckInsNow,
+      refreshLocalPlayers: refreshLocalPlayersNow,
+      refreshPostSession: refreshPostSessionNow,
+      refreshReturners: refreshReturnersNow,
+    } = refreshLocalDataRef.current
 
     await Promise.all([
-      refreshLocalPlayers(),
-      refreshLocalCheckIns(),
-      refreshPostSession(),
-      refreshBaselines(),
-      refreshReturners(),
+      refreshLocalPlayersNow(),
+      refreshLocalCheckInsNow(),
+      refreshPostSessionNow(),
+      refreshBaselinesNow(),
+      refreshReturnersNow(),
     ])
     const [storedLastExportAt, completedSession] = await Promise.all([
       getLastExportAt(userId),
@@ -147,7 +170,7 @@ function CoachApp() {
     ])
     setLastExportAtState(storedLastExportAt)
     setLatestCompletedSession(completedSession)
-  }, [refreshBaselines, refreshLocalCheckIns, refreshLocalPlayers, refreshPostSession, refreshReturners, userId])
+  }, [userId])
 
   const runManualSync = useCallback(async () => {
     if (!userId) {
@@ -173,7 +196,7 @@ function CoachApp() {
     Promise.resolve()
       .then(refreshAllLocalData)
       .catch(() => undefined)
-  }, [refreshAllLocalData])
+  }, [refreshAllLocalData, selectedSession.id])
 
   useEffect(() => {
     if (!manualSyncNotice) {

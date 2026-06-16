@@ -105,6 +105,7 @@ function createId() {
 const pendingSessionLogEnsures = new Map<string, Promise<SessionLog>>()
 const pendingCheckInEntrySaves = new Map<string, Promise<PlayerSessionEntry>>()
 const pendingCheckInSyncs = new Map<string, Promise<PlayerSyncOverview>>()
+const rerunRequestedCheckInSyncs = new Set<string>()
 
 function sessionLogEnsureKey(userId: string, sessionDefinitionId: string) {
   return `${userId}:${sessionDefinitionId}`
@@ -275,6 +276,10 @@ export async function findSessionLog(userId: string, sessionDefinitionId: string
       .and((sessionLog) => sessionLog.sessionDefinitionId === sessionDefinitionId && !sessionLog.deletedAt)
       .first()) ?? null
   )
+}
+
+export async function countLocalSessionLogs(userId: string) {
+  return localDb.sessionLogs.where('userId').equals(userId).count()
 }
 
 async function ensureSessionLogOnce(userId: string, sessionDefinition: SessionDefinition) {
@@ -849,52 +854,75 @@ async function syncPendingPlayerSessionEntries(userId: string) {
   )
 }
 
-async function refreshRemoteCheckIns(userId: string) {
-  const { data: sessionRows, error: sessionError } = await supabase!
+type PullRemoteCheckInsOptions = {
+  sessionDefinitionId?: string
+}
+
+async function refreshRemoteCheckIns(userId: string, options: PullRemoteCheckInsOptions = {}) {
+  let sessionQuery = supabase!
     .from('session_logs')
     .select(
       'id,user_id,session_definition_id,date,status,coach,group_size,weather_or_heat_note,plan_changed,duration_minutes,contact_index,speed_exposure_note,coach_review,created_at,updated_at,deleted_at,client_updated_at',
     )
     .eq('user_id', userId)
-    .is('deleted_at', null)
+  if (options.sessionDefinitionId) {
+    sessionQuery = sessionQuery.eq('session_definition_id', options.sessionDefinitionId)
+  }
+  const { data: sessionRows, error: sessionError } = await sessionQuery.is('deleted_at', null)
 
   if (sessionError) {
     throw new Error(sessionError.message)
   }
 
-  for (const row of (sessionRows ?? []) as SessionLogRow[]) {
-    const localSessionLog = await localDb.sessionLogs.get(row.id)
-    if (localSessionLog?.syncStatus === 'pending') {
-      continue
-    }
+  const remoteSessionLogs = (sessionRows ?? []) as SessionLogRow[]
+  const localSessionLogs = await localDb.sessionLogs.bulkGet(remoteSessionLogs.map((row) => row.id))
+  const sessionLogsToPut = remoteSessionLogs
+    .map((row, index) => ({ local: localSessionLogs[index], remote: sessionLogFromRow(row), row }))
+    .filter(({ local, row }) => {
+      if (local && local.syncStatus !== 'synced') {
+        return false
+      }
 
-    if (!localSessionLog || row.client_updated_at >= localSessionLog.clientUpdatedAt) {
-      await localDb.sessionLogs.put(sessionLogFromRow(row))
-    }
+      return !local || row.client_updated_at >= local.clientUpdatedAt
+    })
+    .map(({ remote }) => remote)
+  await localDb.sessionLogs.bulkPut(sessionLogsToPut)
+
+  const sessionLogIds = remoteSessionLogs.map((row) => row.id)
+  if (options.sessionDefinitionId && sessionLogIds.length === 0) {
+    return sessionLogIds
   }
 
-  const { data: entryRows, error: entryError } = await supabase!
+  let entryQuery = supabase!
     .from('player_session_entries')
     .select(
       'id,user_id,session_log_id,player_id,present,readiness,life_flag,pain_score,pain_location,returner_flag,red_flag,movement_concern,traffic_light,traffic_light_suggestion,traffic_light_was_manual,training_variant,limits,observation,session_rpe,duration_minutes,session_load,post_pain_score,post_pain_location,e2_decision,next_step,checkin_source,player_submitted_at,coach_edited_at,player_note,created_at,updated_at,deleted_at,client_updated_at',
     )
     .eq('user_id', userId)
-    .is('deleted_at', null)
+  if (options.sessionDefinitionId) {
+    entryQuery = entryQuery.in('session_log_id', sessionLogIds)
+  }
+  const { data: entryRows, error: entryError } = await entryQuery.is('deleted_at', null)
 
   if (entryError) {
     throw new Error(entryError.message)
   }
 
-  for (const row of (entryRows ?? []) as PlayerSessionEntryRow[]) {
-    const localEntry = await localDb.playerSessionEntries.get(row.id)
-    if (localEntry?.syncStatus === 'pending') {
-      continue
-    }
+  const remoteEntries = (entryRows ?? []) as PlayerSessionEntryRow[]
+  const localEntries = await localDb.playerSessionEntries.bulkGet(remoteEntries.map((row) => row.id))
+  const entriesToPut = remoteEntries
+    .map((row, index) => ({ local: localEntries[index], remote: entryFromRow(row), row }))
+    .filter(({ local, row }) => {
+      if (local && local.syncStatus !== 'synced') {
+        return false
+      }
 
-    if (!localEntry || row.client_updated_at >= localEntry.clientUpdatedAt) {
-      await localDb.playerSessionEntries.put(entryFromRow(row))
-    }
-  }
+      return !local || row.client_updated_at >= local.clientUpdatedAt
+    })
+    .map(({ remote }) => remote)
+  await localDb.playerSessionEntries.bulkPut(entriesToPut)
+
+  return sessionLogIds
 }
 
 async function pushPendingCheckInsOnce(userId: string): Promise<PlayerSyncOverview> {
@@ -942,38 +970,58 @@ async function pushPendingCheckInsOnce(userId: string): Promise<PlayerSyncOvervi
 export async function pushPendingCheckIns(userId: string): Promise<PlayerSyncOverview> {
   const pendingSync = pendingCheckInSyncs.get(userId)
   if (pendingSync) {
+    rerunRequestedCheckInSyncs.add(userId)
     return pendingSync
   }
 
-  const syncPromise = measureInteraction('sync:field-data-push', () => pushPendingCheckInsOnce(userId)).finally(
-    () => {
+  const syncPromise = (async () => {
+    let overview = await measureInteraction('sync:field-data-push', () => pushPendingCheckInsOnce(userId))
+    while (rerunRequestedCheckInSyncs.delete(userId)) {
+      const latestOverview = await getCheckInSyncOverview(userId)
+      if (latestOverview.pendingCount === 0 || latestOverview.status === 'error') {
+        overview = latestOverview
+        continue
+      }
+
+      overview = await measureInteraction('sync:field-data-push:rerun', () => pushPendingCheckInsOnce(userId))
+    }
+    return overview
+  })().finally(() => {
       pendingCheckInSyncs.delete(userId)
-    },
-  )
+      rerunRequestedCheckInSyncs.delete(userId)
+    })
   pendingCheckInSyncs.set(userId, syncPromise)
 
   return syncPromise
 }
 
-export async function pullRemoteCheckIns(userId: string) {
+export async function pullRemoteCheckIns(userId: string, options: PullRemoteCheckInsOptions = {}) {
   if (!supabase) {
     throw new Error('Supabase ist noch nicht konfiguriert.')
   }
 
-  await refreshRemoteCheckIns(userId)
+  const sessionLogIds = await refreshRemoteCheckIns(userId, options)
+  if (options.sessionDefinitionId) {
+    const scopedOptions = { sessionLogIds }
+    await refreshRemoteProgressEntries(userId, scopedOptions)
+    await refreshRemoteBaselineEntries(userId, scopedOptions)
+    await refreshRemoteReturnerEntries(userId, scopedOptions)
+    return
+  }
+
   await refreshRemoteProgressEntries(userId)
   await refreshRemoteBaselineEntries(userId)
   await refreshRemoteReturnerEntries(userId)
 }
 
-export async function syncCheckIns(userId: string): Promise<PlayerSyncOverview> {
+export async function syncCheckIns(userId: string, options: PullRemoteCheckInsOptions = {}): Promise<PlayerSyncOverview> {
   const overview = await pushPendingCheckIns(userId)
   if (overview.status === 'error') {
     return overview
   }
 
   try {
-    await pullRemoteCheckIns(userId)
+    await pullRemoteCheckIns(userId, options)
     return {
       ...(await getCheckInSyncOverview(userId)),
       status: 'synced',

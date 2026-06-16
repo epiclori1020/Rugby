@@ -537,10 +537,12 @@ export function CheckInView({
             selectedSessionId={selectedSessionId}
             sessions={sessions}
           />
-          <button className="secondary-action" type="button" onClick={runSync} disabled={isLoading}>
-            <RefreshCw className="nav-icon" aria-hidden />
-            <span>{isLoading ? 'Sync laeuft...' : 'Sync'}</span>
-          </button>
+          {syncOverview.status === 'error' ? (
+            <button className="secondary-action" type="button" onClick={runSync} disabled={isLoading}>
+              <RefreshCw className="nav-icon" aria-hidden />
+              <span>{isLoading ? 'Sync laeuft...' : 'Retry'}</span>
+            </button>
+          ) : null}
           <button className="secondary-action" type="button" onClick={() => onNavigate('spieler')}>
             <UserCheck className="nav-icon" aria-hidden />
             <span>Spieler verwalten</span>

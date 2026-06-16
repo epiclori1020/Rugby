@@ -162,6 +162,42 @@ export async function listReturnerEntriesForPlayer(userId: string, playerId: str
   })
 }
 
+export async function listReturnerEntriesForPlayers(userId: string, playerIds: string[]) {
+  if (playerIds.length === 0) {
+    return {}
+  }
+
+  const playerIdSet = new Set(playerIds)
+  const sessionLogs = await localDb.sessionLogs.where('userId').equals(userId).toArray()
+  const dateBySessionLogId = new Map(sessionLogs.map((sessionLog) => [sessionLog.id, sessionLog.date]))
+  const entries = await localDb.returnerEntries
+    .where('userId')
+    .equals(userId)
+    .and((entry) => !!entry.playerId && playerIdSet.has(entry.playerId) && !entry.deletedAt)
+    .toArray()
+  const grouped = new Map<string, ReturnerEntry[]>()
+
+  for (const entry of entries) {
+    if (!entry.playerId) {
+      continue
+    }
+
+    grouped.set(entry.playerId, [...(grouped.get(entry.playerId) ?? []), entry])
+  }
+
+  return Object.fromEntries(
+    [...grouped.entries()].map(([playerId, playerEntries]) => [
+      playerId,
+      playerEntries.sort((a, b) => {
+        const dateA = dateBySessionLogId.get(a.sessionLogId) ?? a.createdAt
+        const dateB = dateBySessionLogId.get(b.sessionLogId) ?? b.createdAt
+
+        return dateB.localeCompare(dateA)
+      }),
+    ]),
+  )
+}
+
 export async function listReturnerEntriesForSession(userId: string, sessionLogId: string) {
   return localDb.returnerEntries
     .where('userId')
@@ -328,33 +364,50 @@ export async function syncPendingReturnerEntries(userId: string) {
   )
 }
 
-export async function refreshRemoteReturnerEntries(userId: string) {
+export type RefreshRemoteReturnerEntriesOptions = {
+  sessionLogIds?: string[]
+}
+
+export async function refreshRemoteReturnerEntries(
+  userId: string,
+  options: RefreshRemoteReturnerEntriesOptions = {},
+) {
   if (!supabase) {
     throw new Error('Supabase ist noch nicht konfiguriert.')
   }
 
-  const { data, error } = await supabase
+  if (options.sessionLogIds && options.sessionLogIds.length === 0) {
+    return
+  }
+
+  let query = supabase
     .from('returner_entries')
     .select(
       'id,user_id,player_id,session_log_id,medical_contact_note,current_stage,speed_cap,cod_decel_cap,conditioning_cap,contact_cap,allowed_today,planned_caps,completed,symptoms_during,next_morning,decision,created_at,updated_at,deleted_at,client_updated_at',
     )
     .eq('user_id', userId)
-    .is('deleted_at', null)
+  if (options.sessionLogIds) {
+    query = query.in('session_log_id', options.sessionLogIds)
+  }
+  const { data, error } = await query.is('deleted_at', null)
 
   if (error) {
     throw new Error(error.message)
   }
 
-  for (const row of (data ?? []) as ReturnerEntryRow[]) {
-    const localEntry = await localDb.returnerEntries.get(row.id)
-    if (localEntry?.syncStatus === 'pending') {
-      continue
-    }
+  const remoteEntries = (data ?? []) as ReturnerEntryRow[]
+  const localEntries = await localDb.returnerEntries.bulkGet(remoteEntries.map((row) => row.id))
+  const entriesToPut = remoteEntries
+    .map((row, index) => ({ local: localEntries[index], remote: returnerEntryFromRow(row), row }))
+    .filter(({ local, row }) => {
+      if (local && local.syncStatus !== 'synced') {
+        return false
+      }
 
-    if (!localEntry || row.client_updated_at >= localEntry.clientUpdatedAt) {
-      await localDb.returnerEntries.put(returnerEntryFromRow(row))
-    }
-  }
+      return !local || row.client_updated_at >= local.clientUpdatedAt
+    })
+    .map(({ remote }) => remote)
+  await localDb.returnerEntries.bulkPut(entriesToPut)
 
   await setSyncMeta(`returners:lastSuccessfulSyncAt:${userId}`, nowIso())
 }

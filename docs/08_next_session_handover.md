@@ -976,6 +976,28 @@ Verifikation fuer diese Runde:
 - direkte `psql`-RLS-/Flooding-Kontrollen gegen die Remote-DB
 - Browser-QA auf `http://localhost:5174/#/checkin/<test-token>`: Public-Seite laedt mit aktuellem Dev-Code, Datenschutz-Copy sichtbar, Test-Submission wird remote geschrieben und Testdaten danach geloescht.
 
+## Field Hub Performance-Entscheidung 2026-06-16
+
+Kontext:
+
+- Nach Performance-Audit und externem Plan-Review wurde die App-Performance ohne neue Supabase-Komplexitaet nachgeschaerft.
+- Ziel war MVP-gerecht: Interaktionen local-first schnell halten, Sync behalten, Public/WhatsApp-Check-in behalten, aber aus kritischen UI-Pfaden herausnehmen.
+
+Entscheidungen fuer Folgesessions:
+
+- Public-Check-in-Polling ist bewusst kein Voll-Sync mehr. Der Poll soll nur aktuelle Public-Links/Submissions der gewaehlten Session laden, importieren und danach lokal gezielt Check-in-Daten refreshen.
+- Public-Polling laeuft nur auf dem Check-in-Tab, sichtbar/online und mit 30 Sekunden Intervall. `Heute` pollt nicht mehr im Hintergrund.
+- Session-begrenzte Syncs nutzen die aktuelle `session_definition_id` und daraus abgeleitete `session_log_id`s fuer Check-in, Progress, Baseline und Returner. Globaler manueller Sync bleibt als Rettungsanker erhalten.
+- Kein `client_updated_at`-Delta-Sync einfuehren, solange es keinen serverseitig gesetzten `updated_at`-Trigger gibt. Grund: iPad/iPhone-Geraeteuhren koennen sonst Mehrgeraete-Daten still ueberspringen.
+- App-weite Local-Refresh-Kaskaden duerfen nicht durch jeden Check-in-Tap entstehen. Returner-Flag-Relevanz bleibt live, Returner-History wird gruppiert und gezielt nachgeladen.
+- Lokale Pending/Error-Records duerfen nach Background-Sync nicht pauschal als `synced` markiert werden. Nach Push wird die echte lokale Uebersicht neu gelesen.
+- Tab-spezifische Sync-Buttons sind nur noch Fehler-Retry. Der normale manuelle Voll-Sync bleibt im globalen Sync-Statusbereich.
+
+Supabase-Status:
+
+- Keine neue Migration, kein RLS-/Grant-/Storage-Push und kein DB-Deploy noetig. Diese Runde aendert nur Frontend-/Repository-Sync-Verhalten.
+- Keine `service_role` Keys, keine Secrets und keine neue Supabase-Architektur einfuehren.
+
 ## Empfohlener Startprompt fuer eine Trainingsplan-Session
 
 ```text

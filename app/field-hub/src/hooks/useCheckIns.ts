@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import type { CheckInEntryPatch, PlayerObservation, PlayerSessionEntry, PlayerWarning, TrafficLight } from '../domain/checkIn'
 import type { Player } from '../domain/players'
 import type { PublicCheckInSubmission } from '../domain/publicCheckIn'
@@ -9,6 +9,7 @@ import { scheduleBackgroundSync } from '../lib/backgroundSync'
 import { mergeRecordIntoList } from '../lib/optimisticUpdates'
 import {
   buildEmptyEntry,
+  countLocalSessionLogs,
   ensureSessionLog,
   findSessionLog,
   getCheckInSyncOverview,
@@ -16,6 +17,7 @@ import {
   listExpectedPlayerIds,
   listLatestObservations,
   listLatestWarnings,
+  pullRemoteCheckIns,
   pushPendingCheckIns,
   saveCheckInEntry,
   saveSessionLogPatch,
@@ -32,6 +34,8 @@ import {
   refreshRemotePublicCheckIns,
   type CreatedPublicCheckInLink,
 } from '../lib/publicCheckInRepository'
+
+const REMOTE_PULL_THROTTLE_MS = 30_000
 
 type SaveEntryResult =
   | { ok: true; entry: PlayerSessionEntry }
@@ -55,6 +59,10 @@ export function useCheckIns(
   const [publicCheckInLinks, setPublicCheckInLinks] = useState<Awaited<ReturnType<typeof listLocalPublicCheckInLinks>>>([])
   const [publicCheckInSubmissions, setPublicCheckInSubmissions] = useState<PublicCheckInSubmission[]>([])
   const [publicCheckInNotice, setPublicCheckInNotice] = useState<string | null>(null)
+  const publicRefreshInFlightRef = useRef<Promise<void> | null>(null)
+  const remotePullInFlightRef = useRef<Promise<void> | null>(null)
+  const lastRemotePullAtRef = useRef(0)
+  const syncRunningRef = useRef(false)
 
   const activePlayers = useMemo(() => players.filter((player) => player.active), [players])
   const activePlayerIds = useMemo(() => new Set(activePlayers.map((player) => player.id)), [activePlayers])
@@ -116,11 +124,12 @@ export function useCheckIns(
       return
     }
 
+    syncRunningRef.current = true
     setIsLoading(true)
     try {
-      await refreshRemotePublicCheckIns(userId).catch(() => undefined)
+      await refreshRemotePublicCheckIns(userId, { sessionDefinitionId: sessionDefinition.id }).catch(() => undefined)
       const publicImportResult = await importPublicCheckInSubmissions(userId, sessionDefinition).catch(() => null)
-      const overview = await syncCheckIns(userId)
+      const overview = await syncCheckIns(userId, { sessionDefinitionId: sessionDefinition.id })
       setSyncOverview(overview)
       setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Check-in-Sync fehlgeschlagen.' : null)
       if (publicImportResult && (publicImportResult.imported > 0 || publicImportResult.conflicts > 0)) {
@@ -142,7 +151,79 @@ export function useCheckIns(
       return overview
     } finally {
       setIsLoading(false)
+      syncRunningRef.current = false
     }
+  }, [refreshLocalCheckIns, sessionDefinition, userId])
+
+  // M1: leichter, event-getriebener Frische-Pull fuer Cross-Device-Daten.
+  // Bewusst KEIN setIsLoading (Controls bleiben nutzbar), KEIN Push/syncCheckIns,
+  // session-begrenzt (voll nur bei leerer lokaler DB), gedrosselt + in-flight-geschuetzt.
+  const refreshRemoteCheckInData = useCallback(async () => {
+    if (!userId || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+      return
+    }
+
+    if (syncRunningRef.current || remotePullInFlightRef.current) {
+      return remotePullInFlightRef.current ?? undefined
+    }
+
+    if (Date.now() - lastRemotePullAtRef.current < REMOTE_PULL_THROTTLE_MS) {
+      return
+    }
+
+    const pullPromise = (async () => {
+      try {
+        const hasLocalHistory = (await countLocalSessionLogs(userId)) > 0
+        await pullRemoteCheckIns(userId, hasLocalHistory ? { sessionDefinitionId: sessionDefinition.id } : {})
+        await refreshLocalCheckIns()
+        lastRemotePullAtRef.current = Date.now()
+      } catch {
+        // Best-effort: Fehler ignorieren, lokale Daten bleiben gueltig.
+      }
+    })().finally(() => {
+      remotePullInFlightRef.current = null
+    })
+    remotePullInFlightRef.current = pullPromise
+    return pullPromise
+  }, [refreshLocalCheckIns, sessionDefinition.id, userId])
+
+  const refreshPublicCheckIns = useCallback(async () => {
+    if (!userId || (typeof navigator !== 'undefined' && !navigator.onLine)) {
+      return
+    }
+
+    if (publicRefreshInFlightRef.current) {
+      return publicRefreshInFlightRef.current
+    }
+
+    const refreshPromise = (async () => {
+      await refreshRemotePublicCheckIns(userId, { sessionDefinitionId: sessionDefinition.id })
+      const publicImportResult = await importPublicCheckInSubmissions(userId, sessionDefinition)
+      if (publicImportResult.imported > 0 || publicImportResult.conflicts > 0) {
+        setPublicCheckInNotice(
+          `${publicImportResult.imported} Spieler-Check-ins uebernommen, ${publicImportResult.conflicts} Konflikte.`,
+        )
+      }
+      if (publicImportResult.imported > 0 || publicImportResult.conflicts > 0 || publicImportResult.superseded > 0) {
+        await refreshLocalCheckIns()
+      } else {
+        const [overview, localPublicLinks] = await Promise.all([
+          getCheckInSyncOverview(userId),
+          listLocalPublicCheckInLinks(userId, sessionDefinition.id),
+        ])
+        setSyncOverview(overview)
+        setPublicCheckInLinks(localPublicLinks.sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
+        setPublicCheckInSubmissions(
+          (
+            await Promise.all(localPublicLinks.map((link) => listLocalPublicCheckInSubmissions(userId, link.id)))
+          ).flat(),
+        )
+      }
+    })().finally(() => {
+      publicRefreshInFlightRef.current = null
+    })
+    publicRefreshInFlightRef.current = refreshPromise
+    return refreshPromise
   }, [refreshLocalCheckIns, sessionDefinition, userId])
 
   const runBackgroundSync = useCallback(async () => {
@@ -152,20 +233,9 @@ export function useCheckIns(
 
     try {
       const overview = await pushPendingCheckIns(userId)
-      setSyncOverview(overview)
+      setSyncOverview(await getCheckInSyncOverview(userId))
       if (overview.status !== 'error') {
-        setSessionLog((currentSessionLog) =>
-          currentSessionLog?.syncStatus === 'pending' || currentSessionLog?.syncStatus === 'error'
-            ? { ...currentSessionLog, syncStatus: 'synced', syncError: null }
-            : currentSessionLog,
-        )
-        setEntries((currentEntries) =>
-          currentEntries.map((entry) =>
-            entry.syncStatus === 'pending' || entry.syncStatus === 'error'
-              ? { ...entry, syncStatus: 'synced', syncError: null }
-              : entry,
-          ),
-        )
+        await refreshLocalCheckIns()
       }
       setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Check-in-Sync fehlgeschlagen.' : null)
     } catch (caughtError) {
@@ -177,13 +247,33 @@ export function useCheckIns(
       })
       setErrorMessage(`Lokal gespeichert, Sync offen: ${message}`)
     }
-  }, [userId])
+  }, [refreshLocalCheckIns, userId])
 
   useEffect(() => {
     Promise.resolve()
       .then(refreshLocalCheckIns)
       .catch(() => undefined)
   }, [refreshLocalCheckIns])
+
+  // M1: einmal beim Mount/Session-Wechsel + beim Sichtbarwerden (Vordergrund) frisch ziehen.
+  useEffect(() => {
+    void refreshRemoteCheckInData()
+  }, [refreshRemoteCheckInData])
+
+  useEffect(() => {
+    if (!userId || typeof document === 'undefined') {
+      return undefined
+    }
+
+    const handleVisibilityChange = () => {
+      if (document.visibilityState === 'visible') {
+        void refreshRemoteCheckInData()
+      }
+    }
+
+    document.addEventListener('visibilitychange', handleVisibilityChange)
+    return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
+  }, [refreshRemoteCheckInData, userId])
 
   useEffect(() => {
     if (!userId || !enablePublicCheckInPolling) {
@@ -195,12 +285,12 @@ export function useCheckIns(
         return
       }
 
-      void runSync()
+      void refreshPublicCheckIns().catch(() => undefined)
     }
-    const intervalId = window.setInterval(pollPublicCheckIns, 12_000)
+    const intervalId = window.setInterval(pollPublicCheckIns, 30_000)
 
     return () => window.clearInterval(intervalId)
-  }, [enablePublicCheckInPolling, runSync, userId])
+  }, [enablePublicCheckInPolling, refreshPublicCheckIns, userId])
 
   useEffect(() => {
     if (!userId) {

@@ -53,7 +53,7 @@ export function useBaselines(userId: string | null, sessionDefinition: SessionDe
 
     setIsLoading(true)
     try {
-      const overview = await syncCheckIns(userId)
+      const overview = await syncCheckIns(userId, { sessionDefinitionId: sessionDefinition.id })
       const baselineOverview = await getBaselineSyncOverview(userId)
       setSyncOverview(baselineOverview)
       setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Baseline-Sync fehlgeschlagen.' : null)
@@ -71,7 +71,7 @@ export function useBaselines(userId: string | null, sessionDefinition: SessionDe
     } finally {
       setIsLoading(false)
     }
-  }, [refreshBaselines, userId])
+  }, [refreshBaselines, sessionDefinition.id, userId])
 
   const runBackgroundSync = useCallback(async () => {
     if (!userId || (typeof navigator !== 'undefined' && !navigator.onLine)) {
@@ -80,16 +80,9 @@ export function useBaselines(userId: string | null, sessionDefinition: SessionDe
 
     try {
       const overview = await pushPendingCheckIns(userId)
-      const baselineOverview = await getBaselineSyncOverview(userId)
-      setSyncOverview(baselineOverview)
+      setSyncOverview(await getBaselineSyncOverview(userId))
       if (overview.status !== 'error') {
-        setEntries((currentEntries) =>
-          currentEntries.map((entry) =>
-            entry.syncStatus === 'pending' || entry.syncStatus === 'error'
-              ? { ...entry, syncStatus: 'synced', syncError: null }
-              : entry,
-          ),
-        )
+        await refreshBaselines()
       }
       setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Baseline-Sync fehlgeschlagen.' : null)
     } catch (caughtError) {
@@ -101,7 +94,7 @@ export function useBaselines(userId: string | null, sessionDefinition: SessionDe
       })
       setErrorMessage(`Lokal gespeichert, Sync offen: ${message}`)
     }
-  }, [userId])
+  }, [refreshBaselines, userId])
 
   useEffect(() => {
     Promise.resolve()

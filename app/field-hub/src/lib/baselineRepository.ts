@@ -255,33 +255,50 @@ export async function syncPendingBaselineEntries(userId: string) {
   )
 }
 
-export async function refreshRemoteBaselineEntries(userId: string) {
+export type RefreshRemoteBaselineEntriesOptions = {
+  sessionLogIds?: string[]
+}
+
+export async function refreshRemoteBaselineEntries(
+  userId: string,
+  options: RefreshRemoteBaselineEntriesOptions = {},
+) {
   if (!supabase) {
     throw new Error('Supabase ist noch nicht konfiguriert.')
   }
 
-  const { data, error } = await supabase
+  if (options.sessionLogIds && options.sessionLogIds.length === 0) {
+    return
+  }
+
+  let query = supabase
     .from('baseline_entries')
     .select(
       'id,user_id,player_id,session_log_id,broad_jump_cm,med_ball_chest_pass_m,med_ball_weight_kg,sprint_30m,note,created_at,updated_at,deleted_at,client_updated_at',
     )
     .eq('user_id', userId)
-    .is('deleted_at', null)
+  if (options.sessionLogIds) {
+    query = query.in('session_log_id', options.sessionLogIds)
+  }
+  const { data, error } = await query.is('deleted_at', null)
 
   if (error) {
     throw new Error(error.message)
   }
 
-  for (const row of (data ?? []) as BaselineEntryRow[]) {
-    const localEntry = await localDb.baselineEntries.get(row.id)
-    if (localEntry?.syncStatus === 'pending') {
-      continue
-    }
+  const remoteEntries = (data ?? []) as BaselineEntryRow[]
+  const localEntries = await localDb.baselineEntries.bulkGet(remoteEntries.map((row) => row.id))
+  const entriesToPut = remoteEntries
+    .map((row, index) => ({ local: localEntries[index], remote: baselineEntryFromRow(row), row }))
+    .filter(({ local, row }) => {
+      if (local && local.syncStatus !== 'synced') {
+        return false
+      }
 
-    if (!localEntry || row.client_updated_at >= localEntry.clientUpdatedAt) {
-      await localDb.baselineEntries.put(baselineEntryFromRow(row))
-    }
-  }
+      return !local || row.client_updated_at >= local.clientUpdatedAt
+    })
+    .map(({ remote }) => remote)
+  await localDb.baselineEntries.bulkPut(entriesToPut)
 
   await setSyncMeta(`baselines:lastSuccessfulSyncAt:${userId}`, nowIso())
 }

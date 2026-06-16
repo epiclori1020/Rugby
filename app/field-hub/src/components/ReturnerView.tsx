@@ -355,10 +355,12 @@ export function ReturnerView({
             selectedSessionId={selectedSessionId}
             sessions={sessions}
           />
-          <button className="secondary-action" type="button" onClick={runSync} disabled={isLoading}>
-            <RefreshCw className="nav-icon" aria-hidden />
-            <span>{isLoading ? 'Sync laeuft...' : 'Sync'}</span>
-          </button>
+          {syncOverview.status === 'error' ? (
+            <button className="secondary-action" type="button" onClick={runSync} disabled={isLoading}>
+              <RefreshCw className="nav-icon" aria-hidden />
+              <span>{isLoading ? 'Sync laeuft...' : 'Retry'}</span>
+            </button>
+          ) : null}
           <button className="secondary-action" type="button" onClick={() => onNavigate('training')}>
             <UserCheck className="nav-icon" aria-hidden />
             <span>Training</span>

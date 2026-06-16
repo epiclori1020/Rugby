@@ -15,6 +15,7 @@ import { supabase } from './supabaseClient'
 
 const PLAYER_PHOTOS_BUCKET = 'player-photos'
 const pendingPlayerSyncs = new Map<string, Promise<PlayerSyncOverview>>()
+const rerunRequestedPlayerSyncs = new Set<string>()
 const playerPhotoUrlCache = new Map<string, string>()
 
 type PlayerRow = {
@@ -458,16 +459,18 @@ async function syncPlayersOnce(userId: string): Promise<PlayerSyncOverview> {
     .toArray()
   const pendingLocalPlayerIds = new Set(pendingPlayerWritesAfterPush.map((write) => write.recordId))
 
-  for (const row of remoteRows) {
-    const localPlayer = await localDb.players.get(row.id)
-    if (localPlayer?.syncStatus === 'pending') {
-      continue
-    }
+  const localRemotePlayers = await localDb.players.bulkGet(remoteRows.map((row) => row.id))
+  const remotePlayersToPut = remoteRows
+    .map((row, index) => ({ local: localRemotePlayers[index], remote: playerFromRow(row), row }))
+    .filter(({ local, row }) => {
+      if (local && local.syncStatus !== 'synced') {
+        return false
+      }
 
-    if (!localPlayer || row.client_updated_at >= localPlayer.clientUpdatedAt) {
-      await localDb.players.put(playerFromRow(row))
-    }
-  }
+      return !local || row.client_updated_at >= local.clientUpdatedAt
+    })
+    .map(({ remote }) => remote)
+  await localDb.players.bulkPut(remotePlayersToPut)
 
   const localPlayers = await localDb.players.where('userId').equals(userId).toArray()
   const syncedLocalPlayers = localPlayers.filter((player) => player.syncStatus !== 'pending' && !player.deletedAt)
@@ -501,11 +504,25 @@ async function syncPlayersOnce(userId: string): Promise<PlayerSyncOverview> {
 export async function syncPlayers(userId: string): Promise<PlayerSyncOverview> {
   const pendingSync = pendingPlayerSyncs.get(userId)
   if (pendingSync) {
+    rerunRequestedPlayerSyncs.add(userId)
     return pendingSync
   }
 
-  const syncPromise = measureInteraction('sync:players', () => syncPlayersOnce(userId)).finally(() => {
+  const syncPromise = (async () => {
+    let overview = await measureInteraction('sync:players', () => syncPlayersOnce(userId))
+    while (rerunRequestedPlayerSyncs.delete(userId)) {
+      const latestOverview = await getPlayerSyncOverview(userId)
+      if (latestOverview.pendingCount === 0 || latestOverview.status === 'error') {
+        overview = latestOverview
+        continue
+      }
+
+      overview = await measureInteraction('sync:players:rerun', () => syncPlayersOnce(userId))
+    }
+    return overview
+  })().finally(() => {
     pendingPlayerSyncs.delete(userId)
+    rerunRequestedPlayerSyncs.delete(userId)
   })
   pendingPlayerSyncs.set(userId, syncPromise)
 

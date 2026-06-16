@@ -189,31 +189,48 @@ export async function syncPendingProgressEntries(userId: string) {
   )
 }
 
-export async function refreshRemoteProgressEntries(userId: string) {
+export type RefreshRemoteProgressEntriesOptions = {
+  sessionLogIds?: string[]
+}
+
+export async function refreshRemoteProgressEntries(
+  userId: string,
+  options: RefreshRemoteProgressEntriesOptions = {},
+) {
   if (!supabase) {
     throw new Error('Supabase ist noch nicht konfiguriert.')
   }
 
-  const { data, error } = await supabase
+  if (options.sessionLogIds && options.sessionLogIds.length === 0) {
+    return
+  }
+
+  let query = supabase
     .from('progress_entries')
     .select(
       'id,user_id,player_id,session_log_id,main_exercise,load,reps,rpe,power_or_sprint,conditioning,note,created_at,updated_at,deleted_at,client_updated_at',
     )
     .eq('user_id', userId)
-    .is('deleted_at', null)
+  if (options.sessionLogIds) {
+    query = query.in('session_log_id', options.sessionLogIds)
+  }
+  const { data, error } = await query.is('deleted_at', null)
 
   if (error) {
     throw new Error(error.message)
   }
 
-  for (const row of (data ?? []) as ProgressEntryRow[]) {
-    const localEntry = await localDb.progressEntries.get(row.id)
-    if (localEntry?.syncStatus === 'pending') {
-      continue
-    }
+  const remoteEntries = (data ?? []) as ProgressEntryRow[]
+  const localEntries = await localDb.progressEntries.bulkGet(remoteEntries.map((row) => row.id))
+  const entriesToPut = remoteEntries
+    .map((row, index) => ({ local: localEntries[index], remote: progressEntryFromRow(row), row }))
+    .filter(({ local, row }) => {
+      if (local && local.syncStatus !== 'synced') {
+        return false
+      }
 
-    if (!localEntry || row.client_updated_at >= localEntry.clientUpdatedAt) {
-      await localDb.progressEntries.put(progressEntryFromRow(row))
-    }
-  }
+      return !local || row.client_updated_at >= local.clientUpdatedAt
+    })
+    .map(({ remote }) => remote)
+  await localDb.progressEntries.bulkPut(entriesToPut)
 }
