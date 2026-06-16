@@ -7,6 +7,7 @@ import { CheckInView } from './components/CheckInView'
 import { ExportView } from './components/ExportView'
 import { LibraryView } from './components/LibraryView'
 import { PostSessionView } from './components/PostSessionView'
+import { PublicCheckInView } from './components/PublicCheckInView'
 import { PwaUpdateNotice } from './components/PwaUpdateNotice'
 import { PlayersView } from './components/PlayersView'
 import { ReturnerView } from './components/ReturnerView'
@@ -38,6 +39,15 @@ export type HubTab =
 
 const selectedSessionStorageKey = 'fieldHub:selectedSessionId'
 
+function getPublicCheckInTokenFromHash() {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const match = window.location.hash.match(/^#\/checkin\/([^/?#]+)/)
+  return match ? decodeURIComponent(match[1]) : null
+}
+
 function getInitialSelectedSessionId(fallbackSessionId: string) {
   if (typeof window === 'undefined') {
     return fallbackSessionId
@@ -49,7 +59,7 @@ function getInitialSelectedSessionId(fallbackSessionId: string) {
   return storedSessionExists && storedSessionId ? storedSessionId : fallbackSessionId
 }
 
-function App() {
+function CoachApp() {
   const [activeTab, setActiveTab] = useState<HubTab>('heute')
   const [dismissedBackupReminderKey, setDismissedBackupReminderKey] = useState<string | null>(null)
   const [isManualSyncing, setIsManualSyncing] = useState(false)
@@ -70,6 +80,7 @@ function App() {
     authState.status === 'signed-in' ? authState.user.id : null,
     selectedSession,
     playerActions.players,
+    activeTab === 'heute' || activeTab === 'check-in',
   )
   const postSessionActions = usePostSession(
     authState.status === 'signed-in' ? authState.user.id : null,
@@ -286,6 +297,16 @@ function App() {
       )}
     </AppShell>
   )
+}
+
+function App() {
+  const publicCheckInToken = getPublicCheckInTokenFromHash()
+
+  if (publicCheckInToken) {
+    return <PublicCheckInView token={publicCheckInToken} />
+  }
+
+  return <CoachApp />
 }
 
 export default App

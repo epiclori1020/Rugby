@@ -7,14 +7,19 @@ import {
   ShieldAlert,
   UserCheck,
 } from 'lucide-react'
-import type { FormEvent } from 'react'
+import { useState, type FormEvent } from 'react'
 import type { HubTab } from '../App'
 import { exerciseMappings, variantCards } from '../content/trainingReference'
 import type { SessionDefinition } from '../content/types'
 import type { CheckInEntryPatch, CheckInLimit, PlayerSessionEntry, PlayerWarning, TrafficLight } from '../domain/checkIn'
 import type { Player } from '../domain/players'
 import type { ReturnerCapSummary } from '../domain/returners'
-import { applyTrainingQuickAction, type TrainingQuickAction } from '../domain/training'
+import {
+  appendLiveObservation,
+  applyTrainingQuickAction,
+  type LiveObservationCategory,
+  type TrainingQuickAction,
+} from '../domain/training'
 import type { useCheckIns } from '../hooks/useCheckIns'
 import type { AuthSessionState } from '../lib/auth'
 import { hasPlayerId } from '../lib/playerId'
@@ -56,6 +61,17 @@ const quickActions: Array<{ action: TrainingQuickAction; label: string; tone?: '
   { action: 'kein_conditioning', label: 'kein Conditioning' },
   { action: 'kein_schweres_heben', label: 'kein schweres Heben' },
   { action: 'physio_medical', label: 'Physio/Medical' },
+]
+
+const liveObservationCategories: LiveObservationCategory[] = [
+  'Warm-up',
+  'Movement',
+  'Speed',
+  'Technik',
+  'Kraft',
+  'Conditioning',
+  'Kontakt',
+  'Orga',
 ]
 
 function formatTrafficLight(trafficLight: TrafficLight | null) {
@@ -245,6 +261,10 @@ export function TrainingView({
   })
   const variantCount = orderedPlayers.filter((player) => getEntryForPlayer(player).trainingVariant).length
   const limitedCount = orderedPlayers.filter((player) => getEntryForPlayer(player).limits.length > 0).length
+  const [liveObservationTarget, setLiveObservationTarget] = useState('group')
+  const [liveObservationCategory, setLiveObservationCategory] = useState<LiveObservationCategory>('Movement')
+  const [liveObservationText, setLiveObservationText] = useState('')
+  const [liveObservationFeedback, setLiveObservationFeedback] = useState<string | null>(null)
 
   function handleSessionTextBlur(field: 'contactIndex' | 'speedExposureNote') {
     return (event: FormEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -261,6 +281,37 @@ export function TrainingView({
         status: 'in_progress',
       })
     }
+  }
+
+  function handleLiveObservationSubmit(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    const note = liveObservationText.trim()
+
+    if (!note) {
+      return
+    }
+
+    if (liveObservationTarget === 'group') {
+      void saveSessionPatch({
+        coachReview: appendLiveObservation(sessionLog?.coachReview ?? '', liveObservationCategory, note),
+        planChanged: true,
+        status: 'in_progress',
+      })
+      setLiveObservationFeedback('Gruppen-Notiz gespeichert.')
+    } else {
+      const player = orderedPlayers.find((item) => item.id === liveObservationTarget)
+      if (!player) {
+        return
+      }
+
+      const entry = getEntryForPlayer(player)
+      void saveEntry(player, {
+        observation: appendLiveObservation(entry.observation, liveObservationCategory, note),
+      })
+      setLiveObservationFeedback(`Notiz fuer ${player.name} gespeichert.`)
+    }
+
+    setLiveObservationText('')
   }
 
   if (authState.status !== 'signed-in') {
@@ -336,6 +387,57 @@ export function TrainingView({
         <span>{pendingCountLabel(syncOverview.pendingCount, 'Training/Check-in-Aenderungen')}</span>
         {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
       </div>
+
+      <section className="panel live-observation-panel" aria-labelledby="live-observation-heading">
+        <div className="status-line">
+          <Gauge className="nav-icon" aria-hidden />
+          <h3 id="live-observation-heading">Live-Beobachtung</h3>
+        </div>
+        <form className="live-observation-form" onSubmit={handleLiveObservationSubmit}>
+          <label className="inline-field">
+            <span>Ziel</span>
+            <select value={liveObservationTarget} onChange={(event) => setLiveObservationTarget(event.target.value)}>
+              <option value="group">Ganze Gruppe</option>
+              {orderedPlayers.map((player) => (
+                <option key={player.id} value={player.id}>
+                  {player.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="control-group">
+            <span>Kategorie</span>
+            <div className="button-row">
+              {liveObservationCategories.map((category) => (
+                <button
+                  className={liveObservationCategory === category ? 'segmented active' : 'segmented'}
+                  key={category}
+                  type="button"
+                  onClick={() => setLiveObservationCategory(category)}
+                >
+                  {category}
+                </button>
+              ))}
+            </div>
+          </div>
+          <label className="inline-field wide">
+            <span>Notiz oder iPad-Diktat</span>
+            <textarea
+              value={liveObservationText}
+              disabled={isLoading}
+              rows={2}
+              placeholder="Reinsprechen oder kurz tippen"
+              onChange={(event) => setLiveObservationText(event.target.value)}
+            />
+          </label>
+          <button className="primary-action" type="submit" disabled={isLoading || liveObservationText.trim().length === 0}>
+            Speichern
+          </button>
+        </form>
+        <p className={liveObservationFeedback ? 'action-feedback visible' : 'action-feedback'} aria-live="polite">
+          {liveObservationFeedback ?? ''}
+        </p>
+      </section>
 
       <div className="training-grid">
         <div className="content-stack">

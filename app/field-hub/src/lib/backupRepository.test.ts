@@ -64,6 +64,22 @@ describe('backupRepository', () => {
 
   it('creates a complete local backup for the signed-in user', async () => {
     await localDb.players.put(player)
+    await localDb.publicCheckInLinks.put({
+      id: 'public-link-1',
+      userId,
+      sessionDefinitionId: 'session-def-1',
+      sessionTitle: 'Dienstag',
+      sessionDate: '2026-06-18',
+      tokenHash: 'token-hash',
+      expiresAt: '2026-06-19T02:00:00.000Z',
+      closedAt: null,
+      createdAt: '2026-06-18T17:00:00.000Z',
+      updatedAt: '2026-06-18T17:00:00.000Z',
+      deletedAt: null,
+      clientUpdatedAt: '2026-06-18T17:00:00.000Z',
+      syncStatus: 'synced',
+      syncError: null,
+    })
     await localDb.sessionLogs.put({
       id: 'session-log-1',
       userId,
@@ -117,6 +133,7 @@ describe('backupRepository', () => {
     expect(backup.data.progressEntries).toHaveLength(1)
     expect(backup.data.baselineEntries).toEqual([])
     expect(backup.data.returnerEntries).toEqual([])
+    expect(backup.data.publicCheckInLinks).toHaveLength(1)
   })
 
   it('previews import records without mutating local data', async () => {

@@ -1,4 +1,4 @@
-import { AlertTriangle, ClipboardCheck, RefreshCw, ShieldAlert, UserCheck } from 'lucide-react'
+import { AlertTriangle, Clipboard, ClipboardCheck, FileText, Link2, RefreshCw, ShieldAlert, UserCheck, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { HubTab } from '../App'
 import type { SessionDefinition } from '../content/types'
@@ -443,6 +443,7 @@ export function CheckInView({
     entries,
     errorMessage,
     expectedPlayerIds,
+    observations,
     warnings,
     syncOverview,
     isLoading,
@@ -451,11 +452,15 @@ export function CheckInView({
     getEntryForPlayer,
     clearError,
   } = checkInActions
+  const [publicLinkFeedback, setPublicLinkFeedback] = useState<string | null>(null)
   const returnerCapByPlayerId = new Map(returnerCaps.filter(hasPlayerId).map((cap) => [cap.playerId, cap]))
   const expectedPlayerSet = new Set(expectedPlayerIds)
   const activePlayerIdSet = new Set(activePlayers.map((player) => player.id))
   const activeEntries = entries.filter((entry) => hasPlayerId(entry) && activePlayerIdSet.has(entry.playerId))
   const activeWarnings = warnings.filter((warning) => hasPlayerId(warning) && activePlayerIdSet.has(warning.playerId))
+  const activeObservations = observations.filter(
+    (observation) => hasPlayerId(observation) && activePlayerIdSet.has(observation.playerId),
+  )
   const warningByPlayerId = new Map(activeWarnings.map((warning) => [warning.playerId, warning]))
   const orderedPlayers = [...activePlayers].sort((a, b) => {
     const aExpected = expectedPlayerSet.has(a.id)
@@ -471,6 +476,36 @@ export function CheckInView({
   const yellowCount = activeEntries.filter((entry) => entry.trafficLight === 'yellow').length
   const redCount = activeEntries.filter((entry) => entry.trafficLight === 'red').length
   const returnerCount = activeEntries.filter((entry) => entry.returnerFlag !== 'nein').length
+  const activePublicLink = checkInActions.publicCheckInLinks.find((link) => !link.closedAt)
+  const publicSubmissionCounts = checkInActions.publicCheckInSubmissions.reduce(
+    (counts, submission) => {
+      counts[submission.status] += 1
+      return counts
+    },
+    { pending: 0, imported: 0, conflict: 0, superseded: 0 },
+  )
+
+  async function handleCreatePublicLink() {
+    const createdLink = await checkInActions.createPublicLink()
+    if (!createdLink) {
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(createdLink.url)
+      setPublicLinkFeedback('Link erstellt und kopiert.')
+    } catch {
+      setPublicLinkFeedback(`Link erstellt: ${createdLink.url}`)
+    }
+  }
+
+  async function handleCopyExistingPublicLink() {
+    if (!activePublicLink) {
+      return
+    }
+
+    setPublicLinkFeedback('Roh-Token wird nur direkt beim Erstellen angezeigt. Erzeuge einen neuen Link, wenn du ihn erneut kopieren musst.')
+  }
 
   if (authState.status !== 'signed-in') {
     return (
@@ -549,11 +584,52 @@ export function CheckInView({
         {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
       </div>
 
+      <section className="panel public-checkin-coach-panel" aria-label="WhatsApp Check-in Link">
+        <div className="status-line">
+          <Link2 className="nav-icon" aria-hidden />
+          <div>
+            <h3>WhatsApp Check-in</h3>
+            <p>
+              Ein Gruppenlink fuer diese Einheit. Spieler sehen nur Namensauswahl und eigenes Formular;
+              eingehende Check-ins werden automatisch abgefragt.
+            </p>
+          </div>
+        </div>
+        <div className="button-row">
+          <button className="primary-action" type="button" onClick={() => void handleCreatePublicLink()} disabled={isLoading}>
+            <Clipboard className="nav-icon" aria-hidden />
+            <span>{activePublicLink ? 'Neuen Link erstellen' : 'Link erstellen und kopieren'}</span>
+          </button>
+          {activePublicLink ? (
+            <>
+              <button className="secondary-action" type="button" onClick={() => void handleCopyExistingPublicLink()}>
+                <ClipboardCheck className="nav-icon" aria-hidden />
+                <span>Aktiver Link</span>
+              </button>
+              <button className="secondary-action" type="button" onClick={() => void checkInActions.closePublicLink(activePublicLink.id)}>
+                <X className="nav-icon" aria-hidden />
+                <span>Link schliessen</span>
+              </button>
+            </>
+          ) : null}
+        </div>
+        <p className="sync-help">
+          {activePublicLink
+            ? `Aktiv bis ${new Date(activePublicLink.expiresAt).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })}.`
+            : 'Noch kein aktiver Link fuer diese Einheit lokal sichtbar.'}
+          {checkInActions.publicCheckInSubmissions.length > 0
+            ? ` Eingaenge: ${publicSubmissionCounts.pending} offen, ${publicSubmissionCounts.imported} uebernommen, ${publicSubmissionCounts.conflict} Konflikte.`
+            : ''}
+          {checkInActions.publicCheckInNotice ? ` ${checkInActions.publicCheckInNotice}` : ''}
+          {publicLinkFeedback ? ` ${publicLinkFeedback}` : ''}
+        </p>
+      </section>
+
       {activeWarnings.length > 0 ? (
         <aside className="panel warning-panel" aria-label="Offene Warnungen">
           <div className="status-line">
             <ShieldAlert className="nav-icon" aria-hidden />
-            <h3>Offene Warnungen aus letzter Einheit</h3>
+            <h3>Offene Warnungen</h3>
           </div>
           <div className="warning-list">
             {activeWarnings.map((warning) => {
@@ -568,6 +644,28 @@ export function CheckInView({
                     {warning.nextStep ? ` · Next ${warning.nextStep}` : ''}
                     {warning.postPainScore !== null ? ` · Post-Pain ${warning.postPainScore}/10` : ''}
                     {warning.observation ? ` · ${warning.observation}` : ''}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </aside>
+      ) : null}
+
+      {activeObservations.length > 0 ? (
+        <aside className="panel" aria-label="Notizen aus letzter Einheit">
+          <div className="status-line">
+            <FileText className="nav-icon" aria-hidden />
+            <h3>Notizen aus letzter Einheit</h3>
+          </div>
+          <div className="warning-list">
+            {activeObservations.map((observation) => {
+              const player = playerActions.players.find((item) => item.id === observation.playerId)
+              return (
+                <div className="warning-note" key={`${observation.playerId}-${observation.sessionDate}`}>
+                  <FileText className="nav-icon" aria-hidden />
+                  <span>
+                    <strong>{player?.name ?? 'Spieler'}</strong>: {observation.observation}
                   </span>
                 </div>
               )

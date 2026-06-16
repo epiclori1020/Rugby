@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import type { SessionDefinition } from '../content/types'
 import type { PlayerSessionEntry, PlayerWarning } from '../domain/checkIn'
+import type { PlayerObservation } from '../domain/checkIn'
 import type { Player } from '../domain/players'
 import type { PlayerSyncOverview } from '../domain/sync'
 import type { useCheckIns } from '../hooks/useCheckIns'
@@ -131,6 +132,12 @@ const activePlayer: Player = {
   syncError: null,
 }
 
+const activePlayerObservation: PlayerObservation = {
+  playerId: activePlayer.id,
+  observation: 'Hamstring im Speed-Block beobachten',
+  sessionDate: '2026-06-13',
+}
+
 const autoGreenEntry: PlayerSessionEntry = {
   ...deletedPlayerEntry,
   id: 'entry-active-player',
@@ -142,6 +149,15 @@ const autoGreenEntry: PlayerSessionEntry = {
   trafficLightSuggestion: 'green',
   trafficLightWasManual: false,
   syncStatus: 'synced',
+}
+
+const publicCheckInActions = {
+  publicCheckInLinks: [],
+  publicCheckInSubmissions: [],
+  publicCheckInNotice: null,
+  observations: [],
+  createPublicLink: async () => null,
+  closePublicLink: async () => undefined,
 }
 
 describe('CheckInView active player metrics', () => {
@@ -161,6 +177,7 @@ describe('CheckInView active player metrics', () => {
       saveSessionPatch: async () => undefined,
       getEntryForPlayer: (player: Player) => ({ ...deletedPlayerEntry, playerId: player.id }),
       sessionLog: null,
+      ...publicCheckInActions,
       clearError: () => undefined,
     } satisfies ReturnType<typeof useCheckIns>
     const playerActions = {
@@ -211,6 +228,7 @@ describe('CheckInView active player metrics', () => {
       saveSessionPatch: async () => undefined,
       getEntryForPlayer: (player: Player) => ({ ...deletedPlayerEntry, playerId: player.id }),
       sessionLog: null,
+      ...publicCheckInActions,
       clearError: () => undefined,
     } satisfies ReturnType<typeof useCheckIns>
     const playerActions = {
@@ -260,6 +278,7 @@ describe('CheckInView active player metrics', () => {
       saveSessionPatch: async () => undefined,
       getEntryForPlayer: () => autoGreenEntry,
       sessionLog: null,
+      ...publicCheckInActions,
       clearError: () => undefined,
     } satisfies ReturnType<typeof useCheckIns>
     const playerActions = {
@@ -294,5 +313,57 @@ describe('CheckInView active player metrics', () => {
     expect(markup).toContain('Keine Red Flag')
     expect(markup).not.toContain('class="segmented active danger" type="button">Keine Red Flag')
     expect(markup).not.toContain('segmented active danger')
+  })
+
+  it('shows player observations separately from safety warnings', () => {
+    const checkInActions = {
+      activePlayers: [activePlayer],
+      entries: [autoGreenEntry],
+      errorMessage: null,
+      expectedPlayerIds: [],
+      warnings: [],
+      syncOverview,
+      isLoading: false,
+      sessionLogId: 'session-log-1',
+      refreshLocalCheckIns: async () => undefined,
+      runSync: async () => syncOverview,
+      saveEntry: async () => ({ ok: true as const, entry: deletedPlayerEntry }),
+      saveSessionPatch: async () => undefined,
+      getEntryForPlayer: () => autoGreenEntry,
+      sessionLog: null,
+      ...publicCheckInActions,
+      observations: [activePlayerObservation],
+      clearError: () => undefined,
+    } satisfies ReturnType<typeof useCheckIns>
+    const playerActions = {
+      players: [activePlayer],
+      syncOverview,
+      isLoading: false,
+      refreshLocalPlayers: async () => undefined,
+      runSync: async () => undefined,
+      savePlayer: async () => undefined,
+      deactivatePlayer: async () => undefined,
+      deletePlayer: async () => undefined,
+      uploadPlayerPhoto: async () => undefined,
+      removePlayerPhoto: async () => undefined,
+    } satisfies ReturnType<typeof usePlayers>
+
+    const markup = renderToStaticMarkup(
+      <CheckInView
+        authState={authState}
+        checkInActions={checkInActions}
+        onNavigate={() => undefined}
+        onSessionChange={() => undefined}
+        playerActions={playerActions}
+        returnerCaps={[]}
+        selectedSession={selectedSession}
+        selectedSessionId={selectedSession.id}
+        sessions={[selectedSession]}
+      />,
+    )
+
+    expect(markup).toContain('Notizen aus letzter Einheit')
+    expect(markup).toContain('Hamstring im Speed-Block beobachten')
+    expect(markup).not.toContain('Offene Warnungen/Beobachtungen')
   })
 })

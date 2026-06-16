@@ -2,6 +2,7 @@ import type { BaselineEntry } from '../domain/baseline'
 import type { PlayerSessionEntry, SessionLog } from '../domain/checkIn'
 import type { Player } from '../domain/players'
 import type { ProgressEntry } from '../domain/postSession'
+import type { PublicCheckInLink, PublicCheckInLinkPlayer, PublicCheckInSubmission } from '../domain/publicCheckIn'
 import type { ReturnerEntry } from '../domain/returners'
 import { getSyncMeta, localDb, setSyncMeta, type PendingWriteTable } from './localDb'
 
@@ -16,6 +17,9 @@ export type FieldHubBackupV1 = {
     progressEntries: ProgressEntry[]
     baselineEntries: BaselineEntry[]
     returnerEntries: ReturnerEntry[]
+    publicCheckInLinks: PublicCheckInLink[]
+    publicCheckInLinkPlayers: PublicCheckInLinkPlayer[]
+    publicCheckInSubmissions: PublicCheckInSubmission[]
   }
 }
 
@@ -43,6 +47,9 @@ const collectionToTable = {
   progressEntries: 'progress_entries',
   baselineEntries: 'baseline_entries',
   returnerEntries: 'returner_entries',
+  publicCheckInLinks: 'public_checkin_links',
+  publicCheckInLinkPlayers: 'public_checkin_link_players',
+  publicCheckInSubmissions: 'public_checkin_submissions',
 } satisfies Record<BackupCollectionKey, PendingWriteTable>
 
 const collectionToDexieTable = {
@@ -52,7 +59,16 @@ const collectionToDexieTable = {
   progressEntries: localDb.progressEntries,
   baselineEntries: localDb.baselineEntries,
   returnerEntries: localDb.returnerEntries,
+  publicCheckInLinks: localDb.publicCheckInLinks,
+  publicCheckInLinkPlayers: localDb.publicCheckInLinkPlayers,
+  publicCheckInSubmissions: localDb.publicCheckInSubmissions,
 }
+
+const publicCheckInCollections = new Set<BackupCollectionKey>([
+  'publicCheckInLinks',
+  'publicCheckInLinkPlayers',
+  'publicCheckInSubmissions',
+])
 
 async function putImportedRecord(collectionKey: BackupCollectionKey, record: FieldHubBackupV1['data'][BackupCollectionKey][number]) {
   if (collectionKey === 'players') {
@@ -65,6 +81,12 @@ async function putImportedRecord(collectionKey: BackupCollectionKey, record: Fie
     await localDb.progressEntries.put(record as ProgressEntry)
   } else if (collectionKey === 'baselineEntries') {
     await localDb.baselineEntries.put(record as BaselineEntry)
+  } else if (collectionKey === 'publicCheckInLinks') {
+    await localDb.publicCheckInLinks.put(record as PublicCheckInLink)
+  } else if (collectionKey === 'publicCheckInLinkPlayers') {
+    await localDb.publicCheckInLinkPlayers.put(record as PublicCheckInLinkPlayer)
+  } else if (collectionKey === 'publicCheckInSubmissions') {
+    await localDb.publicCheckInSubmissions.put(record as PublicCheckInSubmission)
   } else {
     await localDb.returnerEntries.put(record as ReturnerEntry)
   }
@@ -198,6 +220,39 @@ function hasValidRecordShape(collectionKey: BackupCollectionKey, record: unknown
     )
   }
 
+  if (collectionKey === 'publicCheckInLinks') {
+    return (
+      hasString(record, 'sessionDefinitionId') &&
+      hasString(record, 'sessionTitle') &&
+      hasString(record, 'sessionDate') &&
+      hasString(record, 'tokenHash') &&
+      hasString(record, 'expiresAt') &&
+      hasNullableString(record, 'closedAt')
+    )
+  }
+
+  if (collectionKey === 'publicCheckInLinkPlayers') {
+    return (
+      hasString(record, 'linkId') &&
+      hasNullableString(record, 'playerId') &&
+      hasString(record, 'displayName') &&
+      hasNullableNumber(record, 'sortOrder')
+    )
+  }
+
+  if (collectionKey === 'publicCheckInSubmissions') {
+    return (
+      hasString(record, 'linkId') &&
+      hasString(record, 'linkPlayerId') &&
+      hasNullableString(record, 'playerId') &&
+      hasNullableNumber(record, 'readiness') &&
+      hasNullableNumber(record, 'painScore') &&
+      hasString(record, 'returnerFlag') &&
+      hasString(record, 'status') &&
+      hasString(record, 'submittedAt')
+    )
+  }
+
   return (
     hasNullableString(record, 'playerId') &&
     hasString(record, 'sessionLogId') &&
@@ -217,13 +272,22 @@ function isBackupPayload(value: unknown): value is FieldHubBackupV1 {
 
   const candidate = value as Partial<FieldHubBackupV1>
 
+  const requiredCollections: BackupCollectionKey[] = [
+    'players',
+    'sessionLogs',
+    'playerSessionEntries',
+    'progressEntries',
+    'baselineEntries',
+    'returnerEntries',
+  ]
+
   return (
     candidate.type === 'rugby-field-hub-full-backup' &&
     candidate.version === 1 &&
     typeof candidate.exportedAt === 'string' &&
     typeof candidate.data === 'object' &&
     candidate.data !== null &&
-    Object.keys(collectionToTable).every((key) => Array.isArray(candidate.data?.[key as BackupCollectionKey]))
+    requiredCollections.every((key) => Array.isArray(candidate.data?.[key]))
   )
 }
 
@@ -243,7 +307,17 @@ async function queueImportedWrite(table: PendingWriteTable, recordId: string, us
 }
 
 export async function createFieldHubBackup(userId: string): Promise<FieldHubBackupV1> {
-  const [players, sessionLogs, playerSessionEntries, progressEntries, baselineEntries, returnerEntries] =
+  const [
+    players,
+    sessionLogs,
+    playerSessionEntries,
+    progressEntries,
+    baselineEntries,
+    returnerEntries,
+    publicCheckInLinks,
+    publicCheckInLinkPlayers,
+    publicCheckInSubmissions,
+  ] =
     await Promise.all([
       localDb.players.where('userId').equals(userId).toArray(),
       localDb.sessionLogs.where('userId').equals(userId).toArray(),
@@ -251,6 +325,9 @@ export async function createFieldHubBackup(userId: string): Promise<FieldHubBack
       localDb.progressEntries.where('userId').equals(userId).toArray(),
       localDb.baselineEntries.where('userId').equals(userId).toArray(),
       localDb.returnerEntries.where('userId').equals(userId).toArray(),
+      localDb.publicCheckInLinks.where('userId').equals(userId).toArray(),
+      localDb.publicCheckInLinkPlayers.where('userId').equals(userId).toArray(),
+      localDb.publicCheckInSubmissions.where('userId').equals(userId).toArray(),
     ])
 
   return {
@@ -264,6 +341,9 @@ export async function createFieldHubBackup(userId: string): Promise<FieldHubBack
       progressEntries,
       baselineEntries,
       returnerEntries,
+      publicCheckInLinks,
+      publicCheckInLinkPlayers,
+      publicCheckInSubmissions,
     },
   }
 }
@@ -289,7 +369,7 @@ export async function previewFieldHubBackupImport(
   for (const collectionKey of Object.keys(collectionToTable) as BackupCollectionKey[]) {
     const table = collectionToDexieTable[collectionKey]
 
-    for (const record of payload.data[collectionKey]) {
+    for (const record of payload.data[collectionKey] ?? []) {
       totalRecords += 1
 
       if (!hasValidRecordShape(collectionKey, record)) {
@@ -341,7 +421,7 @@ export async function importFieldHubBackup(
     const table = collectionToDexieTable[collectionKey]
     const pendingTable = collectionToTable[collectionKey]
 
-    for (const record of payload.data[collectionKey]) {
+    for (const record of payload.data[collectionKey] ?? []) {
       if (!isRecordWithSync(record)) {
         continue
       }
@@ -355,12 +435,14 @@ export async function importFieldHubBackup(
 
       const importedRecord = {
         ...record,
-        syncStatus: 'pending' as const,
+        syncStatus: publicCheckInCollections.has(collectionKey) ? ('synced' as const) : ('pending' as const),
         syncError: null,
       }
 
       await putImportedRecord(collectionKey, importedRecord)
-      await queueImportedWrite(pendingTable, record.id, userId)
+      if (!publicCheckInCollections.has(collectionKey)) {
+        await queueImportedWrite(pendingTable, record.id, userId)
+      }
       importedRecords += 1
     }
   }
