@@ -115,6 +115,12 @@ export type PlayerWarning = {
   sessionDate: string
 }
 
+export type PlayerObservation = {
+  playerId: string | null
+  observation: string
+  sessionDate: string
+}
+
 export const emptyCheckInDraft: CheckInDraft = {
   present: false,
   readiness: null,

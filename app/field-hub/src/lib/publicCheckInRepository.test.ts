@@ -124,6 +124,24 @@ describe('publicCheckInRepository import', () => {
     expect(updatedSubmission?.status).toBe('conflict')
   })
 
+  it('imports a public submission after a coach-only observation', async () => {
+    const sessionLog = await ensureSessionLog(userId, sessionDefinition)
+    await saveCheckInEntry(userId, sessionLog.id, player, { observation: 'Speed-Block beobachten' })
+    await localDb.publicCheckInSubmissions.put(submission({ id: 'after-observation', submittedAt: '2026-06-16T18:10:00.000Z' }))
+
+    const result = await importPublicCheckInSubmissions(userId, sessionDefinition)
+    const entry = await localDb.playerSessionEntries.where('userId').equals(userId).first()
+    const updatedSubmission = await localDb.publicCheckInSubmissions.get('after-observation')
+
+    expect(result.imported).toBe(1)
+    expect(result.conflicts).toBe(0)
+    expect(entry?.readiness).toBe(3)
+    expect(entry?.observation).toBe('Speed-Block beobachten')
+    expect(entry?.coachEditedAt).toBeNull()
+    expect(entry?.checkInSource).toBe('player_link')
+    expect(updatedSubmission?.status).toBe('imported')
+  })
+
   it('supersedes older pending submissions for the same player', async () => {
     await localDb.publicCheckInSubmissions.bulkPut([
       submission({ id: 'older-submission', readiness: 2, submittedAt: '2026-06-16T17:10:00.000Z' }),

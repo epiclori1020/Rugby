@@ -939,6 +939,43 @@ Verifikation fuer diese Runde:
 - direkte `psql`-Kontrolle von RLS, Policies, Grants und neuen Spalten
 - Browser-QA mit frischem Vite-Server: oeffentliche Route zeigt fuer ungueltigen Test-Token korrekt `Check-in-Link ist ungueltig oder abgelaufen`; Coach-App rendert ohne Konsolenfehler.
 
+## Field Hub Remote-Check-in-Nachhaertung 2026-06-16
+
+Kontext:
+
+- Nach externem Review wurden Flooding, Safety/Beobachtungs-Vermischung, RLS-Header-Abhaengigkeit, Mehrfachlinks und Datenschutz-Copy nachgeschaerft.
+- Ziel blieb MVP-konform: kein Spielerportal, keine Spieler-Accounts, keine Edge Functions, kein Realtime, keine `service_role` Keys.
+
+Entscheidungen fuer Folgesessions:
+
+- Pro Coach und Session darf DB-seitig nur ein offener Public-Check-in-Link existieren. Beim Erstellen eines neuen Links fuer dieselbe Einheit werden alte offene Links lokal und remote geschlossen.
+- `anon`-RLS fuer Link-Players und Submissions nutzt private `security definer`-Helfer, damit die Token-Pruefung nicht an fehlenden Tabellenrechten auf `public_checkin_links` scheitert.
+- Flooding ist bewusst einfach begrenzt: maximal 20 nicht geloeschte Submissions pro `(link_id, link_player_id)`. Der Trigger nutzt einen transaktionalen Advisory Lock pro Link/Spieler, damit parallele Inserts nicht am Count vorbei laufen. Danach zeigt die Public-UI eine freundliche Meldung und der Spieler soll den Coach direkt informieren.
+- Reine Coach-/Spielerbeobachtungen aus vorherigen Einheiten sind keine Safety-Warnungen mehr. Gelb/Rot/Returner/auffaellige Check-in-Signale bleiben im Warn-Count; neutrale Beobachtungen erscheinen getrennt als `Notizen aus letzter Einheit`.
+- Spielerbezogene Live-Beobachtungen setzen nicht automatisch `coach_edited_at`. Dadurch blockiert eine reine Beobachtung keinen spaeteren Remote-Self-Check-in. Echte Coach-Korrekturen bleiben weiterhin vorrangig und erzeugen Konflikte fuer spaete Spieler-Resubmissions.
+- Die Public-Seite enthaelt eine kurze Datenschutz-/Fehlname-Copy. Sie bleibt bewusst knapp, weil es kein Rechtsdokument und kein Spielerportal ist.
+- Browser-QA auf `127.0.0.1` kann durch alte PWA-Service-Worker-Assets verfaelscht werden. Fuer lokale Public-Route-Tests besser einen frischen Port und `localhost` nutzen oder Service Worker/Cache aktiv bereinigen.
+
+Supabase-Status:
+
+- Remote-Migrationen `20260616112214_harden_public_checkin_live_flow.sql` und `20260616113829_serialize_public_checkin_submission_limit.sql` wurden am 16. Juni 2026 per `supabase db push --yes` auf Projekt `rugby-snc-field-hub` (`vpgqmykayreqlzfcvtat`) angewendet.
+- Remote-Verifikation nach Push: `supabase db lint --linked --fail-on error`, `supabase migration list --linked`, direkte `psql`-RLS-Tests fuer keinen/falschen/gueltigen/geschlossenen/abgelaufenen Token, `anon` ohne Zugriff auf `public.players`, Flood-Limit blockt den 21. Insert.
+- Fuer kuenftige Supabase-CLI-Checks weiterhin die nicht getrackte `.env.supabase.local` lokal laden. Keine Secrets committen und keinen `service_role` Key verwenden.
+
+Verifikation fuer diese Runde:
+
+- `npm run typecheck`
+- `npm run lint`
+- `npm test`
+- `npm run build`
+- `git diff --check`
+- `supabase db push --dry-run`
+- `supabase db push --yes`
+- `supabase db lint --linked --fail-on error`
+- `supabase migration list --linked`
+- direkte `psql`-RLS-/Flooding-Kontrollen gegen die Remote-DB
+- Browser-QA auf `http://localhost:5174/#/checkin/<test-token>`: Public-Seite laedt mit aktuellem Dev-Code, Datenschutz-Copy sichtbar, Test-Submission wird remote geschrieben und Testdaten danach geloescht.
+
 ## Empfohlener Startprompt fuer eine Trainingsplan-Session
 
 ```text

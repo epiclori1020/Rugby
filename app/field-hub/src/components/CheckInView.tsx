@@ -1,4 +1,4 @@
-import { AlertTriangle, Clipboard, ClipboardCheck, Link2, RefreshCw, ShieldAlert, UserCheck, X } from 'lucide-react'
+import { AlertTriangle, Clipboard, ClipboardCheck, FileText, Link2, RefreshCw, ShieldAlert, UserCheck, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { HubTab } from '../App'
 import type { SessionDefinition } from '../content/types'
@@ -443,6 +443,7 @@ export function CheckInView({
     entries,
     errorMessage,
     expectedPlayerIds,
+    observations,
     warnings,
     syncOverview,
     isLoading,
@@ -457,6 +458,9 @@ export function CheckInView({
   const activePlayerIdSet = new Set(activePlayers.map((player) => player.id))
   const activeEntries = entries.filter((entry) => hasPlayerId(entry) && activePlayerIdSet.has(entry.playerId))
   const activeWarnings = warnings.filter((warning) => hasPlayerId(warning) && activePlayerIdSet.has(warning.playerId))
+  const activeObservations = observations.filter(
+    (observation) => hasPlayerId(observation) && activePlayerIdSet.has(observation.playerId),
+  )
   const warningByPlayerId = new Map(activeWarnings.map((warning) => [warning.playerId, warning]))
   const orderedPlayers = [...activePlayers].sort((a, b) => {
     const aExpected = expectedPlayerSet.has(a.id)
@@ -622,10 +626,10 @@ export function CheckInView({
       </section>
 
       {activeWarnings.length > 0 ? (
-        <aside className="panel warning-panel" aria-label="Offene Warnungen und Beobachtungen">
+        <aside className="panel warning-panel" aria-label="Offene Warnungen">
           <div className="status-line">
             <ShieldAlert className="nav-icon" aria-hidden />
-            <h3>Offene Warnungen/Beobachtungen</h3>
+            <h3>Offene Warnungen</h3>
           </div>
           <div className="warning-list">
             {activeWarnings.map((warning) => {
@@ -640,6 +644,28 @@ export function CheckInView({
                     {warning.nextStep ? ` · Next ${warning.nextStep}` : ''}
                     {warning.postPainScore !== null ? ` · Post-Pain ${warning.postPainScore}/10` : ''}
                     {warning.observation ? ` · ${warning.observation}` : ''}
+                  </span>
+                </div>
+              )
+            })}
+          </div>
+        </aside>
+      ) : null}
+
+      {activeObservations.length > 0 ? (
+        <aside className="panel" aria-label="Notizen aus letzter Einheit">
+          <div className="status-line">
+            <FileText className="nav-icon" aria-hidden />
+            <h3>Notizen aus letzter Einheit</h3>
+          </div>
+          <div className="warning-list">
+            {activeObservations.map((observation) => {
+              const player = playerActions.players.find((item) => item.id === observation.playerId)
+              return (
+                <div className="warning-note" key={`${observation.playerId}-${observation.sessionDate}`}>
+                  <FileText className="nav-icon" aria-hidden />
+                  <span>
+                    <strong>{player?.name ?? 'Spieler'}</strong>: {observation.observation}
                   </span>
                 </div>
               )

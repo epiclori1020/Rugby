@@ -8,6 +8,7 @@ import {
   findSessionLog,
   getCheckInSyncOverview,
   listExpectedPlayerIds,
+  listLatestObservations,
   listLatestWarnings,
   rowFromEntry,
   saveCheckInEntry,
@@ -331,7 +332,7 @@ describe('checkInRepository session logs', () => {
     ])
   })
 
-  it('carries forward player observations even without a safety flag', async () => {
+  it('carries pure player observations separately from safety warnings', async () => {
     await localDb.sessionLogs.put({
       id: 'observation-session',
       userId,
@@ -362,6 +363,7 @@ describe('checkInRepository session logs', () => {
       sessionLogId: 'observation-session',
       playerId: 'player-observation',
       present: true,
+      returnerFlag: 'nein',
       observation: 'Hamstring links im Speed-Block beobachten',
       createdAt: '2026-06-13T18:00:00.000Z',
       updatedAt: '2026-06-13T18:00:00.000Z',
@@ -371,7 +373,8 @@ describe('checkInRepository session logs', () => {
       syncError: null,
     })
 
-    await expect(listLatestWarnings(userId, null, '2026-06-16')).resolves.toMatchObject([
+    await expect(listLatestWarnings(userId, null, '2026-06-16')).resolves.toEqual([])
+    await expect(listLatestObservations(userId, null, '2026-06-16')).resolves.toMatchObject([
       {
         playerId: 'player-observation',
         observation: 'Hamstring links im Speed-Block beobachten',

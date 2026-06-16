@@ -52,6 +52,9 @@ export function TodayDashboard({
   const activeWarnings = checkInActions.warnings.filter(
     (warning) => hasPlayerId(warning) && activePlayerIds.has(warning.playerId),
   )
+  const activeObservations = checkInActions.observations.filter(
+    (observation) => hasPlayerId(observation) && activePlayerIds.has(observation.playerId),
+  )
   const expectedPlayerSet = new Set(checkInActions.expectedPlayerIds)
   const expectedCount =
     expectedPlayerSet.size > 0 ? activePlayers.filter((player) => expectedPlayerSet.has(player.id)).length : activePlayers.length
@@ -225,6 +228,25 @@ export function TodayDashboard({
           </p>
           <p>{pendingCountLabel(pendingCount, 'Check-in-Aenderungen')}.</p>
         </article>
+
+        {activeObservations.length > 0 ? (
+          <article className="panel">
+            <div className="status-line">
+              <FileText className="nav-icon" aria-hidden />
+              <h3>Notizen aus letzter Einheit</h3>
+            </div>
+            <ul className="compact-list">
+              {activeObservations.map((observation) => {
+                const player = activePlayers.find((item) => item.id === observation.playerId)
+                return (
+                  <li key={`${observation.playerId}-${observation.sessionDate}`}>
+                    <strong>{player?.name ?? 'Spieler'}:</strong> {observation.observation}
+                  </li>
+                )
+              })}
+            </ul>
+          </article>
+        ) : null}
 
         <article className="panel">
           <div className="status-line">

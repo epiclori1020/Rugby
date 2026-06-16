@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
-import type { CheckInEntryPatch, PlayerSessionEntry, PlayerWarning, TrafficLight } from '../domain/checkIn'
+import type { CheckInEntryPatch, PlayerObservation, PlayerSessionEntry, PlayerWarning, TrafficLight } from '../domain/checkIn'
 import type { Player } from '../domain/players'
 import type { PublicCheckInSubmission } from '../domain/publicCheckIn'
 import type { PlayerSyncOverview } from '../domain/sync'
@@ -14,6 +14,7 @@ import {
   getCheckInSyncOverview,
   listCheckInEntries,
   listExpectedPlayerIds,
+  listLatestObservations,
   listLatestWarnings,
   pushPendingCheckIns,
   saveCheckInEntry,
@@ -44,6 +45,7 @@ export function useCheckIns(
 ) {
   const [entries, setEntries] = useState<PlayerSessionEntry[]>([])
   const [warnings, setWarnings] = useState<PlayerWarning[]>([])
+  const [observations, setObservations] = useState<PlayerObservation[]>([])
   const [syncOverview, setSyncOverview] = useState<PlayerSyncOverview>(defaultPlayerSyncOverview)
   const [isLoading, setIsLoading] = useState(false)
   const [sessionLogId, setSessionLogId] = useState<string | null>(null)
@@ -64,11 +66,16 @@ export function useCheckIns(
     () => warnings.filter((warning) => hasPlayerId(warning) && activePlayerIds.has(warning.playerId)),
     [activePlayerIds, warnings],
   )
+  const activeObservations = useMemo(
+    () => observations.filter((observation) => hasPlayerId(observation) && activePlayerIds.has(observation.playerId)),
+    [activePlayerIds, observations],
+  )
 
   const refreshLocalCheckIns = useCallback(async () => {
     if (!userId) {
       setEntries([])
       setWarnings([])
+      setObservations([])
       setSyncOverview(defaultPlayerSyncOverview)
       setSessionLogId(null)
       setSessionLog(null)
@@ -81,9 +88,10 @@ export function useCheckIns(
     }
 
     const sessionLog = await findSessionLog(userId, sessionDefinition.id)
-    const [localEntries, localWarnings, expectedIds, overview, localPublicLinks] = await Promise.all([
+    const [localEntries, localWarnings, localObservations, expectedIds, overview, localPublicLinks] = await Promise.all([
       sessionLog ? listCheckInEntries(userId, sessionLog.id) : Promise.resolve([]),
       listLatestWarnings(userId, sessionLog?.id ?? null, sessionDefinition.date),
+      listLatestObservations(userId, sessionLog?.id ?? null, sessionDefinition.date),
       listExpectedPlayerIds(userId, sessionDefinition.date),
       getCheckInSyncOverview(userId),
       listLocalPublicCheckInLinks(userId, sessionDefinition.id),
@@ -92,6 +100,7 @@ export function useCheckIns(
     setSessionLog(sessionLog)
     setEntries(localEntries)
     setWarnings(localWarnings)
+    setObservations(localObservations)
     setExpectedPlayerIds(expectedIds)
     setSyncOverview(overview)
     setPublicCheckInLinks(localPublicLinks.sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
@@ -324,6 +333,7 @@ export function useCheckIns(
     errorMessage,
     expectedPlayerIds,
     warnings: activeWarnings,
+    observations: activeObservations,
     syncOverview,
     isLoading,
     sessionLogId,

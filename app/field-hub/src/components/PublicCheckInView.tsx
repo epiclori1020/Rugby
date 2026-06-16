@@ -6,6 +6,7 @@ import {
   submitPublicCheckIn,
   type PublicCheckInFormData,
 } from '../lib/publicCheckInRepository'
+import { publicSubmissionErrorMessage } from '../lib/publicCheckInErrors'
 
 type PublicCheckInViewProps = {
   token: string
@@ -89,7 +90,7 @@ export function PublicCheckInView({ token }: PublicCheckInViewProps) {
       setMessage('Check-in abgeschickt. Wenn du versehentlich den falschen Namen gewaehlt hast, sag Arwin bitte direkt Bescheid.')
     } catch (caughtError) {
       setStatus('ready')
-      setMessage(caughtError instanceof Error ? caughtError.message : 'Check-in konnte nicht abgeschickt werden.')
+      setMessage(publicSubmissionErrorMessage(caughtError))
     }
   }
 
@@ -115,6 +116,11 @@ export function PublicCheckInView({ token }: PublicCheckInViewProps) {
 
         {isFormVisible ? (
           <form className="public-checkin-form" onSubmit={handleSubmit}>
+            <p className="privacy-note">
+              Deine Angaben gehen nur an Rugby Donau S&amp;C fuer diese Trainingseinheit. Wenn du den falschen Namen
+              waehlst oder etwas Sensibles hast, sag Arwin bitte direkt Bescheid.
+            </p>
+
             <label className="inline-field wide">
               <span>Name suchen</span>
               <input

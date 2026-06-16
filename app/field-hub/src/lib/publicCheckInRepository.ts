@@ -330,6 +330,43 @@ export type CreatedPublicCheckInLink = PublicCheckInLinkBundle & {
   url: string
 }
 
+async function closeOpenPublicCheckInLinksForSession(
+  userId: string,
+  sessionDefinitionId: string,
+  timestamp: string,
+) {
+  if (!supabase) {
+    return
+  }
+
+  const { error } = await supabase
+    .from('public_checkin_links')
+    .update({ closed_at: timestamp, updated_at: timestamp, client_updated_at: timestamp })
+    .eq('user_id', userId)
+    .eq('session_definition_id', sessionDefinitionId)
+    .is('closed_at', null)
+    .is('deleted_at', null)
+  if (error) {
+    throw new Error(error.message)
+  }
+
+  const openLocalLinks = await localDb.publicCheckInLinks
+    .where('[userId+sessionDefinitionId]')
+    .equals([userId, sessionDefinitionId])
+    .and((link) => !link.closedAt && !link.deletedAt)
+    .toArray()
+  if (openLocalLinks.length > 0) {
+    await localDb.publicCheckInLinks.bulkPut(
+      openLocalLinks.map((link) => ({
+        ...link,
+        closedAt: timestamp,
+        updatedAt: timestamp,
+        clientUpdatedAt: timestamp,
+      })),
+    )
+  }
+}
+
 export async function createPublicCheckInLinkBundle(
   userId: string,
   sessionDefinition: SessionDefinition,
@@ -342,6 +379,7 @@ export async function createPublicCheckInLinkBundle(
   const timestamp = nowIso()
   const rawToken = createPublicCheckInToken()
   const tokenHash = await hashPublicCheckInToken(rawToken)
+  await closeOpenPublicCheckInLinksForSession(userId, sessionDefinition.id, timestamp)
   const activePlayers = players
     .filter((player) => player.active && !player.deletedAt)
     .sort((a, b) => a.name.localeCompare(b.name, 'de-AT'))

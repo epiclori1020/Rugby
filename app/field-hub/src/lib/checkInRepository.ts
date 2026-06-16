@@ -9,6 +9,7 @@ import {
   type CheckInLimit,
   type CheckInSource,
   type PlayerSessionEntry,
+  type PlayerObservation,
   type PostSessionEntryPatch,
   type PlayerWarning,
   type RedFlag,
@@ -445,17 +446,7 @@ export async function listLatestWarnings(userId: string, currentSessionLogId: st
       continue
     }
 
-    const hasWarning =
-      entry.trafficLight === 'yellow' ||
-      entry.trafficLight === 'red' ||
-      entry.returnerFlag !== 'nein' ||
-      entry.limits.length > 0 ||
-      (entry.e2Decision !== null && entry.e2Decision !== 'normal') ||
-      entry.nextStep === 'reduzieren' ||
-      entry.nextStep === 'klaeren' ||
-      (entry.postPainScore !== null && entry.postPainScore >= 3) ||
-      entry.observation.trim().length > 0
-    if (!hasWarning) {
+    if (!hasSafetySignal(entry)) {
       continue
     }
 
@@ -479,6 +470,62 @@ export async function listLatestWarnings(userId: string, currentSessionLogId: st
   }
 
   return [...latestByPlayer.values()]
+}
+
+export async function listLatestObservations(
+  userId: string,
+  currentSessionLogId: string | null,
+  currentSessionDate: string,
+) {
+  const sessionLogs = await localDb.sessionLogs.where('userId').equals(userId).toArray()
+  const dateBySessionLogId = new Map(sessionLogs.map((sessionLog) => [sessionLog.id, sessionLog.date]))
+  const previousSessionIds = new Set(
+    sessionLogs
+      .filter((sessionLog) => !sessionLog.deletedAt && sessionLog.date < currentSessionDate)
+      .map((sessionLog) => sessionLog.id),
+  )
+  const entries = await localDb.playerSessionEntries
+    .where('userId')
+    .equals(userId)
+    .and(
+      (entry) =>
+        (!currentSessionLogId || entry.sessionLogId !== currentSessionLogId) &&
+        previousSessionIds.has(entry.sessionLogId) &&
+        !entry.deletedAt,
+    )
+    .toArray()
+  const latestByPlayer = new Map<string, PlayerObservation>()
+
+  for (const entry of entries) {
+    if (!hasPlayerId(entry) || entry.observation.trim().length === 0 || hasSafetySignal(entry)) {
+      continue
+    }
+
+    const sessionDate = dateBySessionLogId.get(entry.sessionLogId) ?? entry.createdAt
+    const existing = latestByPlayer.get(entry.playerId)
+    if (!existing || sessionDate > existing.sessionDate) {
+      latestByPlayer.set(entry.playerId, {
+        playerId: entry.playerId,
+        observation: entry.observation,
+        sessionDate,
+      })
+    }
+  }
+
+  return [...latestByPlayer.values()]
+}
+
+function hasSafetySignal(entry: PlayerSessionEntry) {
+  return (
+    entry.trafficLight === 'yellow' ||
+    entry.trafficLight === 'red' ||
+    entry.returnerFlag !== 'nein' ||
+    entry.limits.length > 0 ||
+    (entry.e2Decision !== null && entry.e2Decision !== 'normal') ||
+    entry.nextStep === 'reduzieren' ||
+    entry.nextStep === 'klaeren' ||
+    (entry.postPainScore !== null && entry.postPainScore >= 3)
+  )
 }
 
 export function buildEmptyEntry(userId: string, sessionLogId: string, player: Player): PlayerSessionEntry {
@@ -579,13 +626,16 @@ async function saveCheckInEntryOnce(
     manualTrafficLight === 'auto'
       ? applyAutoTrafficLight(draftWithLimits)
       : manualTrafficLight
-        ? applyManualTrafficLight(suggestedDraft, manualTrafficLight)
-        : suggestedDraft
+      ? applyManualTrafficLight(suggestedDraft, manualTrafficLight)
+      : suggestedDraft
+  const marksCoachEdited = shouldMarkCoachEdited(patch, manualTrafficLight)
   const entry: PlayerSessionEntry = {
     ...baseEntry,
     ...finalDraft,
-    checkInSource: baseEntry.checkInSource === 'player_link' ? 'mixed' : 'coach',
-    coachEditedAt: timestamp,
+    checkInSource: marksCoachEdited
+      ? baseEntry.checkInSource === 'player_link' ? 'mixed' : 'coach'
+      : baseEntry.checkInSource ?? 'coach',
+    coachEditedAt: marksCoachEdited ? timestamp : baseEntry.coachEditedAt,
     updatedAt: timestamp,
     clientUpdatedAt: timestamp,
     syncStatus: 'pending',
@@ -596,6 +646,22 @@ async function saveCheckInEntryOnce(
   await queueWrite('player_session_entries', entry.id, userId)
 
   return entry
+}
+
+function shouldMarkCoachEdited(patch: CheckInEntryPatch, manualTrafficLight?: TrafficLight | 'auto') {
+  return (
+    manualTrafficLight !== undefined ||
+    patch.present !== undefined ||
+    patch.readiness !== undefined ||
+    patch.lifeFlag !== undefined ||
+    patch.painScore !== undefined ||
+    patch.painLocation !== undefined ||
+    patch.returnerFlag !== undefined ||
+    patch.redFlag !== undefined ||
+    patch.movementConcern !== undefined ||
+    patch.trainingVariant !== undefined ||
+    patch.limits !== undefined
+  )
 }
 
 export async function saveCheckInEntry(
