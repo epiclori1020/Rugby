@@ -331,6 +331,54 @@ describe('checkInRepository session logs', () => {
     ])
   })
 
+  it('carries forward player observations even without a safety flag', async () => {
+    await localDb.sessionLogs.put({
+      id: 'observation-session',
+      userId,
+      sessionDefinitionId: 'observation',
+      date: '2026-06-13',
+      status: 'completed',
+      coach: '',
+      groupSize: null,
+      weatherOrHeatNote: '',
+      planChanged: false,
+      durationMinutes: null,
+      contactIndex: '',
+      speedExposureNote: '',
+      coachReview: '',
+      createdAt: '2026-06-13T18:00:00.000Z',
+      updatedAt: '2026-06-13T18:00:00.000Z',
+      deletedAt: null,
+      clientUpdatedAt: '2026-06-13T18:00:00.000Z',
+      syncStatus: 'synced',
+      syncError: null,
+    })
+
+    await localDb.playerSessionEntries.put({
+      ...emptyCheckInDraft,
+      ...postSessionDefaults,
+      id: 'observation-only',
+      userId,
+      sessionLogId: 'observation-session',
+      playerId: 'player-observation',
+      present: true,
+      observation: 'Hamstring links im Speed-Block beobachten',
+      createdAt: '2026-06-13T18:00:00.000Z',
+      updatedAt: '2026-06-13T18:00:00.000Z',
+      deletedAt: null,
+      clientUpdatedAt: '2026-06-13T18:00:00.000Z',
+      syncStatus: 'synced',
+      syncError: null,
+    })
+
+    await expect(listLatestWarnings(userId, null, '2026-06-16')).resolves.toMatchObject([
+      {
+        playerId: 'player-observation',
+        observation: 'Hamstring links im Speed-Block beobachten',
+      },
+    ])
+  })
+
   it('preserves remote traffic-light suggestion and manual override metadata', () => {
     const entry = entryFromRow(remoteEntryRow)
 

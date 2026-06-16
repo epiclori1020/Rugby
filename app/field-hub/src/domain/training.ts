@@ -8,6 +8,16 @@ export type TrainingQuickAction =
   | 'kein_schweres_heben'
   | 'physio_medical'
 
+export type LiveObservationCategory =
+  | 'Warm-up'
+  | 'Movement'
+  | 'Speed'
+  | 'Technik'
+  | 'Kraft'
+  | 'Conditioning'
+  | 'Kontakt'
+  | 'Orga'
+
 export type VariantCard = {
   variant: TrainingVariant
   label: string
@@ -51,4 +61,25 @@ export function applyTrainingQuickAction(
   }
 
   return { limits }
+}
+
+export function formatLiveObservation(category: LiveObservationCategory | string, note: string, timestamp = new Date()) {
+  const time = new Intl.DateTimeFormat('de-AT', {
+    hour: '2-digit',
+    minute: '2-digit',
+  }).format(timestamp)
+
+  return `[${category}] ${time}: ${note.trim()}`
+}
+
+export function appendLiveObservation(
+  existingNote: string,
+  category: LiveObservationCategory | string,
+  note: string,
+  timestamp = new Date(),
+) {
+  const formattedObservation = formatLiveObservation(category, note, timestamp)
+  const trimmedExistingNote = existingNote.trim()
+
+  return trimmedExistingNote ? `${trimmedExistingNote}\n${formattedObservation}` : formattedObservation
 }

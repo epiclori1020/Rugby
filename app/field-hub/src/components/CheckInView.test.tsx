@@ -144,6 +144,14 @@ const autoGreenEntry: PlayerSessionEntry = {
   syncStatus: 'synced',
 }
 
+const publicCheckInActions = {
+  publicCheckInLinks: [],
+  publicCheckInSubmissions: [],
+  publicCheckInNotice: null,
+  createPublicLink: async () => null,
+  closePublicLink: async () => undefined,
+}
+
 describe('CheckInView active player metrics', () => {
   it('does not count stale entries for deleted players', () => {
     const checkInActions = {
@@ -161,6 +169,7 @@ describe('CheckInView active player metrics', () => {
       saveSessionPatch: async () => undefined,
       getEntryForPlayer: (player: Player) => ({ ...deletedPlayerEntry, playerId: player.id }),
       sessionLog: null,
+      ...publicCheckInActions,
       clearError: () => undefined,
     } satisfies ReturnType<typeof useCheckIns>
     const playerActions = {
@@ -211,6 +220,7 @@ describe('CheckInView active player metrics', () => {
       saveSessionPatch: async () => undefined,
       getEntryForPlayer: (player: Player) => ({ ...deletedPlayerEntry, playerId: player.id }),
       sessionLog: null,
+      ...publicCheckInActions,
       clearError: () => undefined,
     } satisfies ReturnType<typeof useCheckIns>
     const playerActions = {
@@ -260,6 +270,7 @@ describe('CheckInView active player metrics', () => {
       saveSessionPatch: async () => undefined,
       getEntryForPlayer: () => autoGreenEntry,
       sessionLog: null,
+      ...publicCheckInActions,
       clearError: () => undefined,
     } satisfies ReturnType<typeof useCheckIns>
     const playerActions = {

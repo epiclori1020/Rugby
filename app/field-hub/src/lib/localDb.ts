@@ -3,6 +3,7 @@ import type { BaselineEntry } from '../domain/baseline'
 import type { PlayerSessionEntry, SessionLog } from '../domain/checkIn'
 import type { Player } from '../domain/players'
 import type { ProgressEntry } from '../domain/postSession'
+import type { PublicCheckInLink, PublicCheckInLinkPlayer, PublicCheckInSubmission } from '../domain/publicCheckIn'
 import type { ReturnerEntry } from '../domain/returners'
 
 export type PendingWriteOperation = 'upsert' | 'delete'
@@ -13,6 +14,9 @@ export type PendingWriteTable =
   | 'progress_entries'
   | 'baseline_entries'
   | 'returner_entries'
+  | 'public_checkin_links'
+  | 'public_checkin_link_players'
+  | 'public_checkin_submissions'
 
 export type PendingWrite = {
   localId?: number
@@ -53,6 +57,9 @@ class FieldHubDatabase extends Dexie {
   progressEntries!: Table<ProgressEntry, string>
   baselineEntries!: Table<BaselineEntry, string>
   returnerEntries!: Table<ReturnerEntry, string>
+  publicCheckInLinks!: Table<PublicCheckInLink, string>
+  publicCheckInLinkPlayers!: Table<PublicCheckInLinkPlayer, string>
+  publicCheckInSubmissions!: Table<PublicCheckInSubmission, string>
   pendingWrites!: Table<PendingWrite, number>
   photoCache!: Table<PhotoCacheEntry, string>
   pendingPhotoUploads!: Table<PendingPhotoUpload, string>
@@ -112,6 +119,30 @@ class FieldHubDatabase extends Dexie {
         '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
       returnerEntries:
         '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      pendingWrites: '++localId, table, recordId, userId, createdAt, [userId+table]',
+      photoCache: '&cacheKey, photoPath, photoUpdatedAt, cachedAt',
+      pendingPhotoUploads: '&photoPath, userId, playerId, createdAt',
+      syncMeta: '&key',
+    })
+    this.version(7).stores({
+      players:
+        '&id, userId, active, syncStatus, clientUpdatedAt, updatedAt, [userId+syncStatus], [userId+clientUpdatedAt]',
+      sessionLogs:
+        '&id, userId, sessionDefinitionId, date, syncStatus, clientUpdatedAt, [userId+syncStatus], [userId+clientUpdatedAt]',
+      playerSessionEntries:
+        '&id, userId, sessionLogId, playerId, trafficLight, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      progressEntries:
+        '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      baselineEntries:
+        '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      returnerEntries:
+        '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      publicCheckInLinks:
+        '&id, userId, sessionDefinitionId, tokenHash, expiresAt, syncStatus, clientUpdatedAt, [userId+sessionDefinitionId]',
+      publicCheckInLinkPlayers:
+        '&id, userId, linkId, playerId, displayName, syncStatus, clientUpdatedAt, [userId+linkId], [linkId+playerId]',
+      publicCheckInSubmissions:
+        '&id, userId, linkId, linkPlayerId, playerId, status, submittedAt, syncStatus, clientUpdatedAt, [userId+status], [userId+linkId], [linkPlayerId+status]',
       pendingWrites: '++localId, table, recordId, userId, createdAt, [userId+table]',
       photoCache: '&cacheKey, photoPath, photoUpdatedAt, cachedAt',
       pendingPhotoUploads: '&photoPath, userId, playerId, createdAt',

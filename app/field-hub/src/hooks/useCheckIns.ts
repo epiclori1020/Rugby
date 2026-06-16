@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { CheckInEntryPatch, PlayerSessionEntry, PlayerWarning, TrafficLight } from '../domain/checkIn'
 import type { Player } from '../domain/players'
+import type { PublicCheckInSubmission } from '../domain/publicCheckIn'
 import type { PlayerSyncOverview } from '../domain/sync'
 import { defaultPlayerSyncOverview } from '../domain/sync'
 import type { SessionDefinition } from '../content/types'
@@ -21,12 +22,26 @@ import {
   type SessionLogPatch,
 } from '../lib/checkInRepository'
 import { hasPlayerId } from '../lib/playerId'
+import {
+  closePublicCheckInLink,
+  createPublicCheckInLinkBundle,
+  importPublicCheckInSubmissions,
+  listLocalPublicCheckInLinks,
+  listLocalPublicCheckInSubmissions,
+  refreshRemotePublicCheckIns,
+  type CreatedPublicCheckInLink,
+} from '../lib/publicCheckInRepository'
 
 type SaveEntryResult =
   | { ok: true; entry: PlayerSessionEntry }
   | { ok: false; error: string }
 
-export function useCheckIns(userId: string | null, sessionDefinition: SessionDefinition, players: Player[]) {
+export function useCheckIns(
+  userId: string | null,
+  sessionDefinition: SessionDefinition,
+  players: Player[],
+  enablePublicCheckInPolling = false,
+) {
   const [entries, setEntries] = useState<PlayerSessionEntry[]>([])
   const [warnings, setWarnings] = useState<PlayerWarning[]>([])
   const [syncOverview, setSyncOverview] = useState<PlayerSyncOverview>(defaultPlayerSyncOverview)
@@ -35,6 +50,9 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
   const [sessionLog, setSessionLog] = useState<Awaited<ReturnType<typeof findSessionLog>>>(null)
   const [expectedPlayerIds, setExpectedPlayerIds] = useState<string[]>([])
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const [publicCheckInLinks, setPublicCheckInLinks] = useState<Awaited<ReturnType<typeof listLocalPublicCheckInLinks>>>([])
+  const [publicCheckInSubmissions, setPublicCheckInSubmissions] = useState<PublicCheckInSubmission[]>([])
+  const [publicCheckInNotice, setPublicCheckInNotice] = useState<string | null>(null)
 
   const activePlayers = useMemo(() => players.filter((player) => player.active), [players])
   const activePlayerIds = useMemo(() => new Set(activePlayers.map((player) => player.id)), [activePlayers])
@@ -56,15 +74,19 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
       setSessionLog(null)
       setExpectedPlayerIds([])
       setErrorMessage(null)
+      setPublicCheckInLinks([])
+      setPublicCheckInSubmissions([])
+      setPublicCheckInNotice(null)
       return
     }
 
     const sessionLog = await findSessionLog(userId, sessionDefinition.id)
-    const [localEntries, localWarnings, expectedIds, overview] = await Promise.all([
+    const [localEntries, localWarnings, expectedIds, overview, localPublicLinks] = await Promise.all([
       sessionLog ? listCheckInEntries(userId, sessionLog.id) : Promise.resolve([]),
       listLatestWarnings(userId, sessionLog?.id ?? null, sessionDefinition.date),
       listExpectedPlayerIds(userId, sessionDefinition.date),
       getCheckInSyncOverview(userId),
+      listLocalPublicCheckInLinks(userId, sessionDefinition.id),
     ])
     setSessionLogId(sessionLog?.id ?? null)
     setSessionLog(sessionLog)
@@ -72,6 +94,12 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
     setWarnings(localWarnings)
     setExpectedPlayerIds(expectedIds)
     setSyncOverview(overview)
+    setPublicCheckInLinks(localPublicLinks.sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
+    setPublicCheckInSubmissions(
+      (
+        await Promise.all(localPublicLinks.map((link) => listLocalPublicCheckInSubmissions(userId, link.id)))
+      ).flat(),
+    )
   }, [sessionDefinition, userId])
 
   const runSync = useCallback(async () => {
@@ -81,9 +109,16 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
 
     setIsLoading(true)
     try {
+      await refreshRemotePublicCheckIns(userId).catch(() => undefined)
+      const publicImportResult = await importPublicCheckInSubmissions(userId, sessionDefinition).catch(() => null)
       const overview = await syncCheckIns(userId)
       setSyncOverview(overview)
       setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Check-in-Sync fehlgeschlagen.' : null)
+      if (publicImportResult && (publicImportResult.imported > 0 || publicImportResult.conflicts > 0)) {
+        setPublicCheckInNotice(
+          `${publicImportResult.imported} Spieler-Check-ins uebernommen, ${publicImportResult.conflicts} Konflikte.`,
+        )
+      }
       await refreshLocalCheckIns()
       return overview
     } catch (caughtError) {
@@ -99,7 +134,7 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
     } finally {
       setIsLoading(false)
     }
-  }, [refreshLocalCheckIns, userId])
+  }, [refreshLocalCheckIns, sessionDefinition, userId])
 
   const runBackgroundSync = useCallback(async () => {
     if (!userId || (typeof navigator !== 'undefined' && !navigator.onLine)) {
@@ -140,6 +175,23 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
       .then(refreshLocalCheckIns)
       .catch(() => undefined)
   }, [refreshLocalCheckIns])
+
+  useEffect(() => {
+    if (!userId || !enablePublicCheckInPolling) {
+      return undefined
+    }
+
+    const pollPublicCheckIns = () => {
+      if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+        return
+      }
+
+      void runSync()
+    }
+    const intervalId = window.setInterval(pollPublicCheckIns, 12_000)
+
+    return () => window.clearInterval(intervalId)
+  }, [enablePublicCheckInPolling, runSync, userId])
 
   useEffect(() => {
     if (!userId) {
@@ -212,6 +264,40 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
     }
   }
 
+  async function createPublicLink(): Promise<CreatedPublicCheckInLink | null> {
+    if (!userId) {
+      throw new Error('Login erforderlich.')
+    }
+
+    try {
+      setErrorMessage(null)
+      const createdLink = await createPublicCheckInLinkBundle(userId, sessionDefinition, activePlayers)
+      await refreshLocalCheckIns()
+      setPublicCheckInNotice('Check-in-Link erstellt.')
+      return createdLink
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : 'Check-in-Link konnte nicht erstellt werden.'
+      setErrorMessage(message)
+      return null
+    }
+  }
+
+  async function closePublicLink(linkId: string) {
+    if (!userId) {
+      throw new Error('Login erforderlich.')
+    }
+
+    try {
+      setErrorMessage(null)
+      await closePublicCheckInLink(userId, linkId)
+      await refreshLocalCheckIns()
+      setPublicCheckInNotice('Check-in-Link geschlossen.')
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : 'Check-in-Link konnte nicht geschlossen werden.'
+      setErrorMessage(message)
+    }
+  }
+
   function getEntryForPlayer(player: Player) {
     const entry = entries.find((existingEntry) => existingEntry.playerId === player.id)
 
@@ -241,10 +327,15 @@ export function useCheckIns(userId: string | null, sessionDefinition: SessionDef
     syncOverview,
     isLoading,
     sessionLogId,
+    publicCheckInLinks,
+    publicCheckInSubmissions,
+    publicCheckInNotice,
     refreshLocalCheckIns,
     runSync,
     saveEntry,
     saveSessionPatch,
+    createPublicLink,
+    closePublicLink,
     getEntryForPlayer,
     sessionLog,
     clearError: () => setErrorMessage(null),

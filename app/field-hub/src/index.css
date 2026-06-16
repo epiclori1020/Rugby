@@ -1560,6 +1560,74 @@ code {
   color: var(--brand);
 }
 
+.public-checkin-page {
+  min-height: 100vh;
+  display: grid;
+  align-items: start;
+  justify-items: center;
+  padding:
+    calc(24px + env(safe-area-inset-top))
+    calc(16px + env(safe-area-inset-right))
+    calc(24px + env(safe-area-inset-bottom))
+    calc(16px + env(safe-area-inset-left));
+  background: var(--surface);
+}
+
+.public-checkin-panel {
+  width: min(760px, 100%);
+  display: grid;
+  gap: 18px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--panel);
+  box-shadow: var(--shadow);
+  padding: 20px;
+}
+
+.public-checkin-panel h1 {
+  margin: 0;
+  font-size: 1.85rem;
+  letter-spacing: 0;
+}
+
+.public-checkin-form,
+.live-observation-form {
+  display: grid;
+  gap: 14px;
+}
+
+.public-checkin-form select,
+.live-observation-form select {
+  width: 100%;
+  min-height: 44px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  padding: 10px 12px;
+  font: inherit;
+}
+
+.public-checkin-coach-panel,
+.live-observation-panel {
+  display: grid;
+  gap: 12px;
+}
+
+.sync-help,
+.success-note {
+  margin: 0;
+  color: var(--muted);
+}
+
+.success-note {
+  border: 1px solid rgba(30, 105, 72, 0.2);
+  border-radius: 8px;
+  background: rgba(225, 244, 234, 0.72);
+  color: #1f5f43;
+  padding: 12px;
+}
+
 @media (max-width: 900px) {
   .dashboard-grid {
     grid-template-columns: 1fr;

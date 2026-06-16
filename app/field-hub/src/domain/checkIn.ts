@@ -8,6 +8,7 @@ export type RedFlag = 'none' | 'head_neck_neuro' | 'acute_instability'
 export type TrainingVariant = 'A_plus' | 'A' | 'B' | 'C' | 'D'
 
 export type CheckInLimit = 'kein_sprint' | 'kein_cond' | 'kein_schweres_heben' | 'physio' | 'klaeren'
+export type CheckInSource = 'coach' | 'player_link' | 'mixed'
 
 export type CheckInDraft = {
   present: boolean
@@ -25,6 +26,7 @@ export type CheckInDraft = {
   trainingVariant: TrainingVariant | null
   limits: CheckInLimit[]
   observation: string
+  playerNote?: string
 }
 
 export type SessionLog = {
@@ -61,6 +63,10 @@ export type PlayerSessionEntry = CheckInDraft & {
   postPainLocation: string
   e2Decision: E2Decision | null
   nextStep: NextStep | null
+  checkInSource?: CheckInSource
+  playerSubmittedAt?: string | null
+  coachEditedAt?: string | null
+  playerNote?: string
   createdAt: string
   updatedAt: string
   deletedAt: string | null
@@ -91,6 +97,7 @@ export type CheckInEntryPatch = Partial<
     | 'trainingVariant'
     | 'limits'
     | 'observation'
+    | 'playerNote'
   >
 >
 
@@ -124,6 +131,7 @@ export const emptyCheckInDraft: CheckInDraft = {
   trainingVariant: null,
   limits: [],
   observation: '',
+  playerNote: '',
 }
 
 const harmlessLifeFlagValues = new Set([

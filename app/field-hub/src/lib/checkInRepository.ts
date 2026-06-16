@@ -7,6 +7,7 @@ import {
   type CheckInDraft,
   type CheckInEntryPatch,
   type CheckInLimit,
+  type CheckInSource,
   type PlayerSessionEntry,
   type PostSessionEntryPatch,
   type PlayerWarning,
@@ -76,6 +77,10 @@ export type PlayerSessionEntryRow = {
   post_pain_location: string
   e2_decision: E2Decision | null
   next_step: NextStep | null
+  checkin_source?: CheckInSource
+  player_submitted_at?: string | null
+  coach_edited_at?: string | null
+  player_note?: string
   created_at: string
   updated_at: string
   deleted_at: string | null
@@ -171,6 +176,7 @@ export function entryFromRow(row: PlayerSessionEntryRow, syncStatus: SyncStatus 
     trainingVariant: row.training_variant,
     limits: row.limits,
     observation: row.observation,
+    playerNote: row.player_note ?? '',
   }
   const withSuggestion = row.traffic_light_suggestion
     ? {
@@ -195,6 +201,10 @@ export function entryFromRow(row: PlayerSessionEntryRow, syncStatus: SyncStatus 
     postPainLocation: row.post_pain_location,
     e2Decision: row.e2_decision,
     nextStep: row.next_step,
+    checkInSource: row.checkin_source ?? 'coach',
+    playerSubmittedAt: row.player_submitted_at ?? null,
+    coachEditedAt: row.coach_edited_at ?? null,
+    playerNote: row.player_note ?? '',
     createdAt: row.created_at,
     updatedAt: row.updated_at,
     deletedAt: row.deleted_at,
@@ -230,6 +240,10 @@ export function rowFromEntry(entry: PlayerSessionEntry): PlayerSessionEntryUpser
     post_pain_location: entry.postPainLocation,
     e2_decision: entry.e2Decision,
     next_step: entry.nextStep,
+    checkin_source: entry.checkInSource ?? 'coach',
+    player_submitted_at: entry.playerSubmittedAt ?? null,
+    coach_edited_at: entry.coachEditedAt ?? null,
+    player_note: entry.playerNote ?? '',
     created_at: entry.createdAt,
     updated_at: entry.updatedAt,
     deleted_at: entry.deletedAt,
@@ -439,7 +453,8 @@ export async function listLatestWarnings(userId: string, currentSessionLogId: st
       (entry.e2Decision !== null && entry.e2Decision !== 'normal') ||
       entry.nextStep === 'reduzieren' ||
       entry.nextStep === 'klaeren' ||
-      (entry.postPainScore !== null && entry.postPainScore >= 3)
+      (entry.postPainScore !== null && entry.postPainScore >= 3) ||
+      entry.observation.trim().length > 0
     if (!hasWarning) {
       continue
     }
@@ -486,6 +501,10 @@ export function buildEmptyEntry(userId: string, sessionLogId: string, player: Pl
     postPainLocation: '',
     e2Decision: null,
     nextStep: null,
+    checkInSource: 'coach',
+    playerSubmittedAt: null,
+    coachEditedAt: null,
+    playerNote: '',
     createdAt: timestamp,
     updatedAt: timestamp,
     deletedAt: null,
@@ -565,6 +584,8 @@ async function saveCheckInEntryOnce(
   const entry: PlayerSessionEntry = {
     ...baseEntry,
     ...finalDraft,
+    checkInSource: baseEntry.checkInSource === 'player_link' ? 'mixed' : 'coach',
+    coachEditedAt: timestamp,
     updatedAt: timestamp,
     clientUpdatedAt: timestamp,
     syncStatus: 'pending',
@@ -599,6 +620,50 @@ export async function saveCheckInEntry(
       pendingCheckInEntrySaves.delete(key)
     }
   }
+}
+
+export async function savePublicCheckInEntry(
+  userId: string,
+  sessionLogId: string,
+  player: Player,
+  patch: CheckInEntryPatch,
+  submittedAt: string,
+) {
+  const existing = await localDb.playerSessionEntries
+    .where('userId')
+    .equals(userId)
+    .and((entry) => entry.sessionLogId === sessionLogId && entry.playerId === player.id && !entry.deletedAt)
+    .first()
+  const timestamp = nowIso()
+  const baseEntry = existing ?? buildEmptyEntry(userId, sessionLogId, player)
+  const patchedDraft: CheckInDraft = {
+    ...baseEntry,
+    ...patch,
+    lifeFlag: patch.lifeFlag !== undefined ? patch.lifeFlag.trim() : baseEntry.lifeFlag,
+    painLocation: patch.painLocation !== undefined ? patch.painLocation.trim() : baseEntry.painLocation,
+    playerNote: patch.playerNote !== undefined ? patch.playerNote.trim() : baseEntry.playerNote,
+  }
+  const draftWithLimits = {
+    ...patchedDraft,
+    limits: deriveLimits(patchedDraft),
+  }
+  const suggestedDraft = applySuggestedTrafficLight(draftWithLimits)
+  const entry: PlayerSessionEntry = {
+    ...baseEntry,
+    ...suggestedDraft,
+    checkInSource: baseEntry.coachEditedAt ? 'mixed' : 'player_link',
+    playerSubmittedAt: submittedAt,
+    coachEditedAt: baseEntry.coachEditedAt,
+    updatedAt: timestamp,
+    clientUpdatedAt: timestamp,
+    syncStatus: 'pending',
+    syncError: null,
+  }
+
+  await localDb.playerSessionEntries.put(entry)
+  await queueWrite('player_session_entries', entry.id, userId)
+
+  return entry
 }
 
 export async function getCheckInSyncOverview(userId: string): Promise<PlayerSyncOverview> {
@@ -745,7 +810,7 @@ async function refreshRemoteCheckIns(userId: string) {
   const { data: entryRows, error: entryError } = await supabase!
     .from('player_session_entries')
     .select(
-      'id,user_id,session_log_id,player_id,present,readiness,life_flag,pain_score,pain_location,returner_flag,red_flag,movement_concern,traffic_light,traffic_light_suggestion,traffic_light_was_manual,training_variant,limits,observation,session_rpe,duration_minutes,session_load,post_pain_score,post_pain_location,e2_decision,next_step,created_at,updated_at,deleted_at,client_updated_at',
+      'id,user_id,session_log_id,player_id,present,readiness,life_flag,pain_score,pain_location,returner_flag,red_flag,movement_concern,traffic_light,traffic_light_suggestion,traffic_light_was_manual,training_variant,limits,observation,session_rpe,duration_minutes,session_load,post_pain_score,post_pain_location,e2_decision,next_step,checkin_source,player_submitted_at,coach_edited_at,player_note,created_at,updated_at,deleted_at,client_updated_at',
     )
     .eq('user_id', userId)
     .is('deleted_at', null)

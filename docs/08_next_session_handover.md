@@ -904,6 +904,41 @@ Verifikation fuer diese UX-Runde:
 - `npm run build`
 - Browser-QA auf frischem Dev-Port, weil `127.0.0.1:5173` zeitweise alte PWA-Assets aus einem vorherigen Service-Worker zeigte.
 
+## Field Hub Remote-Check-in-Entscheidung 2026-06-15
+
+Kontext:
+
+- WhatsApp-Gruppenlink fuer Spieler-Self-Check-in wurde als MVP-Erweiterung umgesetzt.
+- Ziel bleibt: kein Spielerportal, keine Spieler-Accounts, keine Edge Functions, kein Realtime, keine `service_role` Keys.
+
+Entscheidungen fuer Folgesessions:
+
+- Es bleibt ein Gruppenlink pro Einheit, aber token-gehaertet: URL-Token wird nur gehasht gespeichert, laeuft ab und kann geschlossen werden.
+- Der Roh-Token/Link wird absichtlich nur beim Erstellen angezeigt/kopiert. Wenn der Link verloren geht, soll ein neuer Link erstellt werden, statt Roh-Tokens lokal dauerhaft zu speichern.
+- Spieler sehen auf der oeffentlichen Seite nur die fuer diesen Link gesnapshotete Namensliste und koennen nur Self-Check-in-Werte absenden. Sie sehen keine Coach-Daten, keine anderen Eingaben und keine Red-Flag-/medizinische Coach-Entscheidung.
+- Eingehende Spieler-Check-ins werden per Polling/Synchronisation sichtbar, nicht per Realtime. Aktuell ist das MVP-bewusst ein 12-Sekunden-Polling auf den relevanten Coach-Ansichten.
+- Coach-Korrekturen gewinnen gegen spaetere Spieler-Resubmissions; solche Faelle werden als Konflikt markiert.
+- Trainingsbeobachtungen koennen live als Gruppen- oder Spielerbeobachtung erfasst werden. Spielerbeobachtungen werden in der naechsten Einheit als offene Warnung/Beobachtung wieder angezeigt.
+- Backup/Export umfasst die Public-Check-in-Link-, Link-Spieler- und Submission-Daten.
+
+Supabase-Status:
+
+- Remote-Migration `20260615121332_public_checkin_links.sql` wurde am 15. Juni 2026 per `supabase db push --yes` auf Projekt `rugby-snc-field-hub` (`vpgqmykayreqlzfcvtat`) angewendet.
+- Nach Security-Audit wurde zusaetzlich `20260615123657_harden_public_checkin_grants.sql` angewendet. Grund: Tabellenrechte fuer `anon` wurden auf least-privilege gehaertet; `anon` hat nur die benoetigten Spaltenrechte, nicht pauschale Tabellenrechte.
+- Direkte Postgres-Verifikation nach Push: RLS aktiv auf `public_checkin_links`, `public_checkin_link_players`, `public_checkin_submissions`; Policies vorhanden; neue Spalten auf `player_session_entries` vorhanden; Remote-Lint ohne Schemafehler.
+- Fuer kuenftige Supabase-CLI-Checks die nicht getrackte `.env.supabase.local` lokal laden. Keine Secrets committen und keinen `service_role` Key verwenden.
+
+Verifikation fuer diese Runde:
+
+- `npm run lint && npm test && npm run build`
+- `git diff --check`
+- `supabase db push --dry-run`
+- `supabase db push --yes`
+- `supabase db lint --linked --fail-on error`
+- `supabase migration list --linked`
+- direkte `psql`-Kontrolle von RLS, Policies, Grants und neuen Spalten
+- Browser-QA mit frischem Vite-Server: oeffentliche Route zeigt fuer ungueltigen Test-Token korrekt `Check-in-Link ist ungueltig oder abgelaufen`; Coach-App rendert ohne Konsolenfehler.
+
 ## Empfohlener Startprompt fuer eine Trainingsplan-Session
 
 ```text

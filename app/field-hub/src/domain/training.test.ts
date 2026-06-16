@@ -1,6 +1,6 @@
 import { describe, expect, test } from 'vitest'
 import { emptyCheckInDraft, type PlayerSessionEntry } from './checkIn'
-import { applyTrainingQuickAction } from './training'
+import { appendLiveObservation, applyTrainingQuickAction, formatLiveObservation } from './training'
 
 function entry(overrides: Partial<PlayerSessionEntry> = {}): PlayerSessionEntry {
   return {
@@ -57,5 +57,19 @@ describe('applyTrainingQuickAction', () => {
     expect(applyTrainingQuickAction(entry(), 'kein_schweres_heben')).toEqual({
       limits: ['kein_schweres_heben'],
     })
+  })
+})
+
+describe('live observations', () => {
+  test('formats a categorized observation with local time prefix', () => {
+    expect(formatLiveObservation('Speed', '3 Reps gestrichen', new Date('2026-06-16T19:42:00.000Z'))).toMatch(
+      /^\[Speed\] \d{2}:\d{2}: 3 Reps gestrichen$/,
+    )
+  })
+
+  test('appends live observations without losing existing notes', () => {
+    expect(appendLiveObservation('Alt', 'Speed', '3 Reps gestrichen', new Date('2026-06-16T19:42:00.000Z'))).toMatch(
+      /^Alt\n\[Speed\] \d{2}:\d{2}: 3 Reps gestrichen$/,
+    )
   })
 })
