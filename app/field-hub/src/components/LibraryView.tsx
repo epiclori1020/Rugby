@@ -254,14 +254,19 @@ export function LibraryView({ initialQuery = '', initialPdfHref, initialPdfTimed
                 <span>PDF</span>
                 <strong>{selectedPdf.label}</strong>
               </div>
-              <button
-                className="icon-button"
-                type="button"
-                aria-label="PDF schliessen"
-                onClick={closePdf}
-              >
-                <X className="nav-icon" aria-hidden />
-              </button>
+              <div className="pdf-viewer-actions">
+                <a className="secondary-action compact-action" href={selectedPdf.href} target="_blank" rel="noreferrer">
+                  Vollstaendige PDF oeffnen
+                </a>
+                <button
+                  className="icon-button"
+                  type="button"
+                  aria-label="PDF schliessen"
+                  onClick={closePdf}
+                >
+                  <X className="nav-icon" aria-hidden />
+                </button>
+              </div>
             </div>
             <div className="pdf-viewer-body">
               {isPdfLoading ? (

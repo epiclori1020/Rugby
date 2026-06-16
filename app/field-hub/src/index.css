@@ -1492,6 +1492,13 @@ code {
   overflow-wrap: anywhere;
 }
 
+.pdf-viewer-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  justify-content: flex-end;
+}
+
 .pdf-viewer-body {
   position: relative;
   min-height: 0;
