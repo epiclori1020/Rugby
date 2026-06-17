@@ -6,6 +6,7 @@ import {
   Dumbbell,
   FileDown,
   HeartPulse,
+  Settings,
   Users,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
@@ -26,6 +27,7 @@ const navigationItems: NavigationItem[] = [
   { id: 'returner', label: 'Returner', Icon: HeartPulse },
   { id: 'bibliothek', label: 'Bibliothek', Icon: Archive },
   { id: 'export', label: 'Export', Icon: FileDown },
+  { id: 'einstellungen', label: 'Einstellungen', Icon: Settings },
 ]
 
 type MainNavigationProps = {

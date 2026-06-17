@@ -12,20 +12,17 @@ const signedInAuthState = {
   error: null,
 } as AuthSessionState
 
-function renderBadge(playerSync: PlayerSyncOverview, syncNotice: string | null = null) {
+function renderBadge(playerSync: PlayerSyncOverview) {
   return renderToStaticMarkup(
     createElement(SyncStatusBadge, {
       authState: signedInAuthState,
-      isManualSyncing: false,
-      onManualSync: () => undefined,
       playerSync,
-      syncNotice,
     }),
   )
 }
 
 describe('SyncStatusBadge copy', () => {
-  it('uses coach-facing sync language instead of implementation terms', () => {
+  it('uses coach-facing sync language only when sync needs attention', () => {
     const markup = renderBadge({
       isOnline: true,
       status: 'pending',
@@ -35,13 +32,13 @@ describe('SyncStatusBadge copy', () => {
     })
 
     expect(markup).toContain('Online · Aenderungen offen')
-    expect(markup).toContain('Bei Unterschieden zwischen Geraeten zaehlt die zuletzt gespeicherte Version.')
     expect(markup).not.toContain('client_updated_at')
     expect(markup).not.toContain('last-write-wins')
     expect(markup).not.toContain('Konflikt-MVP')
+    expect(markup).not.toContain('Jetzt synchronisieren')
   })
 
-  it('renders manual sync success feedback when provided', () => {
+  it('does not render in the topbar when everything is already synced', () => {
     const markup = renderBadge(
       {
         isOnline: true,
@@ -50,9 +47,8 @@ describe('SyncStatusBadge copy', () => {
         lastSuccessfulSyncAt: null,
         errorMessage: null,
       },
-      'Synchronisiert.',
     )
 
-    expect(markup).toContain('Synchronisiert.')
+    expect(markup).toBe('')
   })
 })

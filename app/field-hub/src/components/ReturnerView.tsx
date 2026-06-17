@@ -17,8 +17,7 @@ import type { AuthSessionState } from '../lib/auth'
 import { applyOptimisticReturnerPatch } from '../lib/optimisticUpdates'
 import { measureInteraction } from '../lib/performanceTrace'
 import { returnerEntryKeyBase } from '../lib/returnerEntryKey'
-import { pendingCountLabel, syncStatusLabel } from '../lib/syncLabels'
-import { AuthPanel } from './AuthPanel'
+import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
 import { SessionPicker } from './SessionPicker'
 
 type ReturnerActions = ReturnType<typeof useReturners>
@@ -327,15 +326,15 @@ export function ReturnerView({
     savePlayerReturner,
     syncOverview,
   } = returnerActions
+  const showSyncAttention = shouldShowSyncAttention(syncOverview)
 
   if (authState.status !== 'signed-in') {
     return (
       <div className="content-stack">
-        <AuthPanel authState={authState} />
         <section className="placeholder" aria-labelledby="returner-locked-heading">
           <HeartPulse className="placeholder-icon" aria-hidden />
           <h2 id="returner-locked-heading">Returner</h2>
-          <p>Returner-Caps und Verlauf werden erst nach Coach-Login lokal gespeichert und synchronisiert.</p>
+          <p>Returner-Caps und Verlauf werden erst nach Coach-Login in Einstellungen lokal gespeichert und synchronisiert.</p>
         </section>
       </div>
     )
@@ -373,10 +372,12 @@ export function ReturnerView({
           <span>Returner</span>
           <strong>{activeReturnerPlayers.length}</strong>
         </div>
-        <div className="metric">
-          <span>Sync</span>
-          <strong>{syncOverview.pendingCount}</strong>
-        </div>
+        {showSyncAttention ? (
+          <div className="metric">
+            <span>Offen</span>
+            <strong>{syncOverview.pendingCount}</strong>
+          </div>
+        ) : null}
       </div>
 
       {errorMessage ? (
@@ -389,12 +390,14 @@ export function ReturnerView({
         </div>
       ) : null}
 
-      <div className="panel checkin-sync-strip">
-        <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
-        <strong>{syncStatusLabel(syncOverview.status)}</strong>
-        <span>{pendingCountLabel(syncOverview.pendingCount, 'Returner-Aenderungen')}</span>
-        {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
-      </div>
+      {showSyncAttention ? (
+        <div className="panel checkin-sync-strip">
+          <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
+          <strong>{syncStatusLabel(syncOverview.status)}</strong>
+          <span>{pendingCountLabel(syncOverview.pendingCount, 'Returner-Aenderungen')}</span>
+          {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
+        </div>
+      ) : null}
 
       <section className="panel returner-red-flags" aria-label="Returner Red Flags">
         <div className="status-line">

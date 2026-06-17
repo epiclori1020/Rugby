@@ -20,9 +20,8 @@ import type { useBaselines } from '../hooks/useBaselines'
 import type { AuthSessionState } from '../lib/auth'
 import { triggerHapticFeedback } from '../lib/interactionFeedback'
 import { downloadPlayerPhotoUrl } from '../lib/playerRepository'
-import { pendingCountLabel, syncStatusLabel } from '../lib/syncLabels'
+import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
 import type { usePlayers } from '../hooks/usePlayers'
-import { AuthPanel } from './AuthPanel'
 
 type PlayerActions = ReturnType<typeof usePlayers>
 type BaselineActions = ReturnType<typeof useBaselines>
@@ -163,6 +162,7 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState<Record<string, string>>({})
   const photoPreviewUrlsRef = useRef<Record<string, string>>({})
   const { clearPhotoLoadError, markPhotoLoadError, photoLoadError } = usePhotoLoadError()
+  const showSyncAttention = shouldShowSyncAttention(syncOverview)
 
   const selectedPlayer = useMemo(
     () => players.find((player) => player.id === selectedPlayerId) ?? null,
@@ -223,11 +223,10 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
   if (authState.status !== 'signed-in') {
     return (
       <div className="content-stack">
-        <AuthPanel authState={authState} />
         <section className="placeholder" aria-labelledby="players-locked-heading">
           <Users className="placeholder-icon" aria-hidden />
           <h2 id="players-locked-heading">Spieler-Stammdaten</h2>
-          <p>Dynamische Spieler-Daten werden erst nach Coach-Login geladen.</p>
+          <p>Dynamische Spieler-Daten werden erst nach Coach-Login in Einstellungen geladen.</p>
         </section>
       </div>
     )
@@ -412,11 +411,13 @@ export function PlayersView({ authState, baselineActions, playerActions }: Playe
           ) : null}
         </div>
 
-        <div className="sync-mini">
-          <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
-          <strong>{syncStatusLabel(syncOverview.status)}</strong>
-          <span>{pendingCountLabel(syncOverview.pendingCount)}</span>
-        </div>
+        {showSyncAttention ? (
+          <div className="sync-mini">
+            <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
+            <strong>{syncStatusLabel(syncOverview.status)}</strong>
+            <span>{pendingCountLabel(syncOverview.pendingCount)}</span>
+          </div>
+        ) : null}
         {viewNotice ? (
           <p className="form-success player-view-notice" aria-live="polite">
             {viewNotice}

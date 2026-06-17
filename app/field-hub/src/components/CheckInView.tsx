@@ -19,8 +19,7 @@ import { triggerHapticFeedback } from '../lib/interactionFeedback'
 import { applyOptimisticCheckInPatch } from '../lib/optimisticUpdates'
 import { measureInteraction } from '../lib/performanceTrace'
 import { hasPlayerId } from '../lib/playerId'
-import { pendingCountLabel, syncStatusLabel } from '../lib/syncLabels'
-import { AuthPanel } from './AuthPanel'
+import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
 import { SessionPicker } from './SessionPicker'
 
 type CheckInActions = ReturnType<typeof useCheckIns>
@@ -452,6 +451,7 @@ export function CheckInView({
     getEntryForPlayer,
     clearError,
   } = checkInActions
+  const showSyncAttention = shouldShowSyncAttention(syncOverview)
   const [publicLinkFeedback, setPublicLinkFeedback] = useState<string | null>(null)
   const returnerCapByPlayerId = new Map(returnerCaps.filter(hasPlayerId).map((cap) => [cap.playerId, cap]))
   const expectedPlayerSet = new Set(expectedPlayerIds)
@@ -510,11 +510,10 @@ export function CheckInView({
   if (authState.status !== 'signed-in') {
     return (
       <div className="content-stack">
-        <AuthPanel authState={authState} />
         <section className="placeholder" aria-labelledby="checkin-locked-heading">
           <ClipboardCheck className="placeholder-icon" aria-hidden />
           <h2 id="checkin-locked-heading">Pre-Session Check-in</h2>
-          <p>Check-in-Daten werden erst nach Coach-Login lokal gespeichert und synchronisiert.</p>
+          <p>Check-in-Daten werden erst nach Coach-Login in Einstellungen lokal gespeichert und synchronisiert.</p>
         </section>
       </div>
     )
@@ -579,12 +578,14 @@ export function CheckInView({
         </div>
       ) : null}
 
-      <div className="panel checkin-sync-strip">
-        <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
-        <strong>{syncStatusLabel(syncOverview.status)}</strong>
-        <span>{pendingCountLabel(syncOverview.pendingCount, 'Check-in-Aenderungen')}</span>
-        {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
-      </div>
+      {showSyncAttention ? (
+        <div className="panel checkin-sync-strip">
+          <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
+          <strong>{syncStatusLabel(syncOverview.status)}</strong>
+          <span>{pendingCountLabel(syncOverview.pendingCount, 'Check-in-Aenderungen')}</span>
+          {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
+        </div>
+      ) : null}
 
       <section className="panel public-checkin-coach-panel" aria-label="WhatsApp Check-in Link">
         <div className="status-line">

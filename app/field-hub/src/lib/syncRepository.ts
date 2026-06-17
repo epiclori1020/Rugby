@@ -98,6 +98,37 @@ export async function resetErroredPendingWritesForRetry(userId: string) {
   return resetCount
 }
 
+export type ManualSyncFeedback = {
+  kind: 'success' | 'warning' | 'error'
+  message: string
+}
+
+function syncChangeCountLabel(count: number) {
+  return count === 1 ? '1 Aenderung' : `${count} Aenderungen`
+}
+
+export function buildManualSyncFeedback(overview: PlayerSyncOverview): ManualSyncFeedback {
+  if (!overview.isOnline) {
+    return { kind: 'error', message: 'Offline: lokal gespeichert, Sync offen.' }
+  }
+
+  if (overview.status === 'error' || overview.errorMessage) {
+    return {
+      kind: 'error',
+      message: `Sync fehlgeschlagen: ${overview.errorMessage ?? 'Bitte spaeter erneut versuchen.'}`,
+    }
+  }
+
+  if (overview.status === 'pending' || overview.pendingCount > 0) {
+    return {
+      kind: 'warning',
+      message: `Sync offen: ${syncChangeCountLabel(overview.pendingCount)} noch nicht synchronisiert.`,
+    }
+  }
+
+  return { kind: 'success', message: 'Synchronisiert.' }
+}
+
 export async function syncAllUserData(userId: string): Promise<PlayerSyncOverview> {
   await resetErroredPendingWritesForRetry(userId)
   const playerSyncOverview = await syncPlayers(userId)

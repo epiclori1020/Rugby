@@ -25,8 +25,6 @@ describe('AppShell page title', () => {
       <AppShell
         activeTab="export"
         authState={signedOutAuthState}
-        isManualSyncing={false}
-        onManualSync={() => undefined}
         onTabChange={() => undefined}
         playerSync={syncedOverview}
       >
@@ -43,8 +41,6 @@ describe('AppShell page title', () => {
       <AppShell
         activeTab="spieler"
         authState={signedOutAuthState}
-        isManualSyncing={false}
-        onManualSync={() => undefined}
         onTabChange={() => undefined}
         playerSync={syncedOverview}
       >
@@ -56,5 +52,21 @@ describe('AppShell page title', () => {
     expect(markup).toContain('aria-controls="app-sidebar"')
     expect(markup).toContain('Hauptnavigation')
     expect(markup).not.toContain('bottom-tab-bar')
+  })
+
+  it('renders the settings title without a permanent sync button when data is synced', () => {
+    const markup = renderToStaticMarkup(
+      <AppShell
+        activeTab="einstellungen"
+        authState={signedOutAuthState}
+        onTabChange={() => undefined}
+        playerSync={syncedOverview}
+      >
+        <p>Settings content</p>
+      </AppShell>,
+    )
+
+    expect(markup).toContain('Einstellungen')
+    expect(markup).not.toContain('Jetzt synchronisieren')
   })
 })

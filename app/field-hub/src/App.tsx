@@ -1,8 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { AppShell } from './components/AppShell'
-import { AuthPanel } from './components/AuthPanel'
-import { BackupReminderBanner } from './components/BackupReminderBanner'
 import { CheckInView } from './components/CheckInView'
 import { ExportView } from './components/ExportView'
 import { LibraryView } from './components/LibraryView'
@@ -11,6 +9,7 @@ import { PublicCheckInView } from './components/PublicCheckInView'
 import { PwaUpdateNotice } from './components/PwaUpdateNotice'
 import { PlayersView } from './components/PlayersView'
 import { ReturnerView } from './components/ReturnerView'
+import { SettingsView } from './components/SettingsView'
 import { TodayDashboard } from './components/TodayDashboard'
 import { TrainingView } from './components/TrainingView'
 import { getRelevantSessions, sessionDefinitions } from './content/sessions'
@@ -25,7 +24,7 @@ import { useReturners } from './hooks/useReturners'
 import { useStoragePersistence } from './hooks/useStoragePersistence'
 import { getLastExportAt, getLatestCompletedSession } from './lib/backupRepository'
 import { flushBackgroundSyncs } from './lib/backgroundSync'
-import { combineSyncOverviews, syncAllUserData } from './lib/syncRepository'
+import { buildManualSyncFeedback, combineSyncOverviews, syncAllUserData, type ManualSyncFeedback } from './lib/syncRepository'
 
 export type HubTab =
   | 'heute'
@@ -36,6 +35,7 @@ export type HubTab =
   | 'returner'
   | 'bibliothek'
   | 'export'
+  | 'einstellungen'
 
 const selectedSessionStorageKey = 'fieldHub:selectedSessionId'
 
@@ -61,9 +61,8 @@ function getInitialSelectedSessionId(fallbackSessionId: string) {
 
 function CoachApp() {
   const [activeTab, setActiveTab] = useState<HubTab>('heute')
-  const [dismissedBackupReminderKey, setDismissedBackupReminderKey] = useState<string | null>(null)
   const [isManualSyncing, setIsManualSyncing] = useState(false)
-  const [manualSyncNotice, setManualSyncNotice] = useState<string | null>(null)
+  const [manualSyncFeedback, setManualSyncFeedback] = useState<ManualSyncFeedback | null>(null)
   const {
     needRefresh: [needsAppRefresh],
     updateServiceWorker,
@@ -140,7 +139,7 @@ function CoachApp() {
     : null
   const showBackupReminder = shouldShowBackupReminder({
     completedSessionClientUpdatedAt: latestCompletedSession?.clientUpdatedAt ?? null,
-    dismissedReminderKey: dismissedBackupReminderKey,
+    dismissedReminderKey: null,
     lastExportAt,
     reminderKey: backupReminderKey,
   })
@@ -177,12 +176,17 @@ function CoachApp() {
       return
     }
 
-    setManualSyncNotice(null)
+    setManualSyncFeedback(null)
     setIsManualSyncing(true)
     try {
-      await syncAllUserData(userId)
+      const overview = await syncAllUserData(userId)
       await refreshAllLocalData()
-      setManualSyncNotice('Synchronisiert.')
+      setManualSyncFeedback(buildManualSyncFeedback(overview))
+    } catch (caughtError) {
+      setManualSyncFeedback({
+        kind: 'error',
+        message: caughtError instanceof Error ? `Sync fehlgeschlagen: ${caughtError.message}` : 'Sync fehlgeschlagen.',
+      })
     } finally {
       setIsManualSyncing(false)
     }
@@ -199,13 +203,13 @@ function CoachApp() {
   }, [refreshAllLocalData, selectedSession.id])
 
   useEffect(() => {
-    if (!manualSyncNotice) {
+    if (!manualSyncFeedback) {
       return undefined
     }
 
-    const timeoutId = window.setTimeout(() => setManualSyncNotice(null), 4000)
+    const timeoutId = window.setTimeout(() => setManualSyncFeedback(null), 4000)
     return () => window.clearTimeout(timeoutId)
-  }, [manualSyncNotice])
+  }, [manualSyncFeedback])
 
   useEffect(() => {
     function flushBeforeHidden() {
@@ -230,36 +234,22 @@ function CoachApp() {
   return (
     <AppShell
       activeTab={activeTab}
-      isManualSyncing={isManualSyncing}
-      onManualSync={runManualSync}
       onTabChange={setActiveTab}
       authState={authState}
       playerSync={syncOverview}
-      syncNotice={manualSyncNotice}
     >
-      {showBackupReminder && latestCompletedSession ? (
-        <BackupReminderBanner
-          lastExportAt={lastExportAt}
-          onDismiss={() => setDismissedBackupReminderKey(backupReminderKey)}
-          onNavigate={setActiveTab}
-          sessionLog={latestCompletedSession}
-        />
-      ) : null}
       {needsAppRefresh ? <PwaUpdateNotice onReload={() => void updateServiceWorker(true)} /> : null}
       {activeTab === 'heute' ? (
-        <>
-          {authState.status !== 'signed-in' ? <AuthPanel authState={authState} /> : null}
-          <TodayDashboard
-            checkInActions={checkInActions}
-            onNavigate={setActiveTab}
-            onSessionChange={setSelectedSessionId}
-            players={playerActions.players}
-            selectedSession={selectedSession}
-            selectedSessionId={selectedSession.id}
-            sessions={sessionDefinitions}
-            storagePersistence={storagePersistence}
-          />
-        </>
+        <TodayDashboard
+          checkInActions={checkInActions}
+          onNavigate={setActiveTab}
+          onSessionChange={setSelectedSessionId}
+          players={playerActions.players}
+          selectedSession={selectedSession}
+          selectedSessionId={selectedSession.id}
+          sessions={sessionDefinitions}
+          storagePersistence={storagePersistence}
+        />
       ) : activeTab === 'spieler' ? (
         <PlayersView authState={authState} baselineActions={baselineActions} playerActions={playerActions} />
       ) : activeTab === 'check-in' ? (
@@ -314,6 +304,21 @@ function CoachApp() {
           lastExportAt={lastExportAt}
           onDataChanged={refreshAllLocalData}
           onExportComplete={setLastExportAtState}
+        />
+      ) : activeTab === 'einstellungen' ? (
+        <SettingsView
+          authState={authState}
+          backupRecommended={showBackupReminder}
+          isManualSyncing={isManualSyncing}
+          lastExportAt={lastExportAt}
+          latestCompletedSession={latestCompletedSession}
+          needsAppRefresh={needsAppRefresh}
+          onManualSync={runManualSync}
+          onNavigate={setActiveTab}
+          onReloadApp={() => void updateServiceWorker(true)}
+          storagePersistence={storagePersistence}
+          syncFeedback={manualSyncFeedback}
+          syncOverview={syncOverview}
         />
       ) : (
         null

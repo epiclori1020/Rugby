@@ -12,6 +12,7 @@ const tabLabels = [
   'Returner',
   'Bibliothek',
   'Export',
+  'Einstellungen',
 ]
 
 describe('MainNavigation accessibility contract', () => {

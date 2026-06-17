@@ -1,7 +1,12 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Player } from '../domain/players'
-import { combineSyncOverviews, mergeManualSyncOverview, resetErroredPendingWritesForRetry } from './syncRepository'
+import {
+  buildManualSyncFeedback,
+  combineSyncOverviews,
+  mergeManualSyncOverview,
+  resetErroredPendingWritesForRetry,
+} from './syncRepository'
 import { localDb } from './localDb'
 
 const userId = '00000000-0000-4000-8000-000000000001'
@@ -78,5 +83,47 @@ describe('syncRepository', () => {
     expect(merged.pendingCount).toBe(2)
     expect(merged.status).toBe('error')
     expect(merged.errorMessage).toBe('network')
+  })
+
+  it('formats manual sync feedback from the returned overview instead of assuming success', () => {
+    expect(
+      buildManualSyncFeedback({
+        isOnline: true,
+        status: 'pending',
+        pendingCount: 1,
+        lastSuccessfulSyncAt: null,
+        errorMessage: null,
+      }),
+    ).toEqual({ kind: 'warning', message: 'Sync offen: 1 Aenderung noch nicht synchronisiert.' })
+
+    expect(
+      buildManualSyncFeedback({
+        isOnline: true,
+        status: 'pending',
+        pendingCount: 2,
+        lastSuccessfulSyncAt: null,
+        errorMessage: null,
+      }),
+    ).toEqual({ kind: 'warning', message: 'Sync offen: 2 Aenderungen noch nicht synchronisiert.' })
+
+    expect(
+      buildManualSyncFeedback({
+        isOnline: true,
+        status: 'error',
+        pendingCount: 2,
+        lastSuccessfulSyncAt: null,
+        errorMessage: 'network',
+      }),
+    ).toEqual({ kind: 'error', message: 'Sync fehlgeschlagen: network' })
+
+    expect(
+      buildManualSyncFeedback({
+        isOnline: true,
+        status: 'synced',
+        pendingCount: 0,
+        lastSuccessfulSyncAt: null,
+        errorMessage: null,
+      }),
+    ).toEqual({ kind: 'success', message: 'Synchronisiert.' })
   })
 })

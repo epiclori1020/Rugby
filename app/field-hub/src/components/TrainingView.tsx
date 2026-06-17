@@ -23,8 +23,7 @@ import {
 import type { useCheckIns } from '../hooks/useCheckIns'
 import type { AuthSessionState } from '../lib/auth'
 import { hasPlayerId } from '../lib/playerId'
-import { pendingCountLabel, syncStatusLabel } from '../lib/syncLabels'
-import { AuthPanel } from './AuthPanel'
+import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
 import { SessionPicker } from './SessionPicker'
 
 type TrainingActions = ReturnType<typeof useCheckIns>
@@ -246,6 +245,7 @@ export function TrainingView({
     sessionLog,
     clearError,
   } = checkInActions
+  const showSyncAttention = shouldShowSyncAttention(syncOverview)
   const expectedPlayerSet = new Set(expectedPlayerIds)
   const warningByPlayerId = new Map(warnings.filter(hasPlayerId).map((warning) => [warning.playerId, warning]))
   const returnerCapByPlayerId = new Map(returnerCaps.filter(hasPlayerId).map((cap) => [cap.playerId, cap]))
@@ -317,11 +317,10 @@ export function TrainingView({
   if (authState.status !== 'signed-in') {
     return (
       <div className="content-stack">
-        <AuthPanel authState={authState} />
         <section className="placeholder" aria-labelledby="training-locked-heading">
           <Dumbbell className="placeholder-icon" aria-hidden />
           <h2 id="training-locked-heading">Training</h2>
-          <p>Training-Anpassungen werden erst nach Coach-Login lokal gespeichert und synchronisiert.</p>
+          <p>Training-Anpassungen werden erst nach Coach-Login in Einstellungen lokal gespeichert und synchronisiert.</p>
         </section>
       </div>
     )
@@ -383,12 +382,14 @@ export function TrainingView({
         </div>
       ) : null}
 
-      <div className="panel checkin-sync-strip">
-        <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
-        <strong>{syncStatusLabel(syncOverview.status)}</strong>
-        <span>{pendingCountLabel(syncOverview.pendingCount, 'Training/Check-in-Aenderungen')}</span>
-        {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
-      </div>
+      {showSyncAttention ? (
+        <div className="panel checkin-sync-strip">
+          <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
+          <strong>{syncStatusLabel(syncOverview.status)}</strong>
+          <span>{pendingCountLabel(syncOverview.pendingCount, 'Training/Check-in-Aenderungen')}</span>
+          {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
+        </div>
+      ) : null}
 
       <section className="panel live-observation-panel" aria-labelledby="live-observation-heading">
         <div className="status-line">

@@ -226,7 +226,7 @@ export function TodayDashboard({
               ? `${postSessionFollowUpCount} E2-/Progressions-Follow-ups fuer die naechste Einheit.`
               : 'Keine lokalen E2-/Progressions-Follow-ups aus der Nachbereitung.'}
           </p>
-          <p>{pendingCountLabel(pendingCount, 'Check-in-Aenderungen')}.</p>
+          {pendingCount > 0 ? <p>{pendingCountLabel(pendingCount, 'Check-in-Aenderungen')}.</p> : null}
         </article>
 
         {activeObservations.length > 0 ? (

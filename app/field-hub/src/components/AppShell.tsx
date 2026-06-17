@@ -9,12 +9,9 @@ import { SyncStatusBadge } from './SyncStatusBadge'
 type AppShellProps = {
   activeTab: HubTab
   children: ReactNode
-  isManualSyncing: boolean
-  onManualSync: () => void
   onTabChange: (tab: HubTab) => void
   authState: AuthSessionState
   playerSync: PlayerSyncOverview
-  syncNotice?: string | null
 }
 
 const tabMeta: Record<HubTab, { eyebrow: string; title: string; description: string }> = {
@@ -58,17 +55,19 @@ const tabMeta: Record<HubTab, { eyebrow: string; title: string; description: str
     title: 'Export & Backup',
     description: 'JSON-Backup, CSV-Dateien und Import-Vorschau fuer sichere Ablage.',
   },
+  einstellungen: {
+    eyebrow: 'App & Account',
+    title: 'Einstellungen',
+    description: 'Account, Sync, Backup, Geraet und App-Version an einem Ort.',
+  },
 }
 
 export function AppShell({
   activeTab,
   children,
-  isManualSyncing,
-  onManualSync,
   onTabChange,
   authState,
   playerSync,
-  syncNotice = null,
 }: AppShellProps) {
   const meta = tabMeta[activeTab]
   const [isNavigationOpen, setIsNavigationOpen] = useState(false)
@@ -142,10 +141,7 @@ export function AppShell({
           </div>
           <SyncStatusBadge
             authState={authState}
-            isManualSyncing={isManualSyncing}
-            onManualSync={onManualSync}
             playerSync={playerSync}
-            syncNotice={syncNotice}
           />
         </div>
 

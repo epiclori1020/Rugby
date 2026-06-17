@@ -16,7 +16,6 @@ import {
   buildProgressCsv,
   downloadTextFile,
 } from '../lib/csvExport'
-import { AuthPanel } from './AuthPanel'
 
 type ExportViewProps = {
   authState: AuthSessionState
@@ -93,11 +92,10 @@ export function ExportView({
   if (authState.status !== 'signed-in') {
     return (
       <div className="content-stack">
-        <AuthPanel authState={authState} />
         <section className="placeholder" aria-labelledby="export-locked-heading">
           <FileDown className="placeholder-icon" aria-hidden />
           <h2 id="export-locked-heading">Export</h2>
-          <p>Backups und CSV-Exporte sind nach Coach-Login verfuegbar.</p>
+          <p>Backups und CSV-Exporte sind nach Coach-Login in Einstellungen verfuegbar.</p>
         </section>
       </div>
     )

@@ -213,24 +213,6 @@ button {
   font-weight: 800;
 }
 
-.backup-reminder {
-  border: 1px solid #e8c56b;
-  border-radius: 8px;
-  background: #fff9e8;
-  box-shadow: var(--shadow);
-  display: flex;
-  align-items: center;
-  justify-content: space-between;
-  gap: 14px;
-  padding: 14px;
-}
-
-.backup-reminder p {
-  margin: 0;
-  color: #53370d;
-  line-height: 1.45;
-}
-
 .status-line {
   display: flex;
   align-items: center;
@@ -261,6 +243,28 @@ button {
 .dashboard-grid {
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
   align-items: start;
+}
+
+.settings-layout {
+  max-width: 980px;
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  gap: 14px;
+}
+
+.settings-layout .auth-panel,
+.settings-panel {
+  min-width: 0;
+}
+
+.settings-panel {
+  align-content: start;
+}
+
+.settings-panel .primary-action,
+.settings-panel .secondary-action {
+  justify-self: start;
 }
 
 .panel,
@@ -303,8 +307,21 @@ button {
   gap: 4px;
 }
 
+.settings-panel .metric,
+.settings-panel .metric span,
+.settings-panel .metric strong,
+.settings-panel .metric small {
+  min-width: 0;
+  overflow-wrap: anywhere;
+}
+
 .metric strong {
   font-size: 1.45rem;
+}
+
+.metric small {
+  color: var(--muted);
+  overflow-wrap: anywhere;
 }
 
 .tag-row,
@@ -1313,7 +1330,8 @@ button {
 
 .form-error,
 .form-notice,
-.form-success {
+.form-success,
+.form-warning {
   border-radius: 8px;
   margin: 0;
   padding: 10px 12px;
@@ -1335,6 +1353,12 @@ button {
   border: 1px solid #9ac7ac;
   background: #eef9f2;
   color: #24543a;
+}
+
+.form-warning {
+  border: 1px solid rgba(138, 90, 18, 0.28);
+  background: #fffdf8;
+  color: #53370d;
 }
 
 code {
@@ -1642,7 +1666,8 @@ code {
 }
 
 @media (max-width: 900px) {
-  .dashboard-grid {
+  .dashboard-grid,
+  .settings-layout {
     grid-template-columns: 1fr;
   }
 }

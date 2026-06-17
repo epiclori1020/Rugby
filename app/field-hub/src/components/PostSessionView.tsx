@@ -18,8 +18,7 @@ import type { useBaselines } from '../hooks/useBaselines'
 import type { usePostSession } from '../hooks/usePostSession'
 import type { AuthSessionState } from '../lib/auth'
 import { hasPlayerId } from '../lib/playerId'
-import { pendingCountLabel, syncStatusLabel } from '../lib/syncLabels'
-import { AuthPanel } from './AuthPanel'
+import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
 import { SessionPicker } from './SessionPicker'
 
 type PostSessionActions = ReturnType<typeof usePostSession>
@@ -510,6 +509,8 @@ export function PostSessionView({
     getProgressForPlayer,
     clearError,
   } = postSessionActions
+  const showSyncAttention = shouldShowSyncAttention(syncOverview)
+  const showBaselineSyncAttention = shouldShowSyncAttention(baselineActions.syncOverview)
   const baselineCompletedCount = baselineActions.entries.filter(
     (entry) => hasPlayerId(entry) && hasBaselineContent(entry),
   ).length
@@ -558,11 +559,10 @@ export function PostSessionView({
   if (authState.status !== 'signed-in') {
     return (
       <div className="content-stack">
-        <AuthPanel authState={authState} />
         <section className="placeholder" aria-labelledby="post-session-locked-heading">
           <ClipboardCheck className="placeholder-icon" aria-hidden />
           <h2 id="post-session-locked-heading">Nachbereitung</h2>
-          <p>Nachbereitungsdaten werden erst nach Coach-Login lokal gespeichert und synchronisiert.</p>
+          <p>Nachbereitungsdaten werden erst nach Coach-Login in Einstellungen lokal gespeichert und synchronisiert.</p>
         </section>
       </div>
     )
@@ -629,12 +629,14 @@ export function PostSessionView({
         </div>
       ) : null}
 
-      <div className="panel checkin-sync-strip">
-        <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
-        <strong>{syncStatusLabel(syncOverview.status)}</strong>
-        <span>{pendingCountLabel(syncOverview.pendingCount, 'Nachbereitung/Check-in-Aenderungen')}</span>
-        {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
-      </div>
+      {showSyncAttention ? (
+        <div className="panel checkin-sync-strip">
+          <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
+          <strong>{syncStatusLabel(syncOverview.status)}</strong>
+          <span>{pendingCountLabel(syncOverview.pendingCount, 'Nachbereitung/Check-in-Aenderungen')}</span>
+          {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
+        </div>
+      ) : null}
 
       <section className="panel post-session-coach-panel" aria-label="Coach Review">
         <div className="training-coach-fields">
@@ -689,13 +691,15 @@ export function PostSessionView({
           <p>Optional erfassen, wenn Gruppe und Ablauf ruhig sind. 30 m bleibt spaeter/optional und wird nicht erzwungen.</p>
         </div>
 
-        <div className="panel checkin-sync-strip">
-          <span className={`status-dot ${baselineActions.syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
-          <strong>{syncStatusLabel(baselineActions.syncOverview.status)}</strong>
-          <span>{pendingCountLabel(baselineActions.syncOverview.pendingCount, 'Baseline-Aenderungen')}</span>
-          <span>{baselineCompletedCount} Spieler mit Testwerten in dieser Einheit</span>
-          {baselineActions.syncOverview.errorMessage ? <span>{baselineActions.syncOverview.errorMessage}</span> : null}
-        </div>
+        {showBaselineSyncAttention ? (
+          <div className="panel checkin-sync-strip">
+            <span className={`status-dot ${baselineActions.syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
+            <strong>{syncStatusLabel(baselineActions.syncOverview.status)}</strong>
+            <span>{pendingCountLabel(baselineActions.syncOverview.pendingCount, 'Baseline-Aenderungen')}</span>
+            <span>{baselineCompletedCount} Spieler mit Testwerten in dieser Einheit</span>
+            {baselineActions.syncOverview.errorMessage ? <span>{baselineActions.syncOverview.errorMessage}</span> : null}
+          </div>
+        ) : null}
 
         {baselineFormError || baselineActions.errorMessage ? (
           <div className="error-panel" role="alert">
