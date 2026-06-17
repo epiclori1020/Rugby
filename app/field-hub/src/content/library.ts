@@ -69,6 +69,41 @@ export const libraryItems: LibraryItem[] = [
     pdfRefs: [pdfRefs.kw25CoachScript],
   },
   {
+    id: 'deep-playbook-donnerstag-kw25',
+    category: 'Coach-Skript',
+    title: 'Donnerstag Deep Playbook: Einheit 2',
+    summary:
+      'Ausfuehrliche Vorbereitungsfassung fuer Donnerstag 18. Juni: Training, optionale Mini-Baseline, App-Dokumentation, Wording, Uebungen und Fallbacks.',
+    sourcePath: 'docs/18_unit_2_deep_playbook_2026-06-18.styled.pdf',
+    tags: ['KW25', 'Donnerstag', 'Deep Playbook', 'Wording', 'Mini-Baseline', 'App'],
+    sections: [
+      {
+        title: 'Aktive Nutzung',
+        body: [
+          'Diese PDF ist die Deep-Prep-Version fuer Donnerstag, nicht das Klemmbrett-Miniplan-Blatt.',
+          'Am Platz bleiben Donnerstag-Trainingsplan und Kompaktkarte die kurzen Referenzen.',
+          'Die Deep-PDF erklaert jeden Block mit Wording, Zweck, Beobachtung, Entscheidung und Fallback.',
+        ],
+      },
+      {
+        title: 'Donnerstag-Kern',
+        body: [
+          'Normaler Donnerstag-Plan: Check-in, Warm-up, Speed, optionale Mini-Baseline, Kraft-Pods, Microdose, Easy Tempo optional und Abschluss.',
+          'Mini-Baseline nur wenn Ablauf, Sicherheit und Gruppe ruhig genug sind.',
+          'Kein Bronco, kein 30-m-Test, kein Ranking und keine Nachholbelastung.',
+        ],
+      },
+      {
+        title: 'App-Fokus',
+        body: [
+          'App-Dokumentation fuer Ampel, Reaktion auf Dienstag, Schmerz, Returner, Anpassungen, sRPE und Pain/Issue.',
+          'Keine Diagnosen und keine medizinischen Freigaben dokumentieren.',
+        ],
+      },
+    ],
+    pdfRefs: [pdfRefs.kw25ThursdayDeepPlaybook],
+  },
+  {
     id: 'spieler-briefing-start',
     category: 'Spieler-Briefing',
     title: 'Spieler-Briefing: S&C Start',

@@ -21,6 +21,11 @@ export const pdfRefs = {
     href: '/library/4_DONNERSTAG_trainingsplan.pdf',
     sourcePath: 'plans/offseason_coach_sheets/KW25_thursday_training_plan_clear_2026-06-18.md',
   },
+  kw25ThursdayDeepPlaybook: {
+    label: 'Donnerstag Deep Playbook',
+    href: '/library/18_unit_2_deep_playbook_2026-06-18.styled.pdf',
+    sourcePath: 'docs/18_unit_2_deep_playbook_2026-06-18.styled.pdf',
+  },
   consent: {
     label: 'Einwilligung 20x',
     href: '/library/5_OPTIONAL_einwilligung_20x.pdf',

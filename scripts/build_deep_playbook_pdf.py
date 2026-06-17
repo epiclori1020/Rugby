@@ -126,7 +126,8 @@ def page_decoration(canvas, doc):
     # Fusszeile: Quelle links, Seite rechts
     canvas.setFont("Helvetica", 7)
     canvas.setFillColor(SUBTLE)
-    canvas.drawString(doc.leftMargin, 8 * mm, "Einheit 1 - Deep Playbook - Di 16.06.2026")
+    footer = getattr(doc, "footer_text", "Deep Playbook")
+    canvas.drawString(doc.leftMargin, 8 * mm, footer)
     canvas.drawRightString(
         doc.pagesize[0] - doc.rightMargin, 8 * mm, f"Seite {doc.page}"
     )
@@ -167,12 +168,19 @@ def render_bullet(text: str, styles) -> Paragraph:
 
 
 def build_pdf(src: Path, dst: Path):
+    footer_text = "Deep Playbook"
+    if "unit_2" in src.name or "einheit_2" in src.name:
+        footer_text = "Einheit 2 - Deep Playbook - Do 18.06.2026"
+    elif "unit_1" in src.name or "einheit_1" in src.name:
+        footer_text = "Einheit 1 - Deep Playbook - Di 16.06.2026"
+
     doc = BaseDocTemplate(
         str(dst), pagesize=portrait(A4),
         leftMargin=16 * mm, rightMargin=16 * mm,
         topMargin=14 * mm, bottomMargin=14 * mm,
         title=src.stem, author="Rugby S&C export",
     )
+    doc.footer_text = footer_text
     frame = Frame(doc.leftMargin, doc.bottomMargin, doc.width, doc.height, id="n")
     doc.addPageTemplates([PageTemplate(id="main", frames=[frame], onPage=page_decoration)])
 

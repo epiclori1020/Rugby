@@ -112,7 +112,11 @@ export const sessionDefinitions: SessionDefinition[] = [
     summary:
       'Reaktion auf Dienstag pruefen, Grundmuster sauber trainieren und optional zwei einfache Startwerte sammeln, nur wenn die Gruppe ruhig ist.',
     primarySource: 'plans/offseason_coach_sheets/KW25_thursday_training_plan_clear_2026-06-18.md',
-    pdfRefs: [pdfRefs.kw25ThursdayPlan, pdfRefs.kw25CoachScript, pdfRefs.thursdayCompact],
+    pdfRefs: [
+      pdfRefs.kw25ThursdayPlan,
+      pdfRefs.kw25ThursdayDeepPlaybook,
+      pdfRefs.thursdayCompact,
+    ],
     goals: [
       'Reaktion auf Dienstag pruefen',
       'Grundmuster sauber trainieren',
@@ -187,7 +191,12 @@ export const sessionDefinitions: SessionDefinition[] = [
       'Bei Regen/rutschigem Feld keine Jumps/Speed, stattdessen Bike/Erg oder Technikpods.',
       'Wenn keine Werte entstehen, nichts nachholen erzwingen.',
     ],
-    libraryRefs: ['coach-script-kw25', 'variants-abcd', 'exercise-mapping-offseason'],
+    libraryRefs: [
+      'deep-playbook-donnerstag-kw25',
+      'coach-script-kw25',
+      'variants-abcd',
+      'exercise-mapping-offseason',
+    ],
   },
   {
     id: 'kw26-di-2026-06-23',
