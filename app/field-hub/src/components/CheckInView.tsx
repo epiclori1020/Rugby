@@ -10,6 +10,7 @@ import type {
   ReturnerFlag,
   TrafficLight,
 } from '../domain/checkIn'
+import { deriveAttendanceStatus, getTrafficLightSignals } from '../domain/checkIn'
 import type { Player } from '../domain/players'
 import type { ReturnerCapSummary } from '../domain/returners'
 import type { useCheckIns } from '../hooks/useCheckIns'
@@ -39,6 +40,7 @@ type CheckInViewProps = {
   returnerCaps: ReturnerCapSummary[]
   onNavigate: (tab: HubTab) => void
   onSessionChange: (sessionId: string) => void
+  onStartKiosk: () => void
   selectedSession: SessionDefinition
   selectedSessionId: string
   sessions: SessionDefinition[]
@@ -62,6 +64,31 @@ const returnerOptions: Array<{ value: ReturnerFlag; label: string }> = [
   { value: 'offen', label: 'Offen' },
 ]
 
+const sessionReactionOptions: Array<{ value: PlayerSessionEntry['sessionReaction']; label: string }> = [
+  { value: 'none', label: 'Nein' },
+  { value: 'new_or_worse', label: 'Ja, neu/schlechter' },
+  { value: 'unsure', label: 'Unsicher' },
+]
+
+const lifeFlagOptions = ['Unauffällig', 'Schlecht geschlafen', 'Stress', 'Muskelkater', 'Müde']
+const singleResetUndoMs = 5000
+const bulkResetConfirmMessage =
+  'Coach-Eingaben dieser Einheit zurücksetzen? Self-Check-ins und explizite Nicht-da-Einträge bleiben geschützt.'
+
+const painLocationOptions = [
+  'Leiste/Adduktor',
+  'Hamstring/Glute',
+  'Wade/Achilles',
+  'Knie',
+  'Sprunggelenk',
+  'Schulter/Handgelenk',
+  'Kopf/Nacken',
+]
+
+function lifeFlagOptionValue(option: string) {
+  return option === 'Unauffällig' ? '' : option
+}
+
 type NativeShareStatus = 'idle' | 'sharing' | 'shared' | 'aborted' | 'error'
 type CopyStatus = 'idle' | 'copied' | 'error'
 type QrCodeStatus = 'idle' | 'loading' | 'ready' | 'error'
@@ -72,6 +99,50 @@ function entryRenderKey(entry: PlayerSessionEntry) {
 
 function formatTrafficLight(trafficLight: TrafficLight | null) {
   return trafficLight ? trafficLabels[trafficLight] : 'Offen'
+}
+
+function formatAttendance(entry: PlayerSessionEntry) {
+  const status = deriveAttendanceStatus(entry)
+
+  if (status === 'present') {
+    return 'Da'
+  }
+
+  if (status === 'absent') {
+    return 'Nicht da'
+  }
+
+  return 'Offen'
+}
+
+function playerInitial(name: string) {
+  return name.trim().slice(0, 1).toLocaleUpperCase('de-AT') || '#'
+}
+
+function statusTags(entry: PlayerSessionEntry, warning: PlayerWarning | undefined) {
+  const tags = [formatAttendance(entry)]
+  const trafficLight = entry.trafficLight ?? entry.trafficLightSuggestion
+  const signals = getTrafficLightSignals(entry)
+
+  if (trafficLight === 'yellow' || trafficLight === 'red') {
+    tags.push(formatTrafficLight(trafficLight))
+  }
+
+  if (entry.returnerFlag === 'ja') {
+    tags.push('Returner')
+  } else if (signals.needsReturnerClarification) {
+    tags.push('Klärung offen')
+  }
+
+  if (warning) {
+    tags.push('Warnung')
+  }
+
+  if (entry.checkInSource === 'player_link' || entry.checkInSource === 'player_kiosk') {
+    tags.push('Self')
+  }
+
+  return tags
 }
 
 function WarningNote({ warning }: { warning: PlayerWarning | undefined }) {
@@ -128,6 +199,7 @@ function CheckInPlayerRow({
   isExpected,
   isSavingDisabled,
   onSave,
+  onReset,
   player,
   returnerCap,
   warning,
@@ -140,6 +212,7 @@ function CheckInPlayerRow({
     patch: CheckInEntryPatch,
     manualTrafficLight?: TrafficLight | 'auto',
   ) => Promise<{ ok: true; entry: PlayerSessionEntry } | { ok: false; error: string }>
+  onReset: (entry: PlayerSessionEntry) => Promise<{ ok: true; entry: PlayerSessionEntry } | { ok: false; error: string }>
   player: Player
   returnerCap: ReturnerCapSummary | undefined
   warning: PlayerWarning | undefined
@@ -151,9 +224,27 @@ function CheckInPlayerRow({
   )
   const savingActionRef = useRef<string | null>(null)
   const saveFeedbackTimeoutRef = useRef<number | null>(null)
-  const controlsDisabled = isSavingDisabled
+  const resetTimeoutRef = useRef<number | null>(null)
+  const [isResetPending, setIsResetPending] = useState(false)
+  const controlsDisabled = isSavingDisabled || isResetPending
   const sourceEntryKey = entryRenderKey(entry)
   const displayEntry = localEntryOverride?.baseKey === sourceEntryKey ? localEntryOverride.entry : entry
+  const canReset = !displayEntry.id.startsWith('preview:')
+  const [textValues, setTextValues] = useState({
+    sourceEntryKey,
+    lifeValue: displayEntry.lifeFlag,
+    painLocationValue: displayEntry.painLocation,
+    observationValue: displayEntry.observation,
+  })
+  const currentTextValues =
+    textValues.sourceEntryKey === sourceEntryKey
+      ? textValues
+      : {
+          sourceEntryKey,
+          lifeValue: displayEntry.lifeFlag,
+          painLocationValue: displayEntry.painLocation,
+          observationValue: displayEntry.observation,
+        }
 
   useEffect(() => {
     return () => {
@@ -161,8 +252,40 @@ function CheckInPlayerRow({
       if (saveFeedbackTimeoutRef.current !== null) {
         window.clearTimeout(saveFeedbackTimeoutRef.current)
       }
+      if (resetTimeoutRef.current !== null) {
+        window.clearTimeout(resetTimeoutRef.current)
+      }
     }
   }, [])
+
+  function clearSaveFeedbackTimer() {
+    if (saveFeedbackTimeoutRef.current !== null) {
+      window.clearTimeout(saveFeedbackTimeoutRef.current)
+      saveFeedbackTimeoutRef.current = null
+    }
+  }
+
+  function scheduleSaveFeedbackClear() {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    clearSaveFeedbackTimer()
+    saveFeedbackTimeoutRef.current = window.setTimeout(() => {
+      setSaveFeedback(null)
+      saveFeedbackTimeoutRef.current = null
+    }, 1400)
+  }
+
+  function clearPendingReset() {
+    if (resetTimeoutRef.current !== null) {
+      window.clearTimeout(resetTimeoutRef.current)
+      resetTimeoutRef.current = null
+    }
+    savingActionRef.current = null
+    setSavingActionKey(null)
+    setIsResetPending(false)
+  }
 
   async function saveWithFeedback(
     label: string,
@@ -203,15 +326,66 @@ function CheckInPlayerRow({
       setSavingActionKey(null)
     }
 
-    if (typeof window !== 'undefined') {
-      if (saveFeedbackTimeoutRef.current !== null) {
-        window.clearTimeout(saveFeedbackTimeoutRef.current)
+    scheduleSaveFeedbackClear()
+  }
+
+  async function executeResetWithFeedback(entryToReset: PlayerSessionEntry) {
+    const previousEntry = displayEntry
+    savingActionRef.current = 'reset'
+    setSaveFeedback('Setzt zurück...')
+    setSavingActionKey('reset')
+
+    try {
+      const result = await measureInteraction('check-in:reset', () => onReset(entryToReset))
+
+      if (result.ok) {
+        triggerHapticFeedback('success')
+        setLocalEntryOverride(result.entry.deletedAt ? null : { baseKey: sourceEntryKey, entry: result.entry })
+        setSaveFeedback('Check-in zurückgesetzt')
+      } else {
+        triggerHapticFeedback('warning')
+        setLocalEntryOverride({ baseKey: sourceEntryKey, entry: previousEntry })
+        setSaveFeedback('Reset nicht gespeichert')
       }
-      saveFeedbackTimeoutRef.current = window.setTimeout(() => {
-        setSaveFeedback(null)
-        saveFeedbackTimeoutRef.current = null
-      }, 1400)
+    } catch {
+      triggerHapticFeedback('warning')
+      setLocalEntryOverride({ baseKey: sourceEntryKey, entry: previousEntry })
+      setSaveFeedback('Reset nicht gespeichert')
+    } finally {
+      savingActionRef.current = null
+      setSavingActionKey(null)
     }
+
+    scheduleSaveFeedbackClear()
+  }
+
+  function resetWithFeedback() {
+    if (isSavingDisabled || savingActionRef.current === 'reset' || !canReset || isResetPending) {
+      return
+    }
+
+    triggerHapticFeedback('selection')
+    savingActionRef.current = 'reset'
+    setSavingActionKey('reset')
+    setIsResetPending(true)
+    setSaveFeedback(`Reset für ${player.name} wird in 5 Sekunden ausgeführt.`)
+    clearSaveFeedbackTimer()
+    resetTimeoutRef.current = window.setTimeout(() => {
+      resetTimeoutRef.current = null
+      setIsResetPending(false)
+      void executeResetWithFeedback(displayEntry)
+    }, singleResetUndoMs)
+  }
+
+  function undoPendingReset() {
+    if (!isResetPending) {
+      return
+    }
+
+    clearPendingReset()
+    triggerHapticFeedback('selection')
+    setSaveFeedback('Reset abgebrochen')
+    scheduleSaveFeedbackClear()
   }
 
   return (
@@ -224,30 +398,60 @@ function CheckInPlayerRow({
           </div>
           <p>{player.position} · {player.cluster}</p>
         </div>
-        <span className={`sync-pill ${displayEntry.syncStatus}`}>{syncStatusLabel(displayEntry.syncStatus)}</span>
+        <div className="button-row compact">
+          <span className={`sync-pill ${displayEntry.syncStatus}`}>{syncStatusLabel(displayEntry.syncStatus)}</span>
+          {canReset ? (
+            <button
+              className="secondary-action compact-action"
+              type="button"
+              disabled={controlsDisabled || savingActionKey === 'reset'}
+              onClick={() => void resetWithFeedback()}
+            >
+              {isResetPending ? 'Reset geplant' : 'Zurücksetzen'}
+            </button>
+          ) : null}
+        </div>
       </div>
 
       <WarningNote warning={warning} />
       <ReturnerCapNote cap={returnerCap} />
 
       <div className="checkin-controls">
-        <button
-          className={displayEntry.present ? 'segmented active' : 'segmented'}
-          type="button"
-          disabled={controlsDisabled || savingActionKey === 'present'}
-          onClick={() =>
-            void saveWithFeedback('Anwesenheit', 'present', {
-              present: !displayEntry.present,
-              previousWarning: Boolean(warning),
-            })
-          }
-        >
-          <UserCheck className="nav-icon" aria-hidden />
-          <span>{displayEntry.present ? 'Anwesend' : 'Abwesend'}</span>
-        </button>
+        <div className="control-group">
+          <span>Anwesenheit</span>
+          <div className="button-row">
+            <button
+              className={deriveAttendanceStatus(displayEntry) === 'present' ? 'segmented active' : 'segmented'}
+              type="button"
+              disabled={controlsDisabled || savingActionKey === 'present:true'}
+              onClick={() =>
+                void saveWithFeedback('Anwesenheit', 'present:true', {
+                  present: true,
+                  previousWarning: Boolean(warning),
+                })
+              }
+            >
+              <UserCheck className="nav-icon" aria-hidden />
+              <span>Da</span>
+            </button>
+            <button
+              className={deriveAttendanceStatus(displayEntry) === 'absent' ? 'segmented active' : 'segmented'}
+              type="button"
+              disabled={controlsDisabled || savingActionKey === 'present:false'}
+              onClick={() =>
+                void saveWithFeedback('Anwesenheit', 'present:false', {
+                  present: false,
+                  previousWarning: Boolean(warning),
+                })
+              }
+            >
+              Nicht da
+            </button>
+          </div>
+        </div>
 
         <div className="control-group" aria-label={`Readiness ${player.name}`}>
-          <span>Readiness</span>
+          <span>Readiness · 1 = schlecht, 5 = bereit</span>
           <div className="button-row compact">
             {[1, 2, 3, 4, 5].map((value) => (
               <button
@@ -265,12 +469,37 @@ function CheckInPlayerRow({
           </div>
         </div>
 
+        <div className="control-group">
+          <span>Schlaf / Stress / Muskelkater</span>
+          <div className="button-row">
+            {lifeFlagOptions.map((option) => (
+              <button
+                className={displayEntry.lifeFlag === lifeFlagOptionValue(option) ? 'segmented active' : 'segmented'}
+                key={option}
+                type="button"
+                disabled={controlsDisabled || savingActionKey === `lifeFlag:${option}`}
+                onClick={() => {
+                  const optionValue = lifeFlagOptionValue(option)
+                  setTextValues({ ...currentTextValues, lifeValue: optionValue })
+                  void saveWithFeedback('Alltag', `lifeFlag:${option}`, {
+                    lifeFlag: optionValue,
+                    previousWarning: Boolean(warning),
+                  })
+                }}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <label className="inline-field">
-          <span>Life</span>
+          <span>Andere Alltagsnotiz</span>
           <input
-            defaultValue={displayEntry.lifeFlag}
+            value={currentTextValues.lifeValue}
             disabled={controlsDisabled}
             placeholder="Schlaf, Stress, Muskelkater"
+            onChange={(event) => setTextValues({ ...currentTextValues, lifeValue: event.currentTarget.value })}
             onBlur={(event) =>
               void saveWithFeedback('Eingabe', 'lifeFlag', {
                 lifeFlag: event.currentTarget.value,
@@ -281,7 +510,7 @@ function CheckInPlayerRow({
         </label>
 
         <div className="control-group" aria-label={`Schmerz ${player.name}`}>
-          <span>Schmerz</span>
+          <span>Schmerz heute</span>
           <div className="button-row compact pain-scale">
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
               <button
@@ -299,12 +528,36 @@ function CheckInPlayerRow({
           </div>
         </div>
 
+        <div className="control-group">
+          <span>Schmerzort / Körperregion</span>
+          <div className="button-row">
+            {painLocationOptions.map((option) => (
+              <button
+                className={displayEntry.painLocation === option ? 'segmented active' : 'segmented'}
+                  key={option}
+                  type="button"
+                  disabled={controlsDisabled || savingActionKey === `painLocation:${option}`}
+                  onClick={() => {
+                  setTextValues({ ...currentTextValues, painLocationValue: option })
+                  void saveWithFeedback('Schmerzort', `painLocation:${option}`, {
+                    painLocation: option,
+                    previousWarning: Boolean(warning),
+                  })
+                }}
+              >
+                {option}
+              </button>
+            ))}
+          </div>
+        </div>
+
         <label className="inline-field">
-          <span>Ort</span>
+          <span>Anderer Schmerzort</span>
           <input
-            defaultValue={displayEntry.painLocation}
+            value={currentTextValues.painLocationValue}
             disabled={controlsDisabled}
             placeholder="z. B. Wade rechts"
+            onChange={(event) => setTextValues({ ...currentTextValues, painLocationValue: event.currentTarget.value })}
             onBlur={(event) =>
               void saveWithFeedback('Eingabe', 'painLocation', {
                 painLocation: event.currentTarget.value,
@@ -315,7 +568,29 @@ function CheckInPlayerRow({
         </label>
 
         <div className="control-group">
-          <span>Returner</span>
+          <span>Seit letzter Einheit neu oder schlechter?</span>
+          <div className="button-row">
+            {sessionReactionOptions.map((option) => (
+              <button
+                className={displayEntry.sessionReaction === option.value ? 'segmented active' : 'segmented'}
+                key={option.value}
+                type="button"
+                disabled={controlsDisabled || savingActionKey === `sessionReaction:${option.value}`}
+                onClick={() =>
+                  void saveWithFeedback('Reaktion', `sessionReaction:${option.value}`, {
+                    sessionReaction: option.value,
+                    previousWarning: Boolean(warning),
+                  })
+                }
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <div className="control-group">
+          <span>Returner-Status</span>
           <div className="button-row">
             {returnerOptions.map((option) => (
               <button
@@ -337,14 +612,15 @@ function CheckInPlayerRow({
         </div>
 
         <div className="control-group">
-          <span>Safety</span>
+          <span>Red Flags</span>
           <div className="button-row">
             {redFlagOptions.map((option) => {
               const isActiveDanger = option.value !== 'none' && displayEntry.redFlag === option.value
+              const isActiveNeutral = option.value === 'none' && displayEntry.redFlag === 'none'
 
               return (
                 <button
-                  className={isActiveDanger ? 'segmented active danger' : 'segmented'}
+                  className={isActiveDanger ? 'segmented active danger' : isActiveNeutral ? 'segmented active neutral' : 'segmented'}
                   key={option.value}
                   type="button"
                   disabled={controlsDisabled || savingActionKey === `safety:${option.value}`}
@@ -379,7 +655,7 @@ function CheckInPlayerRow({
 
         <div className="traffic-control">
           <span>
-            Vorschlag: <strong>{formatTrafficLight(displayEntry.trafficLightSuggestion)}</strong>
+            Auto-Ampel: <strong>{formatTrafficLight(displayEntry.trafficLightSuggestion)}</strong>
             {displayEntry.trafficLightWasManual ? ' · Coach korrigiert' : ''}
           </span>
           <div className="button-row">
@@ -417,10 +693,11 @@ function CheckInPlayerRow({
         <label className="inline-field wide">
           <span>Notiz, keine Diagnose</span>
           <textarea
-            defaultValue={displayEntry.observation}
+            value={currentTextValues.observationValue}
             disabled={controlsDisabled}
             rows={2}
             placeholder="z. B. Hinken, Leiste 3/10, Technik auffaellig"
+            onChange={(event) => setTextValues({ ...currentTextValues, observationValue: event.currentTarget.value })}
             onBlur={(event) =>
               void saveWithFeedback('Notiz', 'observation', {
                 observation: event.currentTarget.value,
@@ -430,10 +707,47 @@ function CheckInPlayerRow({
           />
         </label>
       </div>
-      <p className={saveFeedback ? 'action-feedback visible' : 'action-feedback'} aria-live="polite">
-        {saveFeedback ?? ''}
-      </p>
+      <div className={saveFeedback ? 'action-feedback visible' : 'action-feedback'} aria-live="polite">
+        {saveFeedback ? <span>{saveFeedback}</span> : null}
+        {isResetPending ? (
+          <button className="secondary-action compact-action" type="button" onClick={undoPendingReset}>
+            Rückgängig
+          </button>
+        ) : null}
+      </div>
     </article>
+  )
+}
+
+function CompactCheckInPlayerRow({
+  entry,
+  isExpected,
+  onSelect,
+  player,
+  warning,
+}: {
+  entry: PlayerSessionEntry
+  isExpected: boolean
+  onSelect: () => void
+  player: Player
+  warning: PlayerWarning | undefined
+}) {
+  const tags = statusTags(entry, warning)
+  const trafficLight = entry.trafficLight ?? entry.trafficLightSuggestion ?? 'open'
+
+  return (
+    <button className={`checkin-player-card traffic-${trafficLight}`} type="button" onClick={onSelect}>
+      <span className="player-avatar placeholder-avatar">{playerInitial(player.name)}</span>
+      <span className="checkin-player-card-main">
+        <strong>{player.name}</strong>
+        <small>{player.position} · {player.cluster}{isExpected ? ' · zuletzt dabei' : ''}</small>
+      </span>
+      <span className="checkin-player-card-tags">
+        {tags.map((tag) => (
+          <span className="tag compact" key={tag}>{tag}</span>
+        ))}
+      </span>
+    </button>
   )
 }
 
@@ -442,6 +756,7 @@ export function CheckInView({
   checkInActions,
   onNavigate,
   onSessionChange,
+  onStartKiosk,
   playerActions,
   returnerCaps,
   selectedSession,
@@ -459,6 +774,8 @@ export function CheckInView({
     isLoading,
     runSync,
     saveEntry,
+    resetEntry,
+    resetSessionCoachEntries,
     getEntryForPlayer,
     clearError,
   } = checkInActions
@@ -469,6 +786,11 @@ export function CheckInView({
   const [qrCodeStatus, setQrCodeStatus] = useState<QrCodeStatus>('idle')
   const [nativeShareStatus, setNativeShareStatus] = useState<NativeShareStatus>('idle')
   const [copyStatus, setCopyStatus] = useState<CopyStatus>('idle')
+  const [searchTerm, setSearchTerm] = useState('')
+  const [activeFilter, setActiveFilter] = useState<'all' | 'open' | 'present' | 'issues' | 'returner' | 'clarify' | 'warning'>('all')
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
+  const [resetFeedback, setResetFeedback] = useState<string | null>(null)
+  const selectedSheetRef = useRef<HTMLDivElement | null>(null)
   const returnerCapByPlayerId = new Map(returnerCaps.filter(hasPlayerId).map((cap) => [cap.playerId, cap]))
   const expectedPlayerSet = new Set(expectedPlayerIds)
   const activePlayerIdSet = new Set(activePlayers.map((player) => player.id))
@@ -488,10 +810,61 @@ export function CheckInView({
 
     return aExpected ? -1 : 1
   })
-  const checkedInCount = activeEntries.filter((entry) => entry.present).length
+  const playerRows = orderedPlayers.map((player) => ({
+    player,
+    entry: getEntryForPlayer(player),
+    warning: warningByPlayerId.get(player.id),
+  }))
+  const checkedInCount = playerRows.filter(({ entry }) => deriveAttendanceStatus(entry) === 'present').length
+  const absentCount = playerRows.filter(({ entry }) => deriveAttendanceStatus(entry) === 'absent').length
+  const openCount = Math.max(activePlayers.length - checkedInCount - absentCount, 0)
   const yellowCount = activeEntries.filter((entry) => entry.trafficLight === 'yellow').length
   const redCount = activeEntries.filter((entry) => entry.trafficLight === 'red').length
-  const returnerCount = activeEntries.filter((entry) => entry.returnerFlag !== 'nein').length
+  const returnerCount = activeEntries.filter((entry) => entry.returnerFlag === 'ja').length
+  const returnerClarificationCount = activeEntries.filter((entry) => getTrafficLightSignals(entry).needsReturnerClarification).length
+  const normalizedSearch = searchTerm.trim().toLocaleLowerCase('de-AT')
+  const filteredPlayerRows = playerRows.filter(({ entry, player, warning }) => {
+    if (normalizedSearch && !player.name.toLocaleLowerCase('de-AT').includes(normalizedSearch)) {
+      return false
+    }
+
+    if (activeFilter === 'open') {
+      return deriveAttendanceStatus(entry) === 'open'
+    }
+
+    if (activeFilter === 'present') {
+      return deriveAttendanceStatus(entry) === 'present'
+    }
+
+    if (activeFilter === 'issues') {
+      return entry.trafficLight === 'yellow' || entry.trafficLight === 'red'
+    }
+
+    if (activeFilter === 'returner') {
+      return entry.returnerFlag === 'ja'
+    }
+
+    if (activeFilter === 'clarify') {
+      return getTrafficLightSignals(entry).needsReturnerClarification
+    }
+
+    if (activeFilter === 'warning') {
+      return Boolean(warning)
+    }
+
+    return true
+  })
+  const groupedPlayerRows = (() => {
+    const groups = new Map<string, typeof filteredPlayerRows>()
+    for (const row of filteredPlayerRows) {
+      const initial = playerInitial(row.player.name)
+      groups.set(initial, [...(groups.get(initial) ?? []), row])
+    }
+
+    return [...groups.entries()].sort(([a], [b]) => a.localeCompare(b, 'de-AT'))
+  })()
+  const selectedPlayer = selectedPlayerId ? activePlayers.find((player) => player.id === selectedPlayerId) ?? null : null
+  const selectedSheetHeadingId = selectedPlayer ? `checkin-sheet-heading-${selectedPlayer.id}` : undefined
   const activePublicLink = checkInActions.publicCheckInLinks.find((link) => !link.closedAt)
   const selectedSessionSharePayload = createdShareSessionId === selectedSessionId ? createdSharePayload : null
   const selectedSessionQrCodeDataUrl = createdShareSessionId === selectedSessionId ? qrCodeDataUrl : null
@@ -509,6 +882,27 @@ export function CheckInView({
     (!selectedSessionSharePayload ||
       typeof navigator.canShare !== 'function' ||
       navigator.canShare(selectedSessionSharePayload))
+
+  useEffect(() => {
+    if (!selectedPlayerId) {
+      return undefined
+    }
+
+    const previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    selectedSheetRef.current?.focus()
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setSelectedPlayerId(null)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      previousActiveElement?.focus()
+    }
+  }, [selectedPlayerId])
 
   function clearTransientShareState() {
     setCreatedSharePayload(null)
@@ -596,6 +990,24 @@ export function CheckInView({
     await checkInActions.closePublicLink(activePublicLink.id)
   }
 
+  async function handleResetCoachEntries() {
+    if (!window.confirm(bulkResetConfirmMessage)) {
+      return
+    }
+
+    const result = await resetSessionCoachEntries()
+
+    if (result.ok) {
+      setResetFeedback(
+        result.resetCount > 0
+          ? `${result.resetCount} Check-in-Einträge zurückgesetzt.`
+          : 'Keine zurücksetzbaren Check-ins für diese Einheit.',
+      )
+    } else {
+      setResetFeedback(result.error)
+    }
+  }
+
   if (authState.status !== 'signed-in') {
     return (
       <div className="content-stack">
@@ -635,6 +1047,10 @@ export function CheckInView({
             <UserCheck className="nav-icon" aria-hidden />
             <span>Spieler verwalten</span>
           </button>
+          <button className="secondary-action" type="button" onClick={onStartKiosk} disabled={activePlayers.length === 0}>
+            <ClipboardCheck className="nav-icon" aria-hidden />
+            <span>Kiosk starten</span>
+          </button>
         </div>
       </div>
 
@@ -644,16 +1060,16 @@ export function CheckInView({
           <strong>{activePlayers.length}</strong>
         </div>
         <div className="metric">
-          <span>Anwesend</span>
-          <strong>{checkedInCount}</strong>
+          <span>Da / offen</span>
+          <strong>{checkedInCount} / {openCount}</strong>
         </div>
         <div className="metric">
           <span>Gelb / Rot</span>
           <strong>{yellowCount} / {redCount}</strong>
         </div>
         <div className="metric">
-          <span>Returner/offen</span>
-          <strong>{returnerCount}</strong>
+          <span>Returner / Klärung</span>
+          <strong>{returnerCount} / {returnerClarificationCount}</strong>
         </div>
       </div>
 
@@ -675,6 +1091,25 @@ export function CheckInView({
           {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
         </div>
       ) : null}
+
+      <section className="panel checkin-reset-panel" aria-label="Check-in zurücksetzen">
+        <div>
+          <h3>Reset</h3>
+          <p className="sync-help">
+            Setzt Coach-Eingaben dieser Einheit zurück. Spieler-Self-Check-ins bleiben erhalten; bewusst gesetzte
+            Nicht-da-Einträge bleiben im Massen-Reset bestehen.
+          </p>
+        </div>
+        <button
+          className="secondary-action"
+          type="button"
+          onClick={() => void handleResetCoachEntries()}
+          disabled={!checkInActions.sessionLogId}
+        >
+          Coach-Check-ins zurücksetzen
+        </button>
+        {resetFeedback ? <p className="action-feedback visible">{resetFeedback}</p> : null}
+      </section>
 
       <section className="panel public-checkin-coach-panel" aria-label="Check-in-Link teilen">
         <div className="status-line">
@@ -783,22 +1218,96 @@ export function CheckInView({
         </aside>
       ) : null}
 
-      <div className="checkin-list">
-        {orderedPlayers.map((player) => (
-          <CheckInPlayerRow
-            entry={getEntryForPlayer(player)}
-            isExpected={expectedPlayerSet.has(player.id)}
-            isSavingDisabled={isLoading}
-            key={player.id}
-            onSave={(selectedPlayer, patch, manualTrafficLight) => {
-              return saveEntry(selectedPlayer, patch, manualTrafficLight)
-            }}
-            player={player}
-            returnerCap={returnerCapByPlayerId.get(player.id)}
-            warning={warningByPlayerId.get(player.id)}
-          />
-        ))}
-      </div>
+      {activePlayers.length > 0 ? (
+        <section className="panel checkin-finder" aria-label="Spieler finden">
+          <div className="checkin-finder-head">
+            <label className="inline-field wide">
+              <span>Name suchen</span>
+              <input
+                value={searchTerm}
+                placeholder="Spielername"
+                onChange={(event) => setSearchTerm(event.currentTarget.value)}
+              />
+            </label>
+            <div className="button-row compact">
+              {[
+                ['all', 'Alle'],
+                ['open', 'Offen'],
+                ['present', 'Da'],
+                ['issues', 'Gelb/Rot'],
+                ['returner', 'Returner'],
+                ['clarify', 'Klärung offen'],
+                ['warning', 'Warnung'],
+              ].map(([value, label]) => (
+                <button
+                  className={activeFilter === value ? 'filter-chip active' : 'filter-chip'}
+                  key={value}
+                  type="button"
+                  onClick={() => setActiveFilter(value as typeof activeFilter)}
+                >
+                  {label}
+                </button>
+              ))}
+            </div>
+          </div>
+          <div className="checkin-player-groups">
+            {groupedPlayerRows.map(([initial, rows]) => (
+              <div className="checkin-player-group" key={initial}>
+                <h4>{initial}</h4>
+                <div className="checkin-player-grid">
+                  {rows.map(({ entry, player, warning }) => (
+                    <CompactCheckInPlayerRow
+                      entry={entry}
+                      isExpected={expectedPlayerSet.has(player.id)}
+                      key={player.id}
+                      onSelect={() => setSelectedPlayerId(player.id)}
+                      player={player}
+                      warning={warning}
+                    />
+                  ))}
+                </div>
+              </div>
+            ))}
+          </div>
+          {filteredPlayerRows.length === 0 ? <p className="sync-help">Keine Spieler für diesen Filter.</p> : null}
+        </section>
+      ) : null}
+
+      {selectedPlayer ? (
+        <section className="checkin-sheet-backdrop" aria-label={`Check-in ${selectedPlayer.name}`}>
+          <div
+            className="checkin-sheet"
+            ref={selectedSheetRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={selectedSheetHeadingId}
+            tabIndex={-1}
+          >
+            <div className="sheet-heading">
+              <div>
+                <p className="eyebrow">Spieler-Check-in</p>
+                <h3 id={selectedSheetHeadingId}>{selectedPlayer.name}</h3>
+              </div>
+              <button className="secondary-action compact-action" type="button" onClick={() => setSelectedPlayerId(null)}>
+                Schliessen
+              </button>
+            </div>
+            <CheckInPlayerRow
+              entry={getEntryForPlayer(selectedPlayer)}
+              isExpected={expectedPlayerSet.has(selectedPlayer.id)}
+              isSavingDisabled={false}
+              key={selectedPlayer.id}
+              onSave={(selectedPlayer, patch, manualTrafficLight) => {
+                return saveEntry(selectedPlayer, patch, manualTrafficLight)
+              }}
+              onReset={(entry) => resetEntry(entry.id)}
+              player={selectedPlayer}
+              returnerCap={returnerCapByPlayerId.get(selectedPlayer.id)}
+              warning={warningByPlayerId.get(selectedPlayer.id)}
+            />
+          </div>
+        </section>
+      ) : null}
 
       {activePlayers.length === 0 ? (
         <section className="placeholder">

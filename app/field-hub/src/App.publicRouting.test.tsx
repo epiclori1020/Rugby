@@ -6,6 +6,21 @@ import App from './App'
 
 const publicRouteState = vi.hoisted(() => ({
   nextMountId: 0,
+  authState: { status: 'signed-out' as 'signed-out' | 'signed-in', user: { id: 'user-1' } },
+  lastKioskProps: null as null | {
+    players: Array<Record<string, unknown>>
+    onSubmitKioskEntry?: (input: {
+      playerId: string
+      readiness: number
+      lifeFlag: string
+      painScore: number
+      painLocation: string
+      returnerFlag: 'nein' | 'ja' | 'offen'
+      sessionReaction: 'none' | 'new_or_worse' | 'unsure'
+      playerNote: string
+    }) => Promise<unknown>
+  },
+  saveKioskEntry: vi.fn(async () => ({ ok: true as const })),
 }))
 
 const syncOverview = {
@@ -59,6 +74,28 @@ vi.mock('./components/PublicCheckInView', async () => {
 vi.mock('./components/CheckInView', async () => {
   const React = await import('react')
   return { CheckInView: () => React.createElement('div') }
+})
+
+vi.mock('./components/KioskCheckInView', async () => {
+  const React = await import('react')
+  return {
+    KioskCheckInView: (props: {
+      players: Array<Record<string, unknown>>
+      onSubmitKioskEntry?: (input: {
+        playerId: string
+        readiness: number
+        lifeFlag: string
+        painScore: number
+        painLocation: string
+        returnerFlag: 'nein' | 'ja' | 'offen'
+        sessionReaction: 'none' | 'new_or_worse' | 'unsure'
+        playerNote: string
+      }) => Promise<unknown>
+    }) => {
+      publicRouteState.lastKioskProps = props
+      return React.createElement('div', { 'data-testid': 'kiosk-view' }, 'Kiosk-Modus Training Check-in')
+    },
+  }
 })
 
 vi.mock('./components/ExportView', async () => {
@@ -130,7 +167,10 @@ vi.mock('./domain/backupReminder', () => ({
 }))
 
 vi.mock('./hooks/useAuthSession', () => ({
-  useAuthSession: () => ({ status: 'signed-out', error: null }),
+  useAuthSession: () =>
+    publicRouteState.authState.status === 'signed-in'
+      ? { status: 'signed-in', user: publicRouteState.authState.user, error: null }
+      : { status: 'signed-out', error: null },
 }))
 
 vi.mock('./hooks/useBaselines', () => ({
@@ -141,21 +181,65 @@ vi.mock('./hooks/useCheckIns', () => ({
   useCheckIns: () => ({
     activePlayers: [],
     entries: [],
+    errorMessage: null,
     expectedPlayerIds: [],
     observations: [],
     warnings: [],
     syncOverview,
     isLoading: false,
+    sessionLogId: null,
     publicCheckInLinks: [],
     publicCheckInSubmissions: [],
     publicCheckInNotice: null,
     refreshLocalCheckIns: vi.fn(async () => undefined),
+    saveKioskEntry: publicRouteState.saveKioskEntry,
   }),
 }))
 
 vi.mock('./hooks/usePlayers', () => ({
   usePlayers: () => ({
-    players: [],
+    players: [
+      {
+        id: 'player-1',
+        userId: 'user-1',
+        name: 'Max Muster',
+        position: 'Back Row',
+        cluster: 'back_row',
+        active: true,
+        consentStatus: 'vorhanden',
+        photoConsentStatus: 'not_asked',
+        photoPath: null,
+        photoUpdatedAt: null,
+        returnerStatus: 'nein',
+        notes: '',
+        createdAt: '2026-06-16T18:00:00.000Z',
+        updatedAt: '2026-06-16T18:00:00.000Z',
+        deletedAt: null,
+        clientUpdatedAt: '2026-06-16T18:00:00.000Z',
+        syncStatus: 'synced',
+        syncError: null,
+      },
+      {
+        id: 'player-inactive',
+        userId: 'user-1',
+        name: 'Inactive Player',
+        position: 'Lock',
+        cluster: 'locks',
+        active: false,
+        consentStatus: 'vorhanden',
+        photoConsentStatus: 'not_asked',
+        photoPath: null,
+        photoUpdatedAt: null,
+        returnerStatus: 'nein',
+        notes: 'private inactive notes',
+        createdAt: '2026-06-16T18:00:00.000Z',
+        updatedAt: '2026-06-16T18:00:00.000Z',
+        deletedAt: null,
+        clientUpdatedAt: '2026-06-16T18:00:00.000Z',
+        syncStatus: 'synced',
+        syncError: null,
+      },
+    ],
     syncOverview,
     isLoading: false,
     refreshLocalPlayers: vi.fn(async () => undefined),
@@ -220,6 +304,9 @@ describe('App public check-in routing', () => {
   beforeEach(() => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
     publicRouteState.nextMountId = 0
+    publicRouteState.authState.status = 'signed-out'
+    publicRouteState.lastKioskProps = null
+    publicRouteState.saveKioskEntry.mockClear()
     window.history.replaceState(null, '', '/')
     window.localStorage.clear()
   })
@@ -263,5 +350,86 @@ describe('App public check-in routing', () => {
 
     const publicView = rendered.container.querySelector<HTMLElement>('[data-testid="public-checkin-view"]')
     expect(publicView?.dataset.token).toBe('token-pop')
+  })
+
+  it('restores the signed-in kiosk mode from local storage', async () => {
+    publicRouteState.authState.status = 'signed-in'
+    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-1')
+
+    const rendered = await renderApp()
+    root = rendered.root
+
+    expect(rendered.container.querySelector('[data-testid="coach-app"]')).toBeNull()
+    expect(rendered.container.textContent).toContain('Kiosk-Modus')
+    expect(rendered.container.textContent).toContain('Training Check-in')
+  })
+
+  it('passes only minimal active player options into kiosk mode', async () => {
+    publicRouteState.authState.status = 'signed-in'
+    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-1')
+
+    const rendered = await renderApp()
+    root = rendered.root
+
+    expect(publicRouteState.lastKioskProps?.players).toEqual([{ id: 'player-1', displayName: 'Max Muster' }])
+    expect(publicRouteState.lastKioskProps?.players[0]).not.toHaveProperty('name')
+    expect(publicRouteState.lastKioskProps?.players[0]).not.toHaveProperty('notes')
+  })
+
+  it('resolves the full active player only when kiosk submits', async () => {
+    publicRouteState.authState.status = 'signed-in'
+    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-1')
+
+    const rendered = await renderApp()
+    root = rendered.root
+
+    await act(async () => {
+      await publicRouteState.lastKioskProps?.onSubmitKioskEntry?.({
+        playerId: 'player-1',
+        readiness: 4,
+        lifeFlag: 'Stress',
+        painScore: 1,
+        painLocation: 'Wade',
+        returnerFlag: 'nein',
+        sessionReaction: 'none',
+        playerNote: 'direkt von Arbeit',
+      })
+    })
+
+    expect(publicRouteState.saveKioskEntry).toHaveBeenCalledWith(
+      expect.objectContaining({ id: 'player-1', name: 'Max Muster' }),
+      {
+        present: true,
+        readiness: 4,
+        lifeFlag: 'Stress',
+        painScore: 1,
+        painLocation: 'Wade',
+        returnerFlag: 'nein',
+        sessionReaction: 'none',
+        playerNote: 'direkt von Arbeit',
+      },
+    )
+  })
+
+  it('does not save kiosk submissions for inactive players', async () => {
+    publicRouteState.authState.status = 'signed-in'
+    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-1')
+
+    const rendered = await renderApp()
+    root = rendered.root
+
+    await expect(
+      publicRouteState.lastKioskProps?.onSubmitKioskEntry?.({
+        playerId: 'player-inactive',
+        readiness: 4,
+        lifeFlag: '',
+        painScore: 0,
+        painLocation: '',
+        returnerFlag: 'nein',
+        sessionReaction: 'none',
+        playerNote: '',
+      }),
+    ).rejects.toThrow('Spieler nicht gefunden.')
+    expect(publicRouteState.saveKioskEntry).not.toHaveBeenCalled()
   })
 })

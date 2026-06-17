@@ -14,6 +14,7 @@ const checkInEntry: PlayerSessionEntry = {
   painScore: null,
   painLocation: '',
   returnerFlag: 'nein',
+  sessionReaction: 'none',
   redFlag: 'none',
   movementConcern: false,
   previousWarning: false,
@@ -68,9 +69,24 @@ describe('optimisticUpdates', () => {
     const nextEntry = applyOptimisticCheckInPatch(checkInEntry, { readiness: 2, previousWarning: false })
 
     expect(nextEntry.readiness).toBe(2)
+    expect(nextEntry.present).toBe(true)
     expect(nextEntry.trafficLight).toBe('yellow')
     expect(nextEntry.trafficLightSuggestion).toBe('yellow')
     expect(nextEntry.syncStatus).toBe('pending')
+  })
+
+  it('keeps explicit absence visible when coach fields are edited optimistically', () => {
+    const absentEntry = {
+      ...checkInEntry,
+      present: false,
+      coachEditedAt: '2026-06-16T18:05:00.000Z',
+    }
+
+    const nextEntry = applyOptimisticCheckInPatch(absentEntry, { readiness: 4, painScore: 0 })
+
+    expect(nextEntry.present).toBe(false)
+    expect(nextEntry.readiness).toBe(4)
+    expect(nextEntry.painScore).toBe(0)
   })
 
   it('keeps manual traffic-light actions visible immediately', () => {

@@ -2,6 +2,7 @@ import {
   applyAutoTrafficLight,
   applyManualTrafficLight,
   applySuggestedTrafficLight,
+  deriveAttendanceStatus,
   deriveLimits,
   type CheckInDraft,
   type CheckInEntryPatch,
@@ -20,6 +21,23 @@ function nowIso() {
 
 function normalizeText(value: string | undefined, fallback: string) {
   return value !== undefined ? value.trim() : fallback
+}
+
+function shouldMarkCoachEdited(patch: CheckInEntryPatch, manualTrafficLight?: TrafficLight | 'auto') {
+  return (
+    manualTrafficLight !== undefined ||
+    patch.present !== undefined ||
+    patch.readiness !== undefined ||
+    patch.lifeFlag !== undefined ||
+    patch.painScore !== undefined ||
+    patch.painLocation !== undefined ||
+    patch.returnerFlag !== undefined ||
+    patch.redFlag !== undefined ||
+    patch.movementConcern !== undefined ||
+    patch.sessionReaction !== undefined ||
+    patch.trainingVariant !== undefined ||
+    patch.limits !== undefined
+  )
 }
 
 export function mergeRecordIntoList<T extends IdentifiedRecord>(records: T[], record: T) {
@@ -45,6 +63,7 @@ export function applyOptimisticCheckInPatch(
     lifeFlag: patch.lifeFlag !== undefined ? patch.lifeFlag.trim() : entry.lifeFlag,
     painLocation: patch.painLocation !== undefined ? patch.painLocation.trim() : entry.painLocation,
     observation: patch.observation !== undefined ? patch.observation.trim() : entry.observation,
+    playerNote: patch.playerNote !== undefined ? patch.playerNote.trim() : entry.playerNote,
   }
   const draftWithLimits = {
     ...patchedDraft,
@@ -57,10 +76,14 @@ export function applyOptimisticCheckInPatch(
       : manualTrafficLight
         ? applyManualTrafficLight(suggestedDraft, manualTrafficLight)
         : suggestedDraft
+  const marksCoachEdited = shouldMarkCoachEdited(patch, manualTrafficLight)
+  const shouldPreserveExplicitAbsence =
+    patch.present === undefined && marksCoachEdited && deriveAttendanceStatus(entry) === 'absent'
 
   return {
     ...entry,
     ...finalDraft,
+    present: patch.present !== undefined ? patch.present : marksCoachEdited ? !shouldPreserveExplicitAbsence : finalDraft.present,
     updatedAt: timestamp,
     clientUpdatedAt: timestamp,
     syncStatus: 'pending',

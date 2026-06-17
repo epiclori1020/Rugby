@@ -77,6 +77,7 @@ type PublicCheckInSubmissionRow = {
   pain_score: number | null
   pain_location: string
   returner_flag: PublicCheckInSubmission['returnerFlag']
+  session_reaction?: PublicCheckInSubmission['sessionReaction']
   player_note: string
   status: PublicCheckInSubmission['status']
   submitted_at: string
@@ -168,6 +169,7 @@ function submissionFromRow(row: PublicCheckInSubmissionRow): PublicCheckInSubmis
     painScore: row.pain_score,
     painLocation: row.pain_location,
     returnerFlag: row.returner_flag,
+    sessionReaction: row.session_reaction ?? 'none',
     playerNote: row.player_note,
     status: row.status,
     submittedAt: row.submitted_at,
@@ -524,6 +526,7 @@ export type PublicSubmissionInput = {
   painScore: number | null
   painLocation: string
   returnerFlag: PublicCheckInSubmission['returnerFlag']
+  sessionReaction: PublicCheckInSubmission['sessionReaction']
   playerNote: string
 }
 
@@ -543,6 +546,7 @@ export async function submitPublicCheckIn(token: string, input: PublicSubmission
     pain_score: input.painScore,
     pain_location: input.painLocation.trim(),
     returner_flag: input.returnerFlag,
+    session_reaction: input.sessionReaction,
     player_note: input.playerNote.trim(),
     submitted_at: timestamp,
     client_updated_at: timestamp,
@@ -621,7 +625,7 @@ export async function refreshRemotePublicCheckIns(
 
   const { data: submissionRows, error: submissionError } = await supabase
     .from('public_checkin_submissions')
-    .select('id,user_id,link_id,link_player_id,player_id,readiness,life_flag,pain_score,pain_location,returner_flag,player_note,status,submitted_at,imported_at,conflict_reason,created_at,updated_at,deleted_at,client_updated_at')
+    .select('id,user_id,link_id,link_player_id,player_id,readiness,life_flag,pain_score,pain_location,returner_flag,session_reaction,player_note,status,submitted_at,imported_at,conflict_reason,created_at,updated_at,deleted_at,client_updated_at')
     .eq('user_id', userId)
     .in('link_id', linkIds)
     .is('deleted_at', null)

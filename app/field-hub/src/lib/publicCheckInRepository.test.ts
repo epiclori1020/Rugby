@@ -59,6 +59,7 @@ function submission(overrides: Partial<PublicCheckInSubmission> = {}): PublicChe
     painScore: 1,
     painLocation: 'Wade rechts',
     returnerFlag: 'nein',
+    sessionReaction: 'none',
     playerNote: 'komme spaeter',
     status: 'pending',
     submittedAt: '2026-06-16T17:45:00.000Z',

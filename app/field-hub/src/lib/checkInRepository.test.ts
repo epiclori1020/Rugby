@@ -11,7 +11,10 @@ import {
   listLatestObservations,
   listLatestWarnings,
   rowFromEntry,
+  resetCheckInEntry,
+  resetCoachFields,
   saveCheckInEntry,
+  saveKioskCheckInEntry,
   savePostSessionEntry,
   saveSessionLogPatch,
   type PlayerSessionEntryRow,
@@ -48,6 +51,7 @@ const remoteEntryRow: PlayerSessionEntryRow = {
   pain_score: 0,
   pain_location: '',
   returner_flag: 'nein',
+  session_reaction: 'none',
   red_flag: 'head_neck_neuro',
   movement_concern: true,
   traffic_light: 'yellow',
@@ -411,6 +415,13 @@ describe('checkInRepository session logs', () => {
     expect(row.traffic_light_was_manual).toBe(true)
   })
 
+  it('maps session reaction in player session rows', () => {
+    const entry = entryFromRow({ ...remoteEntryRow, session_reaction: 'new_or_worse' })
+
+    expect(entry.sessionReaction).toBe('new_or_worse')
+    expect(rowFromEntry(entry).session_reaction).toBe('new_or_worse')
+  })
+
   it('preserves training variant in player session row mapping', () => {
     const entry = entryFromRow(remoteEntryRow)
 
@@ -467,6 +478,121 @@ describe('checkInRepository session logs', () => {
       present: true,
       readiness: 4,
     })
+  })
+
+  it('marks coach field edits as present check-ins', async () => {
+    const saved = await saveCheckInEntry(userId, 'session-coach-present', player, {
+      readiness: 4,
+      lifeFlag: 'Stress',
+      painScore: 1,
+    })
+
+    expect(saved.present).toBe(true)
+    expect(saved.coachEditedAt).toBeTruthy()
+    expect(saved.checkInSource).toBe('coach')
+  })
+
+  it('keeps explicit absence when coach fields are saved later', async () => {
+    const absent = await saveCheckInEntry(userId, 'session-explicit-absent', player, { present: false })
+    const saved = await saveCheckInEntry(userId, 'session-explicit-absent', player, {
+      readiness: 4,
+      painScore: 0,
+    })
+
+    expect(saved.id).toBe(absent.id)
+    expect(saved.present).toBe(false)
+    expect(saved.coachEditedAt).toBeTruthy()
+  })
+
+  it('saves kiosk check-ins as player-submitted present entries without coach edit metadata', async () => {
+    const saved = await saveKioskCheckInEntry(userId, 'session-kiosk', player, {
+      readiness: 3,
+      lifeFlag: 'Stress',
+      painScore: 2,
+      painLocation: 'Wade rechts',
+      returnerFlag: 'offen',
+      sessionReaction: 'unsure',
+      playerNote: 'komme direkt von Arbeit',
+    })
+
+    expect(saved).toMatchObject({
+      present: true,
+      readiness: 3,
+      lifeFlag: 'Stress',
+      painScore: 2,
+      painLocation: 'Wade rechts',
+      returnerFlag: 'offen',
+      sessionReaction: 'unsure',
+      checkInSource: 'player_kiosk',
+      coachEditedAt: null,
+      playerNote: 'komme direkt von Arbeit',
+    })
+    expect(saved.playerSubmittedAt).toBeTruthy()
+    await expect(localDb.pendingWrites.count()).resolves.toBe(1)
+  })
+
+  it('preserves mixed source and coach edit metadata when kiosk check-in updates a coach-edited entry', async () => {
+    const coachEntry = await saveCheckInEntry(userId, 'session-kiosk-mixed', player, { readiness: 5 })
+
+    const saved = await saveKioskCheckInEntry(userId, 'session-kiosk-mixed', player, {
+      readiness: 3,
+      painScore: 1,
+      sessionReaction: 'none',
+    })
+
+    expect(saved.id).toBe(coachEntry.id)
+    expect(saved).toMatchObject({
+      checkInSource: 'mixed',
+      readiness: 3,
+      painScore: 1,
+    })
+    expect(saved.coachEditedAt).toBe(coachEntry.coachEditedAt)
+    expect(saved.playerSubmittedAt).toBeTruthy()
+  })
+
+  it('resets only coach fields on player-submitted entries and preserves session reaction', () => {
+    const playerSubmitted = {
+      ...entryFromRow({
+        ...remoteEntryRow,
+        session_reaction: 'new_or_worse',
+        checkin_source: 'player_kiosk',
+        player_submitted_at: '2026-06-16T17:55:00.000Z',
+        coach_edited_at: '2026-06-16T18:05:00.000Z',
+      }),
+      observation: 'Coach note',
+      redFlag: 'head_neck_neuro' as const,
+      movementConcern: true,
+      limits: ['kein_sprint' as const],
+      trafficLightWasManual: true,
+      trafficLight: 'red' as const,
+      trafficLightSuggestion: 'yellow' as const,
+    }
+
+    const reset = resetCoachFields(playerSubmitted)
+
+    expect(reset).toMatchObject({
+      present: true,
+      readiness: 5,
+      sessionReaction: 'new_or_worse',
+      checkInSource: 'player_kiosk',
+      playerSubmittedAt: '2026-06-16T17:55:00.000Z',
+      coachEditedAt: null,
+      redFlag: 'none',
+      movementConcern: false,
+      limits: [],
+      observation: '',
+      trafficLightWasManual: false,
+    })
+  })
+
+  it('soft deletes coach-only check-ins during reset', async () => {
+    const saved = await saveCheckInEntry(userId, 'session-reset', player, { readiness: 5 })
+
+    const reset = await resetCheckInEntry(userId, saved.id)
+
+    expect(reset.deletedAt).toBeTruthy()
+    expect(reset.syncStatus).toBe('pending')
+    await expect(localDb.pendingWrites.count()).resolves.toBe(1)
   })
 
   it('creates a pending session log only when saving training session notes', async () => {

@@ -3,8 +3,11 @@ import {
   applyAutoTrafficLight,
   applyManualTrafficLight,
   applySuggestedTrafficLight,
+  deriveAttendanceStatus,
+  getTrafficLightSignals,
   suggestTrafficLight,
   type CheckInDraft,
+  type PlayerSessionEntry,
 } from './checkIn'
 
 function baseDraft(overrides: Partial<CheckInDraft> = {}): CheckInDraft {
@@ -18,6 +21,7 @@ function baseDraft(overrides: Partial<CheckInDraft> = {}): CheckInDraft {
     redFlag: 'none',
     movementConcern: false,
     previousWarning: false,
+    sessionReaction: 'none',
     trafficLight: null,
     trafficLightSuggestion: null,
     trafficLightWasManual: false,
@@ -53,9 +57,10 @@ describe('suggestTrafficLight', () => {
     expect(suggestTrafficLight(baseDraft({ lifeFlag: 'schlecht geschlafen, viel Stress' }))).toBe('yellow')
   })
 
-  test('returns yellow for returner ja or offen', () => {
+  test('returns yellow for returner ja without treating offen as an automatic yellow flag', () => {
     expect(suggestTrafficLight(baseDraft({ returnerFlag: 'ja' }))).toBe('yellow')
-    expect(suggestTrafficLight(baseDraft({ returnerFlag: 'offen' }))).toBe('yellow')
+    expect(suggestTrafficLight(baseDraft({ returnerFlag: 'offen' }))).toBe('green')
+    expect(getTrafficLightSignals(baseDraft({ returnerFlag: 'offen' })).needsReturnerClarification).toBe(true)
   })
 
   test('returns red for pain above 4', () => {
@@ -72,7 +77,54 @@ describe('suggestTrafficLight', () => {
   })
 
   test('returns red for two yellow flags', () => {
-    expect(suggestTrafficLight(baseDraft({ readiness: 2, returnerFlag: 'offen' }))).toBe('red')
+    expect(suggestTrafficLight(baseDraft({ readiness: 2, painScore: 3 }))).toBe('red')
+  })
+
+  test('returns yellow for a new, worse or unsure session reaction', () => {
+    expect(suggestTrafficLight(baseDraft({ sessionReaction: 'new_or_worse' }))).toBe('yellow')
+    expect(suggestTrafficLight(baseDraft({ sessionReaction: 'unsure' }))).toBe('yellow')
+  })
+
+  test('returns yellow when previous warning is present', () => {
+    expect(suggestTrafficLight(baseDraft({ previousWarning: true }))).toBe('yellow')
+  })
+})
+
+describe('deriveAttendanceStatus', () => {
+  const baseEntry: PlayerSessionEntry = {
+    ...baseDraft({ present: false }),
+    id: 'entry-1',
+    userId: 'user-1',
+    sessionLogId: 'session-1',
+    playerId: 'player-1',
+    sessionRpe: null,
+    durationMinutes: null,
+    sessionLoad: null,
+    postPainScore: null,
+    postPainLocation: '',
+    e2Decision: null,
+    nextStep: null,
+    checkInSource: 'coach',
+    playerSubmittedAt: null,
+    coachEditedAt: null,
+    playerNote: '',
+    createdAt: '2026-06-16T18:00:00.000Z',
+    updatedAt: '2026-06-16T18:00:00.000Z',
+    deletedAt: null,
+    clientUpdatedAt: '2026-06-16T18:00:00.000Z',
+    syncStatus: 'synced',
+    syncError: null,
+  }
+
+  test('keeps empty preview entries open instead of absent', () => {
+    expect(deriveAttendanceStatus({ ...baseEntry, id: 'preview:test:player-1', coachEditedAt: null })).toBe('open')
+  })
+
+  test('distinguishes present and intentional absence', () => {
+    expect(deriveAttendanceStatus({ ...baseEntry, present: true })).toBe('present')
+    expect(deriveAttendanceStatus({ ...baseEntry, present: false, coachEditedAt: '2026-06-16T18:05:00.000Z' })).toBe(
+      'absent',
+    )
   })
 })
 

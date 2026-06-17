@@ -998,6 +998,68 @@ Supabase-Status:
 - Keine neue Migration, kein RLS-/Grant-/Storage-Push und kein DB-Deploy noetig. Diese Runde aendert nur Frontend-/Repository-Sync-Verhalten.
 - Keine `service_role` Keys, keine Secrets und keine neue Supabase-Architektur einfuehren.
 
+## Field Hub Check-in v1 Redesign 2026-06-17
+
+Kontext:
+
+- Nach Check-in-Audit und externem Review wurde der Check-in-Tab MVP-gerecht umgebaut: Coach-Cockpit mit Spieler-Finder, Einzelspieler-Sheet, gemeinsamer Self-Check-in-Flow fuer Public-Link und Kiosk, neues Feld `session_reaction`, Reset-Logik und Kiosk-Modus.
+- Ziel blieb: keine Spieler-Accounts, kein Spielerportal, keine Edge Functions, kein Realtime, keine `service_role` Keys, keine neue Supabase-Architektur.
+
+Entscheidungen fuer Folgesessions:
+
+- `returnerFlag = offen` ist bewusst kein Ampel-Gelb mehr. Es bleibt eine separate Klärungskennzahl im Coach-Cockpit. Grund: Der Default-Zustand vieler Spieler ist anfangs `offen`; ein automatisches Gelb wuerde die Ampel inflationieren. Wenn `offen` spaeter fachlich als medizinisch ungeklärt definiert wird, muss diese Entscheidung bewusst neu getroffen werden.
+- Kiosk-Modus ist kein Spielerportal. Er laeuft auf dem angemeldeten Coach-Geraet und speichert local-first ueber denselben Pending-Write-Weg wie Coach-Check-ins.
+- Kiosk-Beenden meldet den Coach bewusst ab. Wenn der Logout fehlschlaegt, bleibt der Kiosk aktiv und gibt die Coach-App nicht frei.
+- Kiosk-Check-ins duerfen bestehende Coach-Audit-Metadaten nicht ueberschreiben. Bei vorheriger Coach-Bearbeitung bleibt `checkInSource = mixed` und `coachEditedAt` erhalten.
+- Massen-Reset setzt Coach-Eingaben zurueck, schützt importierte/Self-Check-ins und laesst bewusst gesetzte `Nicht da`-Eintraege stehen. Einzel-Reset bleibt im Spieler-Sheet moeglich.
+- `session_reaction` wird in `player_session_entries`, `public_checkin_submissions`, Repository-Mapping, CSV-Export und Self-Check-in-Flows verwendet.
+
+Supabase-Status:
+
+- Remote-Migration `20260617204122_checkin_v1_redesign_fields.sql` wurde am 17. Juni 2026 per `supabase db push --yes` auf Projekt `rugby-snc-field-hub` (`vpgqmykayreqlzfcvtat`) angewendet.
+- Remote-Verifikation nach Push: `supabase migration list --password ...`, direkte `psql`-Kontrolle von `session_reaction` auf `player_session_entries` und `public_checkin_submissions`, `player_session_entries_checkin_source_check` inklusive `player_kiosk`, und `anon`-INSERT-Grant fuer `public_checkin_submissions.session_reaction`.
+- `supabase db advisors --linked` war ueber die Management-API in dieser Session trotz lokaler DB-Passwort-Datei mit `401 Unauthorized` blockiert. Direkte `psql`-Checks funktionierten.
+
+Verifikation fuer diese Runde:
+
+- `npm run typecheck`
+- `npm run lint`
+- `npm test` mit 229 Tests
+- `npm run build`
+- `git diff --check`
+- Browser-QA mit frischem Vite-Server auf Desktop-, iPad- und iPhone-Breite: Coach-App und Public-Route rendern ohne Console-Errors und ohne horizontale Ueberbreite.
+- Vercel-Frontend-Deploy konnte nicht ausgefuehrt werden, weil der Vercel-Connector fuer das lokal verknuepfte Projekt `403 Forbidden` zurueckgab und keine lokale `vercel` CLI installiert ist.
+
+## Field Hub Check-in v1 Review-Nachhaertung 2026-06-17
+
+Kontext:
+
+- Nach externem Review wurden die berechtigten Restpunkte aus Check-in v1 eng am MVP nachgeschaerft.
+- Ziel blieb: keine neue Supabase-Komplexitaet, keine neue Migration, kein Spielerportal, keine `service_role` Keys.
+
+Entscheidungen fuer Folgesessions:
+
+- Einzel-Reset im Spieler-Sheet ist bewusst nicht mehr sofort destruktiv. Er laeuft ueber einen 5-Sekunden-Undo-Flow und wird bei Sheet-Wechsel/Unmount abgebrochen.
+- Massen-Reset nutzt bewusst ein natives Confirm. Das ist hier eine MVP-Entscheidung fuer eine seltene destruktive Aktion und vermeidet ein neues Modal-System.
+- Kiosk bekommt von `App.tsx` nur noch minimale Spieleroptionen (`id`, `displayName`). Vollstaendige Player-Objekte werden erst beim Submit in `App.tsx` aufgeloest.
+- Kiosk-Exit-Hold ist auf 2 Sekunden festgelegt. Das Label bleibt `Gedrueckt halten zum Abmelden`, weil der sichere Flow tatsaechlich ausloggt.
+- Admin-Reset bleibt bewusst nicht umgesetzt. Ein vollstaendiger Admin-Reset ist ein destruktives Sonderwerkzeug und braucht eine separate Produktentscheidung.
+
+Supabase-Status:
+
+- Keine neue Migration, kein RLS-/Grant-/Storage-Push und kein DB-Deploy noetig.
+
+Verifikation fuer diese Runde:
+
+- Rote Regressionen vor Umsetzung bestaetigt fuer Reset-Schutz, Kiosk-Datenminimierung, Kiosk-Hold und explizite Abwesenheit.
+- `npm run typecheck`
+- `npm run lint`
+- `npm test` mit 242 Tests
+- `npm run build`
+- `git diff --check`
+- Browser-QA mit Vite-Server auf Desktop- und Mobile-Breite: App rendert Inhalt, keine Vite-Overlays, keine Console-Errors, keine horizontale Ueberbreite.
+- Vercel-Deploy wurde nicht ausgefuehrt: Der Vercel-Connector verwies nur auf `vercel deploy`, lokal ist keine `vercel` CLI installiert. DB-Push ist fuer diese Nachhaertung nicht noetig.
+
 ## Empfohlener Startprompt fuer eine Trainingsplan-Session
 
 ```text

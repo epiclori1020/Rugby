@@ -44,6 +44,7 @@ const submission: PublicCheckInSubmission = {
   painScore: 2,
   painLocation: 'Wade rechts',
   returnerFlag: 'nein',
+  sessionReaction: 'new_or_worse',
   playerNote: 'komme direkt von Arbeit',
   status: 'pending',
   submittedAt: '2026-06-16T17:40:00.000Z',
@@ -68,6 +69,7 @@ describe('publicCheckIn domain', () => {
       painScore: 2,
       painLocation: 'Wade rechts',
       returnerFlag: 'nein',
+      sessionReaction: 'new_or_worse',
       playerNote: 'komme direkt von Arbeit',
     })
     expect(patch).not.toHaveProperty('trafficLight')

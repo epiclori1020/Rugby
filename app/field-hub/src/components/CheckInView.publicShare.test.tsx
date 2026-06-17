@@ -102,6 +102,7 @@ const entry: PlayerSessionEntry = {
   painScore: null,
   painLocation: '',
   returnerFlag: 'nein',
+  sessionReaction: 'none',
   redFlag: 'none',
   movementConcern: false,
   previousWarning: false,
@@ -171,6 +172,9 @@ function buildCheckInActions(
     refreshLocalCheckIns: async () => undefined,
     runSync: async () => syncOverview,
     saveEntry: async () => ({ ok: true as const, entry }),
+    saveKioskEntry: async () => ({ ok: true as const, entry }),
+    resetEntry: async () => ({ ok: true as const, entry }),
+    resetSessionCoachEntries: async () => ({ ok: true as const, resetCount: 0 }),
     saveSessionPatch: async () => undefined,
     createPublicLink: async () => null,
     closePublicLink: async () => undefined,
@@ -211,6 +215,7 @@ async function renderCheckInView({
         checkInActions={checkInActions}
         onNavigate={() => undefined}
         onSessionChange={onSessionChange}
+        onStartKiosk={() => undefined}
         playerActions={playerActions}
         returnerCaps={[]}
         selectedSession={selectedSession}

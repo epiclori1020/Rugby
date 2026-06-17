@@ -811,6 +811,112 @@ button {
   gap: 12px;
 }
 
+.checkin-finder,
+.checkin-player-groups,
+.checkin-player-group {
+  display: grid;
+  gap: 12px;
+}
+
+.checkin-finder-head {
+  display: grid;
+  gap: 12px;
+}
+
+.checkin-player-group h4 {
+  color: var(--muted);
+  font-size: 0.88rem;
+  letter-spacing: 0;
+  margin: 0;
+}
+
+.checkin-player-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
+  gap: 8px;
+}
+
+.checkin-player-card {
+  min-height: 76px;
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 10px;
+  padding: 10px;
+  text-align: left;
+}
+
+.checkin-player-card.traffic-green {
+  border-left-color: var(--ok);
+}
+
+.checkin-player-card.traffic-yellow {
+  border-left-color: var(--warning);
+}
+
+.checkin-player-card.traffic-red {
+  border-left-color: #8c2f24;
+}
+
+.checkin-player-card-main {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.checkin-player-card-main small {
+  color: var(--muted);
+}
+
+.checkin-player-card-tags {
+  grid-column: 1 / -1;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.checkin-sheet-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 60;
+  background: rgba(15, 33, 31, 0.34);
+  display: grid;
+  justify-items: end;
+  padding:
+    calc(14px + env(safe-area-inset-top))
+    calc(14px + env(safe-area-inset-right))
+    calc(14px + env(safe-area-inset-bottom))
+    calc(14px + env(safe-area-inset-left));
+}
+
+.checkin-sheet {
+  width: min(760px, 100%);
+  max-height: 100%;
+  overflow-y: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--bg);
+  box-shadow: 0 16px 50px rgba(18, 30, 25, 0.24);
+  padding: 12px;
+}
+
+.sheet-heading {
+  align-items: start;
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 12px;
+}
+
+.sheet-heading h3 {
+  margin: 0;
+}
+
 .checkin-row {
   border: 1px solid var(--line);
   border-left: 7px solid var(--line);
@@ -841,6 +947,10 @@ button {
   gap: 12px;
 }
 
+.checkin-player-head > .button-row {
+  justify-content: flex-end;
+}
+
 .checkin-player-head p {
   margin: 3px 0 0;
   color: var(--muted);
@@ -863,6 +973,17 @@ button {
 
 .error-panel strong {
   color: #8f1d17;
+}
+
+.checkin-reset-panel {
+  align-items: start;
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 12px;
+}
+
+.checkin-reset-panel h3 {
+  margin: 0 0 4px;
 }
 
 .checkin-controls {
@@ -974,6 +1095,12 @@ button {
   border-color: #8c2f24;
   background: #8c2f24;
   color: #ffffff;
+}
+
+.segmented.neutral.active {
+  border-color: var(--line);
+  background: var(--surface-strong);
+  color: var(--ink);
 }
 
 .number-chip {
@@ -1698,7 +1825,8 @@ code {
   color: var(--brand);
 }
 
-.public-checkin-page {
+.public-checkin-page,
+.kiosk-checkin-page {
   min-height: 100vh;
   display: grid;
   align-items: start;
@@ -1711,7 +1839,8 @@ code {
   background: var(--surface);
 }
 
-.public-checkin-panel {
+.public-checkin-panel,
+.kiosk-checkin-panel {
   width: min(760px, 100%);
   display: grid;
   gap: 18px;
@@ -1722,10 +1851,43 @@ code {
   padding: 20px;
 }
 
-.public-checkin-panel h1 {
+.public-checkin-panel h1,
+.kiosk-checkin-panel h1 {
   margin: 0;
   font-size: 1.85rem;
   letter-spacing: 0;
+}
+
+.kiosk-checkin-page {
+  align-content: start;
+  background: var(--bg);
+  padding-bottom: calc(88px + env(safe-area-inset-bottom));
+}
+
+.kiosk-checkin-panel {
+  box-shadow: none;
+}
+
+.self-checkin-flow {
+  width: 100%;
+}
+
+.kiosk-exit-button {
+  position: fixed;
+  right: calc(16px + env(safe-area-inset-right));
+  bottom: calc(16px + env(safe-area-inset-bottom));
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  color: var(--muted);
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  font: inherit;
+  font-weight: 850;
+  padding: 10px 14px;
 }
 
 .public-checkin-form,
@@ -1958,6 +2120,7 @@ code {
   .pdf-link-grid,
   .form-grid,
   .checkin-metrics,
+  .checkin-reset-panel,
   .export-actions {
     grid-template-columns: 1fr;
   }

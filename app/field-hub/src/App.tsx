@@ -3,6 +3,7 @@ import { useRegisterSW } from 'virtual:pwa-register/react'
 import { AppShell } from './components/AppShell'
 import { CheckInView } from './components/CheckInView'
 import { ExportView } from './components/ExportView'
+import { KioskCheckInView } from './components/KioskCheckInView'
 import { LibraryView } from './components/LibraryView'
 import { PostSessionView } from './components/PostSessionView'
 import { PublicCheckInView } from './components/PublicCheckInView'
@@ -10,12 +11,13 @@ import { PwaUpdateNotice } from './components/PwaUpdateNotice'
 import { PlayersView } from './components/PlayersView'
 import { ReturnerView } from './components/ReturnerView'
 import { SettingsView } from './components/SettingsView'
+import type { SelfCheckInSubmissionInput } from './components/SelfCheckInFlow'
 import { TodayDashboard } from './components/TodayDashboard'
 import { TrainingView } from './components/TrainingView'
 import { getRelevantSessions, sessionDefinitions } from './content/sessions'
 import type { PdfRef } from './content/types'
 import { shouldShowBackupReminder } from './domain/backupReminder'
-import type { SessionLog } from './domain/checkIn'
+import type { CheckInEntryPatch, SessionLog } from './domain/checkIn'
 import { useAuthSession } from './hooks/useAuthSession'
 import { useBaselines } from './hooks/useBaselines'
 import { useCheckIns } from './hooks/useCheckIns'
@@ -25,6 +27,7 @@ import { useReturners } from './hooks/useReturners'
 import { useStoragePersistence } from './hooks/useStoragePersistence'
 import { getLastExportAt, getLatestCompletedSession } from './lib/backupRepository'
 import { flushBackgroundSyncs } from './lib/backgroundSync'
+import { signOutCoach } from './lib/auth'
 import { buildManualSyncFeedback, combineSyncOverviews, syncAllUserData, type ManualSyncFeedback } from './lib/syncRepository'
 
 export type HubTab =
@@ -39,6 +42,7 @@ export type HubTab =
   | 'einstellungen'
 
 const selectedSessionStorageKey = 'fieldHub:selectedSessionId'
+const kioskSessionStorageKey = 'fieldHub:kioskSessionId'
 
 function toLocalDateKey(date: Date) {
   const year = date.getFullYear()
@@ -61,10 +65,28 @@ function getInitialSelectedSessionId(fallbackSessionId: string) {
     return fallbackSessionId
   }
 
+  const storedKioskSessionId = window.localStorage.getItem(kioskSessionStorageKey)
+  const storedKioskSessionExists = sessionDefinitions.some((session) => session.id === storedKioskSessionId)
+
+  if (storedKioskSessionExists && storedKioskSessionId) {
+    return storedKioskSessionId
+  }
+
   const storedSessionId = window.localStorage.getItem(selectedSessionStorageKey)
   const storedSessionExists = sessionDefinitions.some((session) => session.id === storedSessionId)
 
   return storedSessionExists && storedSessionId ? storedSessionId : fallbackSessionId
+}
+
+function getInitialKioskSessionId() {
+  if (typeof window === 'undefined') {
+    return null
+  }
+
+  const storedSessionId = window.localStorage.getItem(kioskSessionStorageKey)
+  const storedSessionExists = sessionDefinitions.some((session) => session.id === storedSessionId)
+
+  return storedSessionExists && storedSessionId ? storedSessionId : null
 }
 
 function CoachApp() {
@@ -75,6 +97,7 @@ function CoachApp() {
   const [libraryReturnTab, setLibraryReturnTab] = useState<HubTab | null>(null)
   const [transientNotice, setTransientNotice] = useState<string | null>(null)
   const [appTodayKey, setAppTodayKey] = useState(() => toLocalDateKey(new Date()))
+  const [activeKioskSessionId, setActiveKioskSessionId] = useState<string | null>(getInitialKioskSessionId)
   const {
     needRefresh: [needsAppRefresh],
     updateServiceWorker,
@@ -188,6 +211,23 @@ function CoachApp() {
     setSelectedSessionId(featuredSession.id)
   }, [featuredSession.id])
 
+  const handleStartKiosk = useCallback(() => {
+    window.localStorage.setItem(kioskSessionStorageKey, selectedSession.id)
+    window.localStorage.setItem(selectedSessionStorageKey, selectedSession.id)
+    setSelectedSessionId(selectedSession.id)
+    setActiveKioskSessionId(selectedSession.id)
+  }, [selectedSession.id])
+
+  const handleExitKiosk = useCallback(async () => {
+    try {
+      await signOutCoach()
+      window.localStorage.removeItem(kioskSessionStorageKey)
+      setActiveKioskSessionId(null)
+    } catch {
+      showTransientNotice('Kiosk bleibt aktiv: Logout fehlgeschlagen.')
+    }
+  }, [showTransientNotice])
+
   const refreshAllLocalData = useCallback(async () => {
     if (!userId) {
       return
@@ -295,6 +335,48 @@ function CoachApp() {
     }
   }, [])
 
+  const activeKioskPlayers = playerActions.players.filter((player) => player.active)
+  const kioskPlayerOptions = activeKioskPlayers.map((player) => ({ id: player.id, displayName: player.name }))
+
+  async function handleSubmitKioskEntry(input: SelfCheckInSubmissionInput) {
+    const player = activeKioskPlayers.find((candidate) => candidate.id === input.playerId)
+
+    if (!player) {
+      throw new Error('Spieler nicht gefunden.')
+    }
+
+    const patch: CheckInEntryPatch = {
+      present: true,
+      readiness: input.readiness,
+      lifeFlag: input.lifeFlag,
+      painScore: input.painScore,
+      painLocation: input.painLocation,
+      returnerFlag: input.returnerFlag,
+      sessionReaction: input.sessionReaction,
+      playerNote: input.playerNote,
+    }
+    const result = await checkInActions.saveKioskEntry(player, patch)
+
+    if (!result.ok) {
+      throw new Error(result.error)
+    }
+  }
+
+  if (authState.status === 'signed-in' && activeKioskSessionId === selectedSession.id) {
+    return (
+      <>
+        {needsAppRefresh ? <PwaUpdateNotice onReload={() => void updateServiceWorker(true)} /> : null}
+        <KioskCheckInView
+          errorMessage={checkInActions.errorMessage}
+          onExit={handleExitKiosk}
+          onSubmitKioskEntry={handleSubmitKioskEntry}
+          players={kioskPlayerOptions}
+          selectedSession={selectedSession}
+        />
+      </>
+    )
+  }
+
   return (
     <AppShell
       activeTab={activeTab}
@@ -330,6 +412,7 @@ function CoachApp() {
           checkInActions={checkInActions}
           onNavigate={handleTabChange}
           onSessionChange={setSelectedSessionId}
+          onStartKiosk={handleStartKiosk}
           playerActions={playerActions}
           returnerCaps={returnerActions.returnerCaps}
           selectedSession={selectedSession}

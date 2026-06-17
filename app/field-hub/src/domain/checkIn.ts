@@ -6,9 +6,11 @@ export type TrafficLight = 'green' | 'yellow' | 'red'
 export type ReturnerFlag = ReturnerStatus
 export type RedFlag = 'none' | 'head_neck_neuro' | 'acute_instability'
 export type TrainingVariant = 'A_plus' | 'A' | 'B' | 'C' | 'D'
+export type SessionReaction = 'none' | 'new_or_worse' | 'unsure'
+export type AttendanceStatus = 'open' | 'present' | 'absent'
 
 export type CheckInLimit = 'kein_sprint' | 'kein_cond' | 'kein_schweres_heben' | 'physio' | 'klaeren'
-export type CheckInSource = 'coach' | 'player_link' | 'mixed'
+export type CheckInSource = 'coach' | 'player_link' | 'player_kiosk' | 'mixed'
 
 export type CheckInDraft = {
   present: boolean
@@ -20,6 +22,7 @@ export type CheckInDraft = {
   redFlag: RedFlag
   movementConcern: boolean
   previousWarning: boolean
+  sessionReaction: SessionReaction
   trafficLight: TrafficLight | null
   trafficLightSuggestion: TrafficLight | null
   trafficLightWasManual: boolean
@@ -94,6 +97,7 @@ export type CheckInEntryPatch = Partial<
     | 'redFlag'
     | 'movementConcern'
     | 'previousWarning'
+    | 'sessionReaction'
     | 'trainingVariant'
     | 'limits'
     | 'observation'
@@ -131,6 +135,7 @@ export const emptyCheckInDraft: CheckInDraft = {
   redFlag: 'none',
   movementConcern: false,
   previousWarning: false,
+  sessionReaction: 'none',
   trafficLight: null,
   trafficLightSuggestion: null,
   trafficLightWasManual: false,
@@ -160,25 +165,34 @@ export function hasLifeFlagConcern(lifeFlag: string) {
   return normalized.length > 0 && !harmlessLifeFlagValues.has(normalized)
 }
 
-export function suggestTrafficLight(input: CheckInDraft): TrafficLight {
-  const yellowFlags = [
+export function getTrafficLightSignals(input: CheckInDraft) {
+  const yellowSignals = [
     input.painScore !== null && input.painScore >= 3 && input.painScore <= 4,
     input.readiness !== null && input.readiness <= 2,
     hasLifeFlagConcern(input.lifeFlag),
-    input.returnerFlag === 'ja' || input.returnerFlag === 'offen',
+    input.returnerFlag === 'ja',
     input.previousWarning,
+    input.sessionReaction === 'new_or_worse' || input.sessionReaction === 'unsure',
   ].filter(Boolean).length
 
-  if (
-    (input.painScore !== null && input.painScore > 4) ||
-    input.redFlag !== 'none' ||
-    input.movementConcern ||
-    yellowFlags >= 2
-  ) {
+  return {
+    yellowSignals,
+    hasRedSignal:
+      (input.painScore !== null && input.painScore > 4) ||
+      input.redFlag !== 'none' ||
+      input.movementConcern,
+    needsReturnerClarification: input.returnerFlag === 'offen',
+  }
+}
+
+export function suggestTrafficLight(input: CheckInDraft): TrafficLight {
+  const { yellowSignals, hasRedSignal } = getTrafficLightSignals(input)
+
+  if (hasRedSignal || yellowSignals >= 2) {
     return 'red'
   }
 
-  if (yellowFlags > 0) {
+  if (yellowSignals > 0) {
     return 'yellow'
   }
 
@@ -238,4 +252,37 @@ export function deriveLimits(draft: CheckInDraft): CheckInLimit[] {
   }
 
   return [...limits]
+}
+
+export function hasMeaningfulCheckIn(entry: PlayerSessionEntry) {
+  return (
+    entry.present ||
+    entry.readiness !== null ||
+    entry.lifeFlag.trim().length > 0 ||
+    entry.painScore !== null ||
+    entry.painLocation.trim().length > 0 ||
+    entry.returnerFlag !== 'offen' ||
+    entry.redFlag !== 'none' ||
+    entry.movementConcern ||
+    entry.previousWarning ||
+    entry.sessionReaction !== 'none' ||
+    entry.trainingVariant !== null ||
+    entry.limits.length > 0 ||
+    entry.observation.trim().length > 0 ||
+    (entry.playerNote?.trim().length ?? 0) > 0 ||
+    Boolean(entry.playerSubmittedAt) ||
+    Boolean(entry.coachEditedAt)
+  )
+}
+
+export function deriveAttendanceStatus(entry: PlayerSessionEntry): AttendanceStatus {
+  if (entry.present) {
+    return 'present'
+  }
+
+  if (!hasMeaningfulCheckIn(entry)) {
+    return 'open'
+  }
+
+  return entry.coachEditedAt ? 'absent' : 'open'
 }

@@ -26,7 +26,10 @@ const checkInRepositoryMocks = vi.hoisted(() => ({
   listLatestWarnings: vi.fn(),
   pullRemoteCheckIns: vi.fn(),
   pushPendingCheckIns: vi.fn(),
+  resetCheckInEntry: vi.fn(),
+  resetCoachCheckInsForSession: vi.fn(),
   saveCheckInEntry: vi.fn(),
+  saveKioskCheckInEntry: vi.fn(),
   saveSessionLogPatch: vi.fn(),
   syncCheckIns: vi.fn(),
 }))
@@ -135,7 +138,10 @@ describe('useCheckIns remote freshness pull', () => {
     checkInRepositoryMocks.listLatestWarnings.mockResolvedValue([])
     checkInRepositoryMocks.pullRemoteCheckIns.mockResolvedValue(undefined)
     checkInRepositoryMocks.pushPendingCheckIns.mockResolvedValue(defaultOverview)
+    checkInRepositoryMocks.resetCheckInEntry.mockResolvedValue(null)
+    checkInRepositoryMocks.resetCoachCheckInsForSession.mockResolvedValue([])
     checkInRepositoryMocks.saveCheckInEntry.mockResolvedValue(null)
+    checkInRepositoryMocks.saveKioskCheckInEntry.mockResolvedValue(null)
     checkInRepositoryMocks.saveSessionLogPatch.mockResolvedValue({ id: 'session-log-1' })
     checkInRepositoryMocks.syncCheckIns.mockResolvedValue(defaultOverview)
 

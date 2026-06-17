@@ -2,6 +2,7 @@ import {
   applyAutoTrafficLight,
   applyManualTrafficLight,
   applySuggestedTrafficLight,
+  deriveAttendanceStatus,
   deriveLimits,
   emptyCheckInDraft,
   type CheckInDraft,
@@ -14,6 +15,7 @@ import {
   type PlayerWarning,
   type RedFlag,
   type ReturnerFlag,
+  type SessionReaction,
   type SessionLog,
   type TrainingVariant,
   type TrafficLight,
@@ -63,6 +65,7 @@ export type PlayerSessionEntryRow = {
   pain_score: number | null
   pain_location: string
   returner_flag: ReturnerFlag
+  session_reaction?: SessionReaction
   red_flag: RedFlag
   movement_concern: boolean
   traffic_light: TrafficLight | null
@@ -170,6 +173,7 @@ export function entryFromRow(row: PlayerSessionEntryRow, syncStatus: SyncStatus 
     painScore: row.pain_score,
     painLocation: row.pain_location,
     returnerFlag: row.returner_flag,
+    sessionReaction: row.session_reaction ?? 'none',
     redFlag: row.red_flag,
     movementConcern: row.movement_concern,
     trafficLight: row.traffic_light,
@@ -228,6 +232,7 @@ export function rowFromEntry(entry: PlayerSessionEntry): PlayerSessionEntryUpser
     pain_score: entry.painScore,
     pain_location: entry.painLocation,
     returner_flag: entry.returnerFlag,
+    session_reaction: entry.sessionReaction,
     red_flag: entry.redFlag,
     movement_concern: entry.movementConcern,
     traffic_light: entry.trafficLight,
@@ -621,6 +626,7 @@ async function saveCheckInEntryOnce(
     lifeFlag: patch.lifeFlag !== undefined ? patch.lifeFlag.trim() : baseEntry.lifeFlag,
     painLocation: patch.painLocation !== undefined ? patch.painLocation.trim() : baseEntry.painLocation,
     observation: patch.observation !== undefined ? patch.observation.trim() : baseEntry.observation,
+    playerNote: patch.playerNote !== undefined ? patch.playerNote.trim() : baseEntry.playerNote,
   }
   const draftWithLimits = {
     ...patchedDraft,
@@ -634,11 +640,14 @@ async function saveCheckInEntryOnce(
       ? applyManualTrafficLight(suggestedDraft, manualTrafficLight)
       : suggestedDraft
   const marksCoachEdited = shouldMarkCoachEdited(patch, manualTrafficLight)
+  const shouldPreserveExplicitAbsence =
+    patch.present === undefined && marksCoachEdited && deriveAttendanceStatus(baseEntry) === 'absent'
   const entry: PlayerSessionEntry = {
     ...baseEntry,
     ...finalDraft,
+    present: patch.present !== undefined ? patch.present : marksCoachEdited ? !shouldPreserveExplicitAbsence : finalDraft.present,
     checkInSource: marksCoachEdited
-      ? baseEntry.checkInSource === 'player_link' ? 'mixed' : 'coach'
+      ? baseEntry.checkInSource === 'player_link' || baseEntry.checkInSource === 'player_kiosk' ? 'mixed' : 'coach'
       : baseEntry.checkInSource ?? 'coach',
     coachEditedAt: marksCoachEdited ? timestamp : baseEntry.coachEditedAt,
     updatedAt: timestamp,
@@ -664,6 +673,7 @@ function shouldMarkCoachEdited(patch: CheckInEntryPatch, manualTrafficLight?: Tr
     patch.returnerFlag !== undefined ||
     patch.redFlag !== undefined ||
     patch.movementConcern !== undefined ||
+    patch.sessionReaction !== undefined ||
     patch.trainingVariant !== undefined ||
     patch.limits !== undefined
   )
@@ -735,6 +745,125 @@ export async function savePublicCheckInEntry(
   await queueWrite('player_session_entries', entry.id, userId)
 
   return entry
+}
+
+export async function saveKioskCheckInEntry(
+  userId: string,
+  sessionLogId: string,
+  player: Player,
+  patch: CheckInEntryPatch,
+) {
+  const timestamp = nowIso()
+  const entry = await savePublicCheckInEntry(userId, sessionLogId, player, { ...patch, present: true }, timestamp)
+  const kioskEntry: PlayerSessionEntry = {
+    ...entry,
+    checkInSource: entry.coachEditedAt ? 'mixed' : 'player_kiosk',
+    coachEditedAt: entry.coachEditedAt,
+    updatedAt: timestamp,
+    clientUpdatedAt: timestamp,
+    syncStatus: 'pending',
+    syncError: null,
+  }
+
+  await localDb.playerSessionEntries.put(kioskEntry)
+  await queueWrite('player_session_entries', kioskEntry.id, userId)
+
+  return kioskEntry
+}
+
+export function resetCoachFields(entry: PlayerSessionEntry): PlayerSessionEntry {
+  const resetDraft = applySuggestedTrafficLight({
+    ...entry,
+    redFlag: 'none',
+    movementConcern: false,
+    trafficLight: null,
+    trafficLightSuggestion: null,
+    trafficLightWasManual: false,
+    trainingVariant: null,
+    limits: [],
+    observation: '',
+  })
+
+  return {
+    ...entry,
+    ...resetDraft,
+    coachEditedAt: null,
+  }
+}
+
+export async function resetCheckInEntry(userId: string, entryId: string) {
+  const existing = await localDb.playerSessionEntries.get(entryId)
+  if (!existing || existing.userId !== userId) {
+    throw new Error('Check-in-Eintrag nicht gefunden.')
+  }
+
+  const timestamp = nowIso()
+  const resetEntry: PlayerSessionEntry = existing.playerSubmittedAt
+    ? {
+        ...resetCoachFields(existing),
+        updatedAt: timestamp,
+        clientUpdatedAt: timestamp,
+        syncStatus: 'pending',
+        syncError: null,
+      }
+    : {
+        ...existing,
+        deletedAt: timestamp,
+        updatedAt: timestamp,
+        clientUpdatedAt: timestamp,
+        syncStatus: 'pending',
+        syncError: null,
+      }
+
+  await localDb.playerSessionEntries.put(resetEntry)
+  await queueWrite('player_session_entries', resetEntry.id, userId)
+
+  return resetEntry
+}
+
+export async function resetCoachCheckInsForSession(userId: string, sessionLogId: string) {
+  const entries = await localDb.playerSessionEntries
+    .where('userId')
+    .equals(userId)
+    .and((entry) => entry.sessionLogId === sessionLogId && !entry.deletedAt)
+    .toArray()
+  const timestamp = nowIso()
+  const resetEntries: PlayerSessionEntry[] = []
+
+  for (const entry of entries) {
+    if (entry.playerSubmittedAt) {
+      const resetEntry: PlayerSessionEntry = {
+        ...resetCoachFields(entry),
+        updatedAt: timestamp,
+        clientUpdatedAt: timestamp,
+        syncStatus: 'pending',
+        syncError: null,
+      }
+      await localDb.playerSessionEntries.put(resetEntry)
+      await queueWrite('player_session_entries', resetEntry.id, userId)
+      resetEntries.push(resetEntry)
+      continue
+    }
+
+    if (deriveAttendanceStatus(entry) === 'absent') {
+      resetEntries.push(entry)
+      continue
+    }
+
+    const deletedEntry: PlayerSessionEntry = {
+      ...entry,
+      deletedAt: timestamp,
+      updatedAt: timestamp,
+      clientUpdatedAt: timestamp,
+      syncStatus: 'pending',
+      syncError: null,
+    }
+    await localDb.playerSessionEntries.put(deletedEntry)
+    await queueWrite('player_session_entries', deletedEntry.id, userId)
+    resetEntries.push(deletedEntry)
+  }
+
+  return resetEntries
 }
 
 export async function getCheckInSyncOverview(userId: string): Promise<PlayerSyncOverview> {
@@ -896,7 +1025,7 @@ async function refreshRemoteCheckIns(userId: string, options: PullRemoteCheckIns
   let entryQuery = supabase!
     .from('player_session_entries')
     .select(
-      'id,user_id,session_log_id,player_id,present,readiness,life_flag,pain_score,pain_location,returner_flag,red_flag,movement_concern,traffic_light,traffic_light_suggestion,traffic_light_was_manual,training_variant,limits,observation,session_rpe,duration_minutes,session_load,post_pain_score,post_pain_location,e2_decision,next_step,checkin_source,player_submitted_at,coach_edited_at,player_note,created_at,updated_at,deleted_at,client_updated_at',
+      'id,user_id,session_log_id,player_id,present,readiness,life_flag,pain_score,pain_location,returner_flag,session_reaction,red_flag,movement_concern,traffic_light,traffic_light_suggestion,traffic_light_was_manual,training_variant,limits,observation,session_rpe,duration_minutes,session_load,post_pain_score,post_pain_location,e2_decision,next_step,checkin_source,player_submitted_at,coach_edited_at,player_note,created_at,updated_at,deleted_at,client_updated_at',
     )
     .eq('user_id', userId)
   if (options.sessionDefinitionId) {

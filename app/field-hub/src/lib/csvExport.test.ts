@@ -65,6 +65,7 @@ describe('csvExport', () => {
           lifeFlag: '',
           painScore: null,
           painLocation: '',
+          sessionReaction: 'none',
           returnerFlag: 'nein',
           redFlag: 'none',
           movementConcern: false,
@@ -116,6 +117,6 @@ describe('csvExport', () => {
       ],
     )
 
-    expect(csv).toContain('2026-06-18;Geloeschter Spieler;ja')
+    expect(csv).toContain('2026-06-18;Geloeschter Spieler;ja;;;;;none;nein')
   })
 })

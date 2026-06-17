@@ -20,7 +20,10 @@ import {
   pullRemoteCheckIns,
   pushPendingCheckIns,
   saveCheckInEntry,
+  saveKioskCheckInEntry,
   saveSessionLogPatch,
+  resetCheckInEntry,
+  resetCoachCheckInsForSession,
   syncCheckIns,
   type SessionLogPatch,
 } from '../lib/checkInRepository'
@@ -343,6 +346,93 @@ export function useCheckIns(
     }
   }
 
+  async function saveKioskEntry(player: Player, patch: CheckInEntryPatch): Promise<SaveEntryResult> {
+    if (!userId) {
+      throw new Error('Login erforderlich.')
+    }
+
+    try {
+      setErrorMessage(null)
+      const sessionLog = sessionLogId
+        ? { id: sessionLogId }
+        : await ensureSessionLog(userId, sessionDefinition)
+
+      const savedEntry = await saveKioskCheckInEntry(userId, sessionLog.id, player, patch)
+      setSessionLogId(sessionLog.id)
+      setEntries((currentEntries) => mergeRecordIntoList(currentEntries, savedEntry))
+      setSyncOverview(await getCheckInSyncOverview(userId))
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        scheduleBackgroundSync(userId, 'check-ins', runBackgroundSync)
+      }
+      return { ok: true, entry: savedEntry }
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : 'Kiosk-Check-in konnte nicht gespeichert werden.'
+      setErrorMessage(message)
+      return { ok: false, error: message }
+    }
+  }
+
+  async function resetEntry(entryId: string): Promise<SaveEntryResult> {
+    if (!userId) {
+      throw new Error('Login erforderlich.')
+    }
+
+    try {
+      setErrorMessage(null)
+      const resetEntry = await resetCheckInEntry(userId, entryId)
+      setEntries((currentEntries) =>
+        resetEntry.deletedAt
+          ? currentEntries.filter((entry) => entry.id !== resetEntry.id)
+          : mergeRecordIntoList(currentEntries, resetEntry),
+      )
+      setSyncOverview(await getCheckInSyncOverview(userId))
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        scheduleBackgroundSync(userId, 'check-ins', runBackgroundSync)
+      }
+      return { ok: true, entry: resetEntry }
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : 'Check-in konnte nicht zurückgesetzt werden.'
+      setErrorMessage(message)
+      return { ok: false, error: message }
+    }
+  }
+
+  async function resetSessionCoachEntries() {
+    if (!userId || !sessionLogId) {
+      return { ok: true as const, resetCount: 0 }
+    }
+
+    try {
+      setErrorMessage(null)
+      const resetEntries = await resetCoachCheckInsForSession(userId, sessionLogId)
+      setEntries((currentEntries) => {
+        const deletedEntryIds = new Set(resetEntries.filter((entry) => entry.deletedAt).map((entry) => entry.id))
+        const nextEntries = currentEntries.filter((entry) => !deletedEntryIds.has(entry.id))
+
+        for (const entry of resetEntries.filter((item) => !item.deletedAt)) {
+          const index = nextEntries.findIndex((currentEntry) => currentEntry.id === entry.id)
+          if (index >= 0) {
+            nextEntries[index] = entry
+          } else {
+            nextEntries.push(entry)
+          }
+        }
+
+        return nextEntries
+      })
+      setSyncOverview(await getCheckInSyncOverview(userId))
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        scheduleBackgroundSync(userId, 'check-ins', runBackgroundSync)
+      }
+
+      return { ok: true as const, resetCount: resetEntries.filter((entry) => entry.syncStatus === 'pending').length }
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : 'Check-ins konnten nicht zurückgesetzt werden.'
+      setErrorMessage(message)
+      return { ok: false as const, error: message }
+    }
+  }
+
   async function saveSessionPatch(patch: SessionLogPatch) {
     if (!userId) {
       throw new Error('Login erforderlich.')
@@ -433,6 +523,9 @@ export function useCheckIns(
     refreshLocalCheckIns,
     runSync,
     saveEntry,
+    saveKioskEntry,
+    resetEntry,
+    resetSessionCoachEntries,
     saveSessionPatch,
     createPublicLink,
     closePublicLink,
