@@ -405,10 +405,24 @@ function CoachApp() {
 }
 
 function App() {
-  const publicCheckInToken = getPublicCheckInTokenFromHash()
+  const [publicCheckInToken, setPublicCheckInToken] = useState(getPublicCheckInTokenFromHash)
+
+  useEffect(() => {
+    function updatePublicCheckInToken() {
+      setPublicCheckInToken(getPublicCheckInTokenFromHash())
+    }
+
+    window.addEventListener('hashchange', updatePublicCheckInToken)
+    window.addEventListener('popstate', updatePublicCheckInToken)
+
+    return () => {
+      window.removeEventListener('hashchange', updatePublicCheckInToken)
+      window.removeEventListener('popstate', updatePublicCheckInToken)
+    }
+  }, [])
 
   if (publicCheckInToken) {
-    return <PublicCheckInView token={publicCheckInToken} />
+    return <PublicCheckInView key={publicCheckInToken} token={publicCheckInToken} />
   }
 
   return <CoachApp />

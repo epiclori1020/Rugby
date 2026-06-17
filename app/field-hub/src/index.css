@@ -1752,6 +1752,62 @@ code {
   gap: 12px;
 }
 
+.public-checkin-share-panel {
+  display: grid;
+  gap: 12px;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: var(--surface);
+  padding: 12px;
+}
+
+.public-checkin-share-panel h4 {
+  margin: 0;
+  font-size: 1rem;
+  letter-spacing: 0;
+}
+
+.public-checkin-share-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.public-checkin-share-actions .primary-action,
+.public-checkin-share-actions .secondary-action {
+  min-height: 44px;
+}
+
+.public-checkin-share-warning {
+  margin: 2px 0 0;
+  color: var(--muted);
+  font-size: 0.92rem;
+  line-height: 1.4;
+}
+
+.public-checkin-qr {
+  display: flex;
+  align-items: center;
+  min-height: 44px;
+}
+
+.public-checkin-qr img {
+  width: 100%;
+  max-width: 220px;
+  height: auto;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 8px;
+}
+
+.public-checkin-qr span {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  color: var(--muted);
+}
+
 .sync-help,
 .privacy-note,
 .success-note {

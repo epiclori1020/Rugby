@@ -1,4 +1,4 @@
-import { AlertTriangle, Clipboard, ClipboardCheck, FileText, Link2, RefreshCw, ShieldAlert, UserCheck, X } from 'lucide-react'
+import { AlertTriangle, ClipboardCheck, FileText, Link2, Plus, RefreshCw, ShieldAlert, UserCheck, X } from 'lucide-react'
 import { useEffect, useRef, useState } from 'react'
 import type { HubTab } from '../App'
 import type { SessionDefinition } from '../content/types'
@@ -19,7 +19,14 @@ import { triggerHapticFeedback } from '../lib/interactionFeedback'
 import { applyOptimisticCheckInPatch } from '../lib/optimisticUpdates'
 import { measureInteraction } from '../lib/performanceTrace'
 import { hasPlayerId } from '../lib/playerId'
+import {
+  buildPublicCheckInSharePayload,
+  copyPublicCheckInLink,
+  createPublicCheckInQrCodeDataUrl,
+  type PublicCheckInSharePayload,
+} from '../lib/publicCheckInShare'
 import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
+import { PublicCheckInSharePanel } from './PublicCheckInSharePanel'
 import { SessionPicker } from './SessionPicker'
 
 type CheckInActions = ReturnType<typeof useCheckIns>
@@ -54,6 +61,10 @@ const returnerOptions: Array<{ value: ReturnerFlag; label: string }> = [
   { value: 'ja', label: 'Ja' },
   { value: 'offen', label: 'Offen' },
 ]
+
+type NativeShareStatus = 'idle' | 'sharing' | 'shared' | 'aborted' | 'error'
+type CopyStatus = 'idle' | 'copied' | 'error'
+type QrCodeStatus = 'idle' | 'loading' | 'ready' | 'error'
 
 function entryRenderKey(entry: PlayerSessionEntry) {
   return `${entry.id}:${entry.clientUpdatedAt}:${entry.syncStatus}`
@@ -452,7 +463,12 @@ export function CheckInView({
     clearError,
   } = checkInActions
   const showSyncAttention = shouldShowSyncAttention(syncOverview)
-  const [publicLinkFeedback, setPublicLinkFeedback] = useState<string | null>(null)
+  const [createdSharePayload, setCreatedSharePayload] = useState<PublicCheckInSharePayload | null>(null)
+  const [createdShareSessionId, setCreatedShareSessionId] = useState<string | null>(null)
+  const [qrCodeDataUrl, setQrCodeDataUrl] = useState<string | null>(null)
+  const [qrCodeStatus, setQrCodeStatus] = useState<QrCodeStatus>('idle')
+  const [nativeShareStatus, setNativeShareStatus] = useState<NativeShareStatus>('idle')
+  const [copyStatus, setCopyStatus] = useState<CopyStatus>('idle')
   const returnerCapByPlayerId = new Map(returnerCaps.filter(hasPlayerId).map((cap) => [cap.playerId, cap]))
   const expectedPlayerSet = new Set(expectedPlayerIds)
   const activePlayerIdSet = new Set(activePlayers.map((player) => player.id))
@@ -477,6 +493,9 @@ export function CheckInView({
   const redCount = activeEntries.filter((entry) => entry.trafficLight === 'red').length
   const returnerCount = activeEntries.filter((entry) => entry.returnerFlag !== 'nein').length
   const activePublicLink = checkInActions.publicCheckInLinks.find((link) => !link.closedAt)
+  const selectedSessionSharePayload = createdShareSessionId === selectedSessionId ? createdSharePayload : null
+  const selectedSessionQrCodeDataUrl = createdShareSessionId === selectedSessionId ? qrCodeDataUrl : null
+  const selectedSessionQrCodeStatus = createdShareSessionId === selectedSessionId ? qrCodeStatus : 'idle'
   const publicSubmissionCounts = checkInActions.publicCheckInSubmissions.reduce(
     (counts, submission) => {
       counts[submission.status] += 1
@@ -484,6 +503,26 @@ export function CheckInView({
     },
     { pending: 0, imported: 0, conflict: 0, superseded: 0 },
   )
+  const canNativeShare =
+    typeof navigator !== 'undefined' &&
+    typeof navigator.share === 'function' &&
+    (!selectedSessionSharePayload ||
+      typeof navigator.canShare !== 'function' ||
+      navigator.canShare(selectedSessionSharePayload))
+
+  function clearTransientShareState() {
+    setCreatedSharePayload(null)
+    setCreatedShareSessionId(null)
+    setQrCodeDataUrl(null)
+    setQrCodeStatus('idle')
+    setNativeShareStatus('idle')
+    setCopyStatus('idle')
+  }
+
+  function handleSessionChange(sessionId: string) {
+    clearTransientShareState()
+    onSessionChange(sessionId)
+  }
 
   async function handleCreatePublicLink() {
     const createdLink = await checkInActions.createPublicLink()
@@ -491,20 +530,70 @@ export function CheckInView({
       return
     }
 
+    const sharePayload = buildPublicCheckInSharePayload({
+      sessionDate: selectedSession.date,
+      sessionTitle: selectedSession.title,
+      url: createdLink.url,
+    })
+    setCreatedSharePayload(sharePayload)
+    setCreatedShareSessionId(selectedSessionId)
+    setQrCodeDataUrl(null)
+    setQrCodeStatus('loading')
+    setNativeShareStatus('idle')
+    setCopyStatus('idle')
+
     try {
-      await navigator.clipboard.writeText(createdLink.url)
-      setPublicLinkFeedback('Link erstellt und kopiert.')
+      setQrCodeDataUrl(await createPublicCheckInQrCodeDataUrl(createdLink.url))
+      setQrCodeStatus('ready')
     } catch {
-      setPublicLinkFeedback(`Link erstellt: ${createdLink.url}`)
+      setQrCodeDataUrl(null)
+      setQrCodeStatus('error')
     }
   }
 
-  async function handleCopyExistingPublicLink() {
+  async function handleNativeShare() {
+    if (!selectedSessionSharePayload || !canNativeShare) {
+      return
+    }
+
+    setNativeShareStatus('sharing')
+    setCopyStatus('idle')
+
+    try {
+      await navigator.share(selectedSessionSharePayload)
+      setNativeShareStatus('shared')
+    } catch (caughtError) {
+      if (caughtError && typeof caughtError === 'object' && 'name' in caughtError && caughtError.name === 'AbortError') {
+        setNativeShareStatus('aborted')
+        return
+      }
+
+      setNativeShareStatus('error')
+    }
+  }
+
+  async function handleCopyShareLink() {
+    if (!selectedSessionSharePayload) {
+      return
+    }
+
+    setCopyStatus('idle')
+
+    try {
+      await copyPublicCheckInLink(selectedSessionSharePayload.url)
+      setCopyStatus('copied')
+    } catch {
+      setCopyStatus('error')
+    }
+  }
+
+  async function handleClosePublicLink() {
     if (!activePublicLink) {
       return
     }
 
-    setPublicLinkFeedback('Roh-Token wird nur direkt beim Erstellen angezeigt. Erzeuge einen neuen Link, wenn du ihn erneut kopieren musst.')
+    clearTransientShareState()
+    await checkInActions.closePublicLink(activePublicLink.id)
   }
 
   if (authState.status !== 'signed-in') {
@@ -532,7 +621,7 @@ export function CheckInView({
         </div>
         <div className="player-toolbar">
           <SessionPicker
-            onSessionChange={onSessionChange}
+            onSessionChange={handleSessionChange}
             selectedSessionId={selectedSessionId}
             sessions={sessions}
           />
@@ -587,44 +676,61 @@ export function CheckInView({
         </div>
       ) : null}
 
-      <section className="panel public-checkin-coach-panel" aria-label="WhatsApp Check-in Link">
+      <section className="panel public-checkin-coach-panel" aria-label="Check-in-Link teilen">
         <div className="status-line">
           <Link2 className="nav-icon" aria-hidden />
           <div>
-            <h3>WhatsApp Check-in</h3>
+            <h3>Check-in-Link teilen</h3>
             <p>
-              Ein Gruppenlink fuer diese Einheit. Spieler sehen nur Namensauswahl und eigenes Formular;
-              eingehende Check-ins werden automatisch abgefragt.
+              Erstellt einen privaten Link fuer diese Einheit. Spieler sehen Namensauswahl und eigenes Formular.
             </p>
           </div>
         </div>
         <div className="button-row">
-          <button className="primary-action" type="button" onClick={() => void handleCreatePublicLink()} disabled={isLoading}>
-            <Clipboard className="nav-icon" aria-hidden />
-            <span>{activePublicLink ? 'Neuen Link erstellen' : 'Link erstellen und kopieren'}</span>
+          <button
+            className="primary-action"
+            data-testid="public-checkin-create-link"
+            type="button"
+            onClick={() => void handleCreatePublicLink()}
+            disabled={isLoading}
+          >
+            <Plus className="nav-icon" aria-hidden />
+            <span>{activePublicLink ? 'Neuen Link erstellen' : 'Link erstellen'}</span>
           </button>
           {activePublicLink ? (
-            <>
-              <button className="secondary-action" type="button" onClick={() => void handleCopyExistingPublicLink()}>
-                <ClipboardCheck className="nav-icon" aria-hidden />
-                <span>Aktiver Link</span>
-              </button>
-              <button className="secondary-action" type="button" onClick={() => void checkInActions.closePublicLink(activePublicLink.id)}>
-                <X className="nav-icon" aria-hidden />
-                <span>Link schliessen</span>
-              </button>
-            </>
+            <button
+              className="secondary-action"
+              data-testid="public-checkin-close-link"
+              type="button"
+              onClick={() => void handleClosePublicLink()}
+            >
+              <X className="nav-icon" aria-hidden />
+              <span>Link schliessen</span>
+            </button>
           ) : null}
         </div>
+        {selectedSessionSharePayload ? (
+          <PublicCheckInSharePanel
+            canNativeShare={canNativeShare}
+            copyStatus={copyStatus}
+            nativeShareStatus={nativeShareStatus}
+            onClose={clearTransientShareState}
+            onCopy={() => void handleCopyShareLink()}
+            onNativeShare={() => void handleNativeShare()}
+            payload={selectedSessionSharePayload}
+            qrCodeDataUrl={selectedSessionQrCodeDataUrl}
+            qrCodeStatus={selectedSessionQrCodeStatus}
+          />
+        ) : null}
         <p className="sync-help">
           {activePublicLink
-            ? `Aktiv bis ${new Date(activePublicLink.expiresAt).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })}.`
+            ? `Link aktiv bis ${new Date(activePublicLink.expiresAt).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })}. Aus Sicherheitsgründen kann ein bestehender Link nachträglich nicht erneut angezeigt werden.`
             : 'Noch kein aktiver Link fuer diese Einheit lokal sichtbar.'}
           {checkInActions.publicCheckInSubmissions.length > 0
             ? ` Eingaenge: ${publicSubmissionCounts.pending} offen, ${publicSubmissionCounts.imported} uebernommen, ${publicSubmissionCounts.conflict} Konflikte.`
             : ''}
           {checkInActions.publicCheckInNotice ? ` ${checkInActions.publicCheckInNotice}` : ''}
-          {publicLinkFeedback ? ` ${publicLinkFeedback}` : ''}
+          {selectedSessionSharePayload ? ' Link erstellt. Teile ihn oben oder lasse den QR-Code scannen.' : ''}
         </p>
       </section>
 
