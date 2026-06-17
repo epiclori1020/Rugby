@@ -582,7 +582,7 @@ export function CheckInView({
         <div className="panel checkin-sync-strip">
           <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
           <strong>{syncStatusLabel(syncOverview.status)}</strong>
-          <span>{pendingCountLabel(syncOverview.pendingCount, 'Check-in-Aenderungen')}</span>
+          <span>{pendingCountLabel(syncOverview.pendingCount, 'Check-in-Änderungen')}</span>
           {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
         </div>
       ) : null}

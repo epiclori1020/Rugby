@@ -69,4 +69,23 @@ describe('AppShell page title', () => {
     expect(markup).toContain('Einstellungen')
     expect(markup).not.toContain('Jetzt synchronisieren')
   })
+
+  it('renders app-level transient notices as polite status feedback', () => {
+    const markup = renderToStaticMarkup(
+      <AppShell
+        activeTab="heute"
+        authState={signedOutAuthState}
+        onTabChange={() => undefined}
+        playerSync={syncedOverview}
+        transientNotice="Check-in geöffnet."
+      >
+        <p>Heute content</p>
+      </AppShell>,
+    )
+
+    expect(markup).toContain('Heute zählt, Aufpassen, Material und schnelle Wege in die Arbeitsbereiche.')
+    expect(markup).toContain('role="status"')
+    expect(markup).toContain('aria-live="polite"')
+    expect(markup).toContain('Check-in geöffnet.')
+  })
 })

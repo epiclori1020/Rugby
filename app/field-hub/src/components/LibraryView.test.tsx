@@ -1,5 +1,8 @@
+// @vitest-environment jsdom
+import { act } from 'react'
+import { createRoot } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import { LibraryView } from './LibraryView'
 
 describe('LibraryView empty states', () => {
@@ -39,5 +42,68 @@ describe('LibraryView empty states', () => {
 
     expect(markup).toContain('Direkt oeffnen')
     expect(markup).toContain('href="/library/2_COACH_SCRIPT_di_do.pdf"')
+  })
+
+  it('shows a return action when opened from another tab', () => {
+    const markup = renderToStaticMarkup(
+      <LibraryView
+        initialPdfHref="/library/2_COACH_SCRIPT_di_do.pdf"
+        onReturn={() => undefined}
+        returnLabel="Zurück zu Heute"
+      />,
+    )
+
+    expect(markup).toContain('Zurück zu Heute')
+  })
+
+  it('reacts to initialPdfHref changes after mount and calls the return action', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    const onReturn = vi.fn()
+
+    await act(async () => {
+      root.render(<LibraryView />)
+    })
+
+    expect(container.textContent).not.toContain('PDF wird geladen')
+
+    await act(async () => {
+      root.render(
+        <LibraryView
+          initialPdfHref="/library/2_COACH_SCRIPT_di_do.pdf"
+          onReturn={onReturn}
+          returnLabel="Zurück zu Heute"
+        />,
+      )
+    })
+    await act(async () => {
+      await new Promise((resolve) => window.setTimeout(resolve, 0))
+    })
+
+    expect(container.textContent).toContain('PDF wird geladen')
+    container.querySelector<HTMLButtonElement>('[data-testid="library-return-button"]')?.click()
+    expect(onReturn).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      root.unmount()
+    })
+  })
+
+  it('calls the PDF close callback when the in-app viewer closes', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    const onPdfClose = vi.fn()
+
+    await act(async () => {
+      root.render(<LibraryView initialPdfHref="/library/2_COACH_SCRIPT_di_do.pdf" onPdfClose={onPdfClose} />)
+    })
+
+    container.querySelector<HTMLButtonElement>('button[aria-label="PDF schliessen"]')?.click()
+
+    expect(onPdfClose).toHaveBeenCalledTimes(1)
+
+    await act(async () => {
+      root.unmount()
+    })
   })
 })

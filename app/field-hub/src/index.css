@@ -126,6 +126,7 @@ button {
   transition:
     background-color 140ms ease,
     border-color 140ms ease,
+    box-shadow 140ms ease,
     color 140ms ease,
     transform 120ms ease;
 }
@@ -133,6 +134,11 @@ button {
 .nav-button:hover,
 .quick-action:hover {
   border-color: var(--brand);
+}
+
+.quick-action:hover {
+  box-shadow: 0 8px 18px rgba(15, 33, 31, 0.08);
+  transform: translateY(-1px);
 }
 
 .nav-button:focus-visible,
@@ -213,6 +219,30 @@ button {
   font-weight: 800;
 }
 
+.app-transient-notice {
+  animation: notice-enter 180ms ease-out;
+  border: 1px solid rgba(15, 47, 46, 0.16);
+  border-radius: 8px;
+  background: rgba(216, 232, 226, 0.86);
+  color: var(--brand);
+  font-size: 0.9rem;
+  font-weight: 850;
+  margin: -8px 0 18px;
+  padding: 10px 12px;
+}
+
+@keyframes notice-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-4px);
+  }
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
 .status-line {
   display: flex;
   align-items: center;
@@ -241,8 +271,28 @@ button {
 }
 
 .dashboard-grid {
+  grid-template-areas:
+    "command status"
+    "quick status"
+    "timeline status";
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
   align-items: start;
+}
+
+.today-command-card {
+  grid-area: command;
+}
+
+.quick-action-panel {
+  grid-area: quick;
+}
+
+.timeline-preview-panel {
+  grid-area: timeline;
+}
+
+.dashboard-grid > aside.content-stack {
+  grid-area: status;
 }
 
 .settings-layout {
@@ -339,6 +389,11 @@ button {
   padding: 8px 12px;
 }
 
+.warning-tag {
+  background: var(--warning-bg);
+  color: #53370d;
+}
+
 .tag.compact {
   font-size: 0.76rem;
   padding: 5px 8px;
@@ -379,6 +434,52 @@ button {
   flex: 1 1 180px;
   justify-content: space-between;
   font-weight: 800;
+}
+
+.primary-quick-action {
+  background: var(--brand);
+  border-color: var(--brand);
+  color: #ffffff;
+}
+
+.primary-quick-action:hover {
+  border-color: var(--brand-strong);
+  box-shadow: 0 10px 22px rgba(15, 47, 46, 0.16);
+}
+
+.compact-status-action {
+  min-height: 44px;
+  width: 100%;
+}
+
+.today-command-card {
+  background: linear-gradient(135deg, #fffdf8 0%, #eef6f2 100%);
+}
+
+.today-actions .quick-action {
+  flex-basis: 220px;
+}
+
+.today-goals,
+.today-documents,
+.timeline-tags {
+  display: grid;
+  gap: 8px;
+}
+
+.today-goals > span,
+.today-documents h4 {
+  color: var(--muted);
+  font-size: 0.82rem;
+  font-weight: 850;
+  margin: 0;
+  text-transform: uppercase;
+}
+
+.timeline-tags {
+  display: flex;
+  flex-wrap: wrap;
+  margin-top: 8px;
 }
 
 .compact-list {
@@ -437,12 +538,15 @@ button {
   transition:
     background-color 140ms ease,
     border-color 140ms ease,
+    box-shadow 140ms ease,
     color 140ms ease,
     transform 120ms ease;
 }
 
 .upcoming-session:hover {
   border-color: var(--brand);
+  box-shadow: 0 8px 18px rgba(15, 33, 31, 0.08);
+  transform: translateY(-1px);
 }
 
 .upcoming-session span,
@@ -1431,12 +1535,15 @@ code {
   transition:
     background-color 140ms ease,
     border-color 140ms ease,
+    box-shadow 140ms ease,
     color 140ms ease,
     transform 120ms ease;
 }
 
 .pdf-link:hover {
   border-color: var(--brand);
+  box-shadow: 0 8px 18px rgba(15, 33, 31, 0.08);
+  transform: translateY(-1px);
 }
 
 .pdf-link small {
@@ -1666,8 +1773,16 @@ code {
 }
 
 @media (max-width: 900px) {
-  .dashboard-grid,
   .settings-layout {
+    grid-template-columns: 1fr;
+  }
+
+  .dashboard-grid {
+    grid-template-areas:
+      "command"
+      "quick"
+      "status"
+      "timeline";
     grid-template-columns: 1fr;
   }
 }
@@ -1831,6 +1946,13 @@ code {
     transition: none;
   }
 
+  .app-transient-notice {
+    animation: none;
+  }
+
+  .quick-action:hover,
+  .pdf-link:hover,
+  .upcoming-session:hover,
   .nav-button:active,
   .quick-action:active,
   .primary-action:active,
@@ -1838,11 +1960,11 @@ code {
   .filter-chip:active,
   .segmented:active,
   .number-chip:active,
-    .traffic-chip:active,
-    .icon-button:active,
-    .mobile-menu-button:active,
-    .pdf-link:active,
-    .upcoming-session:active {
+  .traffic-chip:active,
+  .icon-button:active,
+  .mobile-menu-button:active,
+  .pdf-link:active,
+  .upcoming-session:active {
     transform: none;
   }
 }

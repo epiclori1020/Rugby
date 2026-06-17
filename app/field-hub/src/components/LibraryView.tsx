@@ -1,5 +1,5 @@
 import { FileText, Search, X } from 'lucide-react'
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { libraryCategories, libraryItems } from '../content/library'
 import { activePdfRefs } from '../content/pdfRefs'
 import type { LibraryCategory, LibraryItem, PdfRef } from '../content/types'
@@ -12,6 +12,9 @@ type LibraryViewProps = {
   initialQuery?: string
   initialPdfHref?: string
   initialPdfTimedOut?: boolean
+  onPdfClose?: () => void
+  onReturn?: () => void
+  returnLabel?: string
 }
 
 function searchableText(item: LibraryItem) {
@@ -35,7 +38,14 @@ function findPdfByHref(href: string | undefined) {
   return activePdfRefs.find((pdf) => pdf.href === href) ?? null
 }
 
-export function LibraryView({ initialQuery = '', initialPdfHref, initialPdfTimedOut = false }: LibraryViewProps = {}) {
+export function LibraryView({
+  initialQuery = '',
+  initialPdfHref,
+  initialPdfTimedOut = false,
+  onPdfClose,
+  onReturn,
+  returnLabel,
+}: LibraryViewProps = {}) {
   const [selectedCategory, setSelectedCategory] = useState<LibraryCategory | typeof allCategoriesLabel>(
     allCategoriesLabel,
   )
@@ -90,13 +100,29 @@ export function LibraryView({ initialQuery = '', initialPdfHref, initialPdfTimed
     void prewarmPdfAssets([pdf.href])
   }
 
-  function closePdf() {
+  const closePdf = useCallback(() => {
     completePdfOpenMeasureRef.current?.()
     completePdfOpenMeasureRef.current = null
     setSelectedPdf(null)
     setIsPdfLoading(false)
     setHasPdfTimedOut(false)
-  }
+    onPdfClose?.()
+  }, [onPdfClose])
+
+  useEffect(() => {
+    const nextPdf = findPdfByHref(initialPdfHref)
+    if (!nextPdf) {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      setSelectedPdf(nextPdf)
+      setIsPdfLoading(true)
+      setHasPdfTimedOut(initialPdfTimedOut)
+    }, 0)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [initialPdfHref, initialPdfTimedOut])
 
   useEffect(() => {
     if (!selectedPdf) {
@@ -111,7 +137,7 @@ export function LibraryView({ initialQuery = '', initialPdfHref, initialPdfTimed
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [selectedPdf])
+  }, [closePdf, selectedPdf])
 
   useEffect(() => {
     if (!selectedPdf || !isPdfLoading) {
@@ -255,6 +281,16 @@ export function LibraryView({ initialQuery = '', initialPdfHref, initialPdfTimed
                 <strong>{selectedPdf.label}</strong>
               </div>
               <div className="pdf-viewer-actions">
+                {onReturn && returnLabel ? (
+                  <button
+                    className="secondary-action compact-action"
+                    data-testid="library-return-button"
+                    type="button"
+                    onClick={onReturn}
+                  >
+                    {returnLabel}
+                  </button>
+                ) : null}
                 <a className="secondary-action compact-action" href={selectedPdf.href} target="_blank" rel="noreferrer">
                   Vollstaendige PDF oeffnen
                 </a>

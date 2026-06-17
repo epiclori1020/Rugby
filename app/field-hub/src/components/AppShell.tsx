@@ -12,13 +12,14 @@ type AppShellProps = {
   onTabChange: (tab: HubTab) => void
   authState: AuthSessionState
   playerSync: PlayerSyncOverview
+  transientNotice?: string | null
 }
 
 const tabMeta: Record<HubTab, { eyebrow: string; title: string; description: string }> = {
   heute: {
     eyebrow: 'Heute',
     title: 'Trainingssteuerung',
-    description: 'Naechste Einheit, offene Hinweise und schnelle Wege in die Arbeitsbereiche.',
+    description: 'Heute zählt, Aufpassen, Material und schnelle Wege in die Arbeitsbereiche.',
   },
   spieler: {
     eyebrow: 'Kader & Verfuegbarkeit',
@@ -68,6 +69,7 @@ export function AppShell({
   onTabChange,
   authState,
   playerSync,
+  transientNotice = null,
 }: AppShellProps) {
   const meta = tabMeta[activeTab]
   const [isNavigationOpen, setIsNavigationOpen] = useState(false)
@@ -144,6 +146,11 @@ export function AppShell({
             playerSync={playerSync}
           />
         </div>
+        {transientNotice ? (
+          <p className="app-transient-notice" role="status" aria-live="polite">
+            {transientNotice}
+          </p>
+        ) : null}
 
         <div className="content-stack">
           {children}

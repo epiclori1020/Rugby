@@ -13,6 +13,7 @@ import { SettingsView } from './components/SettingsView'
 import { TodayDashboard } from './components/TodayDashboard'
 import { TrainingView } from './components/TrainingView'
 import { getRelevantSessions, sessionDefinitions } from './content/sessions'
+import type { PdfRef } from './content/types'
 import { shouldShowBackupReminder } from './domain/backupReminder'
 import type { SessionLog } from './domain/checkIn'
 import { useAuthSession } from './hooks/useAuthSession'
@@ -39,6 +40,13 @@ export type HubTab =
 
 const selectedSessionStorageKey = 'fieldHub:selectedSessionId'
 
+function toLocalDateKey(date: Date) {
+  const year = date.getFullYear()
+  const month = `${date.getMonth() + 1}`.padStart(2, '0')
+  const day = `${date.getDate()}`.padStart(2, '0')
+  return `${year}-${month}-${day}`
+}
+
 function getPublicCheckInTokenFromHash() {
   if (typeof window === 'undefined') {
     return null
@@ -63,6 +71,10 @@ function CoachApp() {
   const [activeTab, setActiveTab] = useState<HubTab>('heute')
   const [isManualSyncing, setIsManualSyncing] = useState(false)
   const [manualSyncFeedback, setManualSyncFeedback] = useState<ManualSyncFeedback | null>(null)
+  const [libraryInitialPdfHref, setLibraryInitialPdfHref] = useState<string | undefined>(undefined)
+  const [libraryReturnTab, setLibraryReturnTab] = useState<HubTab | null>(null)
+  const [transientNotice, setTransientNotice] = useState<string | null>(null)
+  const [appTodayKey, setAppTodayKey] = useState(() => toLocalDateKey(new Date()))
   const {
     needRefresh: [needsAppRefresh],
     updateServiceWorker,
@@ -72,7 +84,8 @@ function CoachApp() {
   const storagePersistence = useStoragePersistence()
   const authState = useAuthSession()
   const playerActions = usePlayers(authState.status === 'signed-in' ? authState.user.id : null)
-  const { featuredSession } = getRelevantSessions()
+  const todayDate = useMemo(() => new Date(`${appTodayKey}T12:00:00`), [appTodayKey])
+  const { featuredSession, upcomingSessions } = useMemo(() => getRelevantSessions(todayDate), [todayDate])
   const [selectedSessionId, setSelectedSessionId] = useState(() => getInitialSelectedSessionId(featuredSession.id))
   const selectedSession = sessionDefinitions.find((session) => session.id === selectedSessionId) ?? featuredSession
   const checkInActions = useCheckIns(
@@ -144,6 +157,37 @@ function CoachApp() {
     reminderKey: backupReminderKey,
   })
 
+  const showTransientNotice = useCallback((message: string) => {
+    setTransientNotice(message)
+  }, [])
+
+  const handleTabChange = useCallback((tab: HubTab) => {
+    setLibraryInitialPdfHref(undefined)
+    setLibraryReturnTab(null)
+    setActiveTab(tab)
+  }, [])
+
+  const handleOpenPdf = useCallback((pdf: PdfRef) => {
+    setLibraryInitialPdfHref(pdf.href)
+    setLibraryReturnTab('heute')
+    setActiveTab('bibliothek')
+  }, [])
+
+  const handleReturnFromLibrary = useCallback(() => {
+    setLibraryInitialPdfHref(undefined)
+    setLibraryReturnTab(null)
+    setActiveTab('heute')
+  }, [])
+
+  const handleLibraryPdfClose = useCallback(() => {
+    setLibraryInitialPdfHref(undefined)
+    setLibraryReturnTab(null)
+  }, [])
+
+  const handleResetToTodaySession = useCallback(() => {
+    setSelectedSessionId(featuredSession.id)
+  }, [featuredSession.id])
+
   const refreshAllLocalData = useCallback(async () => {
     if (!userId) {
       return
@@ -212,6 +256,26 @@ function CoachApp() {
   }, [manualSyncFeedback])
 
   useEffect(() => {
+    if (!transientNotice) {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => setTransientNotice(null), 2200)
+    return () => window.clearTimeout(timeoutId)
+  }, [transientNotice])
+
+  useEffect(() => {
+    const intervalId = window.setInterval(() => {
+      setAppTodayKey((currentKey) => {
+        const nextKey = toLocalDateKey(new Date())
+        return nextKey === currentKey ? currentKey : nextKey
+      })
+    }, 60_000)
+
+    return () => window.clearInterval(intervalId)
+  }, [])
+
+  useEffect(() => {
     function flushBeforeHidden() {
       void flushBackgroundSyncs()
     }
@@ -234,21 +298,29 @@ function CoachApp() {
   return (
     <AppShell
       activeTab={activeTab}
-      onTabChange={setActiveTab}
+      onTabChange={handleTabChange}
       authState={authState}
       playerSync={syncOverview}
+      transientNotice={transientNotice}
     >
       {needsAppRefresh ? <PwaUpdateNotice onReload={() => void updateServiceWorker(true)} /> : null}
       {activeTab === 'heute' ? (
         <TodayDashboard
           checkInActions={checkInActions}
-          onNavigate={setActiveTab}
+          featuredSession={featuredSession}
+          isSignedIn={authState.status === 'signed-in'}
+          onActionFeedback={showTransientNotice}
+          onNavigate={handleTabChange}
+          onOpenPdf={handleOpenPdf}
+          onResetToTodaySession={handleResetToTodaySession}
           onSessionChange={setSelectedSessionId}
           players={playerActions.players}
           selectedSession={selectedSession}
           selectedSessionId={selectedSession.id}
           sessions={sessionDefinitions}
           storagePersistence={storagePersistence}
+          todayDate={todayDate}
+          upcomingSessions={upcomingSessions}
         />
       ) : activeTab === 'spieler' ? (
         <PlayersView authState={authState} baselineActions={baselineActions} playerActions={playerActions} />
@@ -256,7 +328,7 @@ function CoachApp() {
         <CheckInView
           authState={authState}
           checkInActions={checkInActions}
-          onNavigate={setActiveTab}
+          onNavigate={handleTabChange}
           onSessionChange={setSelectedSessionId}
           playerActions={playerActions}
           returnerCaps={returnerActions.returnerCaps}
@@ -268,7 +340,7 @@ function CoachApp() {
         <TrainingView
           authState={authState}
           checkInActions={checkInActions}
-          onNavigate={setActiveTab}
+          onNavigate={handleTabChange}
           onSessionChange={setSelectedSessionId}
           returnerCaps={returnerActions.returnerCaps}
           selectedSession={selectedSession}
@@ -278,7 +350,7 @@ function CoachApp() {
       ) : activeTab === 'nachbereitung' ? (
         <PostSessionView
           authState={authState}
-          onNavigate={setActiveTab}
+          onNavigate={handleTabChange}
           onSessionChange={setSelectedSessionId}
           baselineActions={baselineActions}
           postSessionActions={postSessionActions}
@@ -289,7 +361,7 @@ function CoachApp() {
       ) : activeTab === 'returner' ? (
         <ReturnerView
           authState={authState}
-          onNavigate={setActiveTab}
+          onNavigate={handleTabChange}
           onSessionChange={setSelectedSessionId}
           returnerActions={returnerActions}
           selectedSession={selectedSession}
@@ -297,7 +369,12 @@ function CoachApp() {
           sessions={sessionDefinitions}
         />
       ) : activeTab === 'bibliothek' ? (
-        <LibraryView />
+        <LibraryView
+          initialPdfHref={libraryInitialPdfHref}
+          onPdfClose={handleLibraryPdfClose}
+          onReturn={libraryReturnTab === 'heute' ? handleReturnFromLibrary : undefined}
+          returnLabel={libraryReturnTab === 'heute' ? 'Zurück zu Heute' : undefined}
+        />
       ) : activeTab === 'export' ? (
         <ExportView
           authState={authState}
@@ -314,7 +391,7 @@ function CoachApp() {
           latestCompletedSession={latestCompletedSession}
           needsAppRefresh={needsAppRefresh}
           onManualSync={runManualSync}
-          onNavigate={setActiveTab}
+          onNavigate={handleTabChange}
           onReloadApp={() => void updateServiceWorker(true)}
           storagePersistence={storagePersistence}
           syncFeedback={manualSyncFeedback}
