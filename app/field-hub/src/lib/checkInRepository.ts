@@ -5,6 +5,7 @@ import {
   deriveAttendanceStatus,
   deriveLimits,
   emptyCheckInDraft,
+  hasPostSessionData,
   mergeRedFlags,
   type CheckInDraft,
   type CheckInEntryPatch,
@@ -773,6 +774,24 @@ export async function saveKioskCheckInEntry(
   return kioskEntry
 }
 
+function resetCheckInFields(entry: PlayerSessionEntry): PlayerSessionEntry {
+  return {
+    ...entry,
+    ...emptyCheckInDraft,
+    sessionRpe: entry.sessionRpe,
+    durationMinutes: entry.durationMinutes,
+    sessionLoad: entry.sessionLoad,
+    postPainScore: entry.postPainScore,
+    postPainLocation: entry.postPainLocation,
+    e2Decision: entry.e2Decision,
+    nextStep: entry.nextStep,
+    checkInSource: undefined,
+    playerSubmittedAt: null,
+    coachEditedAt: null,
+    playerNote: '',
+  }
+}
+
 export function resetCoachFields(entry: PlayerSessionEntry): PlayerSessionEntry {
   const resetDraft = applySuggestedTrafficLight({
     ...entry,
@@ -800,9 +819,9 @@ export async function resetCheckInEntry(userId: string, entryId: string) {
   }
 
   const timestamp = nowIso()
-  const resetEntry: PlayerSessionEntry = existing.playerSubmittedAt
+  const resetEntry: PlayerSessionEntry = hasPostSessionData(existing)
     ? {
-        ...resetCoachFields(existing),
+        ...resetCheckInFields(existing),
         updatedAt: timestamp,
         clientUpdatedAt: timestamp,
         syncStatus: 'pending',
@@ -823,7 +842,26 @@ export async function resetCheckInEntry(userId: string, entryId: string) {
   return resetEntry
 }
 
-export async function resetCoachCheckInsForSession(userId: string, sessionLogId: string) {
+export type CheckInResetSourceCounts = Record<CheckInSource, number>
+
+export type SessionCheckInResetResult = {
+  entries: PlayerSessionEntry[]
+  resetCount: number
+  deletedCount: number
+  retainedPostSessionCount: number
+  sourceCounts: CheckInResetSourceCounts
+}
+
+function emptySourceCounts(): CheckInResetSourceCounts {
+  return {
+    coach: 0,
+    player_link: 0,
+    player_kiosk: 0,
+    mixed: 0,
+  }
+}
+
+export async function resetAllCheckInsForSession(userId: string, sessionLogId: string) {
   const entries = await localDb.playerSessionEntries
     .where('userId')
     .equals(userId)
@@ -831,11 +869,16 @@ export async function resetCoachCheckInsForSession(userId: string, sessionLogId:
     .toArray()
   const timestamp = nowIso()
   const resetEntries: PlayerSessionEntry[] = []
+  const sourceCounts = emptySourceCounts()
+  let deletedCount = 0
+  let retainedPostSessionCount = 0
 
   for (const entry of entries) {
-    if (entry.playerSubmittedAt) {
+    sourceCounts[entry.checkInSource ?? 'coach'] += 1
+
+    if (hasPostSessionData(entry)) {
       const resetEntry: PlayerSessionEntry = {
-        ...resetCoachFields(entry),
+        ...resetCheckInFields(entry),
         updatedAt: timestamp,
         clientUpdatedAt: timestamp,
         syncStatus: 'pending',
@@ -844,11 +887,7 @@ export async function resetCoachCheckInsForSession(userId: string, sessionLogId:
       await localDb.playerSessionEntries.put(resetEntry)
       await queueWrite('player_session_entries', resetEntry.id, userId)
       resetEntries.push(resetEntry)
-      continue
-    }
-
-    if (deriveAttendanceStatus(entry) === 'absent') {
-      resetEntries.push(entry)
+      retainedPostSessionCount += 1
       continue
     }
 
@@ -863,9 +902,16 @@ export async function resetCoachCheckInsForSession(userId: string, sessionLogId:
     await localDb.playerSessionEntries.put(deletedEntry)
     await queueWrite('player_session_entries', deletedEntry.id, userId)
     resetEntries.push(deletedEntry)
+    deletedCount += 1
   }
 
-  return resetEntries
+  return {
+    entries: resetEntries,
+    resetCount: resetEntries.length,
+    deletedCount,
+    retainedPostSessionCount,
+    sourceCounts,
+  }
 }
 
 export async function getCheckInSyncOverview(userId: string): Promise<PlayerSyncOverview> {

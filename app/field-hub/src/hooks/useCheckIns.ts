@@ -23,7 +23,7 @@ import {
   saveKioskCheckInEntry,
   saveSessionLogPatch,
   resetCheckInEntry,
-  resetCoachCheckInsForSession,
+  resetAllCheckInsForSession,
   syncCheckIns,
   type SessionLogPatch,
 } from '../lib/checkInRepository'
@@ -35,8 +35,10 @@ import {
   listLocalPublicCheckInLinks,
   listLocalPublicCheckInSubmissions,
   refreshRemotePublicCheckIns,
+  resetPublicCheckInSubmissionsForSession,
   type CreatedPublicCheckInLink,
 } from '../lib/publicCheckInRepository'
+import { supabase } from '../lib/supabaseClient'
 
 const REMOTE_PULL_THROTTLE_MS = 30_000
 
@@ -48,7 +50,6 @@ export function useCheckIns(
   userId: string | null,
   sessionDefinition: SessionDefinition,
   players: Player[],
-  enablePublicCheckInPolling = false,
 ) {
   const [entries, setEntries] = useState<PlayerSessionEntry[]>([])
   const [warnings, setWarnings] = useState<PlayerWarning[]>([])
@@ -271,15 +272,16 @@ export function useCheckIns(
     const handleVisibilityChange = () => {
       if (document.visibilityState === 'visible') {
         void refreshRemoteCheckInData()
+        void refreshPublicCheckIns().catch(() => undefined)
       }
     }
 
     document.addEventListener('visibilitychange', handleVisibilityChange)
     return () => document.removeEventListener('visibilitychange', handleVisibilityChange)
-  }, [refreshRemoteCheckInData, userId])
+  }, [refreshPublicCheckIns, refreshRemoteCheckInData, userId])
 
   useEffect(() => {
-    if (!userId || !enablePublicCheckInPolling) {
+    if (!userId) {
       return undefined
     }
 
@@ -293,7 +295,38 @@ export function useCheckIns(
     const intervalId = window.setInterval(pollPublicCheckIns, 30_000)
 
     return () => window.clearInterval(intervalId)
-  }, [enablePublicCheckInPolling, refreshPublicCheckIns, userId])
+  }, [refreshPublicCheckIns, userId])
+
+  useEffect(() => {
+    if (!userId || !supabase) {
+      return undefined
+    }
+
+    const realtimeClient = supabase
+    const channel = realtimeClient
+      .channel(`public-checkins:${userId}`)
+      .on(
+        'postgres_changes',
+        {
+          event: 'INSERT',
+          schema: 'public',
+          table: 'public_checkin_submissions',
+          filter: `user_id=eq.${userId}`,
+        },
+        () => {
+          if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
+            return
+          }
+
+          void refreshPublicCheckIns().catch(() => undefined)
+        },
+      )
+      .subscribe()
+
+    return () => {
+      void realtimeClient.removeChannel(channel)
+    }
+  }, [refreshPublicCheckIns, userId])
 
   useEffect(() => {
     if (!userId) {
@@ -397,14 +430,35 @@ export function useCheckIns(
     }
   }
 
-  async function resetSessionCoachEntries() {
-    if (!userId || !sessionLogId) {
-      return { ok: true as const, resetCount: 0 }
+  async function resetSessionCheckIns() {
+    if (!userId) {
+      return {
+        ok: true as const,
+        resetCount: 0,
+        publicSubmissionResetCount: 0,
+        retainedPostSessionCount: 0,
+        sourceCounts: { coach: 0, player_link: 0, player_kiosk: 0, mixed: 0 },
+      }
     }
 
     try {
       setErrorMessage(null)
-      const resetEntries = await resetCoachCheckInsForSession(userId, sessionLogId)
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        await refreshRemotePublicCheckIns(userId, { sessionDefinitionId: sessionDefinition.id }).catch(() => undefined)
+      }
+      const [checkInResetResult, publicSubmissionResetCount] = await Promise.all([
+        sessionLogId
+          ? resetAllCheckInsForSession(userId, sessionLogId)
+          : Promise.resolve({
+              entries: [],
+              resetCount: 0,
+              deletedCount: 0,
+              retainedPostSessionCount: 0,
+              sourceCounts: { coach: 0, player_link: 0, player_kiosk: 0, mixed: 0 },
+            }),
+        resetPublicCheckInSubmissionsForSession(userId, sessionDefinition.id),
+      ])
+      const resetEntries = checkInResetResult.entries
       setEntries((currentEntries) => {
         const deletedEntryIds = new Set(resetEntries.filter((entry) => entry.deletedAt).map((entry) => entry.id))
         const nextEntries = currentEntries.filter((entry) => !deletedEntryIds.has(entry.id))
@@ -425,7 +479,13 @@ export function useCheckIns(
         scheduleBackgroundSync(userId, 'check-ins', runBackgroundSync)
       }
 
-      return { ok: true as const, resetCount: resetEntries.filter((entry) => entry.syncStatus === 'pending').length }
+      return {
+        ok: true as const,
+        resetCount: checkInResetResult.resetCount,
+        publicSubmissionResetCount,
+        retainedPostSessionCount: checkInResetResult.retainedPostSessionCount,
+        sourceCounts: checkInResetResult.sourceCounts,
+      }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Check-ins konnten nicht zurückgesetzt werden.'
       setErrorMessage(message)
@@ -509,6 +569,7 @@ export function useCheckIns(
 
   return {
     activePlayers,
+    sessionEntries: entries,
     entries: activeEntries,
     errorMessage,
     expectedPlayerIds,
@@ -525,7 +586,7 @@ export function useCheckIns(
     saveEntry,
     saveKioskEntry,
     resetEntry,
-    resetSessionCoachEntries,
+    resetSessionCheckIns,
     saveSessionPatch,
     createPublicLink,
     closePublicLink,

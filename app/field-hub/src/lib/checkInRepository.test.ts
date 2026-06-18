@@ -12,6 +12,7 @@ import {
   listLatestWarnings,
   rowFromEntry,
   resetCheckInEntry,
+  resetAllCheckInsForSession,
   resetCoachFields,
   saveCheckInEntry,
   saveKioskCheckInEntry,
@@ -637,6 +638,138 @@ describe('checkInRepository session logs', () => {
     expect(reset.deletedAt).toBeTruthy()
     expect(reset.syncStatus).toBe('pending')
     await expect(localDb.pendingWrites.count()).resolves.toBe(1)
+  })
+
+  it('soft deletes player-submitted check-ins during reset when no post-session data exists', async () => {
+    const saved = await saveKioskCheckInEntry(userId, 'session-reset-kiosk', player, {
+      readiness: 3,
+      painScore: 1,
+      sessionReaction: 'none',
+    })
+
+    const reset = await resetCheckInEntry(userId, saved.id)
+
+    expect(reset.deletedAt).toBeTruthy()
+    expect(reset.syncStatus).toBe('pending')
+    await expect(localDb.pendingWrites.count()).resolves.toBe(1)
+  })
+
+  it('retains post-session rows but clears all check-in source fields during reset', async () => {
+    const sessionLog = await ensureSessionLog(userId, sessionDefinition)
+    const checkedIn = await saveKioskCheckInEntry(userId, sessionLog.id, player, {
+      readiness: 2,
+      lifeFlag: 'Stress',
+      painScore: 3,
+      painLocation: 'Knie',
+      sessionReaction: 'new_or_worse',
+      playerNote: 'komme spaeter',
+    })
+    await savePostSessionEntry(userId, sessionLog.id, player, {
+      sessionRpe: 7,
+      durationMinutes: 60,
+      postPainScore: 2,
+      postPainLocation: 'Wade',
+      e2Decision: 'normal',
+      nextStep: 'halten',
+    })
+
+    const reset = await resetCheckInEntry(userId, checkedIn.id)
+
+    expect(reset.deletedAt).toBeNull()
+    expect(reset).toMatchObject({
+      present: false,
+      readiness: null,
+      lifeFlag: '',
+      painScore: null,
+      painLocation: '',
+      returnerFlag: 'offen',
+      sessionReaction: 'none',
+      trafficLight: null,
+      trafficLightSuggestion: null,
+      checkInSource: undefined,
+      playerSubmittedAt: null,
+      coachEditedAt: null,
+      playerNote: '',
+      sessionRpe: 7,
+      durationMinutes: 60,
+      postPainScore: 2,
+      postPainLocation: 'Wade',
+      e2Decision: 'normal',
+      nextStep: 'halten',
+    })
+  })
+
+  it('resets coach, kiosk and link entries for a whole session with source counts', async () => {
+    const sessionLog = await ensureSessionLog(userId, sessionDefinition)
+    const coachOnly = await saveCheckInEntry(userId, sessionLog.id, player, { readiness: 5 })
+    const kioskPlayer = { ...player, id: 'player-kiosk', name: 'Kiosk Spieler' }
+    const linkPlayer = { ...player, id: 'player-link', name: 'Link Spieler' }
+    await localDb.players.bulkPut([kioskPlayer, linkPlayer])
+    const kioskEntry = await saveKioskCheckInEntry(userId, sessionLog.id, kioskPlayer, {
+      readiness: 3,
+      sessionReaction: 'none',
+    })
+    const linkEntry = await saveKioskCheckInEntry(userId, sessionLog.id, linkPlayer, {
+      readiness: 2,
+      sessionReaction: 'none',
+    })
+    await localDb.playerSessionEntries.put({ ...linkEntry, checkInSource: 'player_link' })
+    await savePostSessionEntry(userId, sessionLog.id, linkPlayer, { sessionRpe: 6, durationMinutes: 50 })
+
+    const result = await resetAllCheckInsForSession(userId, sessionLog.id)
+    const resetCoachOnly = await localDb.playerSessionEntries.get(coachOnly.id)
+    const resetKiosk = await localDb.playerSessionEntries.get(kioskEntry.id)
+    const resetLink = await localDb.playerSessionEntries.get(linkEntry.id)
+
+    expect(result.resetCount).toBe(3)
+    expect(result.deletedCount).toBe(2)
+    expect(result.retainedPostSessionCount).toBe(1)
+    expect(result.sourceCounts).toEqual({ coach: 1, player_link: 1, player_kiosk: 1, mixed: 0 })
+    expect(resetCoachOnly?.deletedAt).toBeTruthy()
+    expect(resetKiosk?.deletedAt).toBeTruthy()
+    expect(resetLink).toMatchObject({
+      deletedAt: null,
+      readiness: null,
+      playerSubmittedAt: null,
+      checkInSource: undefined,
+      sessionRpe: 6,
+      durationMinutes: 50,
+    })
+  })
+
+  it('resets mixed entries for a whole session with source counts', async () => {
+    const sessionLog = await ensureSessionLog(userId, sessionDefinition)
+    const coachEntry = await saveCheckInEntry(userId, sessionLog.id, player, { readiness: 5 })
+    await saveKioskCheckInEntry(userId, sessionLog.id, player, {
+      readiness: 3,
+      painScore: 1,
+      sessionReaction: 'none',
+    })
+
+    const result = await resetAllCheckInsForSession(userId, sessionLog.id)
+    const resetMixed = await localDb.playerSessionEntries.get(coachEntry.id)
+
+    expect(result.resetCount).toBe(1)
+    expect(result.deletedCount).toBe(1)
+    expect(result.retainedPostSessionCount).toBe(0)
+    expect(result.sourceCounts).toEqual({ coach: 0, player_link: 0, player_kiosk: 0, mixed: 1 })
+    expect(resetMixed?.deletedAt).toBeTruthy()
+    expect(resetMixed?.syncStatus).toBe('pending')
+  })
+
+  it('resets explicit absent entries for a whole session', async () => {
+    const sessionLog = await ensureSessionLog(userId, sessionDefinition)
+    const absent = await saveCheckInEntry(userId, sessionLog.id, player, { present: false })
+
+    const result = await resetAllCheckInsForSession(userId, sessionLog.id)
+    const resetAbsent = await localDb.playerSessionEntries.get(absent.id)
+
+    expect(result.resetCount).toBe(1)
+    expect(result.deletedCount).toBe(1)
+    expect(result.retainedPostSessionCount).toBe(0)
+    expect(result.sourceCounts).toEqual({ coach: 1, player_link: 0, player_kiosk: 0, mixed: 0 })
+    expect(resetAbsent?.deletedAt).toBeTruthy()
+    expect(resetAbsent?.syncStatus).toBe('pending')
   })
 
   it('creates a pending session log only when saving training session notes', async () => {

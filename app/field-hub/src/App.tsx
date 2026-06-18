@@ -125,7 +125,6 @@ function CoachApp() {
     authState.status === 'signed-in' ? authState.user.id : null,
     selectedSession,
     playerActions.players,
-    activeTab === 'check-in',
   )
   const postSessionActions = usePostSession(
     authState.status === 'signed-in' ? authState.user.id : null,
@@ -268,7 +267,7 @@ function CoachApp() {
     setManualSyncFeedback(null)
     setIsManualSyncing(true)
     try {
-      const overview = await syncAllUserData(userId)
+      const overview = await syncAllUserData(userId, { publicSessionDefinition: selectedSession })
       await refreshAllLocalData()
       setManualSyncFeedback(buildManualSyncFeedback(overview))
     } catch (caughtError) {
@@ -279,7 +278,7 @@ function CoachApp() {
     } finally {
       setIsManualSyncing(false)
     }
-  }, [refreshAllLocalData, userId])
+  }, [refreshAllLocalData, selectedSession, userId])
 
   useEffect(() => {
     window.localStorage.setItem(selectedSessionStorageKey, selectedSession.id)

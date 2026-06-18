@@ -14,6 +14,7 @@ import {
   deriveAttendanceStatus,
   deriveRedFlagFromPainLocation,
   getTrafficLightSignals,
+  hasPostSessionData,
   joinCheckInTextList,
   mergeRedFlags,
   splitCheckInTextList,
@@ -80,8 +81,6 @@ const sessionReactionOptions: Array<{ value: PlayerSessionEntry['sessionReaction
 
 const lifeFlagOptions = ['Unauffällig', 'Schlecht geschlafen', 'Stress', 'Muskelkater', 'Müde']
 const singleResetUndoMs = 5000
-const bulkResetConfirmMessage =
-  'Coach-Eingaben dieser Einheit zurücksetzen? Self-Check-ins und explizite Nicht-da-Einträge bleiben geschützt.'
 
 const painLocationOptions = [
   'Kopf/Nacken',
@@ -849,7 +848,7 @@ export function CheckInView({
     runSync,
     saveEntry,
     resetEntry,
-    resetSessionCoachEntries,
+    resetSessionCheckIns,
     getEntryForPlayer,
     clearError,
   } = checkInActions
@@ -864,7 +863,10 @@ export function CheckInView({
   const [activeFilter, setActiveFilter] = useState<'all' | 'open' | 'present' | 'issues' | 'returner' | 'clarify' | 'warning'>('all')
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
   const [resetFeedback, setResetFeedback] = useState<string | null>(null)
+  const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false)
   const selectedSheetRef = useRef<HTMLDivElement | null>(null)
+  const resetConfirmDialogRef = useRef<HTMLDivElement | null>(null)
+  const resetButtonRef = useRef<HTMLButtonElement | null>(null)
   const returnerCapByPlayerId = new Map(returnerCaps.filter(hasPlayerId).map((cap) => [cap.playerId, cap]))
   const expectedPlayerSet = new Set(expectedPlayerIds)
   const activePlayerIdSet = new Set(activePlayers.map((player) => player.id))
@@ -948,8 +950,27 @@ export function CheckInView({
       counts[submission.status] += 1
       return counts
     },
-    { pending: 0, imported: 0, conflict: 0, superseded: 0 },
+    { pending: 0, imported: 0, conflict: 0, superseded: 0, reset: 0 },
   )
+  const resetPreviewEntries = checkInActions.sessionEntries.filter((entry) => hasPlayerId(entry) && !entry.deletedAt)
+  const resetPreview = resetPreviewEntries.reduce(
+    (preview, entry) => {
+      preview.sourceCounts[entry.checkInSource ?? 'coach'] += 1
+      if (hasPostSessionData(entry)) {
+        preview.retainedPostSessionCount += 1
+      }
+      return preview
+    },
+    {
+      sourceCounts: { coach: 0, player_link: 0, player_kiosk: 0, mixed: 0 },
+      retainedPostSessionCount: 0,
+    },
+  )
+  const resetPreviewEntryCount = Object.values(resetPreview.sourceCounts).reduce((total, count) => total + count, 0)
+  const resetPreviewPublicSubmissionCount = checkInActions.publicCheckInSubmissions.filter(
+    (submission) => !submission.deletedAt && submission.status !== 'reset',
+  ).length
+  const canResetSessionCheckIns = Boolean(checkInActions.sessionLogId) || resetPreviewPublicSubmissionCount > 0
   const canNativeShare =
     typeof navigator !== 'undefined' &&
     typeof navigator.share === 'function' &&
@@ -977,6 +998,29 @@ export function CheckInView({
       previousActiveElement?.focus()
     }
   }, [selectedPlayerId])
+
+  useEffect(() => {
+    if (!isResetConfirmOpen) {
+      return undefined
+    }
+
+    const previousActiveElement = document.activeElement instanceof HTMLElement ? document.activeElement : null
+    const fallbackFocusElement = resetButtonRef.current
+    resetConfirmDialogRef.current?.focus()
+
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        setIsResetConfirmOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      const focusTarget = previousActiveElement ?? fallbackFocusElement
+      focusTarget?.focus()
+    }
+  }, [isResetConfirmOpen])
 
   function clearTransientShareState() {
     setCreatedSharePayload(null)
@@ -1064,17 +1108,15 @@ export function CheckInView({
     await checkInActions.closePublicLink(activePublicLink.id)
   }
 
-  async function handleResetCoachEntries() {
-    if (!window.confirm(bulkResetConfirmMessage)) {
-      return
-    }
-
-    const result = await resetSessionCoachEntries()
+  async function handleConfirmResetAllCheckIns() {
+    const result = await resetSessionCheckIns()
+    setIsResetConfirmOpen(false)
 
     if (result.ok) {
+      const totalResetCount = result.resetCount + result.publicSubmissionResetCount
       setResetFeedback(
-        result.resetCount > 0
-          ? `${result.resetCount} Check-in-Einträge zurückgesetzt.`
+        totalResetCount > 0
+          ? `${result.resetCount} Check-in-Einträge und ${result.publicSubmissionResetCount} Link-Eingänge zurückgesetzt.`
           : 'Keine zurücksetzbaren Check-ins für diese Einheit.',
       )
     } else {
@@ -1170,17 +1212,18 @@ export function CheckInView({
         <div>
           <h3>Reset</h3>
           <p className="sync-help">
-            Setzt Coach-Eingaben dieser Einheit zurück. Spieler-Self-Check-ins bleiben erhalten; bewusst gesetzte
-            Nicht-da-Einträge bleiben im Massen-Reset bestehen.
+            Setzt alle Check-ins dieser Einheit zurück, inklusive Coach, WhatsApp/QR und Kiosk. Nachbereitungsdaten
+            bleiben erhalten.
           </p>
         </div>
         <button
+          ref={resetButtonRef}
           className="secondary-action"
           type="button"
-          onClick={() => void handleResetCoachEntries()}
-          disabled={!checkInActions.sessionLogId}
+          onClick={() => setIsResetConfirmOpen(true)}
+          disabled={!canResetSessionCheckIns}
         >
-          Coach-Check-ins zurücksetzen
+          Alle Check-ins zurücksetzen
         </button>
         {resetFeedback ? <p className="action-feedback visible">{resetFeedback}</p> : null}
       </section>
@@ -1236,7 +1279,7 @@ export function CheckInView({
             ? `Link aktiv bis ${new Date(activePublicLink.expiresAt).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })}. Aus Sicherheitsgründen kann ein bestehender Link nachträglich nicht erneut angezeigt werden.`
             : 'Noch kein aktiver Link fuer diese Einheit lokal sichtbar.'}
           {checkInActions.publicCheckInSubmissions.length > 0
-            ? ` Eingaenge: ${publicSubmissionCounts.pending} offen, ${publicSubmissionCounts.imported} uebernommen, ${publicSubmissionCounts.conflict} Konflikte.`
+            ? ` Eingaenge: ${publicSubmissionCounts.pending} offen, ${publicSubmissionCounts.imported} uebernommen, ${publicSubmissionCounts.conflict} Konflikte, ${publicSubmissionCounts.reset} zurueckgesetzt.`
             : ''}
           {checkInActions.publicCheckInNotice ? ` ${checkInActions.publicCheckInNotice}` : ''}
           {selectedSessionSharePayload ? ' Link erstellt. Teile ihn oben oder lasse den QR-Code scannen.' : ''}
@@ -1379,6 +1422,72 @@ export function CheckInView({
               returnerCap={returnerCapByPlayerId.get(selectedPlayer.id)}
               warning={warningByPlayerId.get(selectedPlayer.id)}
             />
+          </div>
+        </section>
+      ) : null}
+
+      {isResetConfirmOpen ? (
+        <section className="checkin-sheet-backdrop" aria-label="Reset bestätigen">
+          <div
+            className="checkin-sheet reset-confirm-dialog"
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby="reset-confirm-heading"
+            ref={resetConfirmDialogRef}
+            tabIndex={-1}
+          >
+            <div className="sheet-heading">
+              <div>
+                <p className="eyebrow">Zweite Absicherung</p>
+                <h3 id="reset-confirm-heading">Alle Check-ins zurücksetzen?</h3>
+              </div>
+              <button className="secondary-action compact-action" type="button" onClick={() => setIsResetConfirmOpen(false)}>
+                Schliessen
+              </button>
+            </div>
+            <p className="sync-help">
+              Diese Aktion leert Coach-, WhatsApp/QR- und Kiosk-Check-ins für diese Einheit. Nachbereitungsdaten bleiben
+              bestehen; die betroffenen Zeilen werden nur auf offene Check-ins zurückgesetzt.
+            </p>
+            <div className="reset-confirm-grid" aria-label="Reset-Vorschau">
+              <div className="metric">
+                <span>Coach</span>
+                <strong>{resetPreview.sourceCounts.coach}</strong>
+              </div>
+              <div className="metric">
+                <span>WhatsApp/QR</span>
+                <strong>{resetPreview.sourceCounts.player_link}</strong>
+              </div>
+              <div className="metric">
+                <span>Kiosk</span>
+                <strong>{resetPreview.sourceCounts.player_kiosk}</strong>
+              </div>
+              <div className="metric">
+                <span>Mixed</span>
+                <strong>{resetPreview.sourceCounts.mixed}</strong>
+              </div>
+              <div className="metric">
+                <span>Post-Session bleibt</span>
+                <strong>{resetPreview.retainedPostSessionCount}</strong>
+              </div>
+              <div className="metric">
+                <span>Link-Eingänge</span>
+                <strong>{resetPreviewPublicSubmissionCount}</strong>
+              </div>
+            </div>
+            <div className="button-row">
+              <button className="secondary-action" type="button" onClick={() => setIsResetConfirmOpen(false)}>
+                Abbrechen
+              </button>
+              <button
+                className="secondary-action danger"
+                type="button"
+                onClick={() => void handleConfirmResetAllCheckIns()}
+                disabled={resetPreviewEntryCount + resetPreviewPublicSubmissionCount === 0}
+              >
+                Alle Check-ins zurücksetzen
+              </button>
+            </div>
           </div>
         </section>
       ) : null}

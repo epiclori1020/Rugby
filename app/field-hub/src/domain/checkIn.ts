@@ -145,6 +145,18 @@ export const emptyCheckInDraft: CheckInDraft = {
   playerNote: '',
 }
 
+export function hasPostSessionData(entry: PlayerSessionEntry) {
+  return (
+    entry.sessionRpe !== null ||
+    entry.durationMinutes !== null ||
+    entry.sessionLoad !== null ||
+    entry.postPainScore !== null ||
+    (entry.postPainLocation ?? '').trim().length > 0 ||
+    entry.e2Decision !== null ||
+    entry.nextStep !== null
+  )
+}
+
 const harmlessLifeFlagValues = new Set([
   '-',
   'kein',

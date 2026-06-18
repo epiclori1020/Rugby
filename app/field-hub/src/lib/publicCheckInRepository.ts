@@ -1,5 +1,6 @@
 import type { SessionDefinition } from '../content/types'
 import type { Player } from '../domain/players'
+import type { PlayerSyncOverview } from '../domain/sync'
 import {
   createPublicCheckInToken,
   getLatestImportableSubmission,
@@ -10,6 +11,7 @@ import {
   type PublicCheckInLinkPlayer,
   type PublicCheckInSubmission,
 } from '../domain/publicCheckIn'
+import { defaultPlayerSyncOverview } from '../domain/sync'
 import { ensureSessionLog, savePublicCheckInEntry } from './checkInRepository'
 import { localDb } from './localDb'
 import { createPublicCheckInClient, supabase } from './supabaseClient'
@@ -241,10 +243,27 @@ export async function importPublicCheckInSubmissions(
   userId: string,
   sessionDefinition: SessionDefinition,
 ): Promise<PublicCheckInImportResult> {
+  const sessionLinks = await localDb.publicCheckInLinks
+    .where('[userId+sessionDefinitionId]')
+    .equals([userId, sessionDefinition.id])
+    .and((link) => !link.deletedAt)
+    .toArray()
+  const sessionLinkIds = new Set(sessionLinks.map((link) => link.id))
+
+  if (sessionLinkIds.size === 0) {
+    return { imported: 0, conflicts: 0, superseded: 0 }
+  }
+
   const pendingSubmissions = await localDb.publicCheckInSubmissions
     .where('[userId+status]')
     .equals([userId, 'pending'])
+    .and((submission) => sessionLinkIds.has(submission.linkId))
     .toArray()
+
+  if (pendingSubmissions.length === 0) {
+    return { imported: 0, conflicts: 0, superseded: 0 }
+  }
+
   const groupedSubmissions = groupSubmissionsByPlayer(pendingSubmissions)
   const sessionLog = await ensureSessionLog(userId, sessionDefinition)
   let imported = 0
@@ -320,6 +339,54 @@ export async function listLocalPublicCheckInSubmissions(userId: string, linkId: 
     .equals([userId, linkId])
     .and((submission) => !submission.deletedAt)
     .toArray()
+}
+
+export async function getPublicCheckInSyncOverview(userId: string): Promise<PlayerSyncOverview> {
+  const [links, linkPlayers, submissions] = await Promise.all([
+    localDb.publicCheckInLinks.where('userId').equals(userId).toArray(),
+    localDb.publicCheckInLinkPlayers.where('userId').equals(userId).toArray(),
+    localDb.publicCheckInSubmissions.where('userId').equals(userId).toArray(),
+  ])
+  const publicRecords = [...links, ...linkPlayers, ...submissions]
+  const pendingCount = publicRecords.filter((record) => record.syncStatus === 'pending').length
+  const erroredRecords = publicRecords.filter((record) => record.syncStatus === 'error')
+  const errorMessage =
+    erroredRecords.find((record) => record.syncError)?.syncError ??
+    (erroredRecords.length > 0 ? 'Mindestens ein Link-Check-in konnte nicht synchronisiert werden.' : null)
+
+  return {
+    ...defaultPlayerSyncOverview,
+    isOnline: typeof navigator === 'undefined' ? true : navigator.onLine,
+    status: erroredRecords.length > 0 ? 'error' : pendingCount > 0 ? 'pending' : 'synced',
+    pendingCount,
+    lastSuccessfulSyncAt: null,
+    errorMessage,
+  }
+}
+
+export async function resetPublicCheckInSubmissionsForSession(userId: string, sessionDefinitionId: string) {
+  const links = await localDb.publicCheckInLinks
+    .where('[userId+sessionDefinitionId]')
+    .equals([userId, sessionDefinitionId])
+    .and((link) => !link.deletedAt)
+    .toArray()
+  const linkIds = new Set(links.map((link) => link.id))
+
+  if (linkIds.size === 0) {
+    return 0
+  }
+
+  const submissions = await localDb.publicCheckInSubmissions
+    .where('userId')
+    .equals(userId)
+    .and((submission) => linkIds.has(submission.linkId) && !submission.deletedAt && submission.status !== 'reset')
+    .toArray()
+
+  for (const submission of submissions) {
+    await markSubmission(submission, 'reset', { importedAt: null, conflictReason: null })
+  }
+
+  return submissions.length
 }
 
 export type PublicCheckInLinkBundle = {

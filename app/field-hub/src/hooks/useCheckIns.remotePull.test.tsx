@@ -4,6 +4,8 @@ import { act } from 'react'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SessionDefinition } from '../content/types'
+import type { PlayerSessionEntry } from '../domain/checkIn'
+import type { Player } from '../domain/players'
 import type { useCheckIns } from './useCheckIns'
 
 const defaultOverview = {
@@ -27,7 +29,7 @@ const checkInRepositoryMocks = vi.hoisted(() => ({
   pullRemoteCheckIns: vi.fn(),
   pushPendingCheckIns: vi.fn(),
   resetCheckInEntry: vi.fn(),
-  resetCoachCheckInsForSession: vi.fn(),
+  resetAllCheckInsForSession: vi.fn(),
   saveCheckInEntry: vi.fn(),
   saveKioskCheckInEntry: vi.fn(),
   saveSessionLogPatch: vi.fn(),
@@ -41,10 +43,26 @@ const publicCheckInRepositoryMocks = vi.hoisted(() => ({
   listLocalPublicCheckInLinks: vi.fn(),
   listLocalPublicCheckInSubmissions: vi.fn(),
   refreshRemotePublicCheckIns: vi.fn(),
+  resetPublicCheckInSubmissionsForSession: vi.fn(),
 }))
 
 const backgroundSyncMocks = vi.hoisted(() => ({
   scheduleBackgroundSync: vi.fn(),
+}))
+
+const supabaseClientMocks = vi.hoisted(() => ({
+  postgresChangesHandler: null as null | (() => void),
+  channel: {
+    on: vi.fn((_type: string, _filter: unknown, callback: () => void) => {
+      supabaseClientMocks.postgresChangesHandler = callback
+      return supabaseClientMocks.channel
+    }),
+    subscribe: vi.fn(() => supabaseClientMocks.channel),
+  },
+  supabase: {
+    channel: vi.fn(() => supabaseClientMocks.channel),
+    removeChannel: vi.fn(async () => undefined),
+  },
 }))
 
 vi.mock('../lib/checkInRepository', () => checkInRepositoryMocks)
@@ -52,6 +70,10 @@ vi.mock('../lib/checkInRepository', () => checkInRepositoryMocks)
 vi.mock('../lib/publicCheckInRepository', () => publicCheckInRepositoryMocks)
 
 vi.mock('../lib/backgroundSync', () => backgroundSyncMocks)
+
+vi.mock('../lib/supabaseClient', () => ({
+  supabase: supabaseClientMocks.supabase,
+}))
 
 const sessionDefinition: SessionDefinition = {
   id: 'session-def-1',
@@ -82,11 +104,11 @@ async function flushAsyncWork() {
   })
 }
 
-async function renderUseCheckIns(userId = 'user-1') {
+async function renderUseCheckIns(userId = 'user-1', players: Player[] = []) {
   const { useCheckIns: useCheckInsHook } = await import('./useCheckIns')
 
   function Harness() {
-    latestResult = useCheckInsHook(userId, sessionDefinition, [], false)
+    latestResult = useCheckInsHook(userId, sessionDefinition, players)
     return null
   }
 
@@ -98,6 +120,73 @@ async function renderUseCheckIns(userId = 'user-1') {
     root?.render(<Harness />)
   })
   await flushAsyncWork()
+}
+
+function player(overrides: Partial<Player> = {}): Player {
+  return {
+    id: 'player-1',
+    userId: 'user-1',
+    name: 'Test Spieler',
+    position: 'Back Row',
+    cluster: 'back_row',
+    active: true,
+    consentStatus: 'unklar',
+    photoConsentStatus: 'not_asked',
+    photoPath: null,
+    photoUpdatedAt: null,
+    returnerStatus: 'nein',
+    notes: '',
+    createdAt: '2026-06-16T18:00:00.000Z',
+    updatedAt: '2026-06-16T18:00:00.000Z',
+    deletedAt: null,
+    clientUpdatedAt: '2026-06-16T18:00:00.000Z',
+    syncStatus: 'synced',
+    syncError: null,
+    ...overrides,
+  }
+}
+
+function entry(overrides: Partial<PlayerSessionEntry> = {}): PlayerSessionEntry {
+  return {
+    id: 'entry-1',
+    userId: 'user-1',
+    sessionLogId: 'session-log-1',
+    playerId: 'player-1',
+    present: true,
+    readiness: 4,
+    lifeFlag: '',
+    painScore: 0,
+    painLocation: '',
+    returnerFlag: 'nein',
+    sessionReaction: 'none',
+    redFlag: 'none',
+    movementConcern: false,
+    previousWarning: false,
+    trafficLight: 'green',
+    trafficLightSuggestion: 'green',
+    trafficLightWasManual: false,
+    trainingVariant: null,
+    limits: [],
+    observation: '',
+    playerNote: '',
+    sessionRpe: null,
+    durationMinutes: null,
+    sessionLoad: null,
+    postPainScore: null,
+    postPainLocation: '',
+    e2Decision: null,
+    nextStep: null,
+    checkInSource: 'coach',
+    playerSubmittedAt: null,
+    coachEditedAt: null,
+    createdAt: '2026-06-16T18:00:00.000Z',
+    updatedAt: '2026-06-16T18:00:00.000Z',
+    deletedAt: null,
+    clientUpdatedAt: '2026-06-16T18:00:00.000Z',
+    syncStatus: 'synced',
+    syncError: null,
+    ...overrides,
+  }
 }
 
 function setOnlineState(isOnline: boolean) {
@@ -139,7 +228,13 @@ describe('useCheckIns remote freshness pull', () => {
     checkInRepositoryMocks.pullRemoteCheckIns.mockResolvedValue(undefined)
     checkInRepositoryMocks.pushPendingCheckIns.mockResolvedValue(defaultOverview)
     checkInRepositoryMocks.resetCheckInEntry.mockResolvedValue(null)
-    checkInRepositoryMocks.resetCoachCheckInsForSession.mockResolvedValue([])
+    checkInRepositoryMocks.resetAllCheckInsForSession.mockResolvedValue({
+      entries: [],
+      resetCount: 0,
+      deletedCount: 0,
+      retainedPostSessionCount: 0,
+      sourceCounts: { coach: 0, player_link: 0, player_kiosk: 0, mixed: 0 },
+    })
     checkInRepositoryMocks.saveCheckInEntry.mockResolvedValue(null)
     checkInRepositoryMocks.saveKioskCheckInEntry.mockResolvedValue(null)
     checkInRepositoryMocks.saveSessionLogPatch.mockResolvedValue({ id: 'session-log-1' })
@@ -155,6 +250,12 @@ describe('useCheckIns remote freshness pull', () => {
     publicCheckInRepositoryMocks.listLocalPublicCheckInLinks.mockResolvedValue([])
     publicCheckInRepositoryMocks.listLocalPublicCheckInSubmissions.mockResolvedValue([])
     publicCheckInRepositoryMocks.refreshRemotePublicCheckIns.mockResolvedValue(undefined)
+    publicCheckInRepositoryMocks.resetPublicCheckInSubmissionsForSession.mockResolvedValue(0)
+    supabaseClientMocks.postgresChangesHandler = null
+    supabaseClientMocks.channel.on.mockClear()
+    supabaseClientMocks.channel.subscribe.mockClear()
+    supabaseClientMocks.supabase.channel.mockClear()
+    supabaseClientMocks.supabase.removeChannel.mockClear()
   })
 
   afterEach(async () => {
@@ -178,6 +279,21 @@ describe('useCheckIns remote freshness pull', () => {
     expect(checkInRepositoryMocks.pullRemoteCheckIns).toHaveBeenCalledWith('user-1', {
       sessionDefinitionId: 'session-def-1',
     })
+  })
+
+  it('keeps active entries filtered while exposing all loaded session entries', async () => {
+    const activePlayer = player({ id: 'player-active', active: true })
+    const inactivePlayer = player({ id: 'player-inactive', active: false })
+    checkInRepositoryMocks.findSessionLog.mockResolvedValue({ id: 'session-log-1' })
+    checkInRepositoryMocks.listCheckInEntries.mockResolvedValue([
+      entry({ id: 'entry-active', playerId: activePlayer.id }),
+      entry({ id: 'entry-inactive', playerId: inactivePlayer.id, checkInSource: 'player_kiosk' }),
+    ])
+
+    await renderUseCheckIns('user-1', [activePlayer, inactivePlayer])
+
+    expect(latestResult?.entries.map((item) => item.id)).toEqual(['entry-active'])
+    expect(latestResult?.sessionEntries.map((item) => item.id)).toEqual(['entry-active', 'entry-inactive'])
   })
 
   it('hydrates all remote check-in data on mount when local cache is empty', async () => {
@@ -242,6 +358,73 @@ describe('useCheckIns remote freshness pull', () => {
     expect(checkInRepositoryMocks.syncCheckIns).not.toHaveBeenCalled()
     expect(checkInRepositoryMocks.pushPendingCheckIns).not.toHaveBeenCalled()
     expect(publicCheckInRepositoryMocks.refreshRemotePublicCheckIns).not.toHaveBeenCalled()
+  })
+
+  it('subscribes only to public submission inserts and refreshes public check-ins on insert', async () => {
+    await renderUseCheckIns()
+
+    expect(supabaseClientMocks.supabase.channel).toHaveBeenCalledWith('public-checkins:user-1')
+    expect(supabaseClientMocks.channel.on).toHaveBeenCalledWith(
+      'postgres_changes',
+      {
+        event: 'INSERT',
+        schema: 'public',
+        table: 'public_checkin_submissions',
+        filter: 'user_id=eq.user-1',
+      },
+      expect.any(Function),
+    )
+
+    await act(async () => {
+      supabaseClientMocks.postgresChangesHandler?.()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(publicCheckInRepositoryMocks.refreshRemotePublicCheckIns).toHaveBeenCalledWith('user-1', {
+      sessionDefinitionId: 'session-def-1',
+    })
+    expect(publicCheckInRepositoryMocks.importPublicCheckInSubmissions).toHaveBeenCalledWith('user-1', sessionDefinition)
+  })
+
+  it('does not refresh public check-ins from realtime inserts while the app is hidden', async () => {
+    await renderUseCheckIns()
+    publicCheckInRepositoryMocks.refreshRemotePublicCheckIns.mockClear()
+    publicCheckInRepositoryMocks.importPublicCheckInSubmissions.mockClear()
+    setVisibilityState('hidden')
+
+    await act(async () => {
+      supabaseClientMocks.postgresChangesHandler?.()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(publicCheckInRepositoryMocks.refreshRemotePublicCheckIns).not.toHaveBeenCalled()
+    expect(publicCheckInRepositoryMocks.importPublicCheckInSubmissions).not.toHaveBeenCalled()
+  })
+
+  it('polls public check-ins even when the check-in tab did not enable polling', async () => {
+    await renderUseCheckIns()
+
+    vi.advanceTimersByTime(30_000)
+    await flushAsyncWork()
+
+    expect(publicCheckInRepositoryMocks.refreshRemotePublicCheckIns).toHaveBeenCalledWith('user-1', {
+      sessionDefinitionId: 'session-def-1',
+    })
+  })
+
+  it('refreshes public submissions when the app returns to the foreground', async () => {
+    await renderUseCheckIns()
+
+    vi.setSystemTime(new Date('2026-06-16T18:00:30.001Z'))
+    setVisibilityState('visible')
+    document.dispatchEvent(new Event('visibilitychange'))
+    await flushAsyncWork()
+
+    expect(publicCheckInRepositoryMocks.refreshRemotePublicCheckIns).toHaveBeenCalledWith('user-1', {
+      sessionDefinitionId: 'session-def-1',
+    })
   })
 
   it('does not pull remote check-in data while offline', async () => {

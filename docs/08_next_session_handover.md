@@ -1022,7 +1022,7 @@ Entscheidungen fuer Folgesessions:
 - Kiosk-Modus ist kein Spielerportal. Er laeuft auf dem angemeldeten Coach-Geraet und speichert local-first ueber denselben Pending-Write-Weg wie Coach-Check-ins.
 - Kiosk-Beenden meldet den Coach bewusst ab. Wenn der Logout fehlschlaegt, bleibt der Kiosk aktiv und gibt die Coach-App nicht frei.
 - Kiosk-Check-ins duerfen bestehende Coach-Audit-Metadaten nicht ueberschreiben. Bei vorheriger Coach-Bearbeitung bleibt `checkInSource = mixed` und `coachEditedAt` erhalten.
-- Massen-Reset setzt Coach-Eingaben zurueck, schützt importierte/Self-Check-ins und laesst bewusst gesetzte `Nicht da`-Eintraege stehen. Einzel-Reset bleibt im Spieler-Sheet moeglich.
+- Diese alte Reset-Entscheidung ist durch den Nachtrag `Field Hub Check-in Reset/Public-Sync 2026-06-18` ersetzt: `Alle Check-ins zuruecksetzen` umfasst Coach-, WhatsApp/QR- und Kiosk-Check-ins fuer die gewaehlte Einheit; Post-Session-Daten bleiben erhalten. Einzel-Reset bleibt im Spieler-Sheet moeglich.
 - `session_reaction` wird in `player_session_entries`, `public_checkin_submissions`, Repository-Mapping, CSV-Export und Self-Check-in-Flows verwendet.
 
 Supabase-Status:
@@ -1070,6 +1070,41 @@ Verifikation fuer diese Runde:
 - `git diff --check`
 - Browser-QA mit Vite-Server auf Desktop- und Mobile-Breite: App rendert Inhalt, keine Vite-Overlays, keine Console-Errors, keine horizontale Ueberbreite.
 - Vercel-Deploy wurde nicht ausgefuehrt: Der Vercel-Connector verwies nur auf `vercel deploy`, lokal ist keine `vercel` CLI installiert. DB-Push ist fuer diese Nachhaertung nicht noetig.
+
+## Field Hub Check-in Reset/Public-Sync 2026-06-18
+
+Kontext:
+
+- Nach Audit und externem Review wurde der Reset im Check-in-Tab auf die fachliche Erwartung geaendert: `Alle Check-ins zuruecksetzen` bedeutet Coach-, WhatsApp/QR- und Kiosk-Check-ins fuer die gewaehlte Einheit.
+- Ziel blieb MVP-gerecht: kein Spielerportal, keine Spieler-Accounts, keine Edge Functions, keine `service_role` Keys und keine breite Supabase-Komplexitaet.
+
+Entscheidungen fuer Folgesessions:
+
+- Der Reset loescht Check-in-/Pre-Session-Felder, aber erhaelt Post-Session-Daten wie sRPE, Dauer, Session Load, Post-Pain, E2 und Next Step.
+- Public-Link-Submissions erhalten den Status `reset`, damit bereits importierte oder noch offene Link-Eingaenge nach einem Reset nicht erneut in dieselbe Session laufen.
+- Public-Import ist session-scoped: Pending Submissions duerfen nur ueber lokale Links der aktuell gewaehlten `session_definition_id` importiert werden.
+- Es gibt eine bewusste, enge Realtime-Ausnahme zum urspruenglichen MVP-Verbot: Nur `INSERT` auf `public.public_checkin_submissions` wird genutzt, damit WhatsApp/QR-Check-ins schneller im Coach-UI erscheinen. Kein breites Realtime fuer Coach-Daten, keine UPDATE-Self-Echos.
+- Public-Check-in-Polling laeuft wieder unabhaengig vom aktiven Tab, bleibt aber sichtbar/online-gebunden und session-scoped.
+- Manueller Sync bekommt die aktuell gewaehlte Session, damit Public-Check-ins fuer diese Session mitgezogen/importiert werden.
+- Public-Check-in-Fehler fliessen in die globale Sync-Uebersicht ein; der manuelle Sync darf bei Public-Refresh-/Import-Fehlern nicht ungefangen abbrechen.
+
+Supabase-Status:
+
+- Remote-Migration `20260618120750_checkin_reset_public_realtime.sql` wurde am 18. Juni 2026 per `supabase db push --yes` auf Projekt `rugby-snc-field-hub` (`vpgqmykayreqlzfcvtat`) angewendet.
+- Die Migration erweitert `public_checkin_submissions.status` um `reset` und nimmt `public.public_checkin_submissions` in die Publication `supabase_realtime` auf.
+- Remote-Verifikation nach Push: `supabase migration list --linked --password ...`, `supabase db push --dry-run --password ...`, `supabase db lint --linked --fail-on error`, direkte `psql`-Kontrolle von Status-Constraint, `supabase_realtime`-Publication und RLS auf `public_checkin_submissions`.
+- Fuer kuenftige Supabase-CLI-Checks weiterhin die nicht getrackte `.env.supabase.local` laden. Keine Secrets committen und keinen `service_role` Key verwenden.
+
+Verifikation fuer diese Runde:
+
+- CodeRabbit-Review auf dem uncommitted Diff; ein valider Sync-Error-Handling-Punkt wurde gefixt, zweiter Durchlauf meldete keine neuen Issues.
+- `npm run typecheck`
+- `npm run lint`
+- `npm test` mit 278 Tests
+- `npm run build`
+- `npm audit --audit-level=moderate`
+- `git diff --check`
+- Browser-Smoke lokal: App und Check-in-Tab rendern ohne Console-Errors; iPad-Viewport ohne horizontalen Overflow. Voller eingeloggter Reset-E2E bleibt ohne Coach-Testcredentials offen.
 
 ## Empfohlener Startprompt fuer eine Trainingsplan-Session
 

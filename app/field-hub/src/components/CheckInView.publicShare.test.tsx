@@ -158,6 +158,7 @@ function buildCheckInActions(
 ): ReturnType<typeof useCheckIns> {
   return {
     activePlayers: [player],
+    sessionEntries: [entry],
     entries: [entry],
     errorMessage: null,
     expectedPlayerIds: [],
@@ -174,7 +175,13 @@ function buildCheckInActions(
     saveEntry: async () => ({ ok: true as const, entry }),
     saveKioskEntry: async () => ({ ok: true as const, entry }),
     resetEntry: async () => ({ ok: true as const, entry }),
-    resetSessionCoachEntries: async () => ({ ok: true as const, resetCount: 0 }),
+    resetSessionCheckIns: async () => ({
+      ok: true as const,
+      resetCount: 0,
+      publicSubmissionResetCount: 0,
+      retainedPostSessionCount: 0,
+      sourceCounts: { coach: 0, player_link: 0, player_kiosk: 0, mixed: 0 },
+    }),
     saveSessionPatch: async () => undefined,
     createPublicLink: async () => null,
     closePublicLink: async () => undefined,

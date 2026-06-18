@@ -7,7 +7,7 @@ import {
 } from './checkIn'
 import type { SyncStatus } from './sync'
 
-export type PublicCheckInSubmissionStatus = 'pending' | 'imported' | 'conflict' | 'superseded'
+export type PublicCheckInSubmissionStatus = 'pending' | 'imported' | 'conflict' | 'superseded' | 'reset'
 
 export type PublicCheckInLink = {
   id: string

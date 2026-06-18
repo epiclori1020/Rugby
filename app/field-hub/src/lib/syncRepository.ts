@@ -1,8 +1,14 @@
+import type { SessionDefinition } from '../content/types'
 import type { PlayerSyncOverview } from '../domain/sync'
 import { getBaselineSyncOverview } from './baselineRepository'
 import { getCheckInSyncOverview, syncCheckIns } from './checkInRepository'
 import { localDb } from './localDb'
 import { getPlayerSyncOverview, syncPlayers } from './playerRepository'
+import {
+  getPublicCheckInSyncOverview,
+  importPublicCheckInSubmissions,
+  refreshRemotePublicCheckIns,
+} from './publicCheckInRepository'
 import { getReturnerSyncOverview } from './returnerRepository'
 
 export function combineSyncOverviews(overviews: PlayerSyncOverview[]): PlayerSyncOverview {
@@ -32,6 +38,7 @@ export async function getCombinedSyncOverview(userId: string) {
       getCheckInSyncOverview(userId),
       getBaselineSyncOverview(userId),
       getReturnerSyncOverview(userId),
+      getPublicCheckInSyncOverview(userId),
     ]),
   )
 }
@@ -129,10 +136,33 @@ export function buildManualSyncFeedback(overview: PlayerSyncOverview): ManualSyn
   return { kind: 'success', message: 'Synchronisiert.' }
 }
 
-export async function syncAllUserData(userId: string): Promise<PlayerSyncOverview> {
+export type SyncAllUserDataOptions = {
+  publicSessionDefinition?: SessionDefinition
+}
+
+export async function syncAllUserData(
+  userId: string,
+  options: SyncAllUserDataOptions = {},
+): Promise<PlayerSyncOverview> {
   await resetErroredPendingWritesForRetry(userId)
   const playerSyncOverview = await syncPlayers(userId)
   const syncOverview = await syncCheckIns(userId)
+  let publicCheckInSyncOverview: PlayerSyncOverview | null = null
+  if (options.publicSessionDefinition) {
+    try {
+      await refreshRemotePublicCheckIns(userId, { sessionDefinitionId: options.publicSessionDefinition.id })
+      await importPublicCheckInSubmissions(userId, options.publicSessionDefinition)
+    } catch (caughtError) {
+      publicCheckInSyncOverview = {
+        isOnline: typeof navigator === 'undefined' ? true : navigator.onLine,
+        status: 'error',
+        pendingCount: 0,
+        lastSuccessfulSyncAt: null,
+        errorMessage:
+          caughtError instanceof Error ? caughtError.message : 'Link-Check-ins konnten nicht synchronisiert werden.',
+      }
+    }
+  }
   const refreshedOverview = await getCombinedSyncOverview(userId)
 
   if (playerSyncOverview.status === 'error') {
@@ -141,6 +171,10 @@ export async function syncAllUserData(userId: string): Promise<PlayerSyncOvervie
 
   if (syncOverview.status === 'error') {
     return mergeManualSyncOverview(syncOverview, refreshedOverview)
+  }
+
+  if (publicCheckInSyncOverview?.status === 'error') {
+    return mergeManualSyncOverview(publicCheckInSyncOverview, refreshedOverview)
   }
 
   return refreshedOverview

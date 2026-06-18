@@ -3,9 +3,9 @@ import { beforeEach, describe, expect, it } from 'vitest'
 import type { SessionDefinition } from '../content/types'
 import type { Player } from '../domain/players'
 import type { PublicCheckInSubmission } from '../domain/publicCheckIn'
-import { ensureSessionLog, saveCheckInEntry } from './checkInRepository'
+import { ensureSessionLog, resetAllCheckInsForSession, saveCheckInEntry } from './checkInRepository'
 import { localDb } from './localDb'
-import { importPublicCheckInSubmissions } from './publicCheckInRepository'
+import { importPublicCheckInSubmissions, resetPublicCheckInSubmissionsForSession } from './publicCheckInRepository'
 
 const userId = '00000000-0000-4000-8000-000000000001'
 
@@ -75,12 +75,32 @@ function submission(overrides: Partial<PublicCheckInSubmission> = {}): PublicChe
   }
 }
 
+async function putPublicLink(id = 'link-1', sessionDefinitionId = sessionDefinition.id) {
+  await localDb.publicCheckInLinks.put({
+    id,
+    userId,
+    sessionDefinitionId,
+    sessionTitle: sessionDefinitionId === sessionDefinition.id ? sessionDefinition.title : 'Other',
+    sessionDate: sessionDefinitionId === sessionDefinition.id ? sessionDefinition.date : '2026-06-18',
+    tokenHash: `hash-${id}`,
+    expiresAt: '2026-06-17T00:00:00.000Z',
+    closedAt: null,
+    createdAt: '2026-06-16T17:00:00.000Z',
+    updatedAt: '2026-06-16T17:00:00.000Z',
+    deletedAt: null,
+    clientUpdatedAt: '2026-06-16T17:00:00.000Z',
+    syncStatus: 'synced',
+    syncError: null,
+  })
+}
+
 describe('publicCheckInRepository import', () => {
   beforeEach(async () => {
     await localDb.delete()
     await localDb.open()
     await localDb.players.put(player)
     await ensureSessionLog(userId, sessionDefinition)
+    await putPublicLink()
   })
 
   it('imports a pending public submission into the player check-in', async () => {
@@ -125,6 +145,33 @@ describe('publicCheckInRepository import', () => {
     expect(updatedSubmission?.status).toBe('conflict')
   })
 
+  it('allows public import again after a reset clears coach edit metadata', async () => {
+    const sessionLog = await ensureSessionLog(userId, sessionDefinition)
+    await saveCheckInEntry(userId, sessionLog.id, player, { readiness: 5 })
+    await localDb.publicCheckInSubmissions.put(
+      submission({ id: 'blocked-before-reset', submittedAt: '2026-06-16T18:10:00.000Z' }),
+    )
+
+    const blocked = await importPublicCheckInSubmissions(userId, sessionDefinition)
+    await resetAllCheckInsForSession(userId, sessionLog.id)
+    await localDb.publicCheckInSubmissions.put(
+      submission({ id: 'after-reset', readiness: 2, submittedAt: '2026-06-16T18:20:00.000Z' }),
+    )
+    const imported = await importPublicCheckInSubmissions(userId, sessionDefinition)
+    const entries = await localDb.playerSessionEntries.where('userId').equals(userId).toArray()
+    const activeEntry = entries.find((entry) => entry.playerId === player.id && !entry.deletedAt)
+    const resetEntry = entries.find((entry) => entry.playerId === player.id && entry.deletedAt)
+
+    expect(blocked).toMatchObject({ imported: 0, conflicts: 1 })
+    expect(imported).toMatchObject({ imported: 1, conflicts: 0 })
+    expect(resetEntry?.deletedAt).toBeTruthy()
+    expect(activeEntry).toMatchObject({
+      readiness: 2,
+      checkInSource: 'player_link',
+      coachEditedAt: null,
+    })
+  })
+
   it('imports a public submission after a coach-only observation', async () => {
     const sessionLog = await ensureSessionLog(userId, sessionDefinition)
     await saveCheckInEntry(userId, sessionLog.id, player, { observation: 'Speed-Block beobachten' })
@@ -157,5 +204,50 @@ describe('publicCheckInRepository import', () => {
     expect(result.superseded).toBe(1)
     expect(entry?.readiness).toBe(4)
     expect(olderSubmission?.status).toBe('superseded')
+  })
+
+  it('marks all local public submissions for the session as reset', async () => {
+    await putPublicLink('other-link', 'other-session')
+    await localDb.publicCheckInSubmissions.bulkPut([
+      submission({ id: 'pending-submission', status: 'pending' }),
+      submission({ id: 'imported-submission', status: 'imported', importedAt: '2026-06-16T18:00:00.000Z' }),
+      submission({ id: 'already-reset-submission', status: 'reset' }),
+      submission({ id: 'other-session-submission', linkId: 'other-link', status: 'pending' }),
+    ])
+
+    const resetCount = await resetPublicCheckInSubmissionsForSession(userId, sessionDefinition.id)
+
+    await expect(localDb.publicCheckInSubmissions.get('pending-submission')).resolves.toMatchObject({
+      status: 'reset',
+      importedAt: null,
+      conflictReason: null,
+    })
+    await expect(localDb.publicCheckInSubmissions.get('imported-submission')).resolves.toMatchObject({
+      status: 'reset',
+      importedAt: null,
+      conflictReason: null,
+    })
+    await expect(localDb.publicCheckInSubmissions.get('already-reset-submission')).resolves.toMatchObject({
+      status: 'reset',
+    })
+    await expect(localDb.publicCheckInSubmissions.get('other-session-submission')).resolves.toMatchObject({
+      status: 'pending',
+    })
+    expect(resetCount).toBe(2)
+  })
+
+  it('does not import pending submissions from another session into the selected session', async () => {
+    await putPublicLink('other-link', 'other-session')
+    await localDb.publicCheckInSubmissions.put(
+      submission({ id: 'other-session-submission', linkId: 'other-link', readiness: 5, status: 'pending' }),
+    )
+
+    const result = await importPublicCheckInSubmissions(userId, sessionDefinition)
+    const entries = await localDb.playerSessionEntries.where('userId').equals(userId).toArray()
+    const otherSubmission = await localDb.publicCheckInSubmissions.get('other-session-submission')
+
+    expect(result).toEqual({ imported: 0, conflicts: 0, superseded: 0 })
+    expect(entries).toHaveLength(0)
+    expect(otherSubmission?.status).toBe('pending')
   })
 })

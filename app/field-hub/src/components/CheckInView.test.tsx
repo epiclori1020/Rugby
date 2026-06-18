@@ -155,6 +155,21 @@ const autoGreenEntry: PlayerSessionEntry = {
   syncStatus: 'synced',
 }
 
+const inactivePlayer: Player = {
+  ...activePlayer,
+  id: 'player-inactive',
+  name: 'Inaktiv',
+  active: false,
+}
+
+const inactiveKioskEntry: PlayerSessionEntry = {
+  ...autoGreenEntry,
+  id: 'entry-inactive-kiosk',
+  playerId: inactivePlayer.id,
+  readiness: 2,
+  checkInSource: 'player_kiosk',
+}
+
 const publicCheckInActions = {
   publicCheckInLinks: [],
   publicCheckInSubmissions: [],
@@ -162,7 +177,13 @@ const publicCheckInActions = {
   observations: [],
   saveKioskEntry: async () => ({ ok: true as const, entry: autoGreenEntry }),
   resetEntry: async () => ({ ok: true as const, entry: autoGreenEntry }),
-  resetSessionCoachEntries: async () => ({ ok: true as const, resetCount: 0 }),
+  resetSessionCheckIns: async () => ({
+    ok: true as const,
+    resetCount: 0,
+    publicSubmissionResetCount: 0,
+    retainedPostSessionCount: 0,
+    sourceCounts: { coach: 0, player_link: 0, player_kiosk: 0, mixed: 0 },
+  }),
   createPublicLink: async () => null,
   closePublicLink: async () => undefined,
 }
@@ -172,6 +193,7 @@ function createCheckInActions(
 ): ReturnType<typeof useCheckIns> {
   return {
     activePlayers: [activePlayer],
+    sessionEntries: [autoGreenEntry],
     entries: [autoGreenEntry],
     errorMessage: null,
     expectedPlayerIds: [],
@@ -282,7 +304,6 @@ async function openPlayerSheet(container: HTMLElement) {
 
 describe('CheckInView reset protection', () => {
   let root: Root | null = null
-  let confirmSpy: ReturnType<typeof vi.spyOn> | null = null
 
   beforeEach(() => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
@@ -290,8 +311,6 @@ describe('CheckInView reset protection', () => {
   })
 
   afterEach(async () => {
-    confirmSpy?.mockRestore()
-    confirmSpy = null
     vi.useRealTimers()
     if (root) {
       await act(async () => {
@@ -299,6 +318,7 @@ describe('CheckInView reset protection', () => {
       })
       root = null
     }
+    document.body.replaceChildren()
   })
 
   it('does not reset an entry immediately when reset is clicked', async () => {
@@ -355,38 +375,127 @@ describe('CheckInView reset protection', () => {
     expect(resetEntry).not.toHaveBeenCalled()
   })
 
-  it('does not run bulk reset when confirmation is cancelled', async () => {
-    const resetSessionCoachEntries = vi.fn(async () => ({ ok: true as const, resetCount: 1 }))
-    confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(false)
+  it('opens a bulk reset confirmation dialog with source counts', async () => {
+    const resetSessionCheckIns = vi.fn(async () => ({
+      ok: true as const,
+      resetCount: 1,
+      publicSubmissionResetCount: 1,
+      retainedPostSessionCount: 0,
+      sourceCounts: { coach: 1, player_link: 0, player_kiosk: 0, mixed: 0 },
+    }))
     const rendered = await renderInteractiveCheckInView({
-      checkInActions: createCheckInActions({ resetSessionCoachEntries }),
+      checkInActions: createCheckInActions({
+        resetSessionCheckIns,
+        publicCheckInSubmissions: [
+          {
+            id: 'submission-1',
+            userId: 'user-1',
+            linkId: 'link-1',
+            linkPlayerId: 'link-player-1',
+            playerId: activePlayer.id,
+            readiness: 3,
+            lifeFlag: '',
+            painScore: 0,
+            painLocation: '',
+            returnerFlag: 'nein',
+            sessionReaction: 'none',
+            playerNote: '',
+            status: 'imported',
+            submittedAt: '2026-06-16T17:45:00.000Z',
+            importedAt: '2026-06-16T18:00:00.000Z',
+            conflictReason: null,
+            createdAt: '2026-06-16T17:45:00.000Z',
+            updatedAt: '2026-06-16T18:00:00.000Z',
+            deletedAt: null,
+            clientUpdatedAt: '2026-06-16T18:00:00.000Z',
+            syncStatus: 'synced',
+            syncError: null,
+          },
+        ],
+      }),
     })
     root = rendered.root
 
     await act(async () => {
-      getButton(rendered.container, 'Coach-Check-ins zurücksetzen').click()
+      getButton(rendered.container, 'Alle Check-ins zurücksetzen').click()
     })
 
-    expect(confirmSpy).toHaveBeenCalledWith(
-      'Coach-Eingaben dieser Einheit zurücksetzen? Self-Check-ins und explizite Nicht-da-Einträge bleiben geschützt.',
-    )
-    expect(resetSessionCoachEntries).not.toHaveBeenCalled()
+    expect(rendered.container.textContent).toContain('Alle Check-ins zurücksetzen?')
+    expect(rendered.container.textContent).toContain('Coach')
+    expect(rendered.container.textContent).toContain('Link-Eingänge')
+    expect(resetSessionCheckIns).not.toHaveBeenCalled()
   })
 
-  it('runs bulk reset when confirmation is accepted', async () => {
-    const resetSessionCoachEntries = vi.fn(async () => ({ ok: true as const, resetCount: 1 }))
-    confirmSpy = vi.spyOn(window, 'confirm').mockReturnValue(true)
+  it('counts loaded inactive check-ins in the bulk reset preview', async () => {
     const rendered = await renderInteractiveCheckInView({
-      checkInActions: createCheckInActions({ resetSessionCoachEntries }),
+      checkInActions: createCheckInActions({
+        activePlayers: [activePlayer],
+        entries: [autoGreenEntry],
+        sessionEntries: [autoGreenEntry, inactiveKioskEntry],
+      }),
+      playerActions: createPlayerActions({ players: [activePlayer, inactivePlayer] }),
     })
     root = rendered.root
 
     await act(async () => {
-      getButton(rendered.container, 'Coach-Check-ins zurücksetzen').click()
+      getButton(rendered.container, 'Alle Check-ins zurücksetzen').click()
     })
 
-    expect(resetSessionCoachEntries).toHaveBeenCalledTimes(1)
-    expect(rendered.container.textContent).toContain('1 Check-in-Einträge zurückgesetzt.')
+    const metrics = Array.from(rendered.container.querySelectorAll('.metric')).map((metric) =>
+      metric.textContent?.replace(/\s+/g, ''),
+    )
+
+    expect(metrics).toContain('Coach1')
+    expect(metrics).toContain('Kiosk1')
+  })
+
+  it('focuses the bulk reset dialog and closes it with Escape', async () => {
+    const rendered = await renderInteractiveCheckInView()
+    root = rendered.root
+    document.body.append(rendered.container)
+    const resetButton = getButton(rendered.container, 'Alle Check-ins zurücksetzen')
+    resetButton.focus()
+
+    await act(async () => {
+      resetButton.click()
+    })
+
+    const dialog = rendered.container.querySelector<HTMLElement>('[role="dialog"]')
+    expect(dialog).toBeTruthy()
+    expect(document.activeElement).toBe(dialog)
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    })
+
+    expect(rendered.container.querySelector('[role="dialog"]')).toBeNull()
+    expect(document.activeElement).toBe(resetButton)
+  })
+
+  it('runs bulk reset after dialog confirmation', async () => {
+    const resetSessionCheckIns = vi.fn(async () => ({
+      ok: true as const,
+      resetCount: 1,
+      publicSubmissionResetCount: 2,
+      retainedPostSessionCount: 0,
+      sourceCounts: { coach: 1, player_link: 0, player_kiosk: 0, mixed: 0 },
+    }))
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({ resetSessionCheckIns }),
+    })
+    root = rendered.root
+
+    await act(async () => {
+      getButton(rendered.container, 'Alle Check-ins zurücksetzen').click()
+    })
+    await act(async () => {
+      Array.from(rendered.container.querySelectorAll<HTMLButtonElement>('button'))
+        .find((button) => button.textContent === 'Alle Check-ins zurücksetzen' && button.className.includes('danger'))
+        ?.click()
+    })
+
+    expect(resetSessionCheckIns).toHaveBeenCalledTimes(1)
+    expect(rendered.container.textContent).toContain('1 Check-in-Einträge und 2 Link-Eingänge zurückgesetzt.')
   })
 })
 
@@ -641,6 +750,7 @@ describe('CheckInView active player metrics', () => {
     const secondPlayer: Player = { ...activePlayer, id: 'player-second', name: 'Anton' }
     const checkInActions = {
       activePlayers: [activePlayer, secondPlayer],
+      sessionEntries: [autoGreenEntry],
       entries: [autoGreenEntry],
       errorMessage: null,
       expectedPlayerIds: [],
@@ -695,6 +805,7 @@ describe('CheckInView active player metrics', () => {
   it('does not count stale entries for deleted players', () => {
     const checkInActions = {
       activePlayers: [],
+      sessionEntries: [deletedPlayerEntry],
       entries: [deletedPlayerEntry],
       errorMessage: null,
       expectedPlayerIds: [],
@@ -747,6 +858,7 @@ describe('CheckInView active player metrics', () => {
   it('does not show stale warnings for deleted players', () => {
     const checkInActions = {
       activePlayers: [],
+      sessionEntries: [],
       entries: [],
       errorMessage: null,
       expectedPlayerIds: [],
@@ -798,6 +910,7 @@ describe('CheckInView active player metrics', () => {
   it('keeps automatic Ampel and Safety defaults visually neutral until the coach acts', () => {
     const checkInActions = {
       activePlayers: [activePlayer],
+      sessionEntries: [autoGreenEntry],
       entries: [autoGreenEntry],
       errorMessage: null,
       expectedPlayerIds: [],
@@ -851,6 +964,7 @@ describe('CheckInView active player metrics', () => {
   it('shows player observations separately from safety warnings', () => {
     const checkInActions = {
       activePlayers: [activePlayer],
+      sessionEntries: [autoGreenEntry],
       entries: [autoGreenEntry],
       errorMessage: null,
       expectedPlayerIds: [],

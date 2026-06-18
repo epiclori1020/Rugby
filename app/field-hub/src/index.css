@@ -986,6 +986,19 @@ button {
   margin: 0 0 4px;
 }
 
+.reset-confirm-dialog {
+  align-self: start;
+  justify-self: center;
+  width: min(640px, 100%);
+}
+
+.reset-confirm-grid {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 10px;
+  margin: 12px 0;
+}
+
 .checkin-controls {
   display: grid;
   grid-template-columns: repeat(2, minmax(0, 1fr));
@@ -2121,6 +2134,7 @@ code {
   .form-grid,
   .checkin-metrics,
   .checkin-reset-panel,
+  .reset-confirm-grid,
   .export-actions {
     grid-template-columns: 1fr;
   }

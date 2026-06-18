@@ -33,6 +33,16 @@ const syncOverview = {
   errorMessage: null,
 }
 
+const syncRepositoryMocks = vi.hoisted(() => ({
+  syncAllUserData: vi.fn(async () => ({
+    isOnline: true,
+    status: 'synced' as const,
+    pendingCount: 0,
+    lastSuccessfulSyncAt: null,
+    errorMessage: null,
+  })),
+}))
+
 vi.mock('virtual:pwa-register/react', () => ({
   useRegisterSW: () => ({
     needRefresh: [false],
@@ -43,8 +53,23 @@ vi.mock('virtual:pwa-register/react', () => ({
 vi.mock('./components/AppShell', async () => {
   const React = await import('react')
   return {
-    AppShell: ({ children }: { children: React.ReactNode }) =>
-      React.createElement('div', { 'data-testid': 'coach-app' }, children),
+    AppShell: ({
+      children,
+      onTabChange,
+    }: {
+      children: React.ReactNode
+      onTabChange: (tab: 'einstellungen') => void
+    }) =>
+      React.createElement(
+        'div',
+        { 'data-testid': 'coach-app' },
+        React.createElement(
+          'button',
+          { type: 'button', 'data-testid': 'open-settings', onClick: () => onTabChange('einstellungen') },
+          'Settings',
+        ),
+        children,
+      ),
   }
 })
 
@@ -139,7 +164,14 @@ vi.mock('./components/ReturnerView', async () => {
 
 vi.mock('./components/SettingsView', async () => {
   const React = await import('react')
-  return { SettingsView: () => React.createElement('div') }
+  return {
+    SettingsView: ({ onManualSync }: { onManualSync: () => Promise<void> }) =>
+      React.createElement(
+        'button',
+        { type: 'button', 'data-testid': 'manual-sync', onClick: onManualSync },
+        'Jetzt synchronisieren',
+      ),
+  }
 })
 
 vi.mock('./components/TrainingView', async () => {
@@ -289,7 +321,7 @@ vi.mock('./lib/auth', () => ({
 vi.mock('./lib/syncRepository', () => ({
   buildManualSyncFeedback: () => ({ kind: 'success', message: 'Synchronisiert.' }),
   combineSyncOverviews: () => syncOverview,
-  syncAllUserData: vi.fn(async () => syncOverview),
+  syncAllUserData: syncRepositoryMocks.syncAllUserData,
 }))
 
 async function renderApp() {
@@ -329,6 +361,7 @@ describe('App public check-in routing', () => {
     publicRouteState.lastKioskProps = null
     publicRouteState.saveKioskEntry.mockClear()
     publicRouteState.signOutCoach.mockClear()
+    syncRepositoryMocks.syncAllUserData.mockClear()
     window.history.replaceState(null, '', '/')
     window.localStorage.clear()
   })
@@ -422,7 +455,9 @@ describe('App public check-in routing', () => {
     root = rendered.root
 
     await act(async () => {
-      rendered.container.querySelector<HTMLButtonElement>('button')?.click()
+      Array.from(rendered.container.querySelectorAll<HTMLButtonElement>('button'))
+        .find((button) => button.textContent === 'Kiosk beenden')
+        ?.click()
     })
 
     expect(publicRouteState.signOutCoach).not.toHaveBeenCalled()
@@ -486,5 +521,24 @@ describe('App public check-in routing', () => {
       }),
     ).rejects.toThrow('Spieler nicht gefunden.')
     expect(publicRouteState.saveKioskEntry).not.toHaveBeenCalled()
+  })
+
+  it('passes the selected session into manual sync for public check-in import', async () => {
+    publicRouteState.authState.status = 'signed-in'
+
+    const rendered = await renderApp()
+    root = rendered.root
+
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('[data-testid="open-settings"]')?.click()
+    })
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('[data-testid="manual-sync"]')?.click()
+      await Promise.resolve()
+    })
+
+    expect(syncRepositoryMocks.syncAllUserData).toHaveBeenCalledWith('user-1', {
+      publicSessionDefinition: expect.objectContaining({ id: 'session-current' }),
+    })
   })
 })
