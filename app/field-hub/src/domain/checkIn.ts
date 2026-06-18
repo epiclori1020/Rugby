@@ -159,10 +159,58 @@ const harmlessLifeFlagValues = new Set([
   'unauffällig',
 ])
 
-export function hasLifeFlagConcern(lifeFlag: string) {
-  const normalized = lifeFlag.trim().toLocaleLowerCase('de-AT')
+export function splitCheckInTextList(value: string) {
+  const seen = new Set<string>()
 
-  return normalized.length > 0 && !harmlessLifeFlagValues.has(normalized)
+  return value
+    .split(/[;,]/)
+    .map((item) => item.trim())
+    .filter((item) => {
+      const key = item.toLocaleLowerCase('de-AT')
+      if (!key || seen.has(key)) {
+        return false
+      }
+      seen.add(key)
+      return true
+    })
+}
+
+export function joinCheckInTextList(values: string[]) {
+  return values.map((item) => item.trim()).filter(Boolean).join('; ')
+}
+
+export function toggleCheckInTextListValue(currentValue: string, option: string) {
+  const values = splitCheckInTextList(currentValue)
+  const normalizedOption = option.trim().toLocaleLowerCase('de-AT')
+  const hasOption = values.some((value) => value.toLocaleLowerCase('de-AT') === normalizedOption)
+
+  return joinCheckInTextList(hasOption ? values.filter((value) => value.toLocaleLowerCase('de-AT') !== normalizedOption) : [...values, option])
+}
+
+export function deriveRedFlagFromPainLocation(painLocation: string): RedFlag {
+  const normalizedLocation = painLocation.toLocaleLowerCase('de-AT')
+
+  return normalizedLocation.includes('kopf') || normalizedLocation.includes('nacken') ? 'head_neck_neuro' : 'none'
+}
+
+const redFlagSeverity: Record<RedFlag, number> = {
+  none: 0,
+  head_neck_neuro: 1,
+  acute_instability: 2,
+}
+
+export function mergeRedFlags(existing: RedFlag, incoming: RedFlag): RedFlag {
+  return redFlagSeverity[incoming] > redFlagSeverity[existing] ? incoming : existing
+}
+
+export function hasLifeFlagConcern(lifeFlag: string) {
+  const values = splitCheckInTextList(lifeFlag)
+
+  if (values.length === 0) {
+    return false
+  }
+
+  return values.some((value) => !harmlessLifeFlagValues.has(value.toLocaleLowerCase('de-AT')))
 }
 
 export function getTrafficLightSignals(input: CheckInDraft) {

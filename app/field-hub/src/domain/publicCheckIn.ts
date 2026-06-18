@@ -1,4 +1,10 @@
-import type { CheckInEntryPatch, PlayerSessionEntry, ReturnerFlag, SessionReaction } from './checkIn'
+import {
+  deriveRedFlagFromPainLocation,
+  type CheckInEntryPatch,
+  type PlayerSessionEntry,
+  type ReturnerFlag,
+  type SessionReaction,
+} from './checkIn'
 import type { SyncStatus } from './sync'
 
 export type PublicCheckInSubmissionStatus = 'pending' | 'imported' | 'conflict' | 'superseded'
@@ -71,6 +77,7 @@ export function publicSubmissionPatch(submission: PublicCheckInSubmission): Chec
     lifeFlag: submission.lifeFlag.trim(),
     painScore: submission.painScore,
     painLocation: submission.painLocation.trim(),
+    redFlag: deriveRedFlagFromPainLocation(submission.painLocation),
     returnerFlag: submission.returnerFlag,
     sessionReaction: submission.sessionReaction,
     playerNote: submission.playerNote.trim(),

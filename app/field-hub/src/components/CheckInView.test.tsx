@@ -247,6 +247,27 @@ function getButton(container: HTMLElement, name: string) {
   return button as HTMLButtonElement
 }
 
+function getInputByPlaceholder(container: HTMLElement, placeholder: string) {
+  const input = [...container.querySelectorAll('input')].find((item) => item.placeholder === placeholder)
+
+  if (!input) {
+    throw new Error(`Input ${placeholder} not found`)
+  }
+
+  return input as HTMLInputElement
+}
+
+async function changeInput(element: HTMLInputElement | HTMLTextAreaElement, value: string) {
+  const prototype = element instanceof HTMLTextAreaElement ? HTMLTextAreaElement.prototype : HTMLInputElement.prototype
+  const valueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set
+
+  await act(async () => {
+    valueSetter?.call(element, value)
+    element.dispatchEvent(new Event('input', { bubbles: true }))
+    element.dispatchEvent(new Event('change', { bubbles: true }))
+  })
+}
+
 async function openPlayerSheet(container: HTMLElement) {
   const playerCard = container.querySelector<HTMLButtonElement>('.checkin-player-card')
 
@@ -366,6 +387,252 @@ describe('CheckInView reset protection', () => {
 
     expect(resetSessionCoachEntries).toHaveBeenCalledTimes(1)
     expect(rendered.container.textContent).toContain('1 Check-in-Einträge zurückgesetzt.')
+  })
+})
+
+describe('CheckInView multi-select check-in fields', () => {
+  let root: Root | null = null
+
+  beforeEach(() => {
+    ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+  })
+
+  afterEach(async () => {
+    if (root) {
+      await act(async () => {
+        root?.unmount()
+      })
+      root = null
+    }
+  })
+
+  it('toggles one life flag without collapsing existing values', async () => {
+    const entry = { ...autoGreenEntry, lifeFlag: 'Stress; Muskelkater' }
+    const saveEntry = vi.fn(async (_player: Player, patch: Partial<PlayerSessionEntry>) => ({
+      ok: true as const,
+      entry: { ...entry, ...patch },
+    }))
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({
+        entries: [entry],
+        getEntryForPlayer: () => entry,
+        saveEntry,
+      }),
+    })
+    root = rendered.root
+
+    await openPlayerSheet(rendered.container)
+    await act(async () => {
+      getButton(rendered.container, 'Stress').click()
+      await Promise.resolve()
+    })
+
+    expect(saveEntry).toHaveBeenCalledWith(
+      activePlayer,
+      expect.objectContaining({ lifeFlag: 'Muskelkater', previousWarning: false }),
+      undefined,
+    )
+  })
+
+  it('adds pain locations and derives head-neck red flag without losing existing locations', async () => {
+    const entry = { ...autoGreenEntry, painScore: 2, painLocation: 'Wade/Achilles; Knie', redFlag: 'none' as const }
+    const saveEntry = vi.fn(async (_player: Player, patch: Partial<PlayerSessionEntry>) => ({
+      ok: true as const,
+      entry: { ...entry, ...patch },
+    }))
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({
+        entries: [entry],
+        getEntryForPlayer: () => entry,
+        saveEntry,
+      }),
+    })
+    root = rendered.root
+
+    await openPlayerSheet(rendered.container)
+    await act(async () => {
+      getButton(rendered.container, 'Kopf/Nacken').click()
+      await Promise.resolve()
+    })
+
+    expect(saveEntry).toHaveBeenCalledWith(
+      activePlayer,
+      expect.objectContaining({
+        painLocation: 'Wade/Achilles; Knie; Kopf/Nacken',
+        redFlag: 'head_neck_neuro',
+        previousWarning: false,
+      }),
+      undefined,
+    )
+  })
+
+  it('preserves a stronger coach red flag when pain location changes', async () => {
+    const entry = {
+      ...autoGreenEntry,
+      painScore: 2,
+      painLocation: 'Sprunggelenk',
+      redFlag: 'acute_instability' as const,
+    }
+    const saveEntry = vi.fn(async (_player: Player, patch: Partial<PlayerSessionEntry>) => ({
+      ok: true as const,
+      entry: { ...entry, ...patch },
+    }))
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({
+        entries: [entry],
+        getEntryForPlayer: () => entry,
+        saveEntry,
+      }),
+    })
+    root = rendered.root
+
+    await openPlayerSheet(rendered.container)
+    await act(async () => {
+      getButton(rendered.container, 'Knie').click()
+      await Promise.resolve()
+    })
+
+    expect(saveEntry).toHaveBeenCalledWith(
+      activePlayer,
+      expect.objectContaining({
+        painLocation: 'Sprunggelenk; Knie',
+        redFlag: 'acute_instability',
+        previousWarning: false,
+      }),
+      undefined,
+    )
+  })
+
+  it('keeps a head-neck red flag until the coach explicitly clears it', async () => {
+    const entry = {
+      ...autoGreenEntry,
+      painScore: 2,
+      painLocation: 'Sprunggelenk',
+      redFlag: 'head_neck_neuro' as const,
+    }
+    const saveEntry = vi.fn(async (_player: Player, patch: Partial<PlayerSessionEntry>) => ({
+      ok: true as const,
+      entry: { ...entry, ...patch },
+    }))
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({
+        entries: [entry],
+        getEntryForPlayer: () => entry,
+        saveEntry,
+      }),
+    })
+    root = rendered.root
+
+    await openPlayerSheet(rendered.container)
+    expect(rendered.container.textContent).toContain('Red Flag bleibt aktiv')
+
+    await act(async () => {
+      getButton(rendered.container, 'Knie').click()
+      await Promise.resolve()
+    })
+
+    expect(saveEntry).toHaveBeenLastCalledWith(
+      activePlayer,
+      expect.objectContaining({
+        painLocation: 'Sprunggelenk; Knie',
+        redFlag: 'head_neck_neuro',
+      }),
+      undefined,
+    )
+
+    await act(async () => {
+      getButton(rendered.container, 'Keine Red Flag').click()
+      await Promise.resolve()
+    })
+
+    expect(saveEntry).toHaveBeenLastCalledWith(
+      activePlayer,
+      expect.objectContaining({
+        redFlag: 'none',
+        previousWarning: false,
+      }),
+      undefined,
+    )
+  })
+
+  it('treats coach pain freetext as an additive note instead of editing selected chips', async () => {
+    const entry = {
+      ...autoGreenEntry,
+      painScore: 2,
+      painLocation: 'Knie; Schulter rechts',
+      redFlag: 'none' as const,
+    }
+    const saveEntry = vi.fn(async (_player: Player, patch: Partial<PlayerSessionEntry>) => ({
+      ok: true as const,
+      entry: { ...entry, ...patch },
+    }))
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({
+        entries: [entry],
+        getEntryForPlayer: () => entry,
+        saveEntry,
+      }),
+    })
+    root = rendered.root
+
+    await openPlayerSheet(rendered.container)
+    const customPainInput = getInputByPlaceholder(rendered.container, 'z. B. Wade rechts')
+    expect(customPainInput.value).toBe('Schulter rechts')
+
+    await changeInput(customPainInput, 'Schulter rechts; Wade links')
+    await act(async () => {
+      customPainInput.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+      await Promise.resolve()
+    })
+
+    expect(saveEntry).toHaveBeenCalledWith(
+      activePlayer,
+      expect.objectContaining({
+        painLocation: 'Knie; Schulter rechts; Wade links',
+        redFlag: 'none',
+        previousWarning: false,
+      }),
+      undefined,
+    )
+  })
+
+  it('preserves coach custom pain notes when toggling a pain-location chip', async () => {
+    const entry = {
+      ...autoGreenEntry,
+      painScore: 2,
+      painLocation: 'Schulter rechts',
+      redFlag: 'none' as const,
+    }
+    const saveEntry = vi.fn(async (_player: Player, patch: Partial<PlayerSessionEntry>) => ({
+      ok: true as const,
+      entry: { ...entry, ...patch },
+    }))
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({
+        entries: [entry],
+        getEntryForPlayer: () => entry,
+        saveEntry,
+      }),
+    })
+    root = rendered.root
+
+    await openPlayerSheet(rendered.container)
+    expect(getInputByPlaceholder(rendered.container, 'z. B. Wade rechts').value).toBe('Schulter rechts')
+
+    await act(async () => {
+      getButton(rendered.container, 'Knie').click()
+      await Promise.resolve()
+    })
+
+    expect(saveEntry).toHaveBeenCalledWith(
+      activePlayer,
+      expect.objectContaining({
+        painLocation: 'Knie; Schulter rechts',
+        redFlag: 'none',
+        previousWarning: false,
+      }),
+      undefined,
+    )
   })
 })
 

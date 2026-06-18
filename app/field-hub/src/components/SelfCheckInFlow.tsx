@@ -1,6 +1,12 @@
 import { Send } from 'lucide-react'
 import { useMemo, useState, type FormEvent } from 'react'
-import type { ReturnerFlag, SessionReaction } from '../domain/checkIn'
+import {
+  joinCheckInTextList,
+  splitCheckInTextList,
+  toggleCheckInTextListValue,
+  type ReturnerFlag,
+  type SessionReaction,
+} from '../domain/checkIn'
 
 export type SelfCheckInPlayerOption = {
   id: string
@@ -19,7 +25,6 @@ export type SelfCheckInSubmissionInput = {
 }
 
 type SelfCheckInFlowProps = {
-  confirmLabelForPlayer?: (displayName: string) => string
   disabled?: boolean
   helperText?: string
   onSubmit: (input: SelfCheckInSubmissionInput) => Promise<void>
@@ -43,13 +48,21 @@ const sessionReactionOptions: Array<{ value: SessionReaction; label: string }> =
 const lifeFlagOptions = ['Unauffällig', 'Schlecht geschlafen', 'Stress', 'Muskelkater', 'Müde']
 
 const painLocationOptions = [
+  'Kopf/Nacken',
+  'Schulter',
+  'Ellbogen',
+  'Handgelenk/Hand',
+  'Rippen/Brustkorb',
+  'Rücken/LWS',
+  'Hüfte/Hüftbeuger',
   'Leiste/Adduktor',
   'Hamstring/Glute',
-  'Wade/Achilles',
+  'Quadrizeps/vorderer Oberschenkel',
   'Knie',
+  'Wade/Achilles',
   'Sprunggelenk',
-  'Schulter/Handgelenk',
-  'Kopf/Nacken',
+  'Fuß/Zehen',
+  'Sonstiges',
 ]
 
 function normalizeLifeFlag(value: string) {
@@ -57,7 +70,6 @@ function normalizeLifeFlag(value: string) {
 }
 
 export function SelfCheckInFlow({
-  confirmLabelForPlayer = (displayName) => `Ich checke als ${displayName} ein.`,
   disabled = false,
   helperText,
   onSubmit,
@@ -69,12 +81,13 @@ export function SelfCheckInFlow({
   const [searchTerm, setSearchTerm] = useState('')
   const [readiness, setReadiness] = useState<number | null>(null)
   const [lifeFlag, setLifeFlag] = useState('')
+  const [lifeFlagNote, setLifeFlagNote] = useState('')
   const [painScore, setPainScore] = useState<number | null>(null)
   const [painLocation, setPainLocation] = useState('')
-  const [returnerFlag, setReturnerFlag] = useState<ReturnerFlag>('offen')
-  const [sessionReaction, setSessionReaction] = useState<SessionReaction>('none')
+  const [painLocationNote, setPainLocationNote] = useState('')
+  const [returnerFlag, setReturnerFlag] = useState<ReturnerFlag | null>(null)
+  const [sessionReaction, setSessionReaction] = useState<SessionReaction | null>(null)
   const [playerNote, setPlayerNote] = useState('')
-  const [confirmedName, setConfirmedName] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const filteredPlayers = useMemo(() => {
@@ -88,26 +101,63 @@ export function SelfCheckInFlow({
   }, [players, searchTerm])
   const selectedPlayer = players.find((player) => player.id === selectedPlayerId) ?? null
   const needsPainLocation = painScore !== null && painScore > 0
+  const lifeFlagValues = splitCheckInTextList(lifeFlag)
+  const painLocationValues = splitCheckInTextList(painLocation)
+  const submittedLifeFlag = joinCheckInTextList([...lifeFlagValues, ...splitCheckInTextList(lifeFlagNote)])
+  const submittedPainLocation = joinCheckInTextList([...painLocationValues, ...splitCheckInTextList(painLocationNote)])
   const canSubmit =
     !disabled &&
     !isSubmitting &&
     Boolean(selectedPlayer) &&
-    confirmedName &&
     readiness !== null &&
     painScore !== null &&
-    (!needsPainLocation || painLocation.trim().length > 0)
+    (!needsPainLocation || submittedPainLocation.length > 0)
 
   function resetForm() {
     setSelectedPlayerId('')
     setSearchTerm('')
     setReadiness(null)
     setLifeFlag('')
+    setLifeFlagNote('')
     setPainScore(null)
     setPainLocation('')
-    setReturnerFlag('offen')
-    setSessionReaction('none')
+    setPainLocationNote('')
+    setReturnerFlag(null)
+    setSessionReaction(null)
     setPlayerNote('')
-    setConfirmedName(false)
+  }
+
+  function handleSearchChange(value: string) {
+    setSearchTerm(value)
+    if (selectedPlayerId) {
+      setSelectedPlayerId('')
+    }
+  }
+
+  function selectPlayer(player: SelfCheckInPlayerOption) {
+    setSelectedPlayerId(player.id)
+    setSearchTerm(player.displayName)
+  }
+
+  function toggleReadiness(value: number) {
+    setReadiness((currentValue) => (currentValue === value ? null : value))
+  }
+
+  function togglePainScore(value: number) {
+    setPainScore((currentValue) => {
+      if (currentValue === value) {
+        setPainLocation('')
+        setPainLocationNote('')
+        return null
+      }
+
+      if (value === 0) {
+        setPainLocation('')
+        setPainLocationNote('')
+      }
+
+      return value
+    })
   }
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
@@ -124,11 +174,11 @@ export function SelfCheckInFlow({
       await onSubmit({
         playerId: selectedPlayer.id,
         readiness,
-        lifeFlag,
+        lifeFlag: submittedLifeFlag,
         painScore,
-        painLocation: needsPainLocation ? painLocation.trim() : '',
-        returnerFlag,
-        sessionReaction,
+        painLocation: needsPainLocation ? submittedPainLocation : '',
+        returnerFlag: returnerFlag ?? 'offen',
+        sessionReaction: sessionReaction ?? 'none',
         playerNote,
       })
       setMessage('Check-in gespeichert.')
@@ -150,40 +200,46 @@ export function SelfCheckInFlow({
           value={searchTerm}
           placeholder="2-3 Buchstaben tippen"
           disabled={disabled || isSubmitting}
-          onChange={(event) => setSearchTerm(event.currentTarget.value)}
+          onChange={(event) => handleSearchChange(event.currentTarget.value)}
         />
       </label>
 
-      <label className="inline-field wide">
-        <span>Dein Name</span>
-        <select
-          value={selectedPlayerId}
-          disabled={disabled || isSubmitting}
-          onChange={(event) => {
-            setSelectedPlayerId(event.currentTarget.value)
-            setConfirmedName(false)
-          }}
-        >
-          <option value="">Bitte auswählen</option>
-          {filteredPlayers.map((player) => (
-            <option key={player.id} value={player.id}>
-              {player.displayName}
-            </option>
-          ))}
-        </select>
-      </label>
-
-      {selectedPlayer ? (
-        <label className="toggle-row checkin-toggle">
-          <input
-            type="checkbox"
-            checked={confirmedName}
-            disabled={disabled || isSubmitting}
-            onChange={(event) => setConfirmedName(event.currentTarget.checked)}
-          />
-          <span>{confirmLabelForPlayer(selectedPlayer.displayName)}</span>
-        </label>
-      ) : null}
+      {!selectedPlayer ? (
+        <div className="control-group" role="group" aria-labelledby="self-checkin-player-options">
+          <span id="self-checkin-player-options">Dein Name</span>
+          <div className="button-row">
+            {filteredPlayers.map((player) => (
+              <button
+                className="segmented"
+                key={player.id}
+                type="button"
+                disabled={disabled || isSubmitting}
+                onClick={() => selectPlayer(player)}
+              >
+                {player.displayName}
+              </button>
+            ))}
+          </div>
+          {searchTerm.trim() && filteredPlayers.length === 0 ? <p className="privacy-note">Kein Treffer</p> : null}
+        </div>
+      ) : (
+        <div className="control-group" role="status" aria-live="polite">
+          <span>Ausgewählt: {selectedPlayer.displayName}</span>
+          <div className="button-row">
+            <button
+              className="segmented"
+              type="button"
+              disabled={disabled || isSubmitting}
+              onClick={() => {
+                setSelectedPlayerId('')
+                setSearchTerm('')
+              }}
+            >
+              ändern
+            </button>
+          </div>
+        </div>
+      )}
 
       <div className="control-group">
         <span>Readiness · 1 = schlecht, 5 = bereit</span>
@@ -194,7 +250,7 @@ export function SelfCheckInFlow({
               key={value}
               type="button"
               disabled={disabled || isSubmitting}
-              onClick={() => setReadiness(value)}
+              onClick={() => toggleReadiness(value)}
             >
               {value}
             </button>
@@ -207,11 +263,28 @@ export function SelfCheckInFlow({
         <div className="button-row">
           {lifeFlagOptions.map((option) => (
             <button
-              className={lifeFlag === normalizeLifeFlag(option) ? 'segmented active' : 'segmented'}
+              className={
+                option === 'Unauffällig'
+                  ? lifeFlagValues.length === 0
+                    && !lifeFlagNote.trim()
+                    ? 'segmented active'
+                    : 'segmented'
+                  : lifeFlagValues.includes(normalizeLifeFlag(option))
+                    ? 'segmented active'
+                    : 'segmented'
+              }
               key={option}
               type="button"
               disabled={disabled || isSubmitting}
-              onClick={() => setLifeFlag(normalizeLifeFlag(option))}
+              onClick={() => {
+                const optionValue = normalizeLifeFlag(option)
+                if (!optionValue) {
+                  setLifeFlag('')
+                  setLifeFlagNote('')
+                  return
+                }
+                setLifeFlag((currentValue) => toggleCheckInTextListValue(currentValue, optionValue))
+              }}
             >
               {option}
             </button>
@@ -222,10 +295,10 @@ export function SelfCheckInFlow({
       <label className="inline-field wide">
         <span>Andere Alltagsnotiz</span>
         <input
-          value={lifeFlag}
+          value={lifeFlagNote}
           disabled={disabled || isSubmitting}
           placeholder="leer lassen, wenn unauffällig"
-          onChange={(event) => setLifeFlag(event.currentTarget.value)}
+          onChange={(event) => setLifeFlagNote(event.currentTarget.value)}
         />
       </label>
 
@@ -238,12 +311,7 @@ export function SelfCheckInFlow({
               key={value}
               type="button"
               disabled={disabled || isSubmitting}
-              onClick={() => {
-                setPainScore(value)
-                if (value === 0) {
-                  setPainLocation('')
-                }
-              }}
+              onClick={() => togglePainScore(value)}
             >
               {value}
             </button>
@@ -258,11 +326,11 @@ export function SelfCheckInFlow({
             <div className="button-row">
               {painLocationOptions.map((option) => (
                 <button
-                  className={painLocation === option ? 'segmented active' : 'segmented'}
+                  className={painLocationValues.includes(option) ? 'segmented active' : 'segmented'}
                   key={option}
                   type="button"
                   disabled={disabled || isSubmitting}
-                  onClick={() => setPainLocation(option)}
+                  onClick={() => setPainLocation((currentValue) => toggleCheckInTextListValue(currentValue, option))}
                 >
                   {option}
                 </button>
@@ -272,10 +340,10 @@ export function SelfCheckInFlow({
           <label className="inline-field wide">
             <span>Anderer Schmerzort</span>
             <input
-              value={painLocation}
+              value={painLocationNote}
               disabled={disabled || isSubmitting}
               placeholder="z. B. Wade rechts"
-              onChange={(event) => setPainLocation(event.currentTarget.value)}
+              onChange={(event) => setPainLocationNote(event.currentTarget.value)}
             />
           </label>
         </>
@@ -290,7 +358,7 @@ export function SelfCheckInFlow({
               key={option.value}
               type="button"
               disabled={disabled || isSubmitting}
-              onClick={() => setSessionReaction(option.value)}
+              onClick={() => setSessionReaction((currentValue) => (currentValue === option.value ? null : option.value))}
             >
               {option.label}
             </button>
@@ -307,7 +375,7 @@ export function SelfCheckInFlow({
               key={option.value}
               type="button"
               disabled={disabled || isSubmitting}
-              onClick={() => setReturnerFlag(option.value)}
+              onClick={() => setReturnerFlag((currentValue) => (currentValue === option.value ? null : option.value))}
             >
               {option.label}
             </button>

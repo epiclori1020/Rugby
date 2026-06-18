@@ -10,7 +10,15 @@ import type {
   ReturnerFlag,
   TrafficLight,
 } from '../domain/checkIn'
-import { deriveAttendanceStatus, getTrafficLightSignals } from '../domain/checkIn'
+import {
+  deriveAttendanceStatus,
+  deriveRedFlagFromPainLocation,
+  getTrafficLightSignals,
+  joinCheckInTextList,
+  mergeRedFlags,
+  splitCheckInTextList,
+  toggleCheckInTextListValue,
+} from '../domain/checkIn'
 import type { Player } from '../domain/players'
 import type { ReturnerCapSummary } from '../domain/returners'
 import type { useCheckIns } from '../hooks/useCheckIns'
@@ -76,17 +84,50 @@ const bulkResetConfirmMessage =
   'Coach-Eingaben dieser Einheit zurücksetzen? Self-Check-ins und explizite Nicht-da-Einträge bleiben geschützt.'
 
 const painLocationOptions = [
+  'Kopf/Nacken',
+  'Schulter',
+  'Ellbogen',
+  'Handgelenk/Hand',
+  'Rippen/Brustkorb',
+  'Rücken/LWS',
+  'Hüfte/Hüftbeuger',
   'Leiste/Adduktor',
   'Hamstring/Glute',
-  'Wade/Achilles',
+  'Quadrizeps/vorderer Oberschenkel',
   'Knie',
+  'Wade/Achilles',
   'Sprunggelenk',
-  'Schulter/Handgelenk',
-  'Kopf/Nacken',
+  'Fuß/Zehen',
+  'Sonstiges',
 ]
+
+const painLocationOptionByKey = new Map(painLocationOptions.map((option) => [option.toLocaleLowerCase('de-AT'), option]))
 
 function lifeFlagOptionValue(option: string) {
   return option === 'Unauffällig' ? '' : option
+}
+
+function splitPainLocationParts(value: string) {
+  const knownValues: string[] = []
+  const customValues: string[] = []
+
+  for (const item of splitCheckInTextList(value)) {
+    const knownValue = painLocationOptionByKey.get(item.toLocaleLowerCase('de-AT'))
+    if (knownValue) {
+      knownValues.push(knownValue)
+    } else {
+      customValues.push(item)
+    }
+  }
+
+  return {
+    knownValue: joinCheckInTextList(knownValues),
+    customValue: joinCheckInTextList(customValues),
+  }
+}
+
+function joinPainLocationParts(knownValue: string, customValue: string) {
+  return joinCheckInTextList([...splitCheckInTextList(knownValue), ...splitCheckInTextList(customValue)])
 }
 
 type NativeShareStatus = 'idle' | 'sharing' | 'shared' | 'aborted' | 'error'
@@ -230,21 +271,33 @@ function CheckInPlayerRow({
   const sourceEntryKey = entryRenderKey(entry)
   const displayEntry = localEntryOverride?.baseKey === sourceEntryKey ? localEntryOverride.entry : entry
   const canReset = !displayEntry.id.startsWith('preview:')
-  const [textValues, setTextValues] = useState({
-    sourceEntryKey,
-    lifeValue: displayEntry.lifeFlag,
-    painLocationValue: displayEntry.painLocation,
-    observationValue: displayEntry.observation,
+  const [textValues, setTextValues] = useState(() => {
+    const painLocationParts = splitPainLocationParts(displayEntry.painLocation)
+
+    return {
+      sourceEntryKey,
+      lifeValue: displayEntry.lifeFlag,
+      painLocationValue: painLocationParts.knownValue,
+      painLocationNoteValue: painLocationParts.customValue,
+      observationValue: displayEntry.observation,
+    }
   })
   const currentTextValues =
     textValues.sourceEntryKey === sourceEntryKey
       ? textValues
-      : {
-          sourceEntryKey,
-          lifeValue: displayEntry.lifeFlag,
-          painLocationValue: displayEntry.painLocation,
-          observationValue: displayEntry.observation,
-        }
+      : (() => {
+          const painLocationParts = splitPainLocationParts(displayEntry.painLocation)
+
+          return {
+            sourceEntryKey,
+            lifeValue: displayEntry.lifeFlag,
+            painLocationValue: painLocationParts.knownValue,
+            painLocationNoteValue: painLocationParts.customValue,
+            observationValue: displayEntry.observation,
+          }
+        })()
+  const currentLifeValues = splitCheckInTextList(currentTextValues.lifeValue)
+  const currentPainLocationValues = splitCheckInTextList(currentTextValues.painLocationValue)
 
   useEffect(() => {
     return () => {
@@ -474,15 +527,24 @@ function CheckInPlayerRow({
           <div className="button-row">
             {lifeFlagOptions.map((option) => (
               <button
-                className={displayEntry.lifeFlag === lifeFlagOptionValue(option) ? 'segmented active' : 'segmented'}
+                className={
+                  option === 'Unauffällig'
+                    ? currentLifeValues.length === 0
+                      ? 'segmented active'
+                      : 'segmented'
+                    : currentLifeValues.includes(lifeFlagOptionValue(option))
+                      ? 'segmented active'
+                      : 'segmented'
+                }
                 key={option}
                 type="button"
                 disabled={controlsDisabled || savingActionKey === `lifeFlag:${option}`}
                 onClick={() => {
                   const optionValue = lifeFlagOptionValue(option)
-                  setTextValues({ ...currentTextValues, lifeValue: optionValue })
+                  const lifeValue = optionValue ? toggleCheckInTextListValue(currentTextValues.lifeValue, optionValue) : ''
+                  setTextValues({ ...currentTextValues, lifeValue })
                   void saveWithFeedback('Alltag', `lifeFlag:${option}`, {
-                    lifeFlag: optionValue,
+                    lifeFlag: lifeValue,
                     previousWarning: Boolean(warning),
                   })
                 }}
@@ -533,14 +595,20 @@ function CheckInPlayerRow({
           <div className="button-row">
             {painLocationOptions.map((option) => (
               <button
-                className={displayEntry.painLocation === option ? 'segmented active' : 'segmented'}
-                  key={option}
-                  type="button"
-                  disabled={controlsDisabled || savingActionKey === `painLocation:${option}`}
-                  onClick={() => {
-                  setTextValues({ ...currentTextValues, painLocationValue: option })
+                className={currentPainLocationValues.includes(option) ? 'segmented active' : 'segmented'}
+                key={option}
+                type="button"
+                disabled={controlsDisabled || savingActionKey === `painLocation:${option}`}
+                onClick={() => {
+                  const painLocationChipValue = toggleCheckInTextListValue(currentTextValues.painLocationValue, option)
+                  const painLocationValue = joinPainLocationParts(
+                    painLocationChipValue,
+                    currentTextValues.painLocationNoteValue,
+                  )
+                  setTextValues({ ...currentTextValues, painLocationValue: painLocationChipValue })
                   void saveWithFeedback('Schmerzort', `painLocation:${option}`, {
-                    painLocation: option,
+                    painLocation: painLocationValue,
+                    redFlag: mergeRedFlags(displayEntry.redFlag, deriveRedFlagFromPainLocation(painLocationValue)),
                     previousWarning: Boolean(warning),
                   })
                 }}
@@ -554,16 +622,19 @@ function CheckInPlayerRow({
         <label className="inline-field">
           <span>Anderer Schmerzort</span>
           <input
-            value={currentTextValues.painLocationValue}
+            value={currentTextValues.painLocationNoteValue}
             disabled={controlsDisabled}
             placeholder="z. B. Wade rechts"
-            onChange={(event) => setTextValues({ ...currentTextValues, painLocationValue: event.currentTarget.value })}
-            onBlur={(event) =>
+            onChange={(event) => setTextValues({ ...currentTextValues, painLocationNoteValue: event.currentTarget.value })}
+            onBlur={(event) => {
+              const painLocationValue = joinPainLocationParts(currentTextValues.painLocationValue, event.currentTarget.value)
+
               void saveWithFeedback('Eingabe', 'painLocation', {
-                painLocation: event.currentTarget.value,
+                painLocation: painLocationValue,
+                redFlag: mergeRedFlags(displayEntry.redFlag, deriveRedFlagFromPainLocation(painLocationValue)),
                 previousWarning: Boolean(warning),
               })
-            }
+            }}
           />
         </label>
 
@@ -613,6 +684,9 @@ function CheckInPlayerRow({
 
         <div className="control-group">
           <span>Red Flags</span>
+          {displayEntry.redFlag !== 'none' ? (
+            <p className="privacy-note">Red Flag bleibt aktiv, bis du sie bewusst über Keine Red Flag zurücksetzt.</p>
+          ) : null}
           <div className="button-row">
             {redFlagOptions.map((option) => {
               const isActiveDanger = option.value !== 'none' && displayEntry.redFlag === option.value

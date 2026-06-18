@@ -217,6 +217,17 @@ Sprint 1 wurde unter `app/field-hub/` umgesetzt:
 - Hauptnavigation vorbereitet: Heute, Spieler, Check-in, Training, Nachbereitung, Returner, Bibliothek, Export.
 - PWA-Grundlagen mit `vite-plugin-pwa`, Manifest und Icon-Platzhaltern vorbereitet.
 - Sichtbarer Sync-Status-Platzhalter eingebaut; Supabase ist noch nicht verbunden.
+
+## Nachtrag 18. Juni 2026: Field Hub Check-in / Kiosk-Speicherentscheidungen
+
+Fuer den Check-in- und Kiosk-Flow gilt ab jetzt:
+
+- Kiosk/Public-Saves duerfen Safety-Flags konservativ erhoehen, aber nicht herabstufen. Coach-Saves bleiben bewusst korrigierbar.
+- `sessionReaction` im Self-/Kiosk-Check-in muss explizit beantwortet werden; keine stille Speicherung von unbeantwortet als `none`.
+- Multi-Select-Werte fuer Alltag und Schmerzorte bleiben im MVP textbasiert, werden aber nur ueber zentrale Domain-Helper gelesen/geschrieben.
+- Keine DB-Migration nur fuer Multi-Selects vorziehen. Eine Umstellung auf Arrays oder Relationstabellen braucht spaeter eine eigene Migration inklusive RLS, Sync, Export und Tests.
+- Fuer zukuenftige Analysefunktionen neue auswertbare Daten strukturiert modellieren: RPE, Load, Attendance, Baselines, Progress, Uebungswerte, Schmerzverlauf und Trainingsplan-Bezuege nicht in Notizfeldern verstecken.
+- Freitext bleibt fuer Kontext, Beobachtungen und Coach-Notizen.
 - `.env.example` mit `VITE_SUPABASE_URL` und `VITE_SUPABASE_PUBLISHABLE_KEY` angelegt.
 - `navigator.storage.persist()` wird beim ersten Start versucht; Home-Screen-Hinweis ist sichtbar.
 - Lokale Kommandos sind in `app/field-hub/README.md` dokumentiert.

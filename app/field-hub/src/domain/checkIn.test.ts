@@ -3,9 +3,15 @@ import {
   applyAutoTrafficLight,
   applyManualTrafficLight,
   applySuggestedTrafficLight,
+  deriveRedFlagFromPainLocation,
   deriveAttendanceStatus,
   getTrafficLightSignals,
+  hasLifeFlagConcern,
+  joinCheckInTextList,
+  mergeRedFlags,
   suggestTrafficLight,
+  splitCheckInTextList,
+  toggleCheckInTextListValue,
   type CheckInDraft,
   type PlayerSessionEntry,
 } from './checkIn'
@@ -167,5 +173,36 @@ describe('applyAutoTrafficLight', () => {
     expect(auto.trafficLightWasManual).toBe(false)
     expect(auto.trafficLightSuggestion).toBe('red')
     expect(auto.trafficLight).toBe('red')
+  })
+})
+
+describe('check-in text and red flag helpers', () => {
+  test('splits, trims and deduplicates text list values', () => {
+    expect(splitCheckInTextList(' Stress; Muskelkater, Stress ;  ')).toEqual(['Stress', 'Muskelkater'])
+  })
+
+  test('joins non-empty text list values with the canonical separator', () => {
+    expect(joinCheckInTextList([' Stress ', '', 'Knie'])).toBe('Stress; Knie')
+  })
+
+  test('toggles text list values without collapsing the rest of the list', () => {
+    expect(toggleCheckInTextListValue('Stress; Muskelkater', 'Stress')).toBe('Muskelkater')
+    expect(toggleCheckInTextListValue('Stress; Muskelkater', 'Müde')).toBe('Stress; Muskelkater; Müde')
+  })
+
+  test('derives red flags from head or neck pain locations only', () => {
+    expect(deriveRedFlagFromPainLocation('Kopf/Nacken')).toBe('head_neck_neuro')
+    expect(deriveRedFlagFromPainLocation('Knie')).toBe('none')
+  })
+
+  test('keeps the stricter red flag when merging safety values', () => {
+    expect(mergeRedFlags('acute_instability', 'none')).toBe('acute_instability')
+    expect(mergeRedFlags('none', 'head_neck_neuro')).toBe('head_neck_neuro')
+    expect(mergeRedFlags('head_neck_neuro', 'acute_instability')).toBe('acute_instability')
+  })
+
+  test('distinguishes harmless life flags from actual concerns', () => {
+    expect(hasLifeFlagConcern('ok; Stress')).toBe(true)
+    expect(hasLifeFlagConcern('ok; nichts')).toBe(false)
   })
 })

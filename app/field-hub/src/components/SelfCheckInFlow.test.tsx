@@ -18,9 +18,31 @@ function getButtons(container: HTMLElement, name: string) {
   return [...container.querySelectorAll('button')].filter((item) => item.textContent === name) as HTMLButtonElement[]
 }
 
+function getSubmitButton(container: HTMLElement) {
+  return [...container.querySelectorAll('button')].find((item) => item.textContent === 'Check-in absenden') as HTMLButtonElement
+}
+
+function getInputByPlaceholder(container: HTMLElement, placeholder: string) {
+  const input = [...container.querySelectorAll('input')].find((item) => item.placeholder === placeholder)
+
+  if (!input) {
+    throw new Error(`Input ${placeholder} not found`)
+  }
+
+  return input as HTMLInputElement
+}
+
 async function changeInput(element: HTMLInputElement | HTMLSelectElement | HTMLTextAreaElement, value: string) {
+  const prototype =
+    element instanceof HTMLTextAreaElement
+      ? HTMLTextAreaElement.prototype
+      : element instanceof HTMLSelectElement
+        ? HTMLSelectElement.prototype
+        : HTMLInputElement.prototype
+  const valueSetter = Object.getOwnPropertyDescriptor(prototype, 'value')?.set
+
   await act(async () => {
-    element.value = value
+    valueSetter?.call(element, value)
     element.dispatchEvent(new Event('input', { bubbles: true }))
     element.dispatchEvent(new Event('change', { bubbles: true }))
   })
@@ -65,16 +87,19 @@ describe('SelfCheckInFlow', () => {
     expect(submitButton.disabled).toBe(true)
     expect(container.textContent).not.toContain('Schmerzort / Körperregion')
 
-    const select = container.querySelector('select') as HTMLSelectElement
-    await changeInput(select, 'player-1')
+    await changeInput(container.querySelector('input') as HTMLInputElement, 'max')
+    expect(container.textContent).toContain('Max Muster')
 
-    const confirm = container.querySelector('input[type="checkbox"]') as HTMLInputElement
     await act(async () => {
-      confirm.click()
+      getButton(container, 'Max Muster').click()
     })
+    expect(container.querySelector('select')).toBeNull()
+    expect(container.querySelector('input[type="checkbox"]')).toBeNull()
+
     await act(async () => {
       getButton(container, '4').click()
       getButton(container, 'Stress').click()
+      getButton(container, 'Muskelkater').click()
       getButtons(container, '3').at(-1)?.click()
     })
 
@@ -83,6 +108,7 @@ describe('SelfCheckInFlow', () => {
 
     await act(async () => {
       getButton(container, 'Wade/Achilles').click()
+      getButton(container, 'Knie').click()
       getButton(container, 'Ja, neu/schlechter').click()
       getButtons(container, 'Nein').at(-1)?.click()
     })
@@ -93,9 +119,9 @@ describe('SelfCheckInFlow', () => {
     expect(onSubmit).toHaveBeenCalledWith({
       playerId: 'player-1',
       readiness: 4,
-      lifeFlag: 'Stress',
+      lifeFlag: 'Stress; Muskelkater',
       painScore: 3,
-      painLocation: 'Wade/Achilles',
+      painLocation: 'Wade/Achilles; Knie',
       returnerFlag: 'nein',
       sessionReaction: 'new_or_worse',
       playerNote: '',
@@ -113,18 +139,189 @@ describe('SelfCheckInFlow', () => {
       root?.render(<SelfCheckInFlow onSubmit={onSubmit} players={[{ id: 'player-1', displayName: 'Max Muster' }]} />)
     })
 
-    await changeInput(container.querySelector('select') as HTMLSelectElement, 'player-1')
+    await changeInput(container.querySelector('input') as HTMLInputElement, 'max')
     await act(async () => {
-      ;(container.querySelector('input[type="checkbox"]') as HTMLInputElement).click()
+      getButton(container, 'Max Muster').click()
       getButton(container, '5').click()
       getButton(container, '0').click()
-      getButton(container, 'Nein').click()
+      getButtons(container, 'Nein').at(0)?.click()
     })
 
     await act(async () => {
       container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
     })
 
-    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ painScore: 0, painLocation: '' }))
+    expect(onSubmit).toHaveBeenCalledWith(
+      expect.objectContaining({ painScore: 0, painLocation: '', sessionReaction: 'none' }),
+    )
+  })
+
+  it('allows submitting without an explicit session reaction and stores none', async () => {
+    const onSubmit = vi.fn(async () => undefined)
+    const container = document.createElement('div')
+    root = createRoot(container)
+
+    await act(async () => {
+      root?.render(<SelfCheckInFlow onSubmit={onSubmit} players={[{ id: 'player-1', displayName: 'Max Muster' }]} />)
+    })
+
+    await changeInput(container.querySelector('input') as HTMLInputElement, 'max')
+    await act(async () => {
+      getButton(container, 'Max Muster').click()
+      getButton(container, '5').click()
+      getButton(container, '0').click()
+    })
+
+    expect(getSubmitButton(container).disabled).toBe(false)
+
+    await act(async () => {
+      container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ sessionReaction: 'none' }))
+  })
+
+  it('appends life freetext to selected life chips', async () => {
+    const onSubmit = vi.fn(async () => undefined)
+    const container = document.createElement('div')
+    root = createRoot(container)
+
+    await act(async () => {
+      root?.render(<SelfCheckInFlow onSubmit={onSubmit} players={[{ id: 'player-1', displayName: 'Max Muster' }]} />)
+    })
+
+    await changeInput(container.querySelector('input') as HTMLInputElement, 'max')
+    await act(async () => {
+      getButton(container, 'Max Muster').click()
+      getButton(container, '5').click()
+      getButton(container, 'Stress').click()
+      getButton(container, 'Muskelkater').click()
+      getButton(container, '0').click()
+    })
+    await changeInput(getInputByPlaceholder(container, 'leer lassen, wenn unauffällig'), 'Pruefungsstress')
+
+    await act(async () => {
+      container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ lifeFlag: 'Stress; Muskelkater; Pruefungsstress' }))
+  })
+
+  it('appends pain freetext to selected pain locations', async () => {
+    const onSubmit = vi.fn(async () => undefined)
+    const container = document.createElement('div')
+    root = createRoot(container)
+
+    await act(async () => {
+      root?.render(<SelfCheckInFlow onSubmit={onSubmit} players={[{ id: 'player-1', displayName: 'Max Muster' }]} />)
+    })
+
+    await changeInput(container.querySelector('input') as HTMLInputElement, 'max')
+    await act(async () => {
+      getButton(container, 'Max Muster').click()
+      getButton(container, '5').click()
+      getButtons(container, '2').at(-1)?.click()
+    })
+    await act(async () => {
+      getButton(container, 'Knie').click()
+    })
+    await changeInput(getInputByPlaceholder(container, 'z. B. Wade rechts'), 'Schulter rechts')
+
+    await act(async () => {
+      container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ painLocation: 'Knie; Schulter rechts' }))
+  })
+
+  it('shows no-results feedback and the selected player change action', async () => {
+    const onSubmit = vi.fn(async () => undefined)
+    const container = document.createElement('div')
+    root = createRoot(container)
+
+    await act(async () => {
+      root?.render(
+        <SelfCheckInFlow
+          onSubmit={onSubmit}
+          players={[
+            { id: 'player-1', displayName: 'Max Muster' },
+            { id: 'player-2', displayName: 'Ali Test' },
+          ]}
+        />,
+      )
+    })
+
+    await changeInput(container.querySelector('input') as HTMLInputElement, 'zzz')
+    expect(container.textContent).toContain('Kein Treffer')
+
+    await changeInput(container.querySelector('input') as HTMLInputElement, 'max')
+    await act(async () => {
+      getButton(container, 'Max Muster').click()
+    })
+
+    expect(container.textContent).toContain('Ausgewählt: Max Muster')
+
+    await act(async () => {
+      getButton(container, 'ändern').click()
+    })
+
+    expect(container.textContent).not.toContain('Ausgewählt: Max Muster')
+    expect(container.textContent).toContain('Max Muster')
+  })
+
+  it('lets players undo selected buttons before submitting', async () => {
+    const onSubmit = vi.fn(async () => undefined)
+    const container = document.createElement('div')
+    root = createRoot(container)
+
+    await act(async () => {
+      root?.render(<SelfCheckInFlow onSubmit={onSubmit} players={[{ id: 'player-1', displayName: 'Max Muster' }]} />)
+    })
+
+    await changeInput(container.querySelector('input') as HTMLInputElement, 'max')
+    await act(async () => {
+      getButton(container, 'Max Muster').click()
+      getButton(container, '4').click()
+      getButton(container, '4').click()
+      getButton(container, '0').click()
+    })
+
+    expect(getSubmitButton(container).disabled).toBe(true)
+
+    await act(async () => {
+      getButton(container, '4').click()
+      getButton(container, '0').click()
+    })
+
+    expect(getSubmitButton(container).disabled).toBe(true)
+  })
+
+  it('keeps unauffaellig exclusive in the life flags', async () => {
+    const onSubmit = vi.fn(async () => undefined)
+    const container = document.createElement('div')
+    root = createRoot(container)
+
+    await act(async () => {
+      root?.render(<SelfCheckInFlow onSubmit={onSubmit} players={[{ id: 'player-1', displayName: 'Max Muster' }]} />)
+    })
+
+    await changeInput(container.querySelector('input') as HTMLInputElement, 'max')
+    await act(async () => {
+      getButton(container, 'Max Muster').click()
+      getButton(container, 'Stress').click()
+      getButton(container, 'Muskelkater').click()
+    })
+    await changeInput(getInputByPlaceholder(container, 'leer lassen, wenn unauffällig'), 'Pruefungsstress')
+    await act(async () => {
+      getButton(container, 'Unauffällig').click()
+      getButton(container, '5').click()
+      getButton(container, '0').click()
+      getButtons(container, 'Nein').at(0)?.click()
+    })
+    await act(async () => {
+      container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+
+    expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ lifeFlag: '' }))
   })
 })

@@ -550,6 +550,50 @@ describe('checkInRepository session logs', () => {
     expect(saved.playerSubmittedAt).toBeTruthy()
   })
 
+  it('does not downgrade a stronger coach red flag when kiosk check-in updates a coach-edited entry', async () => {
+    const coachEntry = await saveCheckInEntry(userId, 'session-kiosk-red-flag', player, {
+      readiness: 5,
+      redFlag: 'acute_instability',
+    })
+
+    const saved = await saveKioskCheckInEntry(userId, 'session-kiosk-red-flag', player, {
+      readiness: 3,
+      painScore: 1,
+      painLocation: 'Sprunggelenk',
+      redFlag: 'none',
+      sessionReaction: 'none',
+    })
+
+    expect(saved.id).toBe(coachEntry.id)
+    expect(saved).toMatchObject({
+      checkInSource: 'mixed',
+      redFlag: 'acute_instability',
+      painLocation: 'Sprunggelenk',
+    })
+    expect(saved.coachEditedAt).toBe(coachEntry.coachEditedAt)
+  })
+
+  it('lets kiosk check-in raise red flag severity when no stronger coach flag exists', async () => {
+    await saveCheckInEntry(userId, 'session-kiosk-head-neck', player, {
+      readiness: 5,
+      redFlag: 'none',
+    })
+
+    const saved = await saveKioskCheckInEntry(userId, 'session-kiosk-head-neck', player, {
+      readiness: 3,
+      painScore: 1,
+      painLocation: 'Kopf/Nacken',
+      redFlag: 'head_neck_neuro',
+      sessionReaction: 'none',
+    })
+
+    expect(saved).toMatchObject({
+      checkInSource: 'mixed',
+      redFlag: 'head_neck_neuro',
+      painLocation: 'Kopf/Nacken',
+    })
+  })
+
   it('resets only coach fields on player-submitted entries and preserves session reaction', () => {
     const playerSubmitted = {
       ...entryFromRow({

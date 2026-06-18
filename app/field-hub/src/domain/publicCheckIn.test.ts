@@ -59,7 +59,30 @@ const submission: PublicCheckInSubmission = {
 }
 
 describe('publicCheckIn domain', () => {
-  it('imports player self-report fields without touching coach-only fields', () => {
+  it('imports player self-report fields and derives head-neck red flags', () => {
+    const headNeckSubmission = {
+      ...submission,
+      painLocation: 'Kopf/Nacken',
+    }
+    const patch = publicSubmissionPatch(headNeckSubmission)
+
+    expect(patch).toEqual({
+      present: true,
+      readiness: 4,
+      lifeFlag: 'muede',
+      painScore: 2,
+      painLocation: 'Kopf/Nacken',
+      returnerFlag: 'nein',
+      sessionReaction: 'new_or_worse',
+      redFlag: 'head_neck_neuro',
+      playerNote: 'komme direkt von Arbeit',
+    })
+    expect(patch).not.toHaveProperty('trafficLight')
+    expect(patch).not.toHaveProperty('limits')
+    expect(patch).not.toHaveProperty('observation')
+  })
+
+  it('imports player self-report fields and clears red flags when no head-neck location is present', () => {
     const patch = publicSubmissionPatch(submission)
 
     expect(patch).toEqual({
@@ -70,11 +93,11 @@ describe('publicCheckIn domain', () => {
       painLocation: 'Wade rechts',
       returnerFlag: 'nein',
       sessionReaction: 'new_or_worse',
+      redFlag: 'none',
       playerNote: 'komme direkt von Arbeit',
     })
     expect(patch).not.toHaveProperty('trafficLight')
     expect(patch).not.toHaveProperty('limits')
-    expect(patch).not.toHaveProperty('redFlag')
     expect(patch).not.toHaveProperty('observation')
   })
 

@@ -9,6 +9,7 @@
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "test": "vitest run",
+    "test:e2e:kiosk": "node scripts/e2e-kiosk-smoke.mjs",
     "preview": "vite preview"
   },
   "dependencies": {

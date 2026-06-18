@@ -5,6 +5,7 @@ import {
   deriveAttendanceStatus,
   deriveLimits,
   emptyCheckInDraft,
+  mergeRedFlags,
   type CheckInDraft,
   type CheckInEntryPatch,
   type CheckInLimit,
@@ -722,6 +723,7 @@ export async function savePublicCheckInEntry(
     ...patch,
     lifeFlag: patch.lifeFlag !== undefined ? patch.lifeFlag.trim() : baseEntry.lifeFlag,
     painLocation: patch.painLocation !== undefined ? patch.painLocation.trim() : baseEntry.painLocation,
+    redFlag: patch.redFlag !== undefined ? mergeRedFlags(baseEntry.redFlag, patch.redFlag) : baseEntry.redFlag,
     playerNote: patch.playerNote !== undefined ? patch.playerNote.trim() : baseEntry.playerNote,
   }
   const draftWithLimits = {

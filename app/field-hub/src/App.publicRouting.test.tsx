@@ -19,8 +19,10 @@ const publicRouteState = vi.hoisted(() => ({
       sessionReaction: 'none' | 'new_or_worse' | 'unsure'
       playerNote: string
     }) => Promise<unknown>
+    onExit?: () => void
   },
   saveKioskEntry: vi.fn(async () => ({ ok: true as const })),
+  signOutCoach: vi.fn(async () => undefined),
 }))
 
 const syncOverview = {
@@ -49,7 +51,8 @@ vi.mock('./components/AppShell', async () => {
 vi.mock('./components/TodayDashboard', async () => {
   const React = await import('react')
   return {
-    TodayDashboard: () => React.createElement('div', { 'data-testid': 'today-dashboard' }, 'Heute'),
+    TodayDashboard: ({ selectedSessionId }: { selectedSessionId: string }) =>
+      React.createElement('div', { 'data-testid': 'today-dashboard', 'data-selected-session-id': selectedSessionId }, 'Heute'),
   }
 })
 
@@ -91,9 +94,15 @@ vi.mock('./components/KioskCheckInView', async () => {
         sessionReaction: 'none' | 'new_or_worse' | 'unsure'
         playerNote: string
       }) => Promise<unknown>
+      onExit?: () => void
     }) => {
       publicRouteState.lastKioskProps = props
-      return React.createElement('div', { 'data-testid': 'kiosk-view' }, 'Kiosk-Modus Training Check-in')
+      return React.createElement(
+        'div',
+        { 'data-testid': 'kiosk-view' },
+        'Training Check-in',
+        React.createElement('button', { type: 'button', onClick: () => props.onExit?.() }, 'Kiosk beenden'),
+      )
     },
   }
 })
@@ -139,8 +148,8 @@ vi.mock('./components/TrainingView', async () => {
 })
 
 vi.mock('./content/sessions', () => {
-  const session = {
-    id: 'session-1',
+  const staleSession = {
+    id: 'session-stale',
     date: '2026-06-16',
     kw: 'KW25',
     title: 'Dienstag',
@@ -155,10 +164,16 @@ vi.mock('./content/sessions', () => {
     coachNotes: [],
     libraryRefs: [],
   }
+  const session = {
+    ...staleSession,
+    id: 'session-current',
+    date: '2026-06-18',
+    title: 'Donnerstag',
+  }
 
   return {
     getRelevantSessions: () => ({ featuredSession: session, upcomingSessions: [] }),
-    sessionDefinitions: [session],
+    sessionDefinitions: [staleSession, session],
   }
 })
 
@@ -267,6 +282,10 @@ vi.mock('./lib/backgroundSync', () => ({
   flushBackgroundSyncs: vi.fn(async () => undefined),
 }))
 
+vi.mock('./lib/auth', () => ({
+  signOutCoach: publicRouteState.signOutCoach,
+}))
+
 vi.mock('./lib/syncRepository', () => ({
   buildManualSyncFeedback: () => ({ kind: 'success', message: 'Synchronisiert.' }),
   combineSyncOverviews: () => syncOverview,
@@ -303,10 +322,13 @@ describe('App public check-in routing', () => {
 
   beforeEach(() => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+    vi.useFakeTimers()
+    vi.setSystemTime(new Date('2026-06-18T12:00:00.000+02:00'))
     publicRouteState.nextMountId = 0
     publicRouteState.authState.status = 'signed-out'
     publicRouteState.lastKioskProps = null
     publicRouteState.saveKioskEntry.mockClear()
+    publicRouteState.signOutCoach.mockClear()
     window.history.replaceState(null, '', '/')
     window.localStorage.clear()
   })
@@ -318,6 +340,7 @@ describe('App public check-in routing', () => {
       })
       root = null
     }
+    vi.useRealTimers()
   })
 
   it('switches between coach app and public check-in when the hash changes', async () => {
@@ -354,19 +377,34 @@ describe('App public check-in routing', () => {
 
   it('restores the signed-in kiosk mode from local storage', async () => {
     publicRouteState.authState.status = 'signed-in'
-    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-1')
+    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-current')
 
     const rendered = await renderApp()
     root = rendered.root
 
     expect(rendered.container.querySelector('[data-testid="coach-app"]')).toBeNull()
-    expect(rendered.container.textContent).toContain('Kiosk-Modus')
     expect(rendered.container.textContent).toContain('Training Check-in')
+  })
+
+  it('does not restore an old kiosk session and removes the kiosk key', async () => {
+    publicRouteState.authState.status = 'signed-in'
+    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-stale')
+    window.localStorage.setItem('fieldHub:selectedSessionId', 'session-stale')
+
+    const rendered = await renderApp()
+    root = rendered.root
+
+    expect(rendered.container.querySelector('[data-testid="coach-app"]')).not.toBeNull()
+    expect(rendered.container.querySelector('[data-testid="kiosk-view"]')).toBeNull()
+    expect(window.localStorage.getItem('fieldHub:kioskSessionId')).toBeNull()
+    expect(rendered.container.querySelector<HTMLElement>('[data-testid="today-dashboard"]')?.dataset.selectedSessionId).toBe(
+      'session-current',
+    )
   })
 
   it('passes only minimal active player options into kiosk mode', async () => {
     publicRouteState.authState.status = 'signed-in'
-    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-1')
+    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-current')
 
     const rendered = await renderApp()
     root = rendered.root
@@ -376,9 +414,25 @@ describe('App public check-in routing', () => {
     expect(publicRouteState.lastKioskProps?.players[0]).not.toHaveProperty('notes')
   })
 
+  it('exits kiosk mode without signing out the coach', async () => {
+    publicRouteState.authState.status = 'signed-in'
+    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-current')
+
+    const rendered = await renderApp()
+    root = rendered.root
+
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('button')?.click()
+    })
+
+    expect(publicRouteState.signOutCoach).not.toHaveBeenCalled()
+    expect(window.localStorage.getItem('fieldHub:kioskSessionId')).toBeNull()
+    expect(rendered.container.querySelector('[data-testid="coach-app"]')).not.toBeNull()
+  })
+
   it('resolves the full active player only when kiosk submits', async () => {
     publicRouteState.authState.status = 'signed-in'
-    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-1')
+    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-current')
 
     const rendered = await renderApp()
     root = rendered.root
@@ -389,7 +443,7 @@ describe('App public check-in routing', () => {
         readiness: 4,
         lifeFlag: 'Stress',
         painScore: 1,
-        painLocation: 'Wade',
+        painLocation: 'Kopf/Nacken',
         returnerFlag: 'nein',
         sessionReaction: 'none',
         playerNote: 'direkt von Arbeit',
@@ -403,9 +457,10 @@ describe('App public check-in routing', () => {
         readiness: 4,
         lifeFlag: 'Stress',
         painScore: 1,
-        painLocation: 'Wade',
+        painLocation: 'Kopf/Nacken',
         returnerFlag: 'nein',
         sessionReaction: 'none',
+        redFlag: 'head_neck_neuro',
         playerNote: 'direkt von Arbeit',
       },
     )
@@ -413,7 +468,7 @@ describe('App public check-in routing', () => {
 
   it('does not save kiosk submissions for inactive players', async () => {
     publicRouteState.authState.status = 'signed-in'
-    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-1')
+    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-current')
 
     const rendered = await renderApp()
     root = rendered.root

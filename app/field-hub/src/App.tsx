@@ -17,7 +17,7 @@ import { TrainingView } from './components/TrainingView'
 import { getRelevantSessions, sessionDefinitions } from './content/sessions'
 import type { PdfRef } from './content/types'
 import { shouldShowBackupReminder } from './domain/backupReminder'
-import type { CheckInEntryPatch, SessionLog } from './domain/checkIn'
+import { deriveRedFlagFromPainLocation, type CheckInEntryPatch, type SessionLog } from './domain/checkIn'
 import { useAuthSession } from './hooks/useAuthSession'
 import { useBaselines } from './hooks/useBaselines'
 import { useCheckIns } from './hooks/useCheckIns'
@@ -27,7 +27,6 @@ import { useReturners } from './hooks/useReturners'
 import { useStoragePersistence } from './hooks/useStoragePersistence'
 import { getLastExportAt, getLatestCompletedSession } from './lib/backupRepository'
 import { flushBackgroundSyncs } from './lib/backgroundSync'
-import { signOutCoach } from './lib/auth'
 import { buildManualSyncFeedback, combineSyncOverviews, syncAllUserData, type ManualSyncFeedback } from './lib/syncRepository'
 
 export type HubTab =
@@ -51,6 +50,15 @@ function toLocalDateKey(date: Date) {
   return `${year}-${month}-${day}`
 }
 
+function findSessionById(sessionId: string | null) {
+  return sessionDefinitions.find((session) => session.id === sessionId) ?? null
+}
+
+function isCurrentOrFutureSession(sessionId: string | null, todayKey = toLocalDateKey(new Date())) {
+  const session = findSessionById(sessionId)
+  return Boolean(session && session.date >= todayKey)
+}
+
 function getPublicCheckInTokenFromHash() {
   if (typeof window === 'undefined') {
     return null
@@ -60,33 +68,34 @@ function getPublicCheckInTokenFromHash() {
   return match ? decodeURIComponent(match[1]) : null
 }
 
-function getInitialSelectedSessionId(fallbackSessionId: string) {
+function getInitialSessionState(fallbackSessionId: string, todayKey = toLocalDateKey(new Date())) {
   if (typeof window === 'undefined') {
-    return fallbackSessionId
+    return { selectedSessionId: fallbackSessionId, kioskSessionId: null }
   }
 
   const storedKioskSessionId = window.localStorage.getItem(kioskSessionStorageKey)
-  const storedKioskSessionExists = sessionDefinitions.some((session) => session.id === storedKioskSessionId)
+  const storedSelectedSessionId = window.localStorage.getItem(selectedSessionStorageKey)
+  const storedKioskSession = findSessionById(storedKioskSessionId)
+  const storedSelectedSession = findSessionById(storedSelectedSessionId)
+  const kioskSessionIsCurrent = Boolean(storedKioskSession && isCurrentOrFutureSession(storedKioskSessionId, todayKey))
+  const selectedSessionIsStaleKiosk =
+    Boolean(storedKioskSessionId) && !kioskSessionIsCurrent && storedSelectedSessionId === storedKioskSessionId
 
-  if (storedKioskSessionExists && storedKioskSessionId) {
-    return storedKioskSessionId
+  if (storedKioskSessionId && !kioskSessionIsCurrent) {
+    window.localStorage.removeItem(kioskSessionStorageKey)
   }
 
-  const storedSessionId = window.localStorage.getItem(selectedSessionStorageKey)
-  const storedSessionExists = sessionDefinitions.some((session) => session.id === storedSessionId)
-
-  return storedSessionExists && storedSessionId ? storedSessionId : fallbackSessionId
-}
-
-function getInitialKioskSessionId() {
-  if (typeof window === 'undefined') {
-    return null
+  if (kioskSessionIsCurrent && storedKioskSessionId) {
+    return { selectedSessionId: storedKioskSessionId, kioskSessionId: storedKioskSessionId }
   }
 
-  const storedSessionId = window.localStorage.getItem(kioskSessionStorageKey)
-  const storedSessionExists = sessionDefinitions.some((session) => session.id === storedSessionId)
-
-  return storedSessionExists && storedSessionId ? storedSessionId : null
+  return {
+    selectedSessionId:
+      !selectedSessionIsStaleKiosk && storedSelectedSession && storedSelectedSessionId
+        ? storedSelectedSessionId
+        : fallbackSessionId,
+    kioskSessionId: null,
+  }
 }
 
 function CoachApp() {
@@ -97,7 +106,6 @@ function CoachApp() {
   const [libraryReturnTab, setLibraryReturnTab] = useState<HubTab | null>(null)
   const [transientNotice, setTransientNotice] = useState<string | null>(null)
   const [appTodayKey, setAppTodayKey] = useState(() => toLocalDateKey(new Date()))
-  const [activeKioskSessionId, setActiveKioskSessionId] = useState<string | null>(getInitialKioskSessionId)
   const {
     needRefresh: [needsAppRefresh],
     updateServiceWorker,
@@ -109,7 +117,9 @@ function CoachApp() {
   const playerActions = usePlayers(authState.status === 'signed-in' ? authState.user.id : null)
   const todayDate = useMemo(() => new Date(`${appTodayKey}T12:00:00`), [appTodayKey])
   const { featuredSession, upcomingSessions } = useMemo(() => getRelevantSessions(todayDate), [todayDate])
-  const [selectedSessionId, setSelectedSessionId] = useState(() => getInitialSelectedSessionId(featuredSession.id))
+  const [initialSessionState] = useState(() => getInitialSessionState(featuredSession.id))
+  const [activeKioskSessionId, setActiveKioskSessionId] = useState<string | null>(initialSessionState.kioskSessionId)
+  const [selectedSessionId, setSelectedSessionId] = useState(initialSessionState.selectedSessionId)
   const selectedSession = sessionDefinitions.find((session) => session.id === selectedSessionId) ?? featuredSession
   const checkInActions = useCheckIns(
     authState.status === 'signed-in' ? authState.user.id : null,
@@ -218,15 +228,10 @@ function CoachApp() {
     setActiveKioskSessionId(selectedSession.id)
   }, [selectedSession.id])
 
-  const handleExitKiosk = useCallback(async () => {
-    try {
-      await signOutCoach()
-      window.localStorage.removeItem(kioskSessionStorageKey)
-      setActiveKioskSessionId(null)
-    } catch {
-      showTransientNotice('Kiosk bleibt aktiv: Logout fehlgeschlagen.')
-    }
-  }, [showTransientNotice])
+  const handleExitKiosk = useCallback(() => {
+    window.localStorage.removeItem(kioskSessionStorageKey)
+    setActiveKioskSessionId(null)
+  }, [])
 
   const refreshAllLocalData = useCallback(async () => {
     if (!userId) {
@@ -351,6 +356,7 @@ function CoachApp() {
       lifeFlag: input.lifeFlag,
       painScore: input.painScore,
       painLocation: input.painLocation,
+      redFlag: deriveRedFlagFromPainLocation(input.painLocation),
       returnerFlag: input.returnerFlag,
       sessionReaction: input.sessionReaction,
       playerNote: input.playerNote,

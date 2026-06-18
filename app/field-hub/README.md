@@ -9,12 +9,20 @@ npm run dev
 npm run typecheck
 npm run lint
 npm test
+npm run test:e2e:kiosk
 npm run build
 npm run preview
 ```
 
 Der Dev-Server nutzt Vite. Lokal ist die URL typischerweise `http://127.0.0.1:5173/`
 oder `http://localhost:5173/`.
+
+Der Kiosk-E2E-Test nutzt echte Supabase Auth/RLS mit einem temporaeren Testspieler und raeumt
+diesen danach wieder auf. Zugangsdaten nicht in Dateien speichern, sondern nur zur Laufzeit setzen:
+
+```bash
+FIELD_HUB_E2E_EMAIL="..." FIELD_HUB_E2E_PASSWORD="..." npm run test:e2e:kiosk
+```
 
 ## Sprint-1-Scope
 
