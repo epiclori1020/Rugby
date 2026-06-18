@@ -1,6 +1,6 @@
 # Donnerstag 18. Juni: Trainingsplan klar
 
-Klemmbrett-Seite. Donnerstag ist Training + optionale Mini-Baseline, kein harter Testtag. Dies ist dein primaeres Klemmbrett-Blatt; Detail-Backup ist die Thursday-Intro-Karte 01f, Begruendung und genaue Sprache stehen im Coach-Skript.
+Klemmbrett-Seite. Donnerstag ist Training + optionale Mini-Baseline, kein harter Testtag. Dies ist dein primaeres Klemmbrett-Blatt; Detail-Backup ist die Thursday-Intro-Karte 01f, Begruendung und genaue Sprache stehen im Donnerstag Deep Playbook.
 
 ## Ziel
 
@@ -14,7 +14,7 @@ Klemmbrett-Seite. Donnerstag ist Training + optionale Mini-Baseline, kein harter
 
 | Zeit | Block | Exakt machen | Dosis / Intensitaet | Eintragen |
 | --- | --- | --- | --- | --- |
-| 0-8 | Check-in | Ampel, Reaktion auf Dienstag, neue Schmerzen, Returner-Limit | kurz | Ampel, Schmerz, Ret |
+| 0-8 | Check-in | Ampel, Reaktion auf Dienstag, neue Schmerzen, Returner-Limit, Kopf/Nacken/Schwindel | kurz | Ampel, Schmerz, Ret |
 | 8-18 | Warm-up | Lauf 2x20 m, Shuffle 2x10 m/S, A-March 2x10 m, Dribble 2x10 m, Pogo 2x10, Snap-down 2x3 | RPE 2-3 | Laufbild |
 | 18-28 | Speed | 4x10 m + optional 2x15 m | 70-80 %, 60-90 s Gehpause, kein Timing | nur Auffaelliges |
 | 28-40 | Mini-Baseline optional | Broad Jump 2 Versuche + MB Chest Pass 2 Versuche | nur wenn ruhig; kein Ranking | beste Weite BJ/MB |

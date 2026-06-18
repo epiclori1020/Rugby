@@ -114,6 +114,7 @@ export const sessionDefinitions: SessionDefinition[] = [
     primarySource: 'plans/offseason_coach_sheets/KW25_thursday_training_plan_clear_2026-06-18.md',
     pdfRefs: [
       pdfRefs.kw25ThursdayPlan,
+      pdfRefs.kw25ThursdayCheckIn,
       pdfRefs.kw25ThursdayDeepPlaybook,
       pdfRefs.thursdayCompact,
     ],

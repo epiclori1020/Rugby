@@ -5,10 +5,13 @@ Ziel: Nach dem Onboarding am Dienstag in echtes Training uebergehen. Grundmuster
 
 Basis: Dies ist keine neue zweite Wahrheit. Diese Karte konkretisiert den KW25-Einstieg aus `plans/07_offseason_pre_august_kw25_31.md` und ersetzt fuer den Platz die alte "Testtag"-Logik.
 
+Detail: genaue Sprache, Uebungserklaerung und Fallbacks stehen im Donnerstag Deep Playbook `docs/18_unit_2_deep_playbook_2026-06-18.styled.pdf`.
+
 ## Vor Start
 
 - Checke Gelb/Rot/Returner aus Dienstag.
 - Frage: "Hat jemand seit Dienstag neue Schmerzen oder starke Reaktion?"
+- Kopf/Nacken/Schwindel/neurologisch = sofort Rot und klaeren.
 - Keine verpassten Tests erzwingen.
 - Donnerstag ist kein harter Testtag.
 - Mini-Baseline nur, wenn Gruppe ruhig, sicher und gruen genug ist.
@@ -18,7 +21,7 @@ Basis: Dies ist keine neue zweite Wahrheit. Diese Karte konkretisiert den KW25-E
 
 | Zeit | Block | Inhalt | Coach-Fokus |
 | --- | --- | --- | --- |
-| 0-8 | Check-in | Ampel, Reaktion auf Dienstag, neue Schmerzen | E2-Anpassung |
+| 0-8 | Check-in | Ampel, Reaktion auf Dienstag, neue Schmerzen, Kopf/Nacken/Schwindel | E2-Anpassung |
 | 8-18 | Warm-up | Lauf 2x20 m, Shuffle 2x10 m/Seite, A-March 2x10 m, Dribble 2x10 m, Pogo 2x10, Snap-down 2x3 | sauber, ruhig |
 | 18-28 | Speed | 4x10 m + optional 2x15 m @ 70-80 %, volle Gehpausen 60-90 s | keine Max-Jagd, kein Timing |
 | 28-40 | Optional Mini-Baseline | Wenn ruhig: Broad Jump 2 Versuche + MB Chest Pass 2 Versuche. Wenn unruhig: nur technisch 3x2/3x3 | kein Ranking, nur Startwert |
@@ -46,7 +49,7 @@ Basis: Dies ist keine neue zweite Wahrheit. Diese Karte konkretisiert den KW25-E
 | Gruppe ruhig, wenig Gelb/Rot, Ablauf stabil | BJ + MB je 2 gueltige Versuche sammeln |
 | Gruppe gross/chaotisch, viele Gelb/Rot, wenig Zeit | keine Werte; BJ/MB nur technisch trainieren |
 | Schulter-/Ruecken-/Leistenschmerz | passenden Wert auslassen |
-| Spieler will sich beweisen/ranken | sofort entschärfen: "Vergleich mit dir selbst, nicht mit anderen" |
+| Spieler will sich beweisen/ranken | sofort entschaerfen: "Vergleich mit dir selbst, nicht mit anderen" |
 
 Kein 30-m-Test am Donnerstag. Kein Bronco. Diese Tests kommen erst spaeter in Frage, wenn Ablauf, Vertrauen und Gruppe stabil sind.
 
@@ -84,7 +87,7 @@ Pod-Organisation:
 | --- | --- |
 | Gruen | kompletter Plan, RPE 5-6 |
 | Gelb | 30-50 % weniger, kein Extra-Tempo, keine Mini-Baseline erzwingen |
-| Rot | kein normales Training; Bike locker, Isometrien oder klaeren |
+| Rot | kein normales Training; Kopf/Nacken/Schwindel klaeren, sonst nur sichere leichte Alternative |
 | Returner offen | kein Sprint >70 %, kein COD, keine Zusatzkondition, keine Mini-Baseline |
 
 ## Spieleransage

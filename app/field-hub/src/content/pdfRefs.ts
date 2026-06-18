@@ -26,6 +26,11 @@ export const pdfRefs = {
     href: '/library/18_unit_2_deep_playbook_2026-06-18.styled.pdf',
     sourcePath: 'docs/18_unit_2_deep_playbook_2026-06-18.styled.pdf',
   },
+  kw25ThursdayCheckIn: {
+    label: 'Donnerstag Eintragungsbogen',
+    href: '/library/01j_unit_2_thursday_checkin_values_2026-06-18.pdf',
+    sourcePath: 'templates/unit_2_thursday_checkin_values_2026-06-18.md',
+  },
   consent: {
     label: 'Einwilligung 20x',
     href: '/library/5_OPTIONAL_einwilligung_20x.pdf',
