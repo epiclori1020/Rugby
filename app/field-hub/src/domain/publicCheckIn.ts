@@ -70,6 +70,10 @@ export type PublicSubmissionImportDecision =
   | { ok: true }
   | { ok: false; reason: string }
 
+export type PublicSubmissionImportOptions = {
+  allowImportedStatus?: boolean
+}
+
 export function publicSubmissionPatch(submission: PublicCheckInSubmission): CheckInEntryPatch {
   return {
     present: true,
@@ -112,8 +116,11 @@ export async function hashPublicCheckInToken(token: string) {
 export function shouldImportPublicSubmission(
   existingEntry: Pick<PlayerSessionEntry, 'coachEditedAt'> | null | undefined,
   submission: PublicCheckInSubmission,
+  options: PublicSubmissionImportOptions = {},
 ): PublicSubmissionImportDecision {
-  if (submission.status !== 'pending') {
+  const isRecoverableImportedSubmission = options.allowImportedStatus && submission.status === 'imported'
+
+  if (submission.status !== 'pending' && !isRecoverableImportedSubmission) {
     return { ok: false, reason: 'Spieler-Check-in wurde bereits verarbeitet.' }
   }
 

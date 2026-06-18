@@ -1106,6 +1106,28 @@ Verifikation fuer diese Runde:
 - `git diff --check`
 - Browser-Smoke lokal: App und Check-in-Tab rendern ohne Console-Errors; iPad-Viewport ohne horizontalen Overflow. Voller eingeloggter Reset-E2E bleibt ohne Coach-Testcredentials offen.
 
+## Field Hub Public-Check-in Orphan-Recovery Review 2026-06-18
+
+Kontext:
+
+- Ein externer Review wies berechtigt darauf hin, dass die erste Orphan-Recovery fuer `public_checkin_submissions.status = imported` zu breit getriggert war.
+- Der urspruengliche Architekturentscheid bleibt wichtig: Der 30-Sekunden-Public-Poll darf nicht wieder zu einem periodischen Check-in-Vollsync werden.
+
+Entscheidungen fuer Folgesessions:
+
+- Public-Poll bleibt leicht: normal nur Public-Link-/Submission-Refresh, Import und ggf. Push neu importierter Eintraege.
+- `pullRemoteCheckIns()` wird im Public-Poll nur fuer Recovery ausgefuehrt, wenn eine `imported` Public-Submission lokal keinen passenden aktiven Check-in-Eintrag fuer diesen Spieler in der gewaehlten Session hat.
+- Bereits `imported` markierte Orphans werden nur als Recovery-Kandidaten verarbeitet; wenn der Spieler inzwischen fehlt oder inaktiv ist, wird die Submission als `conflict` markiert statt still alle 30 Sekunden erneut geprueft zu werden.
+- Das Ordering-Fenster bleibt bewusst als MVP-Kompromiss bestehen: Der Client markiert eine Submission weiterhin nach lokalem Import als `imported` und pusht den daraus erzeugten Check-in danach sofort. Eine strengere Reihenfolge oder serverseitige Transaktion waere sauberer, braucht aber mehr Supabase-/RPC-/Edge-Function-Komplexitaet.
+- Aussagen zur echten Heilung vorhandener Live-Orphans duerfen erst nach einem echten eingeloggten E2E gegen die Zielumgebung gemacht werden. Lokale Tests, Typecheck und Build belegen die Logik, nicht automatisch den Produktionszustand einer installierten PWA.
+
+Verifikation fuer diese Nachhaertung:
+
+- `npm test -- --run src/hooks/useCheckIns.remotePull.test.tsx src/lib/publicCheckInRepository.test.ts src/lib/syncRepositoryOrchestrator.test.ts`
+- `npm test`
+- `npm run typecheck`
+- `npm run build`
+
 ## Empfohlener Startprompt fuer eine Trainingsplan-Session
 
 ```text

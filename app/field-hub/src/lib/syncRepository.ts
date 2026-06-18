@@ -146,12 +146,17 @@ export async function syncAllUserData(
 ): Promise<PlayerSyncOverview> {
   await resetErroredPendingWritesForRetry(userId)
   const playerSyncOverview = await syncPlayers(userId)
-  const syncOverview = await syncCheckIns(userId)
+  let syncOverview = await syncCheckIns(userId)
   let publicCheckInSyncOverview: PlayerSyncOverview | null = null
   if (options.publicSessionDefinition) {
     try {
       await refreshRemotePublicCheckIns(userId, { sessionDefinitionId: options.publicSessionDefinition.id })
-      await importPublicCheckInSubmissions(userId, options.publicSessionDefinition)
+      const publicImportResult = await importPublicCheckInSubmissions(userId, options.publicSessionDefinition, {
+        recoverImportedWithoutLocalEntry: true,
+      })
+      if (publicImportResult.imported > 0) {
+        syncOverview = await syncCheckIns(userId, { sessionDefinitionId: options.publicSessionDefinition.id })
+      }
     } catch (caughtError) {
       publicCheckInSyncOverview = {
         isOnline: typeof navigator === 'undefined' ? true : navigator.onLine,

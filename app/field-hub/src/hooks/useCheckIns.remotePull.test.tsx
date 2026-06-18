@@ -384,7 +384,87 @@ describe('useCheckIns remote freshness pull', () => {
     expect(publicCheckInRepositoryMocks.refreshRemotePublicCheckIns).toHaveBeenCalledWith('user-1', {
       sessionDefinitionId: 'session-def-1',
     })
-    expect(publicCheckInRepositoryMocks.importPublicCheckInSubmissions).toHaveBeenCalledWith('user-1', sessionDefinition)
+    expect(publicCheckInRepositoryMocks.importPublicCheckInSubmissions).toHaveBeenCalledWith(
+      'user-1',
+      sessionDefinition,
+      { recoverImportedWithoutLocalEntry: false },
+    )
+  })
+
+  it('pushes entries created by automatic public check-in imports', async () => {
+    await renderUseCheckIns()
+    publicCheckInRepositoryMocks.importPublicCheckInSubmissions.mockResolvedValueOnce({
+      imported: 1,
+      conflicts: 0,
+      superseded: 0,
+    })
+    checkInRepositoryMocks.pushPendingCheckIns.mockClear()
+
+    vi.advanceTimersByTime(30_000)
+    await flushAsyncWork()
+
+    expect(publicCheckInRepositoryMocks.importPublicCheckInSubmissions).toHaveBeenCalledWith(
+      'user-1',
+      sessionDefinition,
+      { recoverImportedWithoutLocalEntry: false },
+    )
+    expect(checkInRepositoryMocks.pushPendingCheckIns).toHaveBeenCalledWith('user-1')
+    expect(checkInRepositoryMocks.getCheckInSyncOverview).toHaveBeenCalledWith('user-1')
+  })
+
+  it('keeps public refresh state recoverable when public import fails', async () => {
+    await renderUseCheckIns()
+    publicCheckInRepositoryMocks.importPublicCheckInSubmissions.mockRejectedValueOnce(new Error('Import failed'))
+    checkInRepositoryMocks.getCheckInSyncOverview.mockClear()
+
+    vi.advanceTimersByTime(30_000)
+    await flushAsyncWork()
+
+    expect(latestResult?.errorMessage).toBe('Link-Check-ins nicht aktualisiert: Import failed')
+    expect(checkInRepositoryMocks.getCheckInSyncOverview).toHaveBeenCalledWith('user-1')
+    expect(publicCheckInRepositoryMocks.listLocalPublicCheckInLinks).toHaveBeenCalledWith('user-1', 'session-def-1')
+  })
+
+  it('enables imported-submission recovery only after hydrating remote check-in entries', async () => {
+    await renderUseCheckIns()
+    publicCheckInRepositoryMocks.listLocalPublicCheckInLinks.mockResolvedValueOnce([{ id: 'link-recovery' }])
+    publicCheckInRepositoryMocks.listLocalPublicCheckInSubmissions.mockResolvedValueOnce([
+      { status: 'imported', deletedAt: null },
+    ])
+    checkInRepositoryMocks.pullRemoteCheckIns.mockClear()
+
+    vi.advanceTimersByTime(30_000)
+    await flushAsyncWork()
+
+    expect(checkInRepositoryMocks.pullRemoteCheckIns).toHaveBeenCalledWith('user-1', {
+      sessionDefinitionId: 'session-def-1',
+    })
+    expect(publicCheckInRepositoryMocks.importPublicCheckInSubmissions).toHaveBeenCalledWith(
+      'user-1',
+      sessionDefinition,
+      { recoverImportedWithoutLocalEntry: true },
+    )
+  })
+
+  it('does not hydrate remote check-in entries when imported submissions already have local entries', async () => {
+    await renderUseCheckIns()
+    publicCheckInRepositoryMocks.listLocalPublicCheckInLinks.mockResolvedValueOnce([{ id: 'link-recovery' }])
+    publicCheckInRepositoryMocks.listLocalPublicCheckInSubmissions.mockResolvedValueOnce([
+      { status: 'imported', deletedAt: null, playerId: 'player-1' },
+    ])
+    checkInRepositoryMocks.findSessionLog.mockResolvedValueOnce({ id: 'session-log-1' })
+    checkInRepositoryMocks.listCheckInEntries.mockResolvedValueOnce([entry({ playerId: 'player-1' })])
+    checkInRepositoryMocks.pullRemoteCheckIns.mockClear()
+
+    vi.advanceTimersByTime(30_000)
+    await flushAsyncWork()
+
+    expect(checkInRepositoryMocks.pullRemoteCheckIns).not.toHaveBeenCalled()
+    expect(publicCheckInRepositoryMocks.importPublicCheckInSubmissions).toHaveBeenCalledWith(
+      'user-1',
+      sessionDefinition,
+      { recoverImportedWithoutLocalEntry: false },
+    )
   })
 
   it('does not refresh public check-ins from realtime inserts while the app is hidden', async () => {

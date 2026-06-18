@@ -12,6 +12,9 @@ const syncedOverview = {
 }
 
 const syncPlayers = vi.hoisted(() => vi.fn(async () => syncedOverview))
+const checkInRepositoryMocks = vi.hoisted(() => ({
+  syncCheckIns: vi.fn(async () => syncedOverview),
+}))
 const publicCheckInRepositoryMocks = vi.hoisted(() => ({
   getPublicCheckInSyncOverview: vi.fn(async () => syncedOverview),
   refreshRemotePublicCheckIns: vi.fn(async () => undefined),
@@ -42,7 +45,7 @@ vi.mock('./playerRepository', () => ({
 
 vi.mock('./checkInRepository', () => ({
   getCheckInSyncOverview: vi.fn(async () => syncedOverview),
-  syncCheckIns: vi.fn(async () => syncedOverview),
+  syncCheckIns: checkInRepositoryMocks.syncCheckIns,
 }))
 
 vi.mock('./baselineRepository', () => ({
@@ -58,6 +61,8 @@ vi.mock('./publicCheckInRepository', () => publicCheckInRepositoryMocks)
 describe('syncRepository orchestrator', () => {
   beforeEach(async () => {
     syncPlayers.mockClear()
+    checkInRepositoryMocks.syncCheckIns.mockClear()
+    checkInRepositoryMocks.syncCheckIns.mockResolvedValue(syncedOverview)
     publicCheckInRepositoryMocks.getPublicCheckInSyncOverview.mockClear()
     publicCheckInRepositoryMocks.refreshRemotePublicCheckIns.mockClear()
     publicCheckInRepositoryMocks.refreshRemotePublicCheckIns.mockResolvedValue(undefined)
@@ -100,6 +105,27 @@ describe('syncRepository orchestrator', () => {
     expect(overview).toMatchObject({
       status: 'error',
       errorMessage: 'Public sync failed',
+    })
+  })
+
+  it('pushes check-in entries created during manual public check-in import', async () => {
+    publicCheckInRepositoryMocks.importPublicCheckInSubmissions.mockResolvedValueOnce({
+      imported: 1,
+      conflicts: 0,
+      superseded: 0,
+    })
+    const { syncAllUserData } = await import('./syncRepository')
+
+    await syncAllUserData('user-1', { publicSessionDefinition: sessionDefinition })
+
+    expect(publicCheckInRepositoryMocks.importPublicCheckInSubmissions).toHaveBeenCalledWith(
+      'user-1',
+      sessionDefinition,
+      { recoverImportedWithoutLocalEntry: true },
+    )
+    expect(checkInRepositoryMocks.syncCheckIns).toHaveBeenCalledTimes(2)
+    expect(checkInRepositoryMocks.syncCheckIns).toHaveBeenLastCalledWith('user-1', {
+      sessionDefinitionId: 'session-1',
     })
   })
 })

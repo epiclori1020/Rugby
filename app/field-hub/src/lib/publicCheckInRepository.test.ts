@@ -128,6 +128,77 @@ describe('publicCheckInRepository import', () => {
     expect(updatedSubmission?.status).toBe('imported')
   })
 
+  it('recovers an imported public submission when no local check-in entry exists', async () => {
+    await localDb.publicCheckInSubmissions.put(
+      submission({
+        status: 'imported',
+        importedAt: '2026-06-16T18:00:00.000Z',
+      }),
+    )
+
+    const skipped = await importPublicCheckInSubmissions(userId, sessionDefinition)
+    const recovered = await importPublicCheckInSubmissions(userId, sessionDefinition, {
+      recoverImportedWithoutLocalEntry: true,
+    })
+    const entries = await localDb.playerSessionEntries.where('userId').equals(userId).toArray()
+    const updatedSubmission = await localDb.publicCheckInSubmissions.get('submission-1')
+
+    expect(skipped).toEqual({ imported: 0, conflicts: 0, superseded: 0 })
+    expect(recovered).toMatchObject({ imported: 1, conflicts: 0, superseded: 0 })
+    expect(entries[0]).toMatchObject({
+      playerId: player.id,
+      present: true,
+      readiness: 3,
+      checkInSource: 'player_link',
+      playerSubmittedAt: '2026-06-16T17:45:00.000Z',
+    })
+    expect(updatedSubmission?.status).toBe('imported')
+    expect(updatedSubmission?.importedAt).toBe('2026-06-16T18:00:00.000Z')
+  })
+
+  it('does not recover an imported public submission over an existing active check-in entry', async () => {
+    const sessionLog = await ensureSessionLog(userId, sessionDefinition)
+    await saveCheckInEntry(userId, sessionLog.id, player, { observation: 'Coach hat Eintrag schon lokal' })
+    await localDb.publicCheckInSubmissions.put(
+      submission({
+        status: 'imported',
+        importedAt: '2026-06-16T18:00:00.000Z',
+      }),
+    )
+
+    const result = await importPublicCheckInSubmissions(userId, sessionDefinition, {
+      recoverImportedWithoutLocalEntry: true,
+    })
+    const entry = await localDb.playerSessionEntries.where('userId').equals(userId).first()
+
+    expect(result).toEqual({ imported: 0, conflicts: 0, superseded: 0 })
+    expect(entry?.observation).toBe('Coach hat Eintrag schon lokal')
+    expect(entry?.readiness).not.toBe(3)
+  })
+
+  it('marks an imported orphan as conflict when the player is no longer active', async () => {
+    await localDb.players.put({ ...player, active: false })
+    await localDb.publicCheckInSubmissions.put(
+      submission({
+        status: 'imported',
+        importedAt: '2026-06-16T18:00:00.000Z',
+      }),
+    )
+
+    const result = await importPublicCheckInSubmissions(userId, sessionDefinition, {
+      recoverImportedWithoutLocalEntry: true,
+    })
+    const updatedSubmission = await localDb.publicCheckInSubmissions.get('submission-1')
+    const entries = await localDb.playerSessionEntries.where('userId').equals(userId).toArray()
+
+    expect(result).toEqual({ imported: 0, conflicts: 1, superseded: 0 })
+    expect(updatedSubmission).toMatchObject({
+      status: 'conflict',
+      conflictReason: 'Spieler ist nicht aktiv oder nicht vorhanden.',
+    })
+    expect(entries).toHaveLength(0)
+  })
+
   it('marks later public submissions as conflicts after a coach edit', async () => {
     const sessionLog = await ensureSessionLog(userId, sessionDefinition)
     await saveCheckInEntry(userId, sessionLog.id, player, { readiness: 5 })

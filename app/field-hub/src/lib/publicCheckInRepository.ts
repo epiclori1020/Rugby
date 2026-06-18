@@ -192,6 +192,10 @@ export type PublicCheckInImportResult = {
   superseded: number
 }
 
+export type PublicCheckInImportOptions = {
+  recoverImportedWithoutLocalEntry?: boolean
+}
+
 async function markSubmission(
   submission: PublicCheckInSubmission,
   status: PublicCheckInSubmission['status'],
@@ -239,9 +243,40 @@ function groupSubmissionsByPlayer(submissions: PublicCheckInSubmission[]) {
   return grouped
 }
 
+function getLatestSubmissionForImport(
+  submissions: PublicCheckInSubmission[],
+  options: PublicCheckInImportOptions,
+) {
+  const latestPendingSubmission = getLatestImportableSubmission(submissions)
+
+  if (latestPendingSubmission) {
+    return latestPendingSubmission
+  }
+
+  if (!options.recoverImportedWithoutLocalEntry) {
+    return null
+  }
+
+  return submissions
+    .filter((submission) => submission.status === 'imported' && !submission.deletedAt)
+    .sort((a, b) => b.submittedAt.localeCompare(a.submittedAt))[0] ?? null
+}
+
+function conflictableSubmissions(
+  submissions: PublicCheckInSubmission[],
+  latestSubmission: PublicCheckInSubmission | null,
+) {
+  return submissions.filter(
+    (submission) =>
+      submission.status === 'pending' ||
+      (latestSubmission?.status === 'imported' && submission.id === latestSubmission.id),
+  )
+}
+
 export async function importPublicCheckInSubmissions(
   userId: string,
   sessionDefinition: SessionDefinition,
+  options: PublicCheckInImportOptions = {},
 ): Promise<PublicCheckInImportResult> {
   const sessionLinks = await localDb.publicCheckInLinks
     .where('[userId+sessionDefinitionId]')
@@ -254,26 +289,35 @@ export async function importPublicCheckInSubmissions(
     return { imported: 0, conflicts: 0, superseded: 0 }
   }
 
-  const pendingSubmissions = await localDb.publicCheckInSubmissions
+  const importCandidateSubmissions = await localDb.publicCheckInSubmissions
     .where('[userId+status]')
     .equals([userId, 'pending'])
-    .and((submission) => sessionLinkIds.has(submission.linkId))
+    .and((submission) => sessionLinkIds.has(submission.linkId) && !submission.deletedAt)
     .toArray()
+  if (options.recoverImportedWithoutLocalEntry) {
+    importCandidateSubmissions.push(
+      ...(await localDb.publicCheckInSubmissions
+        .where('[userId+status]')
+        .equals([userId, 'imported'])
+        .and((submission) => sessionLinkIds.has(submission.linkId) && !submission.deletedAt)
+        .toArray()),
+    )
+  }
 
-  if (pendingSubmissions.length === 0) {
+  if (importCandidateSubmissions.length === 0) {
     return { imported: 0, conflicts: 0, superseded: 0 }
   }
 
-  const groupedSubmissions = groupSubmissionsByPlayer(pendingSubmissions)
+  const groupedSubmissions = groupSubmissionsByPlayer(importCandidateSubmissions)
   const sessionLog = await ensureSessionLog(userId, sessionDefinition)
   let imported = 0
   let conflicts = 0
   let superseded = 0
 
   for (const submissions of groupedSubmissions.values()) {
-    const latestSubmission = getLatestImportableSubmission(submissions)
+    const latestSubmission = getLatestSubmissionForImport(submissions, options)
     if (!latestSubmission?.playerId) {
-      for (const submission of submissions) {
+      for (const submission of conflictableSubmissions(submissions, latestSubmission)) {
         await markSubmission(submission, 'conflict', { conflictReason: 'Spieler konnte nicht zugeordnet werden.' })
         conflicts += 1
       }
@@ -282,7 +326,7 @@ export async function importPublicCheckInSubmissions(
 
     const player = await localDb.players.get(latestSubmission.playerId)
     if (!player || player.userId !== userId || !player.active) {
-      for (const submission of submissions) {
+      for (const submission of conflictableSubmissions(submissions, latestSubmission)) {
         await markSubmission(submission, 'conflict', { conflictReason: 'Spieler ist nicht aktiv oder nicht vorhanden.' })
         conflicts += 1
       }
@@ -294,10 +338,16 @@ export async function importPublicCheckInSubmissions(
       .equals(userId)
       .and((entry) => entry.sessionLogId === sessionLog.id && entry.playerId === player.id && !entry.deletedAt)
       .first()
-    const decision = shouldImportPublicSubmission(existingEntry, latestSubmission)
+    if (latestSubmission.status === 'imported' && existingEntry) {
+      continue
+    }
+
+    const decision = shouldImportPublicSubmission(existingEntry, latestSubmission, {
+      allowImportedStatus: options.recoverImportedWithoutLocalEntry,
+    })
 
     if (!decision.ok) {
-      for (const submission of submissions) {
+      for (const submission of conflictableSubmissions(submissions, latestSubmission)) {
         await markSubmission(submission, 'conflict', { conflictReason: decision.reason })
         conflicts += 1
       }
@@ -305,7 +355,7 @@ export async function importPublicCheckInSubmissions(
     }
 
     for (const submission of submissions) {
-      if (submission.id !== latestSubmission.id) {
+      if (submission.status === 'pending' && submission.id !== latestSubmission.id) {
         await markSubmission(submission, 'superseded')
         superseded += 1
       }
@@ -318,7 +368,10 @@ export async function importPublicCheckInSubmissions(
       publicSubmissionPatch(latestSubmission),
       latestSubmission.submittedAt,
     )
-    await markSubmission(latestSubmission, 'imported', { importedAt: nowIso(), conflictReason: null })
+    await markSubmission(latestSubmission, 'imported', {
+      importedAt: latestSubmission.importedAt ?? nowIso(),
+      conflictReason: null,
+    })
     imported += 1
   }
 

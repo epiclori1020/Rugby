@@ -46,6 +46,37 @@ type SaveEntryResult =
   | { ok: true; entry: PlayerSessionEntry }
   | { ok: false; error: string }
 
+async function loadLocalPublicCheckInSnapshot(userId: string, sessionDefinitionId: string) {
+  const links = await listLocalPublicCheckInLinks(userId, sessionDefinitionId)
+  const submissions = (await Promise.all(links.map((link) => listLocalPublicCheckInSubmissions(userId, link.id)))).flat()
+
+  return { links, submissions }
+}
+
+async function shouldHydrateRemoteCheckInsForPublicRecovery(
+  userId: string,
+  sessionDefinition: SessionDefinition,
+  submissions: PublicCheckInSubmission[],
+) {
+  const importedSubmissions = submissions.filter((submission) => submission.status === 'imported' && !submission.deletedAt)
+
+  if (importedSubmissions.length === 0) {
+    return false
+  }
+
+  const sessionLog = await findSessionLog(userId, sessionDefinition.id)
+  if (!sessionLog) {
+    return true
+  }
+
+  const localEntries = await listCheckInEntries(userId, sessionLog.id)
+  const localEntryPlayerIds = new Set(
+    localEntries.filter((entry) => hasPlayerId(entry) && !entry.deletedAt).map((entry) => entry.playerId),
+  )
+
+  return importedSubmissions.some((submission) => !submission.playerId || !localEntryPlayerIds.has(submission.playerId))
+}
+
 export function useCheckIns(
   userId: string | null,
   sessionDefinition: SessionDefinition,
@@ -132,7 +163,19 @@ export function useCheckIns(
     setIsLoading(true)
     try {
       await refreshRemotePublicCheckIns(userId, { sessionDefinitionId: sessionDefinition.id }).catch(() => undefined)
-      const publicImportResult = await importPublicCheckInSubmissions(userId, sessionDefinition).catch(() => null)
+      const { submissions: localPublicSubmissions } = await loadLocalPublicCheckInSnapshot(userId, sessionDefinition.id)
+      let canRecoverImportedPublicSubmissions = false
+      if (await shouldHydrateRemoteCheckInsForPublicRecovery(userId, sessionDefinition, localPublicSubmissions)) {
+        try {
+          await pullRemoteCheckIns(userId, { sessionDefinitionId: sessionDefinition.id })
+          canRecoverImportedPublicSubmissions = true
+        } catch {
+          canRecoverImportedPublicSubmissions = false
+        }
+      }
+      const publicImportResult = await importPublicCheckInSubmissions(userId, sessionDefinition, {
+        recoverImportedWithoutLocalEntry: canRecoverImportedPublicSubmissions,
+      }).catch(() => null)
       const overview = await syncCheckIns(userId, { sessionDefinitionId: sessionDefinition.id })
       setSyncOverview(overview)
       setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Check-in-Sync fehlgeschlagen.' : null)
@@ -191,6 +234,17 @@ export function useCheckIns(
     return pullPromise
   }, [refreshLocalCheckIns, sessionDefinition.id, userId])
 
+  const pushImportedPublicCheckIns = useCallback(async () => {
+    if (!userId) {
+      return null
+    }
+
+    const overview = await pushPendingCheckIns(userId)
+    setSyncOverview(overview)
+    setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Check-in-Sync fehlgeschlagen.' : null)
+    return overview
+  }, [userId])
+
   const refreshPublicCheckIns = useCallback(async () => {
     if (!userId || (typeof navigator !== 'undefined' && !navigator.onLine)) {
       return
@@ -202,33 +256,55 @@ export function useCheckIns(
 
     const refreshPromise = (async () => {
       await refreshRemotePublicCheckIns(userId, { sessionDefinitionId: sessionDefinition.id })
-      const publicImportResult = await importPublicCheckInSubmissions(userId, sessionDefinition)
+      const { links: refreshedPublicLinks, submissions: refreshedPublicSubmissions } =
+        await loadLocalPublicCheckInSnapshot(userId, sessionDefinition.id)
+      let canRecoverImportedPublicSubmissions = false
+      if (await shouldHydrateRemoteCheckInsForPublicRecovery(userId, sessionDefinition, refreshedPublicSubmissions)) {
+        try {
+          await pullRemoteCheckIns(userId, { sessionDefinitionId: sessionDefinition.id })
+          canRecoverImportedPublicSubmissions = true
+        } catch {
+          canRecoverImportedPublicSubmissions = false
+        }
+      }
+      let publicImportResult = { imported: 0, conflicts: 0, superseded: 0 }
+      try {
+        publicImportResult = await importPublicCheckInSubmissions(userId, sessionDefinition, {
+          recoverImportedWithoutLocalEntry: canRecoverImportedPublicSubmissions,
+        })
+      } catch (caughtError) {
+        const message = caughtError instanceof Error ? caughtError.message : 'Link-Check-ins konnten nicht synchronisiert werden.'
+        setErrorMessage(`Link-Check-ins nicht aktualisiert: ${message}`)
+      }
+      if (publicImportResult.imported > 0) {
+        await pushImportedPublicCheckIns()
+      }
       if (publicImportResult.imported > 0 || publicImportResult.conflicts > 0) {
         setPublicCheckInNotice(
           `${publicImportResult.imported} Spieler-Check-ins uebernommen, ${publicImportResult.conflicts} Konflikte.`,
         )
       }
-      if (publicImportResult.imported > 0 || publicImportResult.conflicts > 0 || publicImportResult.superseded > 0) {
+      if (
+        publicImportResult.imported > 0 ||
+        publicImportResult.conflicts > 0 ||
+        publicImportResult.superseded > 0 ||
+        canRecoverImportedPublicSubmissions
+      ) {
         await refreshLocalCheckIns()
       } else {
-        const [overview, localPublicLinks] = await Promise.all([
+        const [overview] = await Promise.all([
           getCheckInSyncOverview(userId),
-          listLocalPublicCheckInLinks(userId, sessionDefinition.id),
         ])
         setSyncOverview(overview)
-        setPublicCheckInLinks(localPublicLinks.sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
-        setPublicCheckInSubmissions(
-          (
-            await Promise.all(localPublicLinks.map((link) => listLocalPublicCheckInSubmissions(userId, link.id)))
-          ).flat(),
-        )
+        setPublicCheckInLinks(refreshedPublicLinks.sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
+        setPublicCheckInSubmissions(refreshedPublicSubmissions)
       }
     })().finally(() => {
       publicRefreshInFlightRef.current = null
     })
     publicRefreshInFlightRef.current = refreshPromise
     return refreshPromise
-  }, [refreshLocalCheckIns, sessionDefinition, userId])
+  }, [pushImportedPublicCheckIns, refreshLocalCheckIns, sessionDefinition, userId])
 
   const runBackgroundSync = useCallback(async () => {
     if (!userId || (typeof navigator !== 'undefined' && !navigator.onLine)) {
