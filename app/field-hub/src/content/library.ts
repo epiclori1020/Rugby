@@ -104,6 +104,38 @@ export const libraryItems: LibraryItem[] = [
     pdfRefs: [pdfRefs.kw25ThursdayDeepPlaybook],
   },
   {
+    id: 'kw26-tuesday-active-pack',
+    category: 'PDFs',
+    title: 'Dienstag 23.06: aktives PDF-Paket',
+    summary:
+      'Aktuelle iPad- und Druckunterlagen fuer die einzige KW26-Einheit: Training kompakt, Check-in/Beobachtung und Deep Playbook.',
+    sourcePath: 'plans/offseason_coach_sheets/KW26_basis_1.md',
+    tags: ['KW26', 'Dienstag', '23.06', 'Training kompakt', 'Check-in', 'Deep Playbook'],
+    sections: [
+      {
+        title: 'Am Feld',
+        body: [
+          'Training kompakt ist die kurze Klemmbrett-Referenz.',
+          'Check-in + Beobachtung ist auf zwei Querformatseiten gebaut: Seite 1 Check-in, Seite 2 Beobachtung/Nachbereitung.',
+          'Deep Playbook ist Vorbereitung/iPad-Referenz, nicht Pflichtdruck.',
+        ],
+      },
+      {
+        title: 'Kernentscheidungen',
+        body: [
+          'Donnerstag faellt aus und wird nicht am Dienstag nachgeholt.',
+          'Kein Team-Broad-Jump-Retest, kein Bronco, kein Max-Sprint und kein Max-Deadlift.',
+          'Artur, Christopher, David und DAmore sind als konkrete Nachhol-/Korrekturfaelle abgebildet.',
+        ],
+      },
+    ],
+    pdfRefs: [
+      pdfRefs.kw26TuesdayTrainingCompact,
+      pdfRefs.kw26TuesdayCheckIn,
+      pdfRefs.kw26TuesdayDeepPlaybook,
+    ],
+  },
+  {
     id: 'spieler-briefing-start',
     category: 'Spieler-Briefing',
     title: 'Spieler-Briefing: S&C Start',
