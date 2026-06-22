@@ -3,7 +3,26 @@ import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it, vi } from 'vitest'
+import { pdfRefs } from '../content/pdfRefs'
+import type { SessionDefinition } from '../content/types'
 import { LibraryView } from './LibraryView'
+
+const sessionWithoutLibraryRefs: SessionDefinition = {
+  id: 'test-session',
+  date: '2026-06-23',
+  kw: 'KW26',
+  title: 'Sehr lange Session mit bewusst langem Titel fuer iPad-Umbruch und schnelle Unterlagen',
+  type: 'training',
+  summary: 'Test',
+  primarySource: 'plans/offseason_coach_sheets/KW26_tuesday_training_compact_2026-06-23.md',
+  pdfRefs: [pdfRefs.kw26TuesdayTrainingCompact],
+  goals: [],
+  timeline: [],
+  materials: [],
+  safetyNotes: [],
+  coachNotes: [],
+  libraryRefs: [],
+}
 
 describe('LibraryView empty states', () => {
   it('does not render a stale detail item when search has no matches', () => {
@@ -105,5 +124,27 @@ describe('LibraryView empty states', () => {
     await act(async () => {
       root.unmount()
     })
+  })
+
+  it('opens a coach-focused today-relevant filter from the selected session', () => {
+    const markup = renderToStaticMarkup(
+      <LibraryView initialCategory="Heute relevant" selectedSession={sessionWithoutLibraryRefs} />,
+    )
+
+    expect(markup).toContain('Heute relevant')
+    expect(markup).toContain('Sehr lange Session mit bewusst langem Titel')
+    expect(markup).toContain('Di 23.06 Training kompakt')
+    expect(markup).toContain('Variantenkarte A+/A/B/C/D')
+    expect(markup).toContain('Exercise Pool Mapping')
+    expect(markup).toContain('Aktive Pläne')
+  })
+
+  it('keeps archive visibly separated without promoting archive PDFs as active documents', () => {
+    const markup = renderToStaticMarkup(<LibraryView initialCategory="Archiv" />)
+
+    expect(markup).toContain('Archiv')
+    expect(markup).toContain('_ARCHIV_nicht_drucken')
+    expect(markup).toContain('nicht als aktive Vorlage')
+    expect(markup).not.toContain('alt_unit_1_one_pager.pdf')
   })
 })

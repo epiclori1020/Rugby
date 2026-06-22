@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { AppShell } from './components/AppShell'
+import { AnalysisView } from './components/AnalysisView'
 import { CheckInView } from './components/CheckInView'
 import { ExportView } from './components/ExportView'
 import { KioskCheckInView } from './components/KioskCheckInView'
@@ -15,15 +16,23 @@ import type { SelfCheckInSubmissionInput } from './components/SelfCheckInFlow'
 import { TodayDashboard } from './components/TodayDashboard'
 import { TrainingView } from './components/TrainingView'
 import { getRelevantSessions, sessionDefinitions } from './content/sessions'
-import type { PdfRef } from './content/types'
+import type { LibraryCategory, PdfRef, SessionDefinition } from './content/types'
 import { shouldShowBackupReminder } from './domain/backupReminder'
 import { deriveRedFlagFromPainLocation, type CheckInEntryPatch, type SessionLog } from './domain/checkIn'
+import type { CoachInsightSource } from './domain/coachInsights'
+import type { PlayerAnalysisSource } from './domain/playerAnalysis'
 import { useAuthSession } from './hooks/useAuthSession'
 import { useBaselines } from './hooks/useBaselines'
 import { useCheckIns } from './hooks/useCheckIns'
+import { useCoachInsights } from './hooks/useCoachInsights'
+import { useExercises } from './hooks/useExercises'
+import { useExposures } from './hooks/useExposures'
+import { useMetrics } from './hooks/useMetrics'
 import { usePlayers } from './hooks/usePlayers'
+import { usePostSessionCompletionOverview } from './hooks/usePostSessionCompletionOverview'
 import { usePostSession } from './hooks/usePostSession'
 import { useReturners } from './hooks/useReturners'
+import { useSessionBlocks } from './hooks/useSessionBlocks'
 import { useStoragePersistence } from './hooks/useStoragePersistence'
 import { getLastExportAt, getLatestCompletedSession } from './lib/backupRepository'
 import { flushBackgroundSyncs } from './lib/backgroundSync'
@@ -36,6 +45,7 @@ export type HubTab =
   | 'training'
   | 'nachbereitung'
   | 'returner'
+  | 'analysis'
   | 'bibliothek'
   | 'export'
   | 'einstellungen'
@@ -103,6 +113,8 @@ function CoachApp() {
   const [isManualSyncing, setIsManualSyncing] = useState(false)
   const [manualSyncFeedback, setManualSyncFeedback] = useState<ManualSyncFeedback | null>(null)
   const [libraryInitialPdfHref, setLibraryInitialPdfHref] = useState<string | undefined>(undefined)
+  const [libraryInitialCategory, setLibraryInitialCategory] = useState<LibraryCategory | undefined>(undefined)
+  const [libraryInitialItemId, setLibraryInitialItemId] = useState<string | undefined>(undefined)
   const [libraryReturnTab, setLibraryReturnTab] = useState<HubTab | null>(null)
   const [transientNotice, setTransientNotice] = useState<string | null>(null)
   const [appTodayKey, setAppTodayKey] = useState(() => toLocalDateKey(new Date()))
@@ -136,12 +148,48 @@ function CoachApp() {
     selectedSession,
     playerActions.players,
   )
+  const metricActions = useMetrics(
+    authState.status === 'signed-in' ? authState.user.id : null,
+    selectedSession,
+    playerActions.players,
+  )
+  const exerciseActions = useExercises(
+    authState.status === 'signed-in' ? authState.user.id : null,
+    selectedSession,
+    playerActions.players,
+  )
   const returnerActions = useReturners(
     authState.status === 'signed-in' ? authState.user.id : null,
     selectedSession,
     playerActions.players,
     checkInActions.entries,
   )
+  const sessionBlockActions = useSessionBlocks(authState.status === 'signed-in' ? authState.user.id : null, selectedSession)
+  const exposureActions = useExposures(authState.status === 'signed-in' ? authState.user.id : null, selectedSession)
+  const postSessionEntriesForOverview = postSessionActions.entries ?? []
+  const progressEntriesForOverview = postSessionActions.progressEntries ?? []
+  const baselineEntriesForOverview = baselineActions.entries ?? []
+  const metricEntriesForOverview = metricActions.entries ?? []
+  const returnerEntriesForInsights = returnerActions.entries ?? []
+  const sessionBlockLogsForInsights = sessionBlockActions.blockLogs ?? []
+  const exposureSummariesForInsights = exposureActions.summaries ?? []
+  const activePlayers = useMemo(() => playerActions.players.filter((player) => player.active), [playerActions.players])
+  const postSessionOverview = usePostSessionCompletionOverview({
+    activePlayers,
+    lastExportAt,
+    refreshKey: [
+      activeTab,
+      selectedSession.id,
+      postSessionActions.sessionLog?.clientUpdatedAt ?? '',
+      postSessionEntriesForOverview.map((entry) => entry.clientUpdatedAt).join('|'),
+      progressEntriesForOverview.map((entry) => entry.clientUpdatedAt).join('|'),
+      baselineEntriesForOverview.map((entry) => entry.clientUpdatedAt).join('|'),
+      metricEntriesForOverview.map((entry) => entry.clientUpdatedAt).join('|'),
+    ].join('::'),
+    sessions: sessionDefinitions,
+    todayKey: appTodayKey,
+    userId: authState.status === 'signed-in' ? authState.user.id : null,
+  })
   const userId = authState.status === 'signed-in' ? authState.user.id : null
   const syncOverview = useMemo(
     () =>
@@ -149,36 +197,84 @@ function CoachApp() {
         playerActions.syncOverview,
         checkInActions.syncOverview,
         baselineActions.syncOverview,
+        exerciseActions.syncOverview,
+        metricActions.syncOverview,
         returnerActions.syncOverview,
+        sessionBlockActions.syncOverview,
+        exposureActions.syncOverview,
       ]),
     [
       baselineActions.syncOverview,
       checkInActions.syncOverview,
+      exerciseActions.syncOverview,
+      metricActions.syncOverview,
       playerActions.syncOverview,
       returnerActions.syncOverview,
+      sessionBlockActions.syncOverview,
+      exposureActions.syncOverview,
     ],
+  )
+  const coachInsightRefreshKey = [
+    activeTab,
+    selectedSession.id,
+    playerActions.players.map((player) => `${player.id}:${player.clientUpdatedAt}`).join('|'),
+    checkInActions.entries.map((entry) => `${entry.id}:${entry.clientUpdatedAt}`).join('|'),
+    postSessionEntriesForOverview.map((entry) => `${entry.id}:${entry.clientUpdatedAt}`).join('|'),
+    returnerEntriesForInsights.map((entry) => `${entry.id}:${entry.clientUpdatedAt}`).join('|'),
+    sessionBlockLogsForInsights.map((entry) => `${entry.id}:${entry.clientUpdatedAt}`).join('|'),
+    exposureSummariesForInsights.map((entry) => `${entry.id}:${entry.clientUpdatedAt}`).join('|'),
+    syncOverview.lastSuccessfulSyncAt ?? '',
+  ].join('::')
+  const coachInsightActions = useCoachInsights(
+    userId,
+    playerActions.players,
+    sessionDefinitions,
+    appTodayKey,
+    coachInsightRefreshKey,
   )
   const refreshLocalPlayers = playerActions.refreshLocalPlayers
   const refreshLocalCheckIns = checkInActions.refreshLocalCheckIns
   const refreshPostSession = postSessionActions.refreshPostSession
   const refreshBaselines = baselineActions.refreshBaselines
+  const refreshExercises = exerciseActions.refreshExercises
+  const refreshMetrics = metricActions.refreshMetrics
   const refreshReturners = returnerActions.refreshReturners
+  const refreshSessionBlocks = sessionBlockActions.refreshSessionBlocks
+  const refreshExposures = exposureActions.refreshExposures
   const refreshLocalDataRef = useRef({
+    refreshExposures,
     refreshBaselines,
+    refreshExercises,
+    refreshMetrics,
     refreshLocalCheckIns,
     refreshLocalPlayers,
     refreshPostSession,
     refreshReturners,
+    refreshSessionBlocks,
   })
   useEffect(() => {
     refreshLocalDataRef.current = {
+      refreshExposures,
       refreshBaselines,
+      refreshExercises,
+      refreshMetrics,
       refreshLocalCheckIns,
       refreshLocalPlayers,
       refreshPostSession,
       refreshReturners,
+      refreshSessionBlocks,
     }
-  }, [refreshBaselines, refreshLocalCheckIns, refreshLocalPlayers, refreshPostSession, refreshReturners])
+  }, [
+    refreshBaselines,
+    refreshExercises,
+    refreshExposures,
+    refreshMetrics,
+    refreshLocalCheckIns,
+    refreshLocalPlayers,
+    refreshPostSession,
+    refreshReturners,
+    refreshSessionBlocks,
+  ])
   const backupReminderKey = latestCompletedSession
     ? `${latestCompletedSession.id}:${latestCompletedSession.clientUpdatedAt}`
     : null
@@ -192,33 +288,80 @@ function CoachApp() {
   const showTransientNotice = useCallback((message: string) => {
     setTransientNotice(message)
   }, [])
+  const currentCheckInSessionLogId = checkInActions.sessionLog?.id ?? null
 
   const handleTabChange = useCallback((tab: HubTab) => {
     setLibraryInitialPdfHref(undefined)
+    setLibraryInitialCategory(undefined)
+    setLibraryInitialItemId(undefined)
     setLibraryReturnTab(null)
     setActiveTab(tab)
   }, [])
 
   const handleOpenPdf = useCallback((pdf: PdfRef) => {
     setLibraryInitialPdfHref(pdf.href)
+    setLibraryInitialCategory(undefined)
+    setLibraryInitialItemId(undefined)
     setLibraryReturnTab('heute')
+    setActiveTab('bibliothek')
+  }, [])
+
+  const handleOpenLibraryForSession = useCallback((session: SessionDefinition) => {
+    setSelectedSessionId(session.id)
+    setLibraryInitialPdfHref(undefined)
+    setLibraryInitialCategory('Heute relevant')
+    setLibraryInitialItemId(undefined)
+    setLibraryReturnTab('heute')
+    setActiveTab('bibliothek')
+  }, [])
+
+  const handleOpenLibraryItem = useCallback((itemId: string) => {
+    setLibraryInitialPdfHref(undefined)
+    setLibraryInitialCategory(undefined)
+    setLibraryInitialItemId(itemId)
+    setLibraryReturnTab('training')
     setActiveTab('bibliothek')
   }, [])
 
   const handleReturnFromLibrary = useCallback(() => {
     setLibraryInitialPdfHref(undefined)
+    setLibraryInitialCategory(undefined)
+    setLibraryInitialItemId(undefined)
+    setActiveTab(libraryReturnTab ?? 'heute')
     setLibraryReturnTab(null)
-    setActiveTab('heute')
-  }, [])
+  }, [libraryReturnTab])
 
   const handleLibraryPdfClose = useCallback(() => {
     setLibraryInitialPdfHref(undefined)
-    setLibraryReturnTab(null)
   }, [])
 
   const handleResetToTodaySession = useCallback(() => {
     setSelectedSessionId(featuredSession.id)
   }, [featuredSession.id])
+
+  const handleOpenPlayerSourceSession = useCallback((source: PlayerAnalysisSource) => {
+    if (!source.sessionDefinitionId || !findSessionById(source.sessionDefinitionId)) {
+      return
+    }
+
+    setSelectedSessionId(source.sessionDefinitionId)
+    setActiveTab(source.correctionTarget)
+  }, [])
+  const canOpenPlayerSourceSession = useCallback((source: PlayerAnalysisSource) => {
+    return Boolean(source.sessionDefinitionId && findSessionById(source.sessionDefinitionId))
+  }, [])
+  const handleOpenCoachInsightSource = useCallback(
+    (source: CoachInsightSource) => {
+      if (!source.sessionDefinitionId || !findSessionById(source.sessionDefinitionId)) {
+        return
+      }
+
+      setSelectedSessionId(source.sessionDefinitionId)
+      setActiveTab(source.correctionTarget)
+      showTransientNotice('Quelle geöffnet.')
+    },
+    [showTransientNotice],
+  )
 
   const handleStartKiosk = useCallback(() => {
     window.localStorage.setItem(kioskSessionStorageKey, selectedSession.id)
@@ -238,10 +381,13 @@ function CoachApp() {
     }
     const {
       refreshBaselines: refreshBaselinesNow,
+      refreshExercises: refreshExercisesNow,
+      refreshExposures: refreshExposuresNow,
       refreshLocalCheckIns: refreshLocalCheckInsNow,
       refreshLocalPlayers: refreshLocalPlayersNow,
       refreshPostSession: refreshPostSessionNow,
       refreshReturners: refreshReturnersNow,
+      refreshSessionBlocks: refreshSessionBlocksNow,
     } = refreshLocalDataRef.current
 
     await Promise.all([
@@ -249,7 +395,10 @@ function CoachApp() {
       refreshLocalCheckInsNow(),
       refreshPostSessionNow(),
       refreshBaselinesNow(),
+      refreshExercisesNow(),
       refreshReturnersNow(),
+      refreshSessionBlocksNow(),
+      refreshExposuresNow(currentCheckInSessionLogId),
     ])
     const [storedLastExportAt, completedSession] = await Promise.all([
       getLastExportAt(userId),
@@ -257,7 +406,7 @@ function CoachApp() {
     ])
     setLastExportAtState(storedLastExportAt)
     setLatestCompletedSession(completedSession)
-  }, [userId])
+  }, [currentCheckInSessionLogId, userId])
 
   const runManualSync = useCallback(async () => {
     if (!userId) {
@@ -339,11 +488,10 @@ function CoachApp() {
     }
   }, [])
 
-  const activeKioskPlayers = playerActions.players.filter((player) => player.active)
-  const kioskPlayerOptions = activeKioskPlayers.map((player) => ({ id: player.id, displayName: player.name }))
+  const kioskPlayerOptions = activePlayers.map((player) => ({ id: player.id, displayName: player.name }))
 
   async function handleSubmitKioskEntry(input: SelfCheckInSubmissionInput) {
-    const player = activeKioskPlayers.find((candidate) => candidate.id === input.playerId)
+    const player = activePlayers.find((candidate) => candidate.id === input.playerId)
 
     if (!player) {
       throw new Error('Spieler nicht gefunden.')
@@ -394,14 +542,18 @@ function CoachApp() {
       {activeTab === 'heute' ? (
         <TodayDashboard
           checkInActions={checkInActions}
+          coachInsights={coachInsightActions.insights}
           featuredSession={featuredSession}
           isSignedIn={authState.status === 'signed-in'}
           onActionFeedback={showTransientNotice}
+          onOpenCoachInsightSource={handleOpenCoachInsightSource}
           onNavigate={handleTabChange}
+          onOpenLibrary={handleOpenLibraryForSession}
           onOpenPdf={handleOpenPdf}
           onResetToTodaySession={handleResetToTodaySession}
           onSessionChange={setSelectedSessionId}
           players={playerActions.players}
+          postSessionWork={postSessionOverview.latestWork}
           selectedSession={selectedSession}
           selectedSessionId={selectedSession.id}
           sessions={sessionDefinitions}
@@ -410,7 +562,13 @@ function CoachApp() {
           upcomingSessions={upcomingSessions}
         />
       ) : activeTab === 'spieler' ? (
-        <PlayersView authState={authState} baselineActions={baselineActions} playerActions={playerActions} />
+        <PlayersView
+          authState={authState}
+          canOpenSourceSession={canOpenPlayerSourceSession}
+          onOpenSourceSession={handleOpenPlayerSourceSession}
+          playerActions={playerActions}
+          todayKey={appTodayKey}
+        />
       ) : activeTab === 'check-in' ? (
         <CheckInView
           authState={authState}
@@ -428,11 +586,14 @@ function CoachApp() {
         <TrainingView
           authState={authState}
           checkInActions={checkInActions}
+          exposureActions={exposureActions}
+          onOpenLibraryItem={handleOpenLibraryItem}
           onNavigate={handleTabChange}
           onSessionChange={setSelectedSessionId}
           returnerCaps={returnerActions.returnerCaps}
           selectedSession={selectedSession}
           selectedSessionId={selectedSession.id}
+          sessionBlockActions={sessionBlockActions}
           sessions={sessionDefinitions}
         />
       ) : activeTab === 'nachbereitung' ? (
@@ -441,7 +602,13 @@ function CoachApp() {
           onNavigate={handleTabChange}
           onSessionChange={setSelectedSessionId}
           baselineActions={baselineActions}
+          exposureActions={exposureActions}
+          exposureBlockLogs={sessionBlockActions.blockLogs}
+          exerciseActions={exerciseActions}
+          lastExportAt={lastExportAt}
+          metricActions={metricActions}
           postSessionActions={postSessionActions}
+          returnerCaps={returnerActions.returnerCaps}
           selectedSession={selectedSession}
           selectedSessionId={selectedSession.id}
           sessions={sessionDefinitions}
@@ -456,12 +623,30 @@ function CoachApp() {
           selectedSessionId={selectedSession.id}
           sessions={sessionDefinitions}
         />
+      ) : activeTab === 'analysis' ? (
+        <AnalysisView
+          coachInsights={coachInsightActions.insights}
+          onOpenCoachInsightSource={handleOpenCoachInsightSource}
+          players={playerActions.players}
+          sessions={sessionDefinitions}
+          todayKey={appTodayKey}
+          userId={userId}
+        />
       ) : activeTab === 'bibliothek' ? (
         <LibraryView
+          initialCategory={libraryInitialCategory}
+          initialItemId={libraryInitialItemId}
           initialPdfHref={libraryInitialPdfHref}
           onPdfClose={handleLibraryPdfClose}
-          onReturn={libraryReturnTab === 'heute' ? handleReturnFromLibrary : undefined}
-          returnLabel={libraryReturnTab === 'heute' ? 'Zurück zu Heute' : undefined}
+          onReturn={libraryReturnTab ? handleReturnFromLibrary : undefined}
+          returnLabel={
+            libraryReturnTab === 'heute'
+              ? 'Zurück zu Heute'
+              : libraryReturnTab === 'training'
+                ? 'Zurück zu Training'
+                : undefined
+          }
+          selectedSession={selectedSession}
         />
       ) : activeTab === 'export' ? (
         <ExportView

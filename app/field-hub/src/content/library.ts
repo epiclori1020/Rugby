@@ -2,19 +2,20 @@ import { activePdfRefs, pdfRefs } from './pdfRefs'
 import type { LibraryCategory, LibraryItem } from './types'
 
 export const libraryCategories: LibraryCategory[] = [
-  'Coach-Skript',
-  'Spieler-Briefing',
-  'Detail-Briefing',
+  'Heute relevant',
+  'Aktive Pläne',
+  'Playbooks',
   'Varianten',
   'Exercise Mapping',
   'Consent/Datenschutz',
-  'PDFs',
+  'Quellen',
+  'Archiv',
 ]
 
 export const libraryItems: LibraryItem[] = [
   {
     id: 'coach-script-kw25',
-    category: 'Coach-Skript',
+    category: 'Playbooks',
     title: 'Coach-Skript KW25: Dienstag V2',
     summary:
       'Aktuelles Deep-Playbook fuer Dienstag 16. Juni: Onboarding, Ampel, Returnergrenzen und Coach-Wording.',
@@ -50,7 +51,7 @@ export const libraryItems: LibraryItem[] = [
   },
   {
     id: 'coach-script-donnerstag-backup',
-    category: 'Coach-Skript',
+    category: 'Playbooks',
     title: 'Coach-Skript Donnerstag/Backup',
     summary:
       'Aelteres Di/Do-Skript bleibt als Donnerstag- und Backup-Unterlage verfuegbar, getrennt vom neuen Dienstag-V2-Skript.',
@@ -70,7 +71,7 @@ export const libraryItems: LibraryItem[] = [
   },
   {
     id: 'deep-playbook-donnerstag-kw25',
-    category: 'Coach-Skript',
+    category: 'Playbooks',
     title: 'Donnerstag Deep Playbook: Einheit 2',
     summary:
       'Ausfuehrliche Vorbereitungsfassung fuer Donnerstag 18. Juni: Training, optionale Mini-Baseline, App-Dokumentation, Wording, Uebungen und Fallbacks.',
@@ -105,7 +106,7 @@ export const libraryItems: LibraryItem[] = [
   },
   {
     id: 'kw26-tuesday-active-pack',
-    category: 'PDFs',
+    category: 'Aktive Pläne',
     title: 'Dienstag 23.06: aktives PDF-Paket',
     summary:
       'Aktuelle iPad- und Druckunterlagen fuer die einzige KW26-Einheit: Training kompakt, Check-in/Beobachtung und Deep Playbook.',
@@ -137,7 +138,7 @@ export const libraryItems: LibraryItem[] = [
   },
   {
     id: 'spieler-briefing-start',
-    category: 'Spieler-Briefing',
+    category: 'Quellen',
     title: 'Spieler-Briefing: S&C Start',
     summary:
       'Kurze Spieler-Erklaerung: kein Testtag, warum Check-in und Ampel wichtig sind, was gemeldet werden soll.',
@@ -171,7 +172,7 @@ export const libraryItems: LibraryItem[] = [
   },
   {
     id: 'detail-briefing-unit-1',
-    category: 'Detail-Briefing',
+    category: 'Quellen',
     title: 'Einheit 1 Detail-Briefing fuer Coach',
     summary:
       'Nachschlagewerk fuer Abfragen, Position-Cluster, Schmerzskala, Ampelregeln, Uebungen und Donnerstag-Fallback.',
@@ -308,7 +309,7 @@ export const libraryItems: LibraryItem[] = [
   },
   {
     id: 'active-pdf-fallbacks',
-    category: 'PDFs',
+    category: 'Quellen',
     title: 'Aktive PDF-Fallbacks',
     summary:
       'Kuratierte Fallback-Liste fuer die aktiven App-PDFs aus der Manifest-Auswahl. Archivdateien sind nicht als aktive Workflows eingebaut.',
@@ -325,5 +326,24 @@ export const libraryItems: LibraryItem[] = [
       },
     ],
     pdfRefs: activePdfRefs,
+  },
+  {
+    id: 'archive-boundary',
+    category: 'Archiv',
+    title: 'Archiv: nicht aktive Unterlagen',
+    summary:
+      'Archiv ist bewusst getrennt: alte Testtag-, Workbook- und Langfassungen bleiben Backup, aber nicht als aktive Vorlage am Feld.',
+    sourcePath: 'print_pdfs/00_manifest.txt',
+    tags: ['Archiv', 'nicht aktiv', 'Backup', '_ARCHIV_nicht_drucken'],
+    sections: [
+      {
+        title: 'Grenze',
+        body: [
+          'Dateien aus _ARCHIV_nicht_drucken werden nicht als aktive Session-Unterlagen angezeigt.',
+          'Bei Widerspruch gelten aktive Plaene, Playbooks, Varianten und Exercise Mapping aus der aktuellen Library.',
+          'Archivmaterial nur bei bewusster Rueckfrage pruefen, nicht am Feld als Standard nutzen.',
+        ],
+      },
+    ],
   },
 ]

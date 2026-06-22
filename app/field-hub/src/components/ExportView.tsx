@@ -12,8 +12,12 @@ import {
 import {
   buildBaselineCsv,
   buildCheckInsCsv,
+  buildExerciseResultsCsv,
+  buildExposureSummariesCsv,
+  buildMetricResultsCsv,
   buildPlayersCsv,
   buildProgressCsv,
+  buildSessionBlocksCsv,
   downloadTextFile,
 } from '../lib/csvExport'
 
@@ -31,6 +35,10 @@ type ExportSummary = {
   progressEntries: number
   baselineEntries: number
   returnerEntries: number
+  sessionBlockLogs: number
+  playerExposureSummaries: number
+  exerciseResults: number
+  metricResults: number
 }
 
 const emptySummary: ExportSummary = {
@@ -40,6 +48,10 @@ const emptySummary: ExportSummary = {
   progressEntries: 0,
   baselineEntries: 0,
   returnerEntries: 0,
+  sessionBlockLogs: 0,
+  playerExposureSummaries: 0,
+  exerciseResults: 0,
+  metricResults: 0,
 }
 
 function todayStamp() {
@@ -54,6 +66,10 @@ function summaryFromBackup(backup: FieldHubBackupV1): ExportSummary {
     progressEntries: backup.data.progressEntries.length,
     baselineEntries: backup.data.baselineEntries.length,
     returnerEntries: backup.data.returnerEntries.length,
+    sessionBlockLogs: backup.data.sessionBlockLogs?.length ?? 0,
+    playerExposureSummaries: backup.data.playerExposureSummaries?.length ?? 0,
+    exerciseResults: backup.data.exerciseResults?.length ?? 0,
+    metricResults: backup.data.metricResults?.length ?? 0,
   }
 }
 
@@ -125,7 +141,9 @@ export function ExportView({
     }
   }
 
-  async function handleCsvExport(kind: 'players' | 'checkIns' | 'progress' | 'baseline') {
+  async function handleCsvExport(
+    kind: 'players' | 'checkIns' | 'progress' | 'baseline' | 'sessionBlocks' | 'exposures' | 'exercises' | 'metrics',
+  ) {
     if (!userId) {
       return
     }
@@ -143,11 +161,37 @@ export function ExportView({
             ? buildCheckInsCsv(backup.data.playerSessionEntries, backup.data.players, backup.data.sessionLogs)
             : kind === 'progress'
               ? buildProgressCsv(backup.data.progressEntries, backup.data.players, backup.data.sessionLogs)
-              : buildBaselineCsv(backup.data.baselineEntries, backup.data.players, backup.data.sessionLogs)
+              : kind === 'baseline'
+                ? buildBaselineCsv(backup.data.baselineEntries, backup.data.players, backup.data.sessionLogs)
+                : kind === 'sessionBlocks'
+                  ? buildSessionBlocksCsv(backup.data.sessionBlockLogs ?? [], backup.data.sessionLogs)
+                  : kind === 'exposures'
+                    ? buildExposureSummariesCsv(backup.data.playerExposureSummaries ?? [], backup.data.players, backup.data.sessionLogs)
+                    : kind === 'exercises'
+                      ? buildExerciseResultsCsv(backup.data.exerciseResults ?? [], backup.data.players, backup.data.sessionLogs)
+                      : buildMetricResultsCsv(backup.data.metricResults ?? [], backup.data.players, backup.data.sessionLogs)
 
       downloadTextFile(filename, content, 'text/csv;charset=utf-8')
       await markExportComplete(userId)
-      setExportResult(`CSV ${kind === 'checkIns' ? 'Check-ins' : kind === 'players' ? 'Spieler' : kind === 'progress' ? 'Progression' : 'Baseline/Testwerte'}: Download gestartet.`)
+      setExportResult(
+        `CSV ${
+          kind === 'checkIns'
+            ? 'Check-ins'
+            : kind === 'players'
+              ? 'Spieler'
+              : kind === 'progress'
+                ? 'Progression'
+                : kind === 'baseline'
+                  ? 'Baseline/Testwerte'
+                  : kind === 'sessionBlocks'
+                    ? 'Blockstatus'
+                    : kind === 'exposures'
+                      ? 'Exposures'
+                      : kind === 'exercises'
+                        ? 'Exercise Results'
+                      : 'Metrics'
+        }: Download gestartet.`,
+      )
     } catch (caughtError) {
       setExportErrorMessage(caughtError instanceof Error ? caughtError.message : 'CSV konnte nicht exportiert werden.')
     }
@@ -204,7 +248,8 @@ export function ExportView({
             <h3 id="export-heading">Export und Backup</h3>
             <p>
               JSON ist das vollstaendige Wiederherstellungsbackup. CSV-Dateien sind Tabellen fuer
-              Spieler, Check-ins, Progression oder Baseline/Testwerte und funktionieren auch mit leeren Daten.
+              Spieler, Check-ins, Progression, Baseline/Testwerte, Blockstatus, Exposures, Exercise Results
+              und Metrics und funktionieren auch mit leeren Daten.
               Profilfotos bleiben im privaten Supabase-Storage und werden nicht als Bilddatei exportiert.
             </p>
           </div>
@@ -235,6 +280,22 @@ export function ExportView({
             <span>Returner</span>
             <strong>{summary.returnerEntries}</strong>
           </div>
+          <div className="metric">
+            <span>Blockstatus</span>
+            <strong>{summary.sessionBlockLogs}</strong>
+          </div>
+          <div className="metric">
+            <span>Exposures</span>
+            <strong>{summary.playerExposureSummaries}</strong>
+          </div>
+          <div className="metric">
+            <span>Exercises</span>
+            <strong>{summary.exerciseResults}</strong>
+          </div>
+          <div className="metric">
+            <span>Metrics</span>
+            <strong>{summary.metricResults}</strong>
+          </div>
         </div>
 
         <div className="export-actions">
@@ -257,6 +318,22 @@ export function ExportView({
           <button className="secondary-action" type="button" onClick={() => void handleCsvExport('baseline')}>
             <Download className="nav-icon" aria-hidden />
             <span>CSV Baseline/Testwerte</span>
+          </button>
+          <button className="secondary-action" type="button" onClick={() => void handleCsvExport('sessionBlocks')}>
+            <Download className="nav-icon" aria-hidden />
+            <span>CSV Blockstatus</span>
+          </button>
+          <button className="secondary-action" type="button" onClick={() => void handleCsvExport('exposures')}>
+            <Download className="nav-icon" aria-hidden />
+            <span>CSV Exposures</span>
+          </button>
+          <button className="secondary-action" type="button" onClick={() => void handleCsvExport('exercises')}>
+            <Download className="nav-icon" aria-hidden />
+            <span>CSV Exercise Results</span>
+          </button>
+          <button className="secondary-action" type="button" onClick={() => void handleCsvExport('metrics')}>
+            <Download className="nav-icon" aria-hidden />
+            <span>CSV Metrics</span>
           </button>
         </div>
 

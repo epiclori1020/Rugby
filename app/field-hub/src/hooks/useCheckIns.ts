@@ -38,7 +38,6 @@ import {
   resetPublicCheckInSubmissionsForSession,
   type CreatedPublicCheckInLink,
 } from '../lib/publicCheckInRepository'
-import { supabase } from '../lib/supabaseClient'
 
 const REMOTE_PULL_THROTTLE_MS = 30_000
 
@@ -371,37 +370,6 @@ export function useCheckIns(
     const intervalId = window.setInterval(pollPublicCheckIns, 30_000)
 
     return () => window.clearInterval(intervalId)
-  }, [refreshPublicCheckIns, userId])
-
-  useEffect(() => {
-    if (!userId || !supabase) {
-      return undefined
-    }
-
-    const realtimeClient = supabase
-    const channel = realtimeClient
-      .channel(`public-checkins:${userId}`)
-      .on(
-        'postgres_changes',
-        {
-          event: 'INSERT',
-          schema: 'public',
-          table: 'public_checkin_submissions',
-          filter: `user_id=eq.${userId}`,
-        },
-        () => {
-          if (typeof document !== 'undefined' && document.visibilityState === 'hidden') {
-            return
-          }
-
-          void refreshPublicCheckIns().catch(() => undefined)
-        },
-      )
-      .subscribe()
-
-    return () => {
-      void realtimeClient.removeChannel(channel)
-    }
   }, [refreshPublicCheckIns, userId])
 
   useEffect(() => {

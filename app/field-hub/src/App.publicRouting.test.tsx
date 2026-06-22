@@ -224,6 +224,14 @@ vi.mock('./hooks/useBaselines', () => ({
   useBaselines: () => ({ syncOverview, refreshBaselines: vi.fn(async () => undefined) }),
 }))
 
+vi.mock('./hooks/useMetrics', () => ({
+  useMetrics: () => ({
+    entries: [],
+    syncOverview,
+    refreshMetrics: vi.fn(async () => undefined),
+  }),
+}))
+
 vi.mock('./hooks/useCheckIns', () => ({
   useCheckIns: () => ({
     activePlayers: [],
@@ -240,6 +248,14 @@ vi.mock('./hooks/useCheckIns', () => ({
     publicCheckInNotice: null,
     refreshLocalCheckIns: vi.fn(async () => undefined),
     saveKioskEntry: publicRouteState.saveKioskEntry,
+  }),
+}))
+
+vi.mock('./hooks/useCoachInsights', () => ({
+  useCoachInsights: () => ({
+    insights: [],
+    isLoading: false,
+    refreshCoachInsights: vi.fn(async () => undefined),
   }),
 }))
 

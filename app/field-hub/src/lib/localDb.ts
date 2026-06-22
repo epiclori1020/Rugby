@@ -1,10 +1,14 @@
 import Dexie, { type Table } from 'dexie'
 import type { BaselineEntry } from '../domain/baseline'
 import type { PlayerSessionEntry, SessionLog } from '../domain/checkIn'
+import type { PlayerExposureSummary } from '../domain/exposures'
+import type { ExerciseResult } from '../domain/exercises'
+import type { MetricResult } from '../domain/metrics'
 import type { Player } from '../domain/players'
 import type { ProgressEntry } from '../domain/postSession'
 import type { PublicCheckInLink, PublicCheckInLinkPlayer, PublicCheckInSubmission } from '../domain/publicCheckIn'
 import type { ReturnerEntry } from '../domain/returners'
+import type { SessionBlockLog } from '../domain/sessionBlocks'
 
 export type PendingWriteOperation = 'upsert' | 'delete'
 export type PendingWriteTable =
@@ -14,6 +18,10 @@ export type PendingWriteTable =
   | 'progress_entries'
   | 'baseline_entries'
   | 'returner_entries'
+  | 'session_block_logs'
+  | 'player_exposure_summaries'
+  | 'exercise_results'
+  | 'metric_results'
   | 'public_checkin_links'
   | 'public_checkin_link_players'
   | 'public_checkin_submissions'
@@ -57,6 +65,10 @@ class FieldHubDatabase extends Dexie {
   progressEntries!: Table<ProgressEntry, string>
   baselineEntries!: Table<BaselineEntry, string>
   returnerEntries!: Table<ReturnerEntry, string>
+  sessionBlockLogs!: Table<SessionBlockLog, string>
+  playerExposureSummaries!: Table<PlayerExposureSummary, string>
+  exerciseResults!: Table<ExerciseResult, string>
+  metricResults!: Table<MetricResult, string>
   publicCheckInLinks!: Table<PublicCheckInLink, string>
   publicCheckInLinkPlayers!: Table<PublicCheckInLinkPlayer, string>
   publicCheckInSubmissions!: Table<PublicCheckInSubmission, string>
@@ -137,6 +149,122 @@ class FieldHubDatabase extends Dexie {
         '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
       returnerEntries:
         '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      publicCheckInLinks:
+        '&id, userId, sessionDefinitionId, tokenHash, expiresAt, syncStatus, clientUpdatedAt, [userId+sessionDefinitionId]',
+      publicCheckInLinkPlayers:
+        '&id, userId, linkId, playerId, displayName, syncStatus, clientUpdatedAt, [userId+linkId], [linkId+playerId]',
+      publicCheckInSubmissions:
+        '&id, userId, linkId, linkPlayerId, playerId, status, submittedAt, syncStatus, clientUpdatedAt, [userId+status], [userId+linkId], [linkPlayerId+status]',
+      pendingWrites: '++localId, table, recordId, userId, createdAt, [userId+table]',
+      photoCache: '&cacheKey, photoPath, photoUpdatedAt, cachedAt',
+      pendingPhotoUploads: '&photoPath, userId, playerId, createdAt',
+      syncMeta: '&key',
+    })
+    this.version(8).stores({
+      players:
+        '&id, userId, active, syncStatus, clientUpdatedAt, updatedAt, [userId+syncStatus], [userId+clientUpdatedAt]',
+      sessionLogs:
+        '&id, userId, sessionDefinitionId, date, syncStatus, clientUpdatedAt, [userId+syncStatus], [userId+clientUpdatedAt]',
+      playerSessionEntries:
+        '&id, userId, sessionLogId, playerId, trafficLight, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      progressEntries:
+        '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      baselineEntries:
+        '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      returnerEntries:
+        '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      sessionBlockLogs:
+        '&id, userId, sessionLogId, sessionDefinitionId, blockKey, status, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+sessionLogId+blockKey], [userId+syncStatus], [userId+clientUpdatedAt]',
+      publicCheckInLinks:
+        '&id, userId, sessionDefinitionId, tokenHash, expiresAt, syncStatus, clientUpdatedAt, [userId+sessionDefinitionId]',
+      publicCheckInLinkPlayers:
+        '&id, userId, linkId, playerId, displayName, syncStatus, clientUpdatedAt, [userId+linkId], [linkId+playerId]',
+      publicCheckInSubmissions:
+        '&id, userId, linkId, linkPlayerId, playerId, status, submittedAt, syncStatus, clientUpdatedAt, [userId+status], [userId+linkId], [linkPlayerId+status]',
+      pendingWrites: '++localId, table, recordId, userId, createdAt, [userId+table]',
+      photoCache: '&cacheKey, photoPath, photoUpdatedAt, cachedAt',
+      pendingPhotoUploads: '&photoPath, userId, playerId, createdAt',
+      syncMeta: '&key',
+    })
+    this.version(9).stores({
+      players:
+        '&id, userId, active, syncStatus, clientUpdatedAt, updatedAt, [userId+syncStatus], [userId+clientUpdatedAt]',
+      sessionLogs:
+        '&id, userId, sessionDefinitionId, date, syncStatus, clientUpdatedAt, [userId+syncStatus], [userId+clientUpdatedAt]',
+      playerSessionEntries:
+        '&id, userId, sessionLogId, playerId, trafficLight, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      progressEntries:
+        '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      baselineEntries:
+        '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      returnerEntries:
+        '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      sessionBlockLogs:
+        '&id, userId, sessionLogId, sessionDefinitionId, blockKey, status, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+sessionLogId+blockKey], [userId+syncStatus], [userId+clientUpdatedAt]',
+      playerExposureSummaries:
+        '&id, userId, playerId, sessionLogId, sessionDate, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+playerId+sessionDate], [userId+syncStatus], [userId+clientUpdatedAt]',
+      publicCheckInLinks:
+        '&id, userId, sessionDefinitionId, tokenHash, expiresAt, syncStatus, clientUpdatedAt, [userId+sessionDefinitionId]',
+      publicCheckInLinkPlayers:
+        '&id, userId, linkId, playerId, displayName, syncStatus, clientUpdatedAt, [userId+linkId], [linkId+playerId]',
+      publicCheckInSubmissions:
+        '&id, userId, linkId, linkPlayerId, playerId, status, submittedAt, syncStatus, clientUpdatedAt, [userId+status], [userId+linkId], [linkPlayerId+status]',
+      pendingWrites: '++localId, table, recordId, userId, createdAt, [userId+table]',
+      photoCache: '&cacheKey, photoPath, photoUpdatedAt, cachedAt',
+      pendingPhotoUploads: '&photoPath, userId, playerId, createdAt',
+      syncMeta: '&key',
+    })
+    this.version(10).stores({
+      players:
+        '&id, userId, active, syncStatus, clientUpdatedAt, updatedAt, [userId+syncStatus], [userId+clientUpdatedAt]',
+      sessionLogs:
+        '&id, userId, sessionDefinitionId, date, syncStatus, clientUpdatedAt, [userId+syncStatus], [userId+clientUpdatedAt]',
+      playerSessionEntries:
+        '&id, userId, sessionLogId, playerId, trafficLight, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      progressEntries:
+        '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      baselineEntries:
+        '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      returnerEntries:
+        '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      sessionBlockLogs:
+        '&id, userId, sessionLogId, sessionDefinitionId, blockKey, status, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+sessionLogId+blockKey], [userId+syncStatus], [userId+clientUpdatedAt]',
+      playerExposureSummaries:
+        '&id, userId, playerId, sessionLogId, sessionDate, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+playerId+sessionDate], [userId+syncStatus], [userId+clientUpdatedAt]',
+      metricResults:
+        '&id, userId, playerId, sessionLogId, metricKey, attempt, bodySide, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+sessionLogId+playerId+metricKey+attempt+bodySide], [userId+playerId+metricKey+clientUpdatedAt], [userId+syncStatus], [userId+clientUpdatedAt]',
+      publicCheckInLinks:
+        '&id, userId, sessionDefinitionId, tokenHash, expiresAt, syncStatus, clientUpdatedAt, [userId+sessionDefinitionId]',
+      publicCheckInLinkPlayers:
+        '&id, userId, linkId, playerId, displayName, syncStatus, clientUpdatedAt, [userId+linkId], [linkId+playerId]',
+      publicCheckInSubmissions:
+        '&id, userId, linkId, linkPlayerId, playerId, status, submittedAt, syncStatus, clientUpdatedAt, [userId+status], [userId+linkId], [linkPlayerId+status]',
+      pendingWrites: '++localId, table, recordId, userId, createdAt, [userId+table]',
+      photoCache: '&cacheKey, photoPath, photoUpdatedAt, cachedAt',
+      pendingPhotoUploads: '&photoPath, userId, playerId, createdAt',
+      syncMeta: '&key',
+    })
+    this.version(11).stores({
+      players:
+        '&id, userId, active, syncStatus, clientUpdatedAt, updatedAt, [userId+syncStatus], [userId+clientUpdatedAt]',
+      sessionLogs:
+        '&id, userId, sessionDefinitionId, date, syncStatus, clientUpdatedAt, [userId+syncStatus], [userId+clientUpdatedAt]',
+      playerSessionEntries:
+        '&id, userId, sessionLogId, playerId, trafficLight, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      progressEntries:
+        '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      baselineEntries:
+        '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      returnerEntries:
+        '&id, userId, sessionLogId, playerId, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+syncStatus], [userId+clientUpdatedAt]',
+      sessionBlockLogs:
+        '&id, userId, sessionLogId, sessionDefinitionId, blockKey, status, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+sessionLogId+blockKey], [userId+syncStatus], [userId+clientUpdatedAt]',
+      playerExposureSummaries:
+        '&id, userId, playerId, sessionLogId, sessionDate, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+playerId+sessionDate], [userId+syncStatus], [userId+clientUpdatedAt]',
+      exerciseResults:
+        '&id, userId, playerId, sessionLogId, exerciseKey, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+sessionLogId+playerId+exerciseKey], [userId+playerId+exerciseKey+clientUpdatedAt], [userId+syncStatus], [userId+clientUpdatedAt]',
+      metricResults:
+        '&id, userId, playerId, sessionLogId, metricKey, attempt, bodySide, syncStatus, clientUpdatedAt, [userId+sessionLogId], [userId+sessionLogId+playerId+metricKey+attempt+bodySide], [userId+playerId+metricKey+clientUpdatedAt], [userId+syncStatus], [userId+clientUpdatedAt]',
       publicCheckInLinks:
         '&id, userId, sessionDefinitionId, tokenHash, expiresAt, syncStatus, clientUpdatedAt, [userId+sessionDefinitionId]',
       publicCheckInLinkPlayers:

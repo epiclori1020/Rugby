@@ -360,35 +360,11 @@ describe('useCheckIns remote freshness pull', () => {
     expect(publicCheckInRepositoryMocks.refreshRemotePublicCheckIns).not.toHaveBeenCalled()
   })
 
-  it('subscribes only to public submission inserts and refreshes public check-ins on insert', async () => {
+  it('does not subscribe to public submission realtime inserts', async () => {
     await renderUseCheckIns()
 
-    expect(supabaseClientMocks.supabase.channel).toHaveBeenCalledWith('public-checkins:user-1')
-    expect(supabaseClientMocks.channel.on).toHaveBeenCalledWith(
-      'postgres_changes',
-      {
-        event: 'INSERT',
-        schema: 'public',
-        table: 'public_checkin_submissions',
-        filter: 'user_id=eq.user-1',
-      },
-      expect.any(Function),
-    )
-
-    await act(async () => {
-      supabaseClientMocks.postgresChangesHandler?.()
-      await Promise.resolve()
-      await Promise.resolve()
-    })
-
-    expect(publicCheckInRepositoryMocks.refreshRemotePublicCheckIns).toHaveBeenCalledWith('user-1', {
-      sessionDefinitionId: 'session-def-1',
-    })
-    expect(publicCheckInRepositoryMocks.importPublicCheckInSubmissions).toHaveBeenCalledWith(
-      'user-1',
-      sessionDefinition,
-      { recoverImportedWithoutLocalEntry: false },
-    )
+    expect(supabaseClientMocks.supabase.channel).not.toHaveBeenCalled()
+    expect(supabaseClientMocks.channel.on).not.toHaveBeenCalled()
   })
 
   it('pushes entries created by automatic public check-in imports', async () => {
@@ -467,18 +443,13 @@ describe('useCheckIns remote freshness pull', () => {
     )
   })
 
-  it('does not refresh public check-ins from realtime inserts while the app is hidden', async () => {
+  it('does not have a realtime insert handler that can refresh public check-ins while hidden', async () => {
     await renderUseCheckIns()
     publicCheckInRepositoryMocks.refreshRemotePublicCheckIns.mockClear()
     publicCheckInRepositoryMocks.importPublicCheckInSubmissions.mockClear()
     setVisibilityState('hidden')
 
-    await act(async () => {
-      supabaseClientMocks.postgresChangesHandler?.()
-      await Promise.resolve()
-      await Promise.resolve()
-    })
-
+    expect(supabaseClientMocks.postgresChangesHandler).toBeNull()
     expect(publicCheckInRepositoryMocks.refreshRemotePublicCheckIns).not.toHaveBeenCalled()
     expect(publicCheckInRepositoryMocks.importPublicCheckInSubmissions).not.toHaveBeenCalled()
   })

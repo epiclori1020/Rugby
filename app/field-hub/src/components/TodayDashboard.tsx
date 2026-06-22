@@ -2,23 +2,30 @@ import { useCallback } from 'react'
 import { ArrowRight, CalendarDays, ClipboardCheck, Dumbbell, FileText, ShieldAlert, Users } from 'lucide-react'
 import type { HubTab } from '../App'
 import type { PdfRef, SessionDefinition, SessionType } from '../content/types'
+import type { CoachInsight, CoachInsightSource } from '../domain/coachInsights'
 import type { Player } from '../domain/players'
+import type { LatestRelevantPostSessionWork } from '../domain/postSessionCompletion'
 import type { useCheckIns } from '../hooks/useCheckIns'
 import type { StoragePersistenceState } from '../hooks/useStoragePersistence'
 import { hasPlayerId } from '../lib/playerId'
 import { pendingCountLabel } from '../lib/syncLabels'
+import { CoachInsightsPanel } from './CoachInsightsPanel'
 import { SessionPicker } from './SessionPicker'
 
 type TodayDashboardProps = {
   checkInActions: ReturnType<typeof useCheckIns>
+  coachInsights: CoachInsight[]
   featuredSession: SessionDefinition
   isSignedIn: boolean
   onActionFeedback: (message: string) => void
+  onOpenCoachInsightSource: (source: CoachInsightSource) => void
   onNavigate: (tab: HubTab) => void
+  onOpenLibrary: (session: SessionDefinition) => void
   onOpenPdf: (pdf: PdfRef) => void
   onResetToTodaySession: () => void
   onSessionChange: (sessionId: string) => void
   players: Player[]
+  postSessionWork: LatestRelevantPostSessionWork | null
   selectedSession: SessionDefinition
   selectedSessionId: string
   sessions: SessionDefinition[]
@@ -70,14 +77,18 @@ function relativeSessionLabel(date: string, todayDate: Date) {
 
 export function TodayDashboard({
   checkInActions,
+  coachInsights,
   featuredSession,
   isSignedIn,
   onActionFeedback,
+  onOpenCoachInsightSource,
   onNavigate,
+  onOpenLibrary,
   onOpenPdf,
   onResetToTodaySession,
   onSessionChange,
   players,
+  postSessionWork,
   selectedSession,
   selectedSessionId,
   sessions,
@@ -121,6 +132,12 @@ export function TodayDashboard({
     : activePlayers.length === 0
       ? 'Noch keine aktiven Spieler angelegt.'
       : null
+  const postSessionDefinition = postSessionWork
+    ? sessions.find((session) => session.id === postSessionWork.sessionLog.sessionDefinitionId)
+    : null
+  const postSessionMissingCount = postSessionWork
+    ? postSessionWork.completion.blockers.reduce((sum, blocker) => sum + Math.max(1, blocker.count), 0)
+    : 0
 
   const navigateWithFeedback = useCallback(
     (tab: HubTab, message: string) => {
@@ -150,6 +167,18 @@ export function TodayDashboard({
     },
     [onActionFeedback, onOpenPdf],
   )
+
+  const handleOpenLibrary = useCallback(() => {
+    onOpenLibrary(selectedSession)
+    onActionFeedback('Heutige Unterlagen geöffnet.')
+  }, [onActionFeedback, onOpenLibrary, selectedSession])
+
+  const handleOpenPostSessionWork = useCallback(() => {
+    if (postSessionWork) {
+      onSessionChange(postSessionWork.sessionLog.sessionDefinitionId)
+    }
+    navigateWithFeedback('nachbereitung', 'Nachbereitung geöffnet.')
+  }, [navigateWithFeedback, onSessionChange, postSessionWork])
 
   return (
     <section className="dashboard-grid" aria-labelledby="today-heading">
@@ -197,7 +226,9 @@ export function TodayDashboard({
                 data-testid={action.testId}
                 key={action.tab}
                 type="button"
-                onClick={() => navigateWithFeedback(action.tab, action.feedback)}
+                onClick={() =>
+                  action.tab === 'bibliothek' ? handleOpenLibrary() : navigateWithFeedback(action.tab, action.feedback)
+                }
               >
                 <span>{action.label}</span>
                 <ArrowRight className="nav-icon" aria-hidden />
@@ -233,7 +264,7 @@ export function TodayDashboard({
           <p>{timelineLabel}</p>
           <div className="session-timeline">
             {timelinePreview.map((block) => (
-              <div className="timeline-row" key={`${block.time}-${block.title}`}>
+              <div className="timeline-row" key={block.key}>
                 <span>{block.time}</span>
                 <div>
                   <strong>{block.title}</strong>
@@ -307,6 +338,38 @@ export function TodayDashboard({
             ))}
           </ul>
         </article>
+
+        {postSessionWork ? (
+          <article className={postSessionWork.completion.status === 'abgeschlossen' ? 'panel attention-panel' : 'panel warning-panel attention-panel'}>
+            <div className="status-line">
+              <ClipboardCheck className="nav-icon" aria-hidden />
+              <h3>Nachbereitung</h3>
+            </div>
+            <p>
+              {postSessionDefinition?.title ?? postSessionWork.sessionLog.date}: {' '}
+              {postSessionWork.completion.status === 'abgeschlossen'
+                ? 'Abgeschlossen, Export prüfen.'
+                : `${postSessionMissingCount} Pflichtpunkt(e) offen.`}
+            </p>
+            <button
+              className="quick-action compact-status-action"
+              data-testid="today-post-session-work-action"
+              type="button"
+              onClick={handleOpenPostSessionWork}
+            >
+              <span>Nachbereitung öffnen</span>
+              <ArrowRight className="nav-icon" aria-hidden />
+            </button>
+          </article>
+        ) : null}
+
+        <CoachInsightsPanel
+          dismissKey={`today:${selectedSession.id}`}
+          emptyText="Keine offenen Coach Insights."
+          insights={coachInsights}
+          limit={3}
+          onOpenSource={onOpenCoachInsightSource}
+        />
 
         <article className="panel material-panel">
           <div className="status-line">

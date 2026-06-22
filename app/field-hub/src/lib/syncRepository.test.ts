@@ -1,6 +1,9 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
 import type { Player } from '../domain/players'
+import type { ExerciseResult } from '../domain/exercises'
+import type { MetricResult } from '../domain/metrics'
+import type { SessionBlockLog } from '../domain/sessionBlocks'
 import {
   buildManualSyncFeedback,
   combineSyncOverviews,
@@ -28,6 +31,70 @@ const erroredPlayer: Player = {
   updatedAt: '2026-06-16T18:00:00.000Z',
   deletedAt: null,
   clientUpdatedAt: '2026-06-16T18:00:00.000Z',
+  syncStatus: 'error',
+  syncError: 'network',
+}
+
+const erroredBlockLog: SessionBlockLog = {
+  id: 'block-log-1',
+  userId,
+  sessionLogId: 'session-log-1',
+  sessionDefinitionId: 'session-def-1',
+  blockKey: 'session-def-1:speed',
+  blockTitle: 'Speed',
+  blockOrder: 30,
+  plannedTime: '18-28',
+  plannedWork: '4x10 m',
+  status: 'skipped',
+  reason: 'time',
+  coachNote: '',
+  createdAt: '2026-06-18T18:00:00.000Z',
+  updatedAt: '2026-06-18T18:05:00.000Z',
+  deletedAt: null,
+  clientUpdatedAt: '2026-06-18T18:05:00.000Z',
+  syncStatus: 'error',
+  syncError: 'network',
+}
+
+const erroredMetricResult: MetricResult = {
+  id: 'metric-1',
+  userId,
+  playerId: 'player-1',
+  sessionLogId: 'session-log-1',
+  metricKey: 'broad_jump',
+  value: 246,
+  attempt: 1,
+  isValid: true,
+  bodySide: 'none',
+  contextNote: '',
+  createdAt: '2026-06-18T18:00:00.000Z',
+  updatedAt: '2026-06-18T18:05:00.000Z',
+  deletedAt: null,
+  clientUpdatedAt: '2026-06-18T18:05:00.000Z',
+  syncStatus: 'error',
+  syncError: 'network',
+}
+
+const erroredExerciseResult: ExerciseResult = {
+  id: 'exercise-1',
+  userId,
+  playerId: 'player-1',
+  sessionLogId: 'session-log-1',
+  exerciseKey: 'trap_bar_deadlift',
+  variant: 'A',
+  sets: 3,
+  reps: '5',
+  loadValue: 90,
+  loadUnit: 'kg',
+  rpe: 7,
+  rir: null,
+  techniqueQuality: 'good',
+  painResponse: 'none',
+  notes: '',
+  createdAt: '2026-06-18T18:00:00.000Z',
+  updatedAt: '2026-06-18T18:05:00.000Z',
+  deletedAt: null,
+  clientUpdatedAt: '2026-06-18T18:05:00.000Z',
   syncStatus: 'error',
   syncError: 'network',
 }
@@ -72,6 +139,63 @@ describe('syncRepository', () => {
       syncError: null,
     })
     await expect(localDb.pendingWrites.count()).resolves.toBe(1)
+  })
+
+  it('resets errored session block logs with pending writes before retrying sync', async () => {
+    await localDb.sessionBlockLogs.put(erroredBlockLog)
+    await localDb.pendingWrites.add({
+      table: 'session_block_logs',
+      operation: 'upsert',
+      recordId: erroredBlockLog.id,
+      userId,
+      createdAt: '2026-06-18T18:05:00.000Z',
+    })
+
+    const resetCount = await resetErroredPendingWritesForRetry(userId)
+
+    expect(resetCount).toBe(1)
+    await expect(localDb.sessionBlockLogs.get(erroredBlockLog.id)).resolves.toMatchObject({
+      syncStatus: 'pending',
+      syncError: null,
+    })
+  })
+
+  it('resets errored metric results with pending writes before retrying sync', async () => {
+    await localDb.metricResults.put(erroredMetricResult)
+    await localDb.pendingWrites.add({
+      table: 'metric_results',
+      operation: 'upsert',
+      recordId: erroredMetricResult.id,
+      userId,
+      createdAt: '2026-06-18T18:05:00.000Z',
+    })
+
+    const resetCount = await resetErroredPendingWritesForRetry(userId)
+
+    expect(resetCount).toBe(1)
+    await expect(localDb.metricResults.get(erroredMetricResult.id)).resolves.toMatchObject({
+      syncStatus: 'pending',
+      syncError: null,
+    })
+  })
+
+  it('resets errored exercise results with pending writes before retrying sync', async () => {
+    await localDb.exerciseResults.put(erroredExerciseResult)
+    await localDb.pendingWrites.add({
+      table: 'exercise_results',
+      operation: 'upsert',
+      recordId: erroredExerciseResult.id,
+      userId,
+      createdAt: '2026-06-18T18:05:00.000Z',
+    })
+
+    const resetCount = await resetErroredPendingWritesForRetry(userId)
+
+    expect(resetCount).toBe(1)
+    await expect(localDb.exerciseResults.get(erroredExerciseResult.id)).resolves.toMatchObject({
+      syncStatus: 'pending',
+      syncError: null,
+    })
   })
 
   it('does not double count pending writes when manual sync returns an error overview', () => {

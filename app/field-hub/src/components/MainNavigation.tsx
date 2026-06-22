@@ -6,6 +6,7 @@ import {
   Dumbbell,
   FileDown,
   HeartPulse,
+  LineChart,
   Settings,
   Users,
 } from 'lucide-react'
@@ -25,6 +26,7 @@ const navigationItems: NavigationItem[] = [
   { id: 'training', label: 'Training', Icon: Dumbbell },
   { id: 'nachbereitung', label: 'Nachbereitung', Icon: Activity },
   { id: 'returner', label: 'Returner', Icon: HeartPulse },
+  { id: 'analysis', label: 'Analyse', Icon: LineChart },
   { id: 'bibliothek', label: 'Bibliothek', Icon: Archive },
   { id: 'export', label: 'Export', Icon: FileDown },
   { id: 'einstellungen', label: 'Einstellungen', Icon: Settings },

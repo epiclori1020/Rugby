@@ -2,19 +2,24 @@ import { FileText, Search, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { libraryCategories, libraryItems } from '../content/library'
 import { activePdfRefs } from '../content/pdfRefs'
-import type { LibraryCategory, LibraryItem, PdfRef } from '../content/types'
+import type { LibraryCategory, LibraryItem, PdfRef, SessionDefinition } from '../content/types'
 import { measureInteraction } from '../lib/performanceTrace'
 import { prewarmPdfAssets } from '../lib/pdfAssets'
 
 const allCategoriesLabel = 'Alle'
+const todayCategory = 'Heute relevant' satisfies LibraryCategory
+const defaultTodayLibraryRefs = ['variants-abcd', 'exercise-mapping-offseason']
 
 type LibraryViewProps = {
   initialQuery?: string
+  initialCategory?: LibraryCategory | typeof allCategoriesLabel
+  initialItemId?: string
   initialPdfHref?: string
   initialPdfTimedOut?: boolean
   onPdfClose?: () => void
   onReturn?: () => void
   returnLabel?: string
+  selectedSession?: SessionDefinition
 }
 
 function searchableText(item: LibraryItem) {
@@ -38,40 +43,105 @@ function findPdfByHref(href: string | undefined) {
   return activePdfRefs.find((pdf) => pdf.href === href) ?? null
 }
 
+function uniqueLibraryItems(items: LibraryItem[]) {
+  const seen = new Set<string>()
+  return items.filter((item) => {
+    if (seen.has(item.id)) {
+      return false
+    }
+
+    seen.add(item.id)
+    return true
+  })
+}
+
+function buildTodaySessionItem(selectedSession: SessionDefinition): LibraryItem | null {
+  if (selectedSession.pdfRefs.length === 0) {
+    return null
+  }
+
+  return {
+    id: `today-session-${selectedSession.id}`,
+    category: 'Aktive Pläne',
+    title: selectedSession.title,
+    summary: 'Direkte Session-Unterlagen fuer den heutigen Arbeitskontext.',
+    sourcePath: selectedSession.primarySource,
+    tags: [selectedSession.kw, selectedSession.date, selectedSession.title, 'Heute', 'Plan'],
+    sections: [
+      {
+        title: 'Schnell nutzen',
+        body:
+          selectedSession.goals.length > 0
+            ? selectedSession.goals
+            : ['Session-PDFs oeffnen, falls keine strukturierte Library-Referenz hinterlegt ist.'],
+      },
+    ],
+    pdfRefs: selectedSession.pdfRefs,
+  }
+}
+
+function buildTodayRelevantItems(selectedSession: SessionDefinition | undefined) {
+  if (!selectedSession) {
+    return []
+  }
+
+  const libraryItemById = new Map(libraryItems.map((item) => [item.id, item]))
+  const sessionItem = buildTodaySessionItem(selectedSession)
+  const referencedItems = selectedSession.libraryRefs
+    .map((libraryRef) => libraryItemById.get(libraryRef))
+    .filter((item): item is LibraryItem => Boolean(item))
+  const fallbackItems =
+    referencedItems.length > 0
+      ? []
+      : defaultTodayLibraryRefs
+          .map((libraryRef) => libraryItemById.get(libraryRef))
+          .filter((item): item is LibraryItem => Boolean(item))
+
+  return uniqueLibraryItems([sessionItem, ...referencedItems, ...fallbackItems].filter((item): item is LibraryItem => Boolean(item)))
+}
+
 export function LibraryView({
   initialQuery = '',
+  initialCategory = allCategoriesLabel,
+  initialItemId,
   initialPdfHref,
   initialPdfTimedOut = false,
   onPdfClose,
   onReturn,
   returnLabel,
+  selectedSession,
 }: LibraryViewProps = {}) {
   const [selectedCategory, setSelectedCategory] = useState<LibraryCategory | typeof allCategoriesLabel>(
-    allCategoriesLabel,
+    initialCategory,
   )
   const [query, setQuery] = useState(initialQuery)
-  const [selectedItemId, setSelectedItemId] = useState(libraryItems[0]?.id)
+  const [selectedItemId, setSelectedItemId] = useState<string | undefined>(initialItemId ?? libraryItems[0]?.id)
   const [selectedPdf, setSelectedPdf] = useState<PdfRef | null>(() => findPdfByHref(initialPdfHref))
   const [isPdfLoading, setIsPdfLoading] = useState(Boolean(initialPdfHref))
   const [hasPdfTimedOut, setHasPdfTimedOut] = useState(initialPdfTimedOut)
   const completePdfOpenMeasureRef = useRef<(() => void) | null>(null)
+  const todayRelevantItems = useMemo(() => buildTodayRelevantItems(selectedSession), [selectedSession])
 
   const filteredItems = useMemo(() => {
     const normalizedQuery = query.trim().toLowerCase()
+    const sourceItems = selectedCategory === todayCategory ? todayRelevantItems : libraryItems
 
-    return libraryItems.filter((item) => {
-      const categoryMatches = selectedCategory === allCategoriesLabel || item.category === selectedCategory
+    return sourceItems.filter((item) => {
+      const categoryMatches =
+        selectedCategory === allCategoriesLabel || selectedCategory === todayCategory || item.category === selectedCategory
       const queryMatches = normalizedQuery.length === 0 || searchableText(item).includes(normalizedQuery)
       return categoryMatches && queryMatches
     })
-  }, [query, selectedCategory])
+  }, [query, selectedCategory, todayRelevantItems])
 
   const selectedItem = filteredItems.find((item) => item.id === selectedItemId) ?? filteredItems[0] ?? null
 
   function chooseCategory(category: LibraryCategory | typeof allCategoriesLabel) {
     setSelectedCategory(category)
     const firstMatching =
-      category === allCategoriesLabel
+      category === todayCategory
+        ? todayRelevantItems[0]
+        : category === allCategoriesLabel
         ? libraryItems[0]
         : libraryItems.find((item) => item.category === category)
 
@@ -154,7 +224,7 @@ export function LibraryView({
         <div className="library-heading">
           <p className="eyebrow">Unterlagen</p>
           <h3 id="library-heading">Bibliothek</h3>
-          <p>Strukturierte Unterlagen als App-UI. PDFs bleiben Fallback.</p>
+          <p>Coachbare Arbeitsflaeche fuer Plaene, Playbooks, Session-Inhalte und Quellen. PDFs bleiben Fallback.</p>
         </div>
 
         <label className="search-box">
@@ -202,7 +272,11 @@ export function LibraryView({
             </button>
           ))}
           {filteredItems.length === 0 ? (
-            <p className="empty-state">Keine Unterlage fuer diese Suche gefunden.</p>
+            <p className="empty-state">
+              {selectedCategory === todayCategory
+                ? 'Keine heutigen Unterlagen fuer diese Suche gefunden.'
+                : 'Keine Unterlage fuer diese Suche gefunden.'}
+            </p>
           ) : null}
         </div>
       </div>
@@ -218,6 +292,12 @@ export function LibraryView({
           <div className="source-box">
             <span>Quelle</span>
             <strong>{selectedItem.sourcePath}</strong>
+          </div>
+          <div className="library-workflow-strip" aria-label="Arbeitsnutzen">
+            <span className="tag compact">{selectedItem.category}</span>
+            {selectedItem.pdfRefs && selectedItem.pdfRefs.length > 0 ? (
+              <span className="tag compact">{selectedItem.pdfRefs.length} PDF-Fallback(s)</span>
+            ) : null}
           </div>
 
           <div className="section-stack">
@@ -254,7 +334,11 @@ export function LibraryView({
           <div className="library-heading">
             <p className="eyebrow">Keine Treffer</p>
             <h3>Keine Unterlage ausgewaehlt</h3>
-            <p>Waehle eine andere Suche oder Kategorie.</p>
+            <p>
+              {selectedCategory === todayCategory
+                ? 'Fuer diese Einheit sind keine passenden Unterlagen in der aktuellen Suche sichtbar.'
+                : 'Waehle eine andere Suche oder Kategorie.'}
+            </p>
           </div>
         </article>
       )}

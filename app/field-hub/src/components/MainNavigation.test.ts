@@ -10,6 +10,7 @@ const tabLabels = [
   'Training',
   'Nachbereitung',
   'Returner',
+  'Analyse',
   'Bibliothek',
   'Export',
   'Einstellungen',

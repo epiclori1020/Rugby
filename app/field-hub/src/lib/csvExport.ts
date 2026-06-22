@@ -1,7 +1,11 @@
 import type { BaselineEntry } from '../domain/baseline'
 import type { PlayerSessionEntry, SessionLog } from '../domain/checkIn'
+import { getExerciseDefinition, type ExerciseResult } from '../domain/exercises'
+import type { PlayerExposureSummary } from '../domain/exposures'
+import { getMetricDefinition, type MetricResult } from '../domain/metrics'
 import type { Player } from '../domain/players'
 import type { ProgressEntry } from '../domain/postSession'
+import type { SessionBlockLog } from '../domain/sessionBlocks'
 
 type CsvValue = string | number | boolean | null | undefined
 
@@ -34,8 +38,8 @@ export function buildCsv(headers: string[], rows: CsvValue[][]) {
   ].join('\r\n')
 }
 
-function dateForSession(sessionLogId: string, sessionDateById: Map<string, string>) {
-  return sessionDateById.get(sessionLogId) ?? ''
+function dateForSession(sessionLogId: string | null, sessionDateById: Map<string, string>) {
+  return sessionLogId ? (sessionDateById.get(sessionLogId) ?? '') : ''
 }
 
 function playerName(playerId: string | null, playerNameById: Map<string, string>) {
@@ -158,6 +162,157 @@ export function buildBaselineCsv(
       entry.sprint30m,
       entry.note,
     ]),
+  )
+}
+
+export function buildSessionBlocksCsv(entries: SessionBlockLog[], sessionLogs: SessionLog[]) {
+  const sessionDateById = new Map(sessionLogs.map((sessionLog) => [sessionLog.id, sessionLog.date]))
+
+  return buildCsv(
+    [
+      'Session',
+      'Session Definition',
+      'Block Order',
+      'Block Key',
+      'Block',
+      'Geplante Zeit',
+      'Geplante Arbeit',
+      'Status',
+      'Grund',
+      'Notiz',
+    ],
+    entries.map((entry) => [
+      dateForSession(entry.sessionLogId, sessionDateById),
+      entry.sessionDefinitionId,
+      entry.blockOrder,
+      entry.blockKey,
+      entry.blockTitle,
+      entry.plannedTime,
+      entry.plannedWork,
+      entry.status,
+      entry.reason,
+      entry.coachNote,
+    ]),
+  )
+}
+
+export function buildExposureSummariesCsv(
+  entries: PlayerExposureSummary[],
+  players: Player[],
+  sessionLogs: SessionLog[],
+) {
+  const playerNameById = new Map(players.map((player) => [player.id, player.name]))
+  const sessionDateById = new Map(sessionLogs.map((sessionLog) => [sessionLog.id, sessionLog.date]))
+
+  return buildCsv(
+    [
+      'Session',
+      'Spieler',
+      'Speed',
+      'Acceleration',
+      'COD/Decel',
+      'Lower Strength',
+      'Upper Strength',
+      'Power',
+      'Conditioning',
+      'Contact Prep',
+      'Neck/Trunk',
+      'Mobility',
+      'Reconditioning',
+      'Coach-Notiz',
+    ],
+    entries.map((entry) => [
+      entry.sessionLogId ? dateForSession(entry.sessionLogId, sessionDateById) : entry.sessionDate,
+      playerName(entry.playerId, playerNameById),
+      entry.statuses.speed,
+      entry.statuses.acceleration,
+      entry.statuses.cod_decel,
+      entry.statuses.lower_strength,
+      entry.statuses.upper_strength,
+      entry.statuses.power,
+      entry.statuses.conditioning,
+      entry.statuses.contact_prep,
+      entry.statuses.neck_trunk,
+      entry.statuses.mobility,
+      entry.statuses.reconditioning,
+      entry.coachNote,
+    ]),
+  )
+}
+
+export function buildMetricResultsCsv(
+  entries: MetricResult[],
+  players: Player[],
+  sessionLogs: SessionLog[],
+) {
+  const playerNameById = new Map(players.map((player) => [player.id, player.name]))
+  const sessionDateById = new Map(sessionLogs.map((sessionLog) => [sessionLog.id, sessionLog.date]))
+
+  return buildCsv(
+    ['Session', 'Spieler', 'Metric', 'Einheit', 'Wert', 'Attempt', 'Gueltig', 'Seite', 'Kontext'],
+    entries.map((entry) => {
+      const definition = getMetricDefinition(entry.metricKey)
+
+      return [
+        entry.sessionLogId ? dateForSession(entry.sessionLogId, sessionDateById) : '',
+        playerName(entry.playerId, playerNameById),
+        definition.name,
+        definition.unit,
+        entry.value,
+        entry.attempt,
+        entry.isValid,
+        entry.bodySide,
+        entry.contextNote,
+      ]
+    }),
+  )
+}
+
+export function buildExerciseResultsCsv(
+  entries: ExerciseResult[],
+  players: Player[],
+  sessionLogs: SessionLog[],
+) {
+  const playerNameById = new Map(players.map((player) => [player.id, player.name]))
+  const sessionDateById = new Map(sessionLogs.map((sessionLog) => [sessionLog.id, sessionLog.date]))
+
+  return buildCsv(
+    [
+      'Session',
+      'Spieler',
+      'Uebung',
+      'Pattern',
+      'Variante',
+      'Sets',
+      'Reps',
+      'Last',
+      'Einheit',
+      'RPE',
+      'RIR',
+      'Technik',
+      'Pain Response',
+      'Notiz',
+    ],
+    entries.map((entry) => {
+      const definition = getExerciseDefinition(entry.exerciseKey)
+
+      return [
+        dateForSession(entry.sessionLogId, sessionDateById),
+        playerName(entry.playerId, playerNameById),
+        definition.name,
+        definition.pattern,
+        entry.variant,
+        entry.sets,
+        entry.reps,
+        entry.loadValue,
+        entry.loadUnit,
+        entry.rpe,
+        entry.rir,
+        entry.techniqueQuality,
+        entry.painResponse,
+        entry.notes,
+      ]
+    }),
   )
 }
 

@@ -28,12 +28,16 @@ import type { PlayerSyncOverview, SyncStatus } from '../domain/sync'
 import { defaultPlayerSyncOverview } from '../domain/sync'
 import type { SessionDefinition } from '../content/types'
 import { refreshRemoteBaselineEntries, syncPendingBaselineEntries } from './baselineRepository'
+import { getExerciseSyncOverview, refreshRemoteExerciseResults, syncPendingExerciseResults } from './exerciseRepository'
+import { getExposureSyncOverview, refreshRemoteExposureSummaries, syncPendingExposureSummaries } from './exposureRepository'
+import { getMetricSyncOverview, refreshRemoteMetricResults, syncPendingMetricResults } from './metricRepository'
 import { getSyncMeta, localDb, setSyncMeta } from './localDb'
 import { refreshRemoteProgressEntries, syncPendingProgressEntries } from './postSessionRepository'
 import { markSyncedIfUnchanged, markSyncErrorIfUnchanged } from './pendingWriteSync'
 import { hasPlayerId } from './playerId'
 import { measureInteraction } from './performanceTrace'
 import { refreshRemoteReturnerEntries, syncPendingReturnerEntries } from './returnerRepository'
+import { getSessionBlockSyncOverview, refreshRemoteSessionBlockLogs, syncPendingSessionBlockLogs } from './sessionBlockRepository'
 import { supabase } from './supabaseClient'
 
 type SessionLogRow = {
@@ -1120,10 +1124,14 @@ async function pushPendingCheckInsOnce(userId: string): Promise<PlayerSyncOvervi
 
   try {
     await syncPendingSessionLogs(userId)
+    await syncPendingSessionBlockLogs(userId)
     await syncPendingPlayerSessionEntries(userId)
     await syncPendingProgressEntries(userId)
     await syncPendingBaselineEntries(userId)
     await syncPendingReturnerEntries(userId)
+    await syncPendingExposureSummaries(userId)
+    await syncPendingMetricResults(userId)
+    await syncPendingExerciseResults(userId)
 
     const timestamp = nowIso()
     await setSyncMeta(`checkIns:lastSuccessfulSyncAt:${userId}`, timestamp)
@@ -1154,9 +1162,24 @@ export async function pushPendingCheckIns(userId: string): Promise<PlayerSyncOve
   const syncPromise = (async () => {
     let overview = await measureInteraction('sync:field-data-push', () => pushPendingCheckInsOnce(userId))
     while (rerunRequestedCheckInSyncs.delete(userId)) {
-      const latestOverview = await getCheckInSyncOverview(userId)
-      if (latestOverview.pendingCount === 0 || latestOverview.status === 'error') {
-        overview = latestOverview
+      const overviews = await Promise.all([
+        getCheckInSyncOverview(userId),
+        getSessionBlockSyncOverview(userId),
+        getExposureSyncOverview(userId),
+        getMetricSyncOverview(userId),
+        getExerciseSyncOverview(userId),
+      ])
+      const [latestOverview] = overviews
+      const pendingCount = overviews.reduce((total, currentOverview) => total + currentOverview.pendingCount, 0)
+      const errorOverview = overviews.find((currentOverview) => currentOverview.status === 'error')
+      const errorMessage = overviews.find((currentOverview) => currentOverview.errorMessage)?.errorMessage ?? null
+      if (pendingCount === 0 || errorOverview) {
+        overview = {
+          ...latestOverview,
+          status: errorOverview ? 'error' : latestOverview.status,
+          pendingCount,
+          errorMessage,
+        }
         continue
       }
 
@@ -1183,6 +1206,10 @@ export async function pullRemoteCheckIns(userId: string, options: PullRemoteChec
     await refreshRemoteProgressEntries(userId, scopedOptions)
     await refreshRemoteBaselineEntries(userId, scopedOptions)
     await refreshRemoteReturnerEntries(userId, scopedOptions)
+    await refreshRemoteSessionBlockLogs(userId, scopedOptions)
+    await refreshRemoteExposureSummaries(userId, scopedOptions)
+    await refreshRemoteMetricResults(userId, scopedOptions)
+    await refreshRemoteExerciseResults(userId, scopedOptions)
     return
   }
 

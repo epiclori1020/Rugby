@@ -46,6 +46,11 @@ const tabMeta: Record<HubTab, { eyebrow: string; title: string; description: str
     title: 'Returner',
     description: 'Caps fuer Speed, COD/Decel, Conditioning und Kontakt getrennt fuehren.',
   },
+  analysis: {
+    eyebrow: 'Team Review',
+    title: 'Analyse',
+    description: 'Lokale Team-Trends fuer Planung, Load, Exposures und Planned-vs-Actual.',
+  },
   bibliothek: {
     eyebrow: 'Unterlagen',
     title: 'Bibliothek',

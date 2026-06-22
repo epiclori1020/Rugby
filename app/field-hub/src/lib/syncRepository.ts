@@ -2,7 +2,10 @@ import type { SessionDefinition } from '../content/types'
 import type { PlayerSyncOverview } from '../domain/sync'
 import { getBaselineSyncOverview } from './baselineRepository'
 import { getCheckInSyncOverview, syncCheckIns } from './checkInRepository'
+import { getExerciseSyncOverview } from './exerciseRepository'
+import { getExposureSyncOverview } from './exposureRepository'
 import { localDb } from './localDb'
+import { getMetricSyncOverview } from './metricRepository'
 import { getPlayerSyncOverview, syncPlayers } from './playerRepository'
 import {
   getPublicCheckInSyncOverview,
@@ -10,6 +13,7 @@ import {
   refreshRemotePublicCheckIns,
 } from './publicCheckInRepository'
 import { getReturnerSyncOverview } from './returnerRepository'
+import { getSessionBlockSyncOverview } from './sessionBlockRepository'
 
 export function combineSyncOverviews(overviews: PlayerSyncOverview[]): PlayerSyncOverview {
   const hasError = overviews.some((overview) => overview.status === 'error')
@@ -38,6 +42,10 @@ export async function getCombinedSyncOverview(userId: string) {
       getCheckInSyncOverview(userId),
       getBaselineSyncOverview(userId),
       getReturnerSyncOverview(userId),
+      getSessionBlockSyncOverview(userId),
+      getExposureSyncOverview(userId),
+      getExerciseSyncOverview(userId),
+      getMetricSyncOverview(userId),
       getPublicCheckInSyncOverview(userId),
     ]),
   )
@@ -99,6 +107,30 @@ export async function resetErroredPendingWritesForRetry(userId: string) {
         await localDb.returnerEntries.put({ ...record, syncStatus: 'pending', syncError: null })
         resetCount += 1
       }
+    } else if (write.table === 'session_block_logs') {
+      const record = await localDb.sessionBlockLogs.get(write.recordId)
+      if (record?.syncStatus === 'error') {
+        await localDb.sessionBlockLogs.put({ ...record, syncStatus: 'pending', syncError: null })
+        resetCount += 1
+      }
+    } else if (write.table === 'player_exposure_summaries') {
+      const record = await localDb.playerExposureSummaries.get(write.recordId)
+      if (record?.syncStatus === 'error') {
+        await localDb.playerExposureSummaries.put({ ...record, syncStatus: 'pending', syncError: null })
+        resetCount += 1
+      }
+    } else if (write.table === 'metric_results') {
+      const record = await localDb.metricResults.get(write.recordId)
+      if (record?.syncStatus === 'error') {
+        await localDb.metricResults.put({ ...record, syncStatus: 'pending', syncError: null })
+        resetCount += 1
+      }
+    } else if (write.table === 'exercise_results') {
+      const record = await localDb.exerciseResults.get(write.recordId)
+      if (record?.syncStatus === 'error') {
+        await localDb.exerciseResults.put({ ...record, syncStatus: 'pending', syncError: null })
+        resetCount += 1
+      }
     }
   }
 
@@ -151,12 +183,10 @@ export async function syncAllUserData(
   if (options.publicSessionDefinition) {
     try {
       await refreshRemotePublicCheckIns(userId, { sessionDefinitionId: options.publicSessionDefinition.id })
-      const publicImportResult = await importPublicCheckInSubmissions(userId, options.publicSessionDefinition, {
+      await importPublicCheckInSubmissions(userId, options.publicSessionDefinition, {
         recoverImportedWithoutLocalEntry: true,
       })
-      if (publicImportResult.imported > 0) {
-        syncOverview = await syncCheckIns(userId, { sessionDefinitionId: options.publicSessionDefinition.id })
-      }
+      syncOverview = await syncCheckIns(userId, { sessionDefinitionId: options.publicSessionDefinition.id })
     } catch (caughtError) {
       publicCheckInSyncOverview = {
         isOnline: typeof navigator === 'undefined' ? true : navigator.onLine,

@@ -1,7 +1,9 @@
 import {
   AlertTriangle,
   Dumbbell,
+  FileText,
   Gauge,
+  Play,
   RefreshCw,
   Route,
   ShieldAlert,
@@ -9,11 +11,13 @@ import {
 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import type { HubTab } from '../App'
+import { libraryItems } from '../content/library'
 import { exerciseMappings, variantCards } from '../content/trainingReference'
 import type { SessionDefinition } from '../content/types'
 import type { CheckInEntryPatch, CheckInLimit, PlayerSessionEntry, PlayerWarning, TrafficLight } from '../domain/checkIn'
 import type { Player } from '../domain/players'
 import type { ReturnerCapSummary } from '../domain/returners'
+import { sessionBlockStatusLabels } from '../domain/sessionBlocks'
 import {
   appendLiveObservation,
   applyTrainingQuickAction,
@@ -21,21 +25,30 @@ import {
   type TrainingQuickAction,
 } from '../domain/training'
 import type { useCheckIns } from '../hooks/useCheckIns'
+import type { useExposures } from '../hooks/useExposures'
+import type { useSessionBlocks } from '../hooks/useSessionBlocks'
 import type { AuthSessionState } from '../lib/auth'
 import { hasPlayerId } from '../lib/playerId'
 import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
+import { LiveSessionStepper } from './LiveSessionStepper'
+import { ExposureReviewPanel } from './ExposureReviewPanel'
 import { SessionPicker } from './SessionPicker'
 
 type TrainingActions = ReturnType<typeof useCheckIns>
+type SessionBlockActions = ReturnType<typeof useSessionBlocks>
+type ExposureActions = ReturnType<typeof useExposures>
 
 type TrainingViewProps = {
   authState: AuthSessionState
   checkInActions: TrainingActions
+  exposureActions: ExposureActions
+  onOpenLibraryItem: (itemId: string) => void
   onNavigate: (tab: HubTab) => void
   onSessionChange: (sessionId: string) => void
   returnerCaps: ReturnerCapSummary[]
   selectedSession: SessionDefinition
   selectedSessionId: string
+  sessionBlockActions: SessionBlockActions
   sessions: SessionDefinition[]
 }
 
@@ -75,6 +88,20 @@ const liveObservationCategories: LiveObservationCategory[] = [
 
 function formatTrafficLight(trafficLight: TrafficLight | null) {
   return trafficLight ? trafficLabels[trafficLight] : 'Offen'
+}
+
+function libraryButtonLabel(itemId: string) {
+  const item = libraryItems.find((candidate) => candidate.id === itemId)
+
+  if (!item) {
+    return 'Quelle'
+  }
+
+  if (item.category === 'Varianten' || item.category === 'Exercise Mapping') {
+    return item.category
+  }
+
+  return item.title
 }
 
 function WarningNote({ warning }: { warning: PlayerWarning | undefined }) {
@@ -224,11 +251,14 @@ function TrainingPlayerRow({
 export function TrainingView({
   authState,
   checkInActions,
+  exposureActions,
+  onOpenLibraryItem,
   onNavigate,
   onSessionChange,
   returnerCaps,
   selectedSession,
   selectedSessionId,
+  sessionBlockActions,
   sessions,
 }: TrainingViewProps) {
   const {
@@ -245,6 +275,8 @@ export function TrainingView({
     sessionLog,
     clearError,
   } = checkInActions
+  const blockSyncAttention = shouldShowSyncAttention(sessionBlockActions.syncOverview)
+  const exposureSyncAttention = shouldShowSyncAttention(exposureActions.syncOverview)
   const showSyncAttention = shouldShowSyncAttention(syncOverview)
   const expectedPlayerSet = new Set(expectedPlayerIds)
   const warningByPlayerId = new Map(warnings.filter(hasPlayerId).map((warning) => [warning.playerId, warning]))
@@ -265,6 +297,9 @@ export function TrainingView({
   const [liveObservationCategory, setLiveObservationCategory] = useState<LiveObservationCategory>('Movement')
   const [liveObservationText, setLiveObservationText] = useState('')
   const [liveObservationFeedback, setLiveObservationFeedback] = useState<string | null>(null)
+  const [liveModeState, setLiveModeState] = useState({ sessionId: selectedSession.id, started: false })
+  const isLiveModeStarted = liveModeState.sessionId === selectedSession.id && liveModeState.started
+  const showLiveStepper = isLiveModeStarted || sessionBlockActions.blockLogs.length > 0
 
   function handleSessionTextBlur(field: 'contactIndex' | 'speedExposureNote') {
     return (event: FormEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -340,6 +375,15 @@ export function TrainingView({
             selectedSessionId={selectedSessionId}
             sessions={sessions}
           />
+          <button
+            className="primary-action"
+            type="button"
+            onClick={() => setLiveModeState({ sessionId: selectedSession.id, started: true })}
+            disabled={showLiveStepper}
+          >
+            <Play className="nav-icon" aria-hidden />
+            <span>{showLiveStepper ? 'Training laeuft' : 'Training starten'}</span>
+          </button>
           {syncOverview.status === 'error' ? (
             <button className="secondary-action" type="button" onClick={runSync} disabled={isLoading}>
               <RefreshCw className="nav-icon" aria-hidden />
@@ -382,6 +426,27 @@ export function TrainingView({
         </div>
       ) : null}
 
+      {sessionBlockActions.errorMessage ? (
+        <div className="panel error-panel" role="alert">
+          <strong>Blockstatus nicht vollstaendig synchronisiert</strong>
+          <span>{sessionBlockActions.errorMessage}</span>
+          <button
+            className="secondary-action"
+            type="button"
+            onClick={() => {
+              void sessionBlockActions.runSync()
+            }}
+            disabled={sessionBlockActions.isLoading}
+          >
+            <RefreshCw className="nav-icon" aria-hidden />
+            <span>{sessionBlockActions.isLoading ? 'Sync laeuft...' : 'Retry'}</span>
+          </button>
+          <button className="secondary-action" type="button" onClick={sessionBlockActions.clearError}>
+            Schliessen
+          </button>
+        </div>
+      ) : null}
+
       {showSyncAttention ? (
         <div className="panel checkin-sync-strip">
           <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
@@ -390,6 +455,77 @@ export function TrainingView({
           {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
         </div>
       ) : null}
+
+      {blockSyncAttention ? (
+        <div className="panel checkin-sync-strip">
+          <span className={`status-dot ${sessionBlockActions.syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
+          <strong>{syncStatusLabel(sessionBlockActions.syncOverview.status)}</strong>
+          <span>{pendingCountLabel(sessionBlockActions.syncOverview.pendingCount, 'Blockstatus-Aenderungen')}</span>
+          {sessionBlockActions.syncOverview.errorMessage ? <span>{sessionBlockActions.syncOverview.errorMessage}</span> : null}
+          {sessionBlockActions.syncOverview.status === 'error' ? (
+            <button
+              className="secondary-action compact-action"
+              type="button"
+              onClick={() => {
+                void sessionBlockActions.runSync()
+              }}
+              disabled={sessionBlockActions.isLoading}
+            >
+              <RefreshCw className="nav-icon" aria-hidden />
+              <span>{sessionBlockActions.isLoading ? 'Sync laeuft...' : 'Retry'}</span>
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {exposureActions.errorMessage ? (
+        <div className="panel error-panel" role="alert">
+          <strong>Exposures nicht vollstaendig gespeichert</strong>
+          <span>{exposureActions.errorMessage}</span>
+          <button className="secondary-action" type="button" onClick={exposureActions.clearError}>
+            Schliessen
+          </button>
+        </div>
+      ) : null}
+
+      {exposureSyncAttention ? (
+        <div className="panel checkin-sync-strip">
+          <span className={`status-dot ${exposureActions.syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
+          <strong>{syncStatusLabel(exposureActions.syncOverview.status)}</strong>
+          <span>{pendingCountLabel(exposureActions.syncOverview.pendingCount, 'Exposure-Aenderungen')}</span>
+          {exposureActions.syncOverview.errorMessage ? <span>{exposureActions.syncOverview.errorMessage}</span> : null}
+        </div>
+      ) : null}
+
+      {showLiveStepper ? (
+        <LiveSessionStepper
+          blockLogs={sessionBlockActions.blockLogs}
+          isSavingDisabled={isLoading || sessionBlockActions.isLoading}
+          onSaveBlockLog={(blockKey, patch) => {
+            void sessionBlockActions.saveBlockLog(blockKey, patch)
+          }}
+          session={selectedSession}
+        />
+      ) : null}
+
+      <ExposureReviewPanel
+        entries={checkInActions.entries}
+        isSavingDisabled={isLoading || exposureActions.isLoading}
+        onGenerate={() => {
+          void exposureActions.generateExposureSummaries({
+            sessionLog,
+            blockLogs: sessionBlockActions.blockLogs,
+            entries: checkInActions.entries,
+            returnerCaps,
+          })
+        }}
+        onManualOverride={(summary, type, override) => {
+          void exposureActions.saveManualOverride(summary, type, override)
+        }}
+        players={activePlayers}
+        sessionLog={sessionLog}
+        summaries={exposureActions.summaries}
+      />
 
       <section className="panel live-observation-panel" aria-labelledby="live-observation-heading">
         <div className="status-line">
@@ -447,11 +583,11 @@ export function TrainingView({
           <article className="panel">
             <div className="status-line">
               <Route className="nav-icon" aria-hidden />
-              <h3>Timeline</h3>
+              <h3>Timeline und Blockstatus</h3>
             </div>
             <div className="session-timeline training-timeline">
               {selectedSession.timeline.map((block) => (
-                <div className="timeline-row" key={`${block.time}-${block.title}`}>
+                <div className="timeline-row" key={block.key}>
                   <span>{block.time}</span>
                   <div>
                     <strong>{block.title}</strong>
@@ -459,7 +595,30 @@ export function TrainingView({
                     <div className="tag-row">
                       {block.dose ? <span className="tag compact">{block.dose}</span> : null}
                       {block.note ? <span className="tag compact">{block.note}</span> : null}
+                      <span className="tag compact">
+                        {sessionBlockStatusLabels[sessionBlockActions.getLogForBlock(block.key)?.status ?? 'planned']}
+                      </span>
+                      {sessionBlockActions.getLogForBlock(block.key) ? (
+                        <span className={`sync-pill ${sessionBlockActions.getLogForBlock(block.key)?.syncStatus ?? 'synced'}`}>
+                          {syncStatusLabel(sessionBlockActions.getLogForBlock(block.key)?.syncStatus ?? 'synced')}
+                        </span>
+                      ) : null}
                     </div>
+                    {block.libraryRefs && block.libraryRefs.length > 0 ? (
+                      <div className="block-library-links" aria-label={`Quellen fuer ${block.title}`}>
+                        {block.libraryRefs.map((libraryRef) => (
+                          <button
+                            className="text-action block-library-link"
+                            key={libraryRef}
+                            type="button"
+                            onClick={() => onOpenLibraryItem(libraryRef)}
+                          >
+                            <FileText className="nav-icon" aria-hidden />
+                            <span>{libraryButtonLabel(libraryRef)}</span>
+                          </button>
+                        ))}
+                      </div>
+                    ) : null}
                   </div>
                 </div>
               ))}

@@ -70,6 +70,22 @@ describe('AppShell page title', () => {
     expect(markup).not.toContain('Jetzt synchronisieren')
   })
 
+  it('renders analysis metadata for the team analysis tab', () => {
+    const markup = renderToStaticMarkup(
+      <AppShell
+        activeTab="analysis"
+        authState={signedOutAuthState}
+        onTabChange={() => undefined}
+        playerSync={syncedOverview}
+      >
+        <p>Analysis content</p>
+      </AppShell>,
+    )
+
+    expect(markup).toContain('Analyse')
+    expect(markup).toContain('Lokale Team-Trends fuer Planung, Load, Exposures und Planned-vs-Actual.')
+  })
+
   it('renders app-level transient notices as polite status feedback', () => {
     const markup = renderToStaticMarkup(
       <AppShell

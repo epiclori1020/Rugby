@@ -346,6 +346,10 @@ button {
   grid-template-columns: repeat(2, minmax(0, 1fr));
 }
 
+.analysis-metrics {
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
 .metric {
   min-height: 88px;
   border: 1px solid var(--line);
@@ -565,6 +569,120 @@ button {
   align-items: start;
 }
 
+.analysis-layout,
+.analysis-filter-panel,
+.analysis-distribution {
+  display: grid;
+  gap: 14px;
+}
+
+.analysis-intro-panel {
+  background: var(--surface-strong);
+  box-shadow: none;
+}
+
+.analysis-filter-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(160px, 1fr));
+  gap: 12px;
+}
+
+.analysis-two-column {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.analysis-table-wrap {
+  max-width: 100%;
+  overflow-x: auto;
+}
+
+.analysis-table {
+  width: 100%;
+  min-width: 720px;
+  border-collapse: collapse;
+  font-size: 0.92rem;
+}
+
+.analysis-table th,
+.analysis-table td {
+  border-bottom: 1px solid var(--line);
+  padding: 10px;
+  text-align: left;
+  vertical-align: middle;
+}
+
+.analysis-table th {
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.analysis-table td {
+  color: var(--ink);
+}
+
+.analysis-table td:last-child,
+.analysis-distribution-row {
+  min-width: 160px;
+}
+
+.analysis-bar-track {
+  width: 100%;
+  height: 8px;
+  border-radius: 999px;
+  background: var(--surface-strong);
+  display: block;
+  overflow: hidden;
+}
+
+.analysis-bar-fill {
+  height: 100%;
+  border-radius: inherit;
+  background: var(--brand);
+  display: block;
+}
+
+.analysis-table td .analysis-bar-track {
+  margin-bottom: 5px;
+}
+
+.analysis-distribution-row {
+  display: grid;
+  grid-template-columns: minmax(90px, 0.5fr) minmax(0, 1fr) auto;
+  align-items: center;
+  gap: 10px;
+}
+
+.analysis-distribution-row span {
+  color: var(--muted);
+  font-weight: 850;
+}
+
+.analysis-distribution-row.traffic-green .analysis-bar-fill {
+  background: var(--ok);
+}
+
+.analysis-distribution-row.traffic-yellow .analysis-bar-fill {
+  background: var(--warning);
+}
+
+.analysis-distribution-row.traffic-red .analysis-bar-fill {
+  background: #8c2f24;
+}
+
+.analysis-advisory-watch {
+  border-color: rgba(138, 90, 18, 0.32);
+  background: var(--warning-bg);
+}
+
+.analysis-advisory-high {
+  border-color: rgba(140, 47, 36, 0.35);
+  background: #fff1ef;
+}
+
 .library-sidebar,
 .library-detail,
 .library-heading,
@@ -684,6 +802,13 @@ button {
   display: block;
 }
 
+.players-layout.has-detail {
+  display: grid;
+  grid-template-columns: minmax(320px, 0.42fr) minmax(0, 0.58fr);
+  gap: 14px;
+  align-items: start;
+}
+
 .checkin-layout {
   display: grid;
   gap: 14px;
@@ -749,6 +874,12 @@ button {
   line-height: 1.3;
 }
 
+.player-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 5px;
+}
+
 .player-avatar {
   width: 44px;
   height: 44px;
@@ -783,6 +914,170 @@ button {
   display: grid;
   gap: 12px;
   padding: 12px;
+}
+
+.player-detail-heading {
+  display: grid;
+  grid-template-columns: 54px minmax(0, 1fr);
+  align-items: center;
+  gap: 12px;
+}
+
+.player-detail .player-avatar {
+  width: 54px;
+  height: 54px;
+}
+
+.player-detail-tabs {
+  overflow-x: auto;
+  padding-bottom: 2px;
+}
+
+.player-profile-content,
+.player-profile-section,
+.profile-fact-list,
+.closure-panel,
+.closure-list {
+  display: grid;
+  gap: 12px;
+}
+
+.player-profile-section {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.player-profile-section h4 {
+  margin: 0;
+}
+
+.profile-fact-list p {
+  margin: 0;
+}
+
+.player-analysis-grid {
+  display: grid;
+  gap: 12px;
+}
+
+.player-analysis-card {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+  display: grid;
+  gap: 10px;
+}
+
+.player-analysis-card h5 {
+  margin: 0;
+  font-size: 0.92rem;
+}
+
+.player-analysis-metrics .metric {
+  min-height: 76px;
+}
+
+.player-analysis-list,
+.player-analysis-bars,
+.player-analysis-list-row {
+  display: grid;
+  gap: 8px;
+}
+
+.player-analysis-list-row {
+  border-top: 1px solid var(--line);
+  padding-top: 8px;
+}
+
+.player-analysis-list-row:first-child {
+  border-top: 0;
+  padding-top: 0;
+}
+
+.player-analysis-list-row p {
+  margin: 0;
+}
+
+.player-analysis-bar-row {
+  display: grid;
+  grid-template-columns: minmax(92px, auto) minmax(0, 1fr) minmax(54px, auto);
+  align-items: center;
+  gap: 8px;
+}
+
+.player-analysis-bar-row span:first-child,
+.player-analysis-source,
+.compact-empty {
+  color: var(--muted);
+  font-size: 0.85rem;
+}
+
+.player-analysis-source {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+}
+
+.player-analysis-gap-list {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.coach-insights-panel,
+.coach-insight-list,
+.coach-insight,
+.coach-insight-sources {
+  display: grid;
+  gap: 10px;
+}
+
+.coach-insight {
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.coach-insight-high {
+  border-color: rgba(140, 47, 36, 0.35);
+  background: #fff8f6;
+}
+
+.coach-insight-medium {
+  border-color: rgba(138, 90, 18, 0.28);
+  background: #fffdf8;
+}
+
+.coach-insight-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.coach-insight-heading h4,
+.coach-insight p {
+  margin: 0;
+}
+
+.coach-insight-dismiss {
+  min-width: 118px;
+}
+
+.text-action {
+  border: 0;
+  background: transparent;
+  color: var(--brand);
+  font: inherit;
+  font-weight: 850;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 3px;
 }
 
 .sync-mini {
@@ -1267,6 +1562,11 @@ button {
   color: #7d241b;
 }
 
+.tag.warning {
+  background: var(--warning-bg);
+  color: #53370d;
+}
+
 .training-layout {
   display: grid;
   gap: 14px;
@@ -1281,6 +1581,59 @@ button {
 
 .training-timeline .timeline-row {
   align-items: start;
+}
+
+.live-session-stepper {
+  display: grid;
+  gap: 14px;
+  border-color: rgba(19, 79, 67, 0.28);
+  background: #f7fbf7;
+}
+
+.live-step-heading {
+  display: flex;
+  align-items: start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.live-step-heading h3,
+.live-step-heading p,
+.live-step-work p {
+  margin: 0;
+}
+
+.live-step-work {
+  display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: start;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  padding: 12px;
+}
+
+.live-step-work p {
+  font-size: 1.08rem;
+  font-weight: 850;
+  line-height: 1.45;
+}
+
+.live-step-safety,
+.live-step-navigation {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.live-step-controls {
+  display: grid;
+  gap: 12px;
+}
+
+.live-step-navigation {
+  justify-content: space-between;
 }
 
 .training-coach-fields {
@@ -1622,6 +1975,33 @@ code {
 }
 
 .source-box strong {
+  overflow-wrap: anywhere;
+}
+
+.library-workflow-strip,
+.block-library-links {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.block-library-links {
+  margin-top: 8px;
+}
+
+.block-library-link {
+  min-height: 36px;
+  align-items: center;
+  border: 1px solid var(--line);
+  border-radius: 8px;
+  background: #ffffff;
+  display: inline-flex;
+  gap: 6px;
+  padding: 6px 9px;
+  text-decoration: none;
+}
+
+.block-library-link span {
   overflow-wrap: anywhere;
 }
 
@@ -2023,11 +2403,17 @@ code {
   .library-layout,
   .players-layout,
   .training-grid,
+  .analysis-filter-grid,
+  .analysis-two-column,
   .checkin-header,
   .checkin-controls,
   .baseline-fields,
   .post-session-coach-panel .training-coach-fields {
     display: grid;
+    grid-template-columns: 1fr;
+  }
+
+  .players-layout.has-detail {
     grid-template-columns: 1fr;
   }
 
@@ -2129,13 +2515,24 @@ code {
     grid-template-columns: 1fr;
   }
 
+  .analysis-metrics {
+    grid-template-columns: 1fr;
+  }
+
   .timeline-row,
+  .live-step-heading,
   .pdf-link-grid,
   .form-grid,
   .checkin-metrics,
   .checkin-reset-panel,
   .reset-confirm-grid,
   .export-actions {
+    grid-template-columns: 1fr;
+  }
+
+  .live-step-heading,
+  .live-step-navigation {
+    display: grid;
     grid-template-columns: 1fr;
   }
 

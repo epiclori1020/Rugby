@@ -1,9 +1,20 @@
 import type { BaselineEntry } from '../domain/baseline'
 import type { PlayerSessionEntry, SessionLog } from '../domain/checkIn'
+import { isKnownExerciseKey, type ExercisePainResponse, type ExerciseResult, type ExerciseTechniqueQuality, type ExerciseVariant } from '../domain/exercises'
+import { exposureTypes, type ExposureStatus, type PlayerExposureSummary } from '../domain/exposures'
+import { isKnownMetricKey, type MetricBodySide, type MetricResult } from '../domain/metrics'
 import type { Player } from '../domain/players'
 import type { ProgressEntry } from '../domain/postSession'
 import type { PublicCheckInLink, PublicCheckInLinkPlayer, PublicCheckInSubmission } from '../domain/publicCheckIn'
 import type { ReturnerEntry } from '../domain/returners'
+import {
+  sessionBlockReasons,
+  sessionBlockStatuses,
+  validateSessionBlockStatusReason,
+  type SessionBlockLog,
+  type SessionBlockReason,
+  type SessionBlockStatus,
+} from '../domain/sessionBlocks'
 import { getSyncMeta, localDb, setSyncMeta, type PendingWriteTable } from './localDb'
 
 export type FieldHubBackupV1 = {
@@ -17,6 +28,10 @@ export type FieldHubBackupV1 = {
     progressEntries: ProgressEntry[]
     baselineEntries: BaselineEntry[]
     returnerEntries: ReturnerEntry[]
+    sessionBlockLogs: SessionBlockLog[]
+    playerExposureSummaries: PlayerExposureSummary[]
+    exerciseResults: ExerciseResult[]
+    metricResults: MetricResult[]
     publicCheckInLinks: PublicCheckInLink[]
     publicCheckInLinkPlayers: PublicCheckInLinkPlayer[]
     publicCheckInSubmissions: PublicCheckInSubmission[]
@@ -47,6 +62,10 @@ const collectionToTable = {
   progressEntries: 'progress_entries',
   baselineEntries: 'baseline_entries',
   returnerEntries: 'returner_entries',
+  sessionBlockLogs: 'session_block_logs',
+  playerExposureSummaries: 'player_exposure_summaries',
+  exerciseResults: 'exercise_results',
+  metricResults: 'metric_results',
   publicCheckInLinks: 'public_checkin_links',
   publicCheckInLinkPlayers: 'public_checkin_link_players',
   publicCheckInSubmissions: 'public_checkin_submissions',
@@ -59,6 +78,10 @@ const collectionToDexieTable = {
   progressEntries: localDb.progressEntries,
   baselineEntries: localDb.baselineEntries,
   returnerEntries: localDb.returnerEntries,
+  sessionBlockLogs: localDb.sessionBlockLogs,
+  playerExposureSummaries: localDb.playerExposureSummaries,
+  exerciseResults: localDb.exerciseResults,
+  metricResults: localDb.metricResults,
   publicCheckInLinks: localDb.publicCheckInLinks,
   publicCheckInLinkPlayers: localDb.publicCheckInLinkPlayers,
   publicCheckInSubmissions: localDb.publicCheckInSubmissions,
@@ -81,6 +104,14 @@ async function putImportedRecord(collectionKey: BackupCollectionKey, record: Fie
     await localDb.progressEntries.put(record as ProgressEntry)
   } else if (collectionKey === 'baselineEntries') {
     await localDb.baselineEntries.put(record as BaselineEntry)
+  } else if (collectionKey === 'sessionBlockLogs') {
+    await localDb.sessionBlockLogs.put(record as SessionBlockLog)
+  } else if (collectionKey === 'playerExposureSummaries') {
+    await localDb.playerExposureSummaries.put(record as PlayerExposureSummary)
+  } else if (collectionKey === 'exerciseResults') {
+    await localDb.exerciseResults.put(record as ExerciseResult)
+  } else if (collectionKey === 'metricResults') {
+    await localDb.metricResults.put(record as MetricResult)
   } else if (collectionKey === 'publicCheckInLinks') {
     await localDb.publicCheckInLinks.put(record as PublicCheckInLink)
   } else if (collectionKey === 'publicCheckInLinkPlayers') {
@@ -123,6 +154,15 @@ function hasString(value: unknown, key: string) {
   return typeof value === 'object' && value !== null && key in value && typeof value[key as keyof typeof value] === 'string'
 }
 
+function getString(value: unknown, key: string) {
+  if (typeof value !== 'object' || value === null) {
+    return null
+  }
+
+  const record = value as Record<string, unknown>
+  return typeof record[key] === 'string' ? record[key] : null
+}
+
 function hasNullableString(value: unknown, key: string) {
   return (
     typeof value === 'object' &&
@@ -145,6 +185,10 @@ function hasNullableNumber(value: unknown, key: string) {
   )
 }
 
+function hasNumber(value: unknown, key: string) {
+  return typeof value === 'object' && value !== null && key in value && typeof value[key as keyof typeof value] === 'number'
+}
+
 function hasStringArray(value: unknown, key: string) {
   return (
     typeof value === 'object' &&
@@ -153,6 +197,51 @@ function hasStringArray(value: unknown, key: string) {
     Array.isArray(value[key as keyof typeof value]) &&
     (value[key as keyof typeof value] as unknown[]).every((entry) => typeof entry === 'string')
   )
+}
+
+function hasObject(value: unknown, key: string) {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    key in value &&
+    typeof value[key as keyof typeof value] === 'object' &&
+    value[key as keyof typeof value] !== null &&
+    !Array.isArray(value[key as keyof typeof value])
+  )
+}
+
+function hasExposureStatuses(value: unknown) {
+  if (typeof value !== 'object' || value === null || !('statuses' in value)) {
+    return false
+  }
+
+  const statuses = (value as Record<string, unknown>).statuses
+  if (typeof statuses !== 'object' || statuses === null || Array.isArray(statuses)) {
+    return false
+  }
+
+  const allowedStatuses = new Set<ExposureStatus>(['none', 'completed', 'reduced', 'skipped'])
+  return exposureTypes.every((type) => allowedStatuses.has((statuses as Record<string, ExposureStatus>)[type]))
+}
+
+function hasMetricBodySide(value: unknown) {
+  const side = getString(value, 'bodySide') as MetricBodySide | null
+  return side === 'none' || side === 'left' || side === 'right'
+}
+
+function hasExerciseVariant(value: unknown) {
+  const variant = getString(value, 'variant') as ExerciseVariant | null
+  return variant === 'A_plus' || variant === 'A' || variant === 'B' || variant === 'C' || variant === 'D' || variant === 'custom'
+}
+
+function hasExerciseTechniqueQuality(value: unknown) {
+  const quality = getString(value, 'techniqueQuality') as ExerciseTechniqueQuality | null
+  return quality === 'good' || quality === 'ok' || quality === 'limited' || quality === 'poor' || quality === 'not_recorded'
+}
+
+function hasExercisePainResponse(value: unknown) {
+  const response = getString(value, 'painResponse') as ExercisePainResponse | null
+  return response === 'none' || response === 'same' || response === 'worse' || response === 'better' || response === 'unclear'
 }
 
 function hasValidRecordShape(collectionKey: BackupCollectionKey, record: unknown) {
@@ -189,7 +278,7 @@ function hasValidRecordShape(collectionKey: BackupCollectionKey, record: unknown
   if (collectionKey === 'playerSessionEntries') {
     return (
       hasString(record, 'sessionLogId') &&
-      hasNullableString(record, 'playerId') &&
+      hasString(record, 'playerId') &&
       hasBoolean(record, 'present') &&
       hasNullableNumber(record, 'readiness') &&
       hasNullableNumber(record, 'painScore') &&
@@ -219,6 +308,80 @@ function hasValidRecordShape(collectionKey: BackupCollectionKey, record: unknown
       hasNullableNumber(record, 'sprint30m')
     )
   }
+
+  if (collectionKey === 'sessionBlockLogs') {
+    const status = getString(record, 'status')
+    const reason = getString(record, 'reason')
+    const hasValidStatusReason =
+      status !== null &&
+      reason !== null &&
+      sessionBlockStatuses.includes(status as SessionBlockStatus) &&
+      sessionBlockReasons.includes(reason as SessionBlockReason) &&
+      validateSessionBlockStatusReason(status as SessionBlockStatus, reason as SessionBlockReason).valid
+
+    return (
+      hasString(record, 'sessionLogId') &&
+      hasString(record, 'sessionDefinitionId') &&
+      hasString(record, 'blockKey') &&
+      hasString(record, 'blockTitle') &&
+      hasNumber(record, 'blockOrder') &&
+      hasString(record, 'plannedTime') &&
+      hasString(record, 'plannedWork') &&
+      hasValidStatusReason &&
+      hasString(record, 'coachNote')
+    )
+  }
+
+  if (collectionKey === 'playerExposureSummaries') {
+    return (
+      hasNullableString(record, 'playerId') &&
+      hasNullableString(record, 'sessionLogId') &&
+      hasString(record, 'sessionDefinitionId') &&
+      hasString(record, 'sessionDate') &&
+      hasExposureStatuses(record) &&
+      hasObject(record, 'sources') &&
+      hasObject(record, 'manualOverrides') &&
+      hasString(record, 'coachNote')
+    )
+  }
+
+  if (collectionKey === 'metricResults') {
+    const metricKey = getString(record, 'metricKey')
+
+    return (
+      hasNullableString(record, 'playerId') &&
+      hasNullableString(record, 'sessionLogId') &&
+      metricKey !== null &&
+      isKnownMetricKey(metricKey) &&
+      hasNumber(record, 'value') &&
+      hasNumber(record, 'attempt') &&
+      hasBoolean(record, 'isValid') &&
+      hasMetricBodySide(record) &&
+      hasString(record, 'contextNote')
+    )
+  }
+
+  if (collectionKey === 'exerciseResults') {
+    const exerciseKey = getString(record, 'exerciseKey')
+
+    return (
+      hasNullableString(record, 'playerId') &&
+      hasNullableString(record, 'sessionLogId') &&
+      exerciseKey !== null &&
+      isKnownExerciseKey(exerciseKey) &&
+      hasExerciseVariant(record) &&
+      hasNullableNumber(record, 'sets') &&
+      hasString(record, 'reps') &&
+      hasNullableNumber(record, 'loadValue') &&
+      hasString(record, 'loadUnit') &&
+      hasNullableNumber(record, 'rpe') &&
+      hasNullableNumber(record, 'rir') &&
+      hasExerciseTechniqueQuality(record) &&
+      hasExercisePainResponse(record) &&
+      hasString(record, 'notes')
+    )
+  }
+
 
   if (collectionKey === 'publicCheckInLinks') {
     return (
@@ -317,6 +480,10 @@ export async function createFieldHubBackup(userId: string): Promise<FieldHubBack
     publicCheckInLinks,
     publicCheckInLinkPlayers,
     publicCheckInSubmissions,
+    sessionBlockLogs,
+    playerExposureSummaries,
+    exerciseResults,
+    metricResults,
   ] =
     await Promise.all([
       localDb.players.where('userId').equals(userId).toArray(),
@@ -328,6 +495,10 @@ export async function createFieldHubBackup(userId: string): Promise<FieldHubBack
       localDb.publicCheckInLinks.where('userId').equals(userId).toArray(),
       localDb.publicCheckInLinkPlayers.where('userId').equals(userId).toArray(),
       localDb.publicCheckInSubmissions.where('userId').equals(userId).toArray(),
+      localDb.sessionBlockLogs.where('userId').equals(userId).toArray(),
+      localDb.playerExposureSummaries.where('userId').equals(userId).toArray(),
+      localDb.exerciseResults.where('userId').equals(userId).toArray(),
+      localDb.metricResults.where('userId').equals(userId).toArray(),
     ])
 
   return {
@@ -341,6 +512,10 @@ export async function createFieldHubBackup(userId: string): Promise<FieldHubBack
       progressEntries,
       baselineEntries,
       returnerEntries,
+      sessionBlockLogs,
+      playerExposureSummaries,
+      exerciseResults,
+      metricResults,
       publicCheckInLinks,
       publicCheckInLinkPlayers,
       publicCheckInSubmissions,

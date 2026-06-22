@@ -20,6 +20,12 @@ const publicCheckInRepositoryMocks = vi.hoisted(() => ({
   refreshRemotePublicCheckIns: vi.fn(async () => undefined),
   importPublicCheckInSubmissions: vi.fn(async () => ({ imported: 0, conflicts: 0, superseded: 0 })),
 }))
+const exposureRepositoryMocks = vi.hoisted(() => ({
+  getExposureSyncOverview: vi.fn(async () => syncedOverview),
+}))
+const exerciseRepositoryMocks = vi.hoisted(() => ({
+  getExerciseSyncOverview: vi.fn(async () => syncedOverview),
+}))
 
 const sessionDefinition: SessionDefinition = {
   id: 'session-1',
@@ -57,6 +63,8 @@ vi.mock('./returnerRepository', () => ({
 }))
 
 vi.mock('./publicCheckInRepository', () => publicCheckInRepositoryMocks)
+vi.mock('./exposureRepository', () => exposureRepositoryMocks)
+vi.mock('./exerciseRepository', () => exerciseRepositoryMocks)
 
 describe('syncRepository orchestrator', () => {
   beforeEach(async () => {
@@ -64,6 +72,8 @@ describe('syncRepository orchestrator', () => {
     checkInRepositoryMocks.syncCheckIns.mockClear()
     checkInRepositoryMocks.syncCheckIns.mockResolvedValue(syncedOverview)
     publicCheckInRepositoryMocks.getPublicCheckInSyncOverview.mockClear()
+    exposureRepositoryMocks.getExposureSyncOverview.mockClear()
+    exerciseRepositoryMocks.getExerciseSyncOverview.mockClear()
     publicCheckInRepositoryMocks.refreshRemotePublicCheckIns.mockClear()
     publicCheckInRepositoryMocks.refreshRemotePublicCheckIns.mockResolvedValue(undefined)
     publicCheckInRepositoryMocks.importPublicCheckInSubmissions.mockClear()
@@ -90,6 +100,22 @@ describe('syncRepository orchestrator', () => {
     await getCombinedSyncOverview('user-1')
 
     expect(publicCheckInRepositoryMocks.getPublicCheckInSyncOverview).toHaveBeenCalledWith('user-1')
+  })
+
+  it('includes exposure status in the combined sync overview', async () => {
+    const { getCombinedSyncOverview } = await import('./syncRepository')
+
+    await getCombinedSyncOverview('user-1')
+
+    expect(exposureRepositoryMocks.getExposureSyncOverview).toHaveBeenCalledWith('user-1')
+  })
+
+  it('includes exercise status in the combined sync overview', async () => {
+    const { getCombinedSyncOverview } = await import('./syncRepository')
+
+    await getCombinedSyncOverview('user-1')
+
+    expect(exerciseRepositoryMocks.getExerciseSyncOverview).toHaveBeenCalledWith('user-1')
   })
 
   it('surfaces public check-in sync failures without throwing away the manual sync result', async () => {

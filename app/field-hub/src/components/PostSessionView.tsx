@@ -2,6 +2,8 @@ import { AlertTriangle, ClipboardCheck, RefreshCw, ShieldAlert, UserCheck } from
 import { useState, type FormEvent } from 'react'
 import type { HubTab } from '../App'
 import type { SessionDefinition } from '../content/types'
+import { metricDefinitions } from '../content/metricDefinitions'
+import { exerciseDefinitions } from '../content/exerciseDefinitions'
 import {
   formatOptionalBaselineNumber,
   hasBaselineContent,
@@ -12,24 +14,50 @@ import {
 } from '../domain/baseline'
 import type { E2Decision, NextStep, ProgressEntry } from '../domain/postSession'
 import { derivePostSessionFollowUps, suggestNextStep } from '../domain/postSession'
+import {
+  exercisePainResponses,
+  exerciseTechniqueQualities,
+  exerciseVariants,
+  formatExerciseResult,
+  type ExerciseResult,
+  type ExerciseResultPatch,
+  type ExerciseVariant,
+} from '../domain/exercises'
+import { formatMetricValue, parseOptionalMetricValue, type MetricResult, type MetricResultPatch } from '../domain/metrics'
 import type { PlayerSessionEntry, PlayerWarning } from '../domain/checkIn'
+import { derivePostSessionCompletion, type PostSessionCompletion } from '../domain/postSessionCompletion'
 import type { Player } from '../domain/players'
+import type { ReturnerCapSummary } from '../domain/returners'
+import type { SessionBlockLog } from '../domain/sessionBlocks'
 import type { useBaselines } from '../hooks/useBaselines'
+import type { useExposures } from '../hooks/useExposures'
+import type { useExercises } from '../hooks/useExercises'
+import type { useMetrics } from '../hooks/useMetrics'
 import type { usePostSession } from '../hooks/usePostSession'
 import type { AuthSessionState } from '../lib/auth'
 import { hasPlayerId } from '../lib/playerId'
 import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
+import { ExposureReviewPanel } from './ExposureReviewPanel'
 import { SessionPicker } from './SessionPicker'
 
 type PostSessionActions = ReturnType<typeof usePostSession>
 type BaselineActions = ReturnType<typeof useBaselines>
+type ExposureActions = ReturnType<typeof useExposures>
+type ExerciseActions = ReturnType<typeof useExercises>
+type MetricActions = ReturnType<typeof useMetrics>
 
 type PostSessionViewProps = {
   authState: AuthSessionState
   baselineActions: BaselineActions
+  exposureActions: ExposureActions
+  exposureBlockLogs: SessionBlockLog[]
+  exerciseActions: ExerciseActions
+  lastExportAt: string | null
+  metricActions: MetricActions
   onNavigate: (tab: HubTab) => void
   onSessionChange: (sessionId: string) => void
   postSessionActions: PostSessionActions
+  returnerCaps: ReturnerCapSummary[]
   selectedSession: SessionDefinition
   selectedSessionId: string
   sessions: SessionDefinition[]
@@ -50,6 +78,15 @@ const nextStepOptions: Array<{ value: NextStep; label: string }> = [
   { value: 'reduzieren', label: 'Reduzieren' },
   { value: 'klaeren', label: 'Klaeren' },
 ]
+
+const exerciseVariantLabels: Record<ExerciseVariant, string> = {
+  A_plus: 'A+',
+  A: 'A',
+  B: 'B',
+  C: 'C',
+  D: 'D',
+  custom: 'Custom',
+}
 
 function progressPreview(player: Player, entry: ProgressEntry | null): ProgressEntry {
   return (
@@ -118,6 +155,54 @@ function WarningSummary({ warning }: { warning: PlayerWarning | undefined }) {
       <AlertTriangle className="nav-icon" aria-hidden />
       <span>Vorwarnung {warning.sessionDate}: {parts.join(' · ')}</span>
     </div>
+  )
+}
+
+function ClosureChecklist({ completion }: { completion: PostSessionCompletion }) {
+  const statusLabel =
+    completion.status === 'abgeschlossen'
+      ? 'abgeschlossen'
+      : completion.status === 'teilweise_abgeschlossen'
+        ? 'teilweise abgeschlossen'
+        : 'offen'
+  const statusClass = completion.status === 'abgeschlossen' ? 'online' : ''
+
+  return (
+    <section className="panel closure-panel" aria-labelledby="closure-heading">
+      <div className="library-heading">
+        <p className="eyebrow">Closure Checklist</p>
+        <h3 id="closure-heading">Nachbereitungsstatus: {statusLabel}</h3>
+        <p>Pflichtdaten blockieren den Abschlussstatus; Progression, Baseline und Export bleiben klare Hinweise.</p>
+      </div>
+      <div className="sync-mini">
+        <span className={`status-dot ${statusClass}`} aria-hidden />
+        <strong>{completion.blockers.length === 0 ? 'Pflichtdaten geklaert' : `${completion.blockers.length} Pflichtpunkt(e) offen`}</strong>
+        {completion.advisories.length > 0 ? <span>{completion.advisories.length} Hinweis(e)</span> : null}
+      </div>
+      {completion.blockers.length > 0 ? (
+        <div className="closure-list">
+          {completion.blockers.map((blocker) => (
+            <div className="warning-note" key={blocker.kind}>
+              <AlertTriangle className="nav-icon" aria-hidden />
+              <span>
+                <strong>{blocker.label}</strong>
+                {blocker.playerNames.length > 0 ? ` ${blocker.playerNames.slice(0, 6).join(', ')}${blocker.playerNames.length > 6 ? ' ...' : ''}` : ''}
+              </span>
+            </div>
+          ))}
+        </div>
+      ) : null}
+      {completion.advisories.length > 0 ? (
+        <div className="closure-list">
+          {completion.advisories.map((advisory) => (
+            <div className="sync-mini" key={advisory.kind}>
+              <strong>{advisory.label}</strong>
+              {advisory.playerNames.length > 0 ? <span>{advisory.playerNames.slice(0, 6).join(', ')}</span> : null}
+            </div>
+          ))}
+        </div>
+      ) : null}
+    </section>
   )
 }
 
@@ -482,21 +567,406 @@ function BaselinePlayerRow({
   )
 }
 
+function formatMetricInput(result: MetricResult | null) {
+  return result ? String(result.value).replace('.', ',') : ''
+}
+
+function MetricPlayerRow({
+  getMetricForPlayer,
+  isSavingDisabled,
+  onParseError,
+  onSave,
+  player,
+}: {
+  getMetricForPlayer: MetricActions['getMetricForPlayer']
+  isSavingDisabled: boolean
+  onParseError: (message: string | null) => void
+  onSave: MetricActions['savePlayerMetric']
+  player: Player
+}) {
+  const playerMetrics = metricDefinitions.map((definition) => ({
+    definition,
+    result: getMetricForPlayer(player, definition.key),
+  }))
+  const hasMetrics = playerMetrics.some(({ result }) => result !== null)
+  const rowStatus = playerMetrics.find(({ result }) => result?.syncStatus === 'error')?.result?.syncStatus
+    ?? playerMetrics.find(({ result }) => result?.syncStatus === 'pending')?.result?.syncStatus
+    ?? playerMetrics.find(({ result }) => result?.syncStatus === 'synced')?.result?.syncStatus
+    ?? 'synced'
+
+  function handleMetricBlur(metricKey: string, currentResult: MetricResult | null) {
+    return (event: FormEvent<HTMLInputElement>) => {
+      const rawValue = event.currentTarget.value.trim()
+      if (!rawValue && !currentResult) {
+        return
+      }
+
+      const parsedValue = parseOptionalMetricValue(rawValue)
+      if (parsedValue === null && rawValue) {
+        onParseError('Metric-Wert muss eine Zahl sein.')
+        return
+      }
+
+      if (parsedValue === currentResult?.value) {
+        return
+      }
+
+      onParseError(null)
+      const patch: MetricResultPatch = {
+        metricKey,
+        value: parsedValue,
+        attempt: currentResult?.attempt ?? 1,
+        bodySide: currentResult?.bodySide ?? 'none',
+        contextNote: currentResult?.contextNote ?? '',
+      }
+      void onSave(player, patch)
+    }
+  }
+
+  function handleContextBlur(currentResult: MetricResult | null) {
+    return (event: FormEvent<HTMLInputElement>) => {
+      const value = event.currentTarget.value.trim()
+      if (!currentResult || value === currentResult.contextNote) {
+        return
+      }
+
+      onParseError(null)
+      void onSave(player, {
+        metricKey: currentResult.metricKey,
+        value: currentResult.value,
+        attempt: currentResult.attempt,
+        bodySide: currentResult.bodySide,
+        contextNote: value,
+      })
+    }
+  }
+
+  return (
+    <article className="baseline-row">
+      <div className="checkin-player-head">
+        <div>
+          <div className="player-name-line">
+            <strong>{player.name}</strong>
+            {hasMetrics ? <span className="tag compact">Metrics</span> : null}
+          </div>
+          <p>{player.position} · {player.cluster}</p>
+        </div>
+        <span className={`sync-pill ${rowStatus}`}>{syncStatusLabel(rowStatus)}</span>
+      </div>
+
+      <div className="baseline-fields">
+        {playerMetrics.map(({ definition, result }) => (
+          <label className="inline-field" key={definition.key}>
+            <span>{definition.name} {definition.unit}</span>
+            <input
+              defaultValue={formatMetricInput(result)}
+              disabled={isSavingDisabled}
+              inputMode="decimal"
+              key={`${result?.id ?? player.id}-${definition.key}`}
+              placeholder={definition.key === 'sprint_30m' ? 'optional' : definition.unit}
+              onBlur={handleMetricBlur(definition.key, result)}
+            />
+          </label>
+        ))}
+
+        <label className="inline-field wide">
+          <span>Kontext, z. B. Ballgewicht 5 kg</span>
+          <input
+            defaultValue={playerMetrics.find(({ definition }) => definition.key === 'med_ball_chest_pass')?.result?.contextNote ?? ''}
+            disabled={isSavingDisabled}
+            key={`${player.id}-med-ball-context-${playerMetrics.find(({ definition }) => definition.key === 'med_ball_chest_pass')?.result?.id ?? 'new'}`}
+            placeholder="z. B. 5 kg, Handzeit, nasser Rasen"
+            onBlur={handleContextBlur(playerMetrics.find(({ definition }) => definition.key === 'med_ball_chest_pass')?.result ?? null)}
+          />
+        </label>
+      </div>
+
+      {hasMetrics ? (
+        <p className="micro-copy">
+          {playerMetrics
+            .filter(({ result }) => result)
+            .map(({ result }) => formatMetricValue(result as MetricResult))
+            .join(' · ')}
+        </p>
+      ) : null}
+    </article>
+  )
+}
+
+function exercisePreview(player: Player, exerciseKey: string, variant: ExerciseVariant, result: ExerciseResult | null): ExerciseResult {
+  const definition = exerciseDefinitions.find((item) => item.key === exerciseKey) ?? exerciseDefinitions[0]
+
+  return (
+    result ?? {
+      id: 'exercise-preview',
+      userId: player.userId,
+      playerId: player.id,
+      sessionLogId: 'session-preview',
+      exerciseKey: definition.key,
+      variant,
+      sets: null,
+      reps: '',
+      loadValue: null,
+      loadUnit: definition.defaultUnit,
+      rpe: null,
+      rir: null,
+      techniqueQuality: 'not_recorded',
+      painResponse: 'unclear',
+      notes: '',
+      createdAt: '',
+      updatedAt: '',
+      deletedAt: null,
+      clientUpdatedAt: '',
+      syncStatus: 'synced',
+      syncError: null,
+    }
+  )
+}
+
+function optionalNumberInput(value: number | null) {
+  return value === null ? '' : String(value).replace('.', ',')
+}
+
+function ExercisePlayerRow({
+  defaultExerciseKey,
+  defaultVariant,
+  exerciseResult,
+  isSavingDisabled,
+  onCopyPrevious,
+  onSave,
+  player,
+  previousResult,
+}: {
+  defaultExerciseKey: string
+  defaultVariant: ExerciseVariant
+  exerciseResult: ExerciseResult | null
+  isSavingDisabled: boolean
+  onCopyPrevious: (player: Player, previousResult: ExerciseResult) => void
+  onSave: ExerciseActions['savePlayerExerciseResult']
+  player: Player
+  previousResult: ExerciseResult | null
+}) {
+  const exercise = exercisePreview(player, defaultExerciseKey, defaultVariant, exerciseResult)
+  const definition = exerciseDefinitions.find((item) => item.key === exercise.exerciseKey) ?? exerciseDefinitions[0]
+
+  function savePatch(patch: Partial<ExerciseResultPatch>) {
+    void onSave(player, {
+      sourceResultId: exerciseResult?.id,
+      exerciseKey: exercise.exerciseKey,
+      variant: exercise.variant,
+      sets: exercise.sets,
+      reps: exercise.reps,
+      loadValue: exercise.loadValue,
+      loadUnit: exercise.loadUnit,
+      rpe: exercise.rpe,
+      rir: exercise.rir,
+      techniqueQuality: exercise.techniqueQuality,
+      painResponse: exercise.painResponse,
+      notes: exercise.notes,
+      ...patch,
+    })
+  }
+
+  function handleTextBlur(field: keyof Pick<ExerciseResultPatch, 'sets' | 'reps' | 'loadValue' | 'rpe' | 'rir' | 'notes'>) {
+    return (event: FormEvent<HTMLInputElement | HTMLTextAreaElement>) => {
+      savePatch({ [field]: event.currentTarget.value })
+    }
+  }
+
+  return (
+    <article className="baseline-row">
+      <div className="checkin-player-head">
+        <div>
+          <div className="player-name-line">
+            <strong>{player.name}</strong>
+            {exerciseResult ? <span className="tag compact">{formatExerciseResult(exerciseResult)}</span> : null}
+          </div>
+          <p>{player.position} · {player.cluster}</p>
+        </div>
+        <span className={`sync-pill ${exercise.syncStatus}`}>{syncStatusLabel(exercise.syncStatus)}</span>
+      </div>
+
+      <div className="baseline-fields">
+        <label className="inline-field">
+          <span>Uebung</span>
+          <select
+            defaultValue={exercise.exerciseKey}
+            disabled={isSavingDisabled}
+            key={`${exercise.id}-exercise-key`}
+            onChange={(event) => savePatch({ exerciseKey: event.currentTarget.value })}
+          >
+            {exerciseDefinitions.map((item) => (
+              <option key={item.key} value={item.key}>
+                {item.name}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <div className="control-group">
+          <span>Variante</span>
+          <div className="button-row compact">
+            {exerciseVariants.map((variant) => (
+              <button
+                className={exercise.variant === variant ? 'segmented active' : 'segmented'}
+                disabled={isSavingDisabled}
+                key={variant}
+                type="button"
+                onClick={() => savePatch({ variant })}
+              >
+                {exerciseVariantLabels[variant]}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        <label className="inline-field">
+          <span>Sets</span>
+          <input
+            defaultValue={optionalNumberInput(exercise.sets)}
+            disabled={isSavingDisabled}
+            inputMode="numeric"
+            key={`${exercise.id}-sets`}
+            placeholder="3"
+            onBlur={handleTextBlur('sets')}
+          />
+        </label>
+
+        <label className="inline-field">
+          <span>Reps</span>
+          <input
+            defaultValue={exercise.reps}
+            disabled={isSavingDisabled}
+            key={`${exercise.id}-reps`}
+            placeholder="5"
+            onBlur={handleTextBlur('reps')}
+          />
+        </label>
+
+        <label className="inline-field">
+          <span>Last {definition.defaultUnit}</span>
+          <input
+            defaultValue={optionalNumberInput(exercise.loadValue)}
+            disabled={isSavingDisabled}
+            inputMode="decimal"
+            key={`${exercise.id}-load`}
+            placeholder={definition.defaultUnit}
+            onBlur={handleTextBlur('loadValue')}
+          />
+        </label>
+
+        <label className="inline-field">
+          <span>RPE</span>
+          <input
+            defaultValue={optionalNumberInput(exercise.rpe)}
+            disabled={isSavingDisabled}
+            inputMode="decimal"
+            key={`${exercise.id}-rpe`}
+            placeholder="7"
+            onBlur={handleTextBlur('rpe')}
+          />
+        </label>
+
+        <label className="inline-field">
+          <span>RIR</span>
+          <input
+            defaultValue={optionalNumberInput(exercise.rir)}
+            disabled={isSavingDisabled}
+            inputMode="decimal"
+            key={`${exercise.id}-rir`}
+            placeholder="optional"
+            onBlur={handleTextBlur('rir')}
+          />
+        </label>
+
+        <label className="inline-field">
+          <span>Technik</span>
+          <select
+            defaultValue={exercise.techniqueQuality}
+            disabled={isSavingDisabled}
+            key={`${exercise.id}-technique`}
+            onChange={(event) => savePatch({ techniqueQuality: event.currentTarget.value })}
+          >
+            {exerciseTechniqueQualities.map((quality) => (
+              <option key={quality} value={quality}>
+                {quality}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="inline-field">
+          <span>Pain Response</span>
+          <select
+            defaultValue={exercise.painResponse}
+            disabled={isSavingDisabled}
+            key={`${exercise.id}-pain`}
+            onChange={(event) => savePatch({ painResponse: event.currentTarget.value })}
+          >
+            {exercisePainResponses.map((response) => (
+              <option key={response} value={response}>
+                {response}
+              </option>
+            ))}
+          </select>
+        </label>
+
+        <label className="inline-field wide">
+          <span>Exercise-Notiz, keine Diagnose</span>
+          <textarea
+            defaultValue={exercise.notes}
+            disabled={isSavingDisabled}
+            key={`${exercise.id}-notes`}
+            rows={2}
+            placeholder="z. B. sauber, gleiche Last naechste Einheit steigern"
+            onBlur={handleTextBlur('notes')}
+          />
+        </label>
+
+        <button
+          className="secondary-action compact-action"
+          disabled={isSavingDisabled || !previousResult}
+          type="button"
+          onClick={() => {
+            if (previousResult) {
+              onCopyPrevious(player, previousResult)
+            }
+          }}
+        >
+          Copy previous player
+        </button>
+      </div>
+    </article>
+  )
+}
+
 export function PostSessionView({
   authState,
   baselineActions,
+  exposureActions,
+  exposureBlockLogs,
+  exerciseActions,
+  lastExportAt,
+  metricActions,
   onNavigate,
   onSessionChange,
   postSessionActions,
+  returnerCaps,
   selectedSession,
   selectedSessionId,
   sessions,
 }: PostSessionViewProps) {
   const [baselineFormError, setBaselineFormError] = useState<string | null>(null)
+  const [exerciseDefaultKey, setExerciseDefaultKey] = useState<string>('trap_bar_deadlift')
+  const [exerciseDefaultVariant, setExerciseDefaultVariant] = useState<ExerciseVariant>('A')
+  const [exerciseDefaultVersion, setExerciseDefaultVersion] = useState(0)
+  const [exerciseFormError, setExerciseFormError] = useState<string | null>(null)
+  const [metricFormError, setMetricFormError] = useState<string | null>(null)
   const {
     activePlayers,
     entries,
     errorMessage,
+    progressEntries,
     warnings,
     syncOverview,
     isLoading,
@@ -511,9 +981,14 @@ export function PostSessionView({
   } = postSessionActions
   const showSyncAttention = shouldShowSyncAttention(syncOverview)
   const showBaselineSyncAttention = shouldShowSyncAttention(baselineActions.syncOverview)
+  const showExerciseSyncAttention = shouldShowSyncAttention(exerciseActions.syncOverview)
+  const showExposureSyncAttention = shouldShowSyncAttention(exposureActions.syncOverview)
+  const showMetricSyncAttention = shouldShowSyncAttention(metricActions.syncOverview)
   const baselineCompletedCount = baselineActions.entries.filter(
     (entry) => hasPlayerId(entry) && hasBaselineContent(entry),
   ).length
+  const metricCompletedCount = new Set(metricActions.entries.filter(hasPlayerId).map((entry) => entry.playerId)).size
+  const exerciseCompletedCount = new Set(exerciseActions.entries.filter(hasPlayerId).map((entry) => entry.playerId)).size
   const warningByPlayerId = new Map(warnings.filter(hasPlayerId).map((warning) => [warning.playerId, warning]))
   const presentPlayerIds = new Set(entries.filter((entry) => hasPlayerId(entry) && entry.present).map((entry) => entry.playerId))
   const orderedPlayers = [...activePlayers].sort((a, b) => {
@@ -537,6 +1012,15 @@ export function PostSessionView({
         entry.nextStep === 'klaeren' ||
         (entry.postPainScore !== null && entry.postPainScore >= 3)),
   ).length
+  const completion = derivePostSessionCompletion({
+    activePlayers,
+    sessionLog,
+    sessionType: selectedSession.type,
+    entries,
+    progressEntries,
+    baselineEntries: baselineActions.entries,
+    lastExportAt,
+  })
 
   function handleSessionNumberBlur(field: 'durationMinutes' | 'groupSize') {
     return (event: FormEvent<HTMLInputElement>) => {
@@ -554,6 +1038,8 @@ export function PostSessionView({
   async function handleRunSync() {
     await runSync()
     await baselineActions.refreshBaselines()
+    await metricActions.refreshMetrics()
+    await exerciseActions.refreshExercises()
   }
 
   if (authState.status !== 'signed-in') {
@@ -582,15 +1068,17 @@ export function PostSessionView({
             selectedSessionId={selectedSessionId}
             sessions={sessions}
           />
-          {syncOverview.status === 'error' || baselineActions.syncOverview.status === 'error' ? (
+          {syncOverview.status === 'error' ||
+          baselineActions.syncOverview.status === 'error' ||
+          metricActions.syncOverview.status === 'error' ? (
             <button
               className="secondary-action"
               type="button"
               onClick={() => void handleRunSync()}
-              disabled={isLoading || baselineActions.isLoading}
+              disabled={isLoading || baselineActions.isLoading || metricActions.isLoading}
             >
               <RefreshCw className="nav-icon" aria-hidden />
-              <span>{isLoading || baselineActions.isLoading ? 'Sync laeuft...' : 'Retry'}</span>
+              <span>{isLoading || baselineActions.isLoading || metricActions.isLoading ? 'Sync laeuft...' : 'Retry'}</span>
             </button>
           ) : null}
           <button className="secondary-action" type="button" onClick={() => onNavigate('training')}>
@@ -615,9 +1103,17 @@ export function PostSessionView({
         </div>
         <div className="metric">
           <span>Status</span>
-          <strong>{sessionLog?.status ?? 'offen'}</strong>
+          <strong>
+            {completion.status === 'teilweise_abgeschlossen'
+              ? 'teilweise'
+              : completion.status === 'abgeschlossen'
+                ? 'abgeschlossen'
+                : 'offen'}
+          </strong>
         </div>
       </div>
+
+      <ClosureChecklist completion={completion} />
 
       {errorMessage ? (
         <div className="panel error-panel" role="alert">
@@ -637,6 +1133,44 @@ export function PostSessionView({
           {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
         </div>
       ) : null}
+
+      {exposureActions.errorMessage ? (
+        <div className="panel error-panel" role="alert">
+          <strong>Exposures nicht vollstaendig gespeichert</strong>
+          <span>{exposureActions.errorMessage}</span>
+          <button className="secondary-action" type="button" onClick={exposureActions.clearError}>
+            Schliessen
+          </button>
+        </div>
+      ) : null}
+
+      {showExposureSyncAttention ? (
+        <div className="panel checkin-sync-strip">
+          <span className={`status-dot ${exposureActions.syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
+          <strong>{syncStatusLabel(exposureActions.syncOverview.status)}</strong>
+          <span>{pendingCountLabel(exposureActions.syncOverview.pendingCount, 'Exposure-Aenderungen')}</span>
+          {exposureActions.syncOverview.errorMessage ? <span>{exposureActions.syncOverview.errorMessage}</span> : null}
+        </div>
+      ) : null}
+
+      <ExposureReviewPanel
+        entries={entries}
+        isSavingDisabled={isLoading || exposureActions.isLoading}
+        onGenerate={() => {
+          void exposureActions.generateExposureSummaries({
+            sessionLog,
+            blockLogs: exposureBlockLogs,
+            entries,
+            returnerCaps,
+          })
+        }}
+        onManualOverride={(summary, type, override) => {
+          void exposureActions.saveManualOverride(summary, type, override)
+        }}
+        players={activePlayers}
+        sessionLog={sessionLog}
+        summaries={exposureActions.summaries}
+      />
 
       <section className="panel post-session-coach-panel" aria-label="Coach Review">
         <div className="training-coach-fields">
@@ -681,6 +1215,171 @@ export function PostSessionView({
           >
             Einheit abschliessen
           </button>
+        </div>
+      </section>
+
+      <section className="panel baseline-panel" aria-labelledby="metrics-heading">
+        <div className="library-heading">
+          <p className="eyebrow">Flexible Metrics</p>
+          <h3 id="metrics-heading">Metric-Rechecks</h3>
+          <p>Broad Jump, Med-Ball Chest Pass und 10 m Sprint erfassen, wenn Timing und Ablauf passen. 30 m bleibt optional/spaeter.</p>
+        </div>
+
+        {showMetricSyncAttention ? (
+          <div className="panel checkin-sync-strip">
+            <span className={`status-dot ${metricActions.syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
+            <strong>{syncStatusLabel(metricActions.syncOverview.status)}</strong>
+            <span>{pendingCountLabel(metricActions.syncOverview.pendingCount, 'Metric-Aenderungen')}</span>
+            <span>{metricCompletedCount} Spieler mit Metrics in dieser Einheit</span>
+            {metricActions.syncOverview.errorMessage ? <span>{metricActions.syncOverview.errorMessage}</span> : null}
+          </div>
+        ) : null}
+
+        {metricFormError || metricActions.errorMessage ? (
+          <div className="error-panel" role="alert">
+            <strong>Metric nicht vollstaendig gespeichert</strong>
+            <span>{metricFormError ?? metricActions.errorMessage}</span>
+            <button
+              className="secondary-action"
+              type="button"
+              onClick={() => {
+                setMetricFormError(null)
+                metricActions.clearError()
+              }}
+            >
+              Schliessen
+            </button>
+          </div>
+        ) : null}
+
+        <div className="baseline-list">
+          {orderedPlayers.map((player) => (
+            <MetricPlayerRow
+              getMetricForPlayer={metricActions.getMetricForPlayer}
+              isSavingDisabled={metricActions.isLoading}
+              key={player.id}
+              onParseError={setMetricFormError}
+              onSave={metricActions.savePlayerMetric}
+              player={player}
+            />
+          ))}
+        </div>
+      </section>
+
+      <section className="panel baseline-panel" aria-labelledby="exercise-results-heading">
+        <div className="library-heading">
+          <p className="eyebrow">Structured Exercise Result</p>
+          <h3 id="exercise-results-heading">Exercise-Progression</h3>
+          <p>Ein Hauptresultat pro Spieler schnell erfassen. Legacy-Progression bleibt darunter sichtbar.</p>
+        </div>
+
+        <div className="training-coach-fields">
+          <label className="inline-field">
+            <span>Session-Default</span>
+            <select value={exerciseDefaultKey} onChange={(event) => setExerciseDefaultKey(event.target.value)}>
+              {exerciseDefinitions.map((definition) => (
+                <option key={definition.key} value={definition.key}>
+                  {definition.name}
+                </option>
+              ))}
+            </select>
+          </label>
+          <div className="control-group">
+            <span>Default-Variante</span>
+            <div className="button-row compact">
+              {exerciseVariants.map((variant) => (
+                <button
+                  className={exerciseDefaultVariant === variant ? 'segmented active' : 'segmented'}
+                  key={variant}
+                  type="button"
+                  onClick={() => setExerciseDefaultVariant(variant)}
+                >
+                  {exerciseVariantLabels[variant]}
+                </button>
+              ))}
+            </div>
+          </div>
+          <button
+            className="secondary-action"
+            type="button"
+            onClick={() => setExerciseDefaultVersion((currentVersion) => currentVersion + 1)}
+          >
+            Apply to present
+          </button>
+        </div>
+
+        {showExerciseSyncAttention ? (
+          <div className="panel checkin-sync-strip">
+            <span className={`status-dot ${exerciseActions.syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
+            <strong>{syncStatusLabel(exerciseActions.syncOverview.status)}</strong>
+            <span>{pendingCountLabel(exerciseActions.syncOverview.pendingCount, 'Exercise-Aenderungen')}</span>
+            <span>{exerciseCompletedCount} Spieler mit Exercise-Result in dieser Einheit</span>
+            {exerciseActions.syncOverview.errorMessage ? <span>{exerciseActions.syncOverview.errorMessage}</span> : null}
+          </div>
+        ) : null}
+
+        {exerciseFormError || exerciseActions.errorMessage ? (
+          <div className="error-panel" role="alert">
+            <strong>Exercise-Result nicht vollstaendig gespeichert</strong>
+            <span>{exerciseFormError ?? exerciseActions.errorMessage}</span>
+            <button
+              className="secondary-action"
+              type="button"
+              onClick={() => {
+                setExerciseFormError(null)
+                exerciseActions.clearError()
+              }}
+            >
+              Schliessen
+            </button>
+          </div>
+        ) : null}
+
+        <div className="baseline-list">
+          {orderedPlayers.map((player, index) => {
+            const result =
+              exerciseActions.getExerciseResultForPlayer(player, exerciseDefaultKey) ??
+              exerciseActions.entries.find((entry) => entry.playerId === player.id) ??
+              null
+            const previousPlayer = orderedPlayers[index - 1]
+            const previousResult = previousPlayer
+              ? exerciseActions.getExerciseResultForPlayer(previousPlayer, exerciseDefaultKey) ??
+                exerciseActions.entries.find((entry) => entry.playerId === previousPlayer.id) ??
+                null
+              : null
+
+            return (
+              <ExercisePlayerRow
+                defaultExerciseKey={exerciseDefaultKey}
+                defaultVariant={exerciseDefaultVariant}
+                exerciseResult={result}
+                isSavingDisabled={exerciseActions.isLoading}
+                key={`${player.id}-${exerciseDefaultVersion}`}
+                onCopyPrevious={(selectedPlayer, previous) => {
+                  void exerciseActions.savePlayerExerciseResult(selectedPlayer, {
+                    exerciseKey: previous.exerciseKey,
+                    variant: previous.variant,
+                    sets: previous.sets,
+                    reps: previous.reps,
+                    loadValue: previous.loadValue,
+                    loadUnit: previous.loadUnit,
+                    rpe: previous.rpe,
+                    rir: previous.rir,
+                    techniqueQuality: previous.techniqueQuality,
+                    painResponse: previous.painResponse,
+                    notes: previous.notes,
+                  }).catch((caughtError: unknown) => {
+                    setExerciseFormError(
+                      caughtError instanceof Error ? caughtError.message : 'Exercise-Result konnte nicht kopiert werden.',
+                    )
+                  })
+                }}
+                onSave={exerciseActions.savePlayerExerciseResult}
+                player={player}
+                previousResult={previousResult}
+              />
+            )
+          })}
         </div>
       </section>
 

@@ -5,7 +5,9 @@ import { describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import type { PdfRef, SessionDefinition } from '../content/types'
 import type { PlayerSessionEntry, PlayerObservation } from '../domain/checkIn'
+import type { CoachInsight } from '../domain/coachInsights'
 import type { Player } from '../domain/players'
+import type { LatestRelevantPostSessionWork } from '../domain/postSessionCompletion'
 import type { PlayerSyncOverview } from '../domain/sync'
 import type { useCheckIns } from '../hooks/useCheckIns'
 import { TodayDashboard } from './TodayDashboard'
@@ -35,14 +37,14 @@ const selectedSession: SessionDefinition = {
   ],
   goals: ['Reaktion prüfen', 'Grundmuster sauber trainieren'],
   timeline: [
-    { time: '0-8', title: 'Check-in', work: 'Ampel und Schmerzen prüfen.', dose: 'kurz', note: 'Ampel' },
-    { time: '8-18', title: 'Warm-up', work: 'RAMP und Laufbild.', dose: 'RPE 2-3', note: 'Laufbild' },
-    { time: '18-28', title: 'Speed', work: 'Starts kontrolliert.', dose: '70-80 Prozent', note: 'kein Timing' },
-    { time: '28-40', title: 'Baseline optional', work: 'BJ und MB.', dose: 'nur wenn ruhig', note: 'kein Ranking' },
-    { time: '40-64', title: 'Kraft Pods', work: 'Squat, Hinge, Push/Pull.', dose: 'RPE 5-6', note: 'Technik' },
-    { time: '64-74', title: 'Microdose', work: 'Adductor, Calf, Band.', dose: 'schmerzfrei', note: 'Problem ja/nein' },
-    { time: '74-84', title: 'Easy Tempo', work: 'Locker laufen oder Bike.', dose: '60-70 Prozent', note: 'optional' },
-    { time: '84-90', title: 'Abschluss', work: 'sRPE und Pain.', note: 'sRPE' },
+    { key: 'session-1:check-in', order: 10, time: '0-8', title: 'Check-in', work: 'Ampel und Schmerzen prüfen.', dose: 'kurz', note: 'Ampel' },
+    { key: 'session-1:warm-up', order: 20, time: '8-18', title: 'Warm-up', work: 'RAMP und Laufbild.', dose: 'RPE 2-3', note: 'Laufbild' },
+    { key: 'session-1:speed', order: 30, time: '18-28', title: 'Speed', work: 'Starts kontrolliert.', dose: '70-80 Prozent', note: 'kein Timing' },
+    { key: 'session-1:baseline', order: 40, time: '28-40', title: 'Baseline optional', work: 'BJ und MB.', dose: 'nur wenn ruhig', note: 'kein Ranking' },
+    { key: 'session-1:strength', order: 50, time: '40-64', title: 'Kraft Pods', work: 'Squat, Hinge, Push/Pull.', dose: 'RPE 5-6', note: 'Technik' },
+    { key: 'session-1:microdose', order: 60, time: '64-74', title: 'Microdose', work: 'Adductor, Calf, Band.', dose: 'schmerzfrei', note: 'Problem ja/nein' },
+    { key: 'session-1:tempo', order: 70, time: '74-84', title: 'Easy Tempo', work: 'Locker laufen oder Bike.', dose: '60-70 Prozent', note: 'optional' },
+    { key: 'session-1:closeout', order: 80, time: '84-90', title: 'Abschluss', work: 'sRPE und Pain.', note: 'sRPE' },
   ],
   materials: [],
   safetyNotes: [],
@@ -122,6 +124,65 @@ const entry: PlayerSessionEntry = {
   syncError: null,
 }
 
+const coachInsight: CoachInsight = {
+  id: 'coach-insight:missing_srpe_completed_session:entry-1',
+  rule: 'missing_srpe_completed_session',
+  severity: 'medium',
+  title: 'sRPE fehlt',
+  reason: 'Max war anwesend, aber sRPE ist noch offen.',
+  targetTab: 'nachbereitung',
+  correctionHint: 'In Nachbereitung sRPE nachtragen.',
+  sources: [
+    {
+      playerId: player.id,
+      playerName: player.name,
+      sessionLogId: 'session-log-1',
+      sessionDefinitionId: selectedSession.id,
+      sessionDate: selectedSession.date,
+      table: 'player_session_entries',
+      recordId: entry.id,
+      correctionTarget: 'nachbereitung',
+    },
+  ],
+}
+
+const postSessionWork: LatestRelevantPostSessionWork = {
+  sessionLog: {
+    id: 'session-log-1',
+    userId: 'user-1',
+    sessionDefinitionId: selectedSession.id,
+    date: selectedSession.date,
+    status: 'planned',
+    coach: '',
+    groupSize: null,
+    weatherOrHeatNote: '',
+    planChanged: false,
+    durationMinutes: 75,
+    contactIndex: '',
+    speedExposureNote: '',
+    coachReview: '',
+    createdAt: '2026-06-16T18:00:00.000Z',
+    updatedAt: '2026-06-16T20:00:00.000Z',
+    deletedAt: null,
+    clientUpdatedAt: '2026-06-16T20:00:00.000Z',
+    syncStatus: 'synced',
+    syncError: null,
+  },
+  completion: {
+    status: 'teilweise_abgeschlossen',
+    blockers: [
+      {
+        kind: 'missing_srpe',
+        label: 'sRPE fehlt bei anwesenden Spielern.',
+        count: 1,
+        playerNames: ['Max'],
+      },
+    ],
+    advisories: [],
+    needsBackupExport: false,
+  },
+}
+
 function buildCheckInActions(
   overrides: Partial<ReturnType<typeof useCheckIns>> = {},
 ): ReturnType<typeof useCheckIns> {
@@ -164,25 +225,33 @@ function buildCheckInActions(
 function renderDashboardMarkup({
   checkInActions = buildCheckInActions(),
   onOpenPdf = () => undefined,
+  onOpenLibrary = () => undefined,
   onResetToTodaySession = () => undefined,
   onActionFeedback = () => undefined,
+  coachInsights = [],
+  onOpenCoachInsightSource = () => undefined,
   selected = selectedSession,
   featured = selectedSession,
   storageStatus = 'persisted',
   isSignedIn = true,
   players = [player],
+  postWork = null,
   today = todayDate,
   upcoming = [selectedSession, featuredSession],
 }: {
   checkInActions?: ReturnType<typeof useCheckIns>
   onOpenPdf?: (pdf: PdfRef) => void
+  onOpenLibrary?: (session: SessionDefinition) => void
   onResetToTodaySession?: () => void
   onActionFeedback?: (message: string) => void
+  coachInsights?: CoachInsight[]
+  onOpenCoachInsightSource?: (source: CoachInsight['sources'][number]) => void
   selected?: SessionDefinition
   featured?: SessionDefinition
   storageStatus?: 'checking' | 'persisted' | 'denied' | 'unsupported' | 'error'
   isSignedIn?: boolean
   players?: Player[]
+  postWork?: LatestRelevantPostSessionWork | null
   today?: Date
   upcoming?: SessionDefinition[]
 } = {}) {
@@ -190,13 +259,17 @@ function renderDashboardMarkup({
     <TodayDashboard
       checkInActions={checkInActions}
       featuredSession={featured}
+      coachInsights={coachInsights}
       isSignedIn={isSignedIn}
       onActionFeedback={onActionFeedback}
+      onOpenCoachInsightSource={onOpenCoachInsightSource}
       onNavigate={() => undefined}
+      onOpenLibrary={onOpenLibrary}
       onOpenPdf={onOpenPdf}
       onResetToTodaySession={onResetToTodaySession}
       onSessionChange={() => undefined}
       players={players}
+      postSessionWork={postWork}
       selectedSession={selected}
       selectedSessionId={selected.id}
       sessions={[selected, featured]}
@@ -214,6 +287,15 @@ describe('TodayDashboard', () => {
     expect(markup).toContain('Keine offenen Warnungen aus vorherigen Einheiten.')
     expect(markup).toContain('Notizen aus letzter Einheit')
     expect(markup).toContain('Landing im Warm-up beobachten')
+  })
+
+  it('shows unfinished post-session work as a compact dashboard action', () => {
+    const markup = renderDashboardMarkup({ postWork: postSessionWork })
+
+    expect(markup).toContain('Nachbereitung')
+    expect(markup).toContain('1 Pflichtpunkt(e) offen.')
+    expect(markup).toContain('Nachbereitung öffnen')
+    expect(markup).not.toContain('sRPE fehlt bei anwesenden Spielern.')
   })
 
   it('shows goals, timeline metadata, and actionable documents without passive plan metrics', () => {
@@ -257,20 +339,25 @@ describe('TodayDashboard', () => {
     const root = createRoot(container)
     const onResetToTodaySession = vi.fn()
     const onOpenPdf = vi.fn()
+    const onOpenLibrary = vi.fn()
     const onActionFeedback = vi.fn()
 
     await act(async () => {
       root.render(
         <TodayDashboard
           checkInActions={buildCheckInActions()}
+          coachInsights={[]}
           featuredSession={featuredSession}
           isSignedIn
           onActionFeedback={onActionFeedback}
+          onOpenCoachInsightSource={() => undefined}
           onNavigate={() => undefined}
+          onOpenLibrary={onOpenLibrary}
           onOpenPdf={onOpenPdf}
           onResetToTodaySession={onResetToTodaySession}
           onSessionChange={() => undefined}
           players={[player]}
+          postSessionWork={null}
           selectedSession={selectedSession}
           selectedSessionId={selectedSession.id}
           sessions={[selectedSession, featuredSession]}
@@ -283,11 +370,14 @@ describe('TodayDashboard', () => {
 
     container.querySelector<HTMLButtonElement>('[data-testid="today-reset-button"]')?.click()
     container.querySelector<HTMLButtonElement>('[data-testid="today-pdf-button-0"]')?.click()
+    container.querySelector<HTMLButtonElement>('[data-testid="today-quick-action-library"]')?.click()
 
     expect(onResetToTodaySession).toHaveBeenCalledTimes(1)
     expect(onOpenPdf).toHaveBeenCalledWith(selectedSession.pdfRefs[0])
+    expect(onOpenLibrary).toHaveBeenCalledWith(selectedSession)
     expect(onActionFeedback).toHaveBeenCalledWith('Heute-Einheit wiederhergestellt.')
     expect(onActionFeedback).toHaveBeenCalledWith('PDF in Bibliothek geöffnet.')
+    expect(onActionFeedback).toHaveBeenCalledWith('Heutige Unterlagen geöffnet.')
 
     await act(async () => {
       root.unmount()
@@ -316,14 +406,18 @@ describe('TodayDashboard', () => {
             warnings: [warningEntry],
             syncOverview: { ...syncOverview, pendingCount: 2, status: 'pending' },
           })}
+          coachInsights={[]}
           featuredSession={selectedSession}
           isSignedIn
           onActionFeedback={onActionFeedback}
+          onOpenCoachInsightSource={() => undefined}
           onNavigate={onNavigate}
+          onOpenLibrary={() => undefined}
           onOpenPdf={() => undefined}
           onResetToTodaySession={() => undefined}
           onSessionChange={() => undefined}
           players={[player]}
+          postSessionWork={null}
           selectedSession={selectedSession}
           selectedSessionId={selectedSession.id}
           sessions={[selectedSession]}
@@ -361,14 +455,18 @@ describe('TodayDashboard', () => {
       root.render(
         <TodayDashboard
           checkInActions={buildCheckInActions()}
+          coachInsights={[]}
           featuredSession={selectedSession}
           isSignedIn
           onActionFeedback={onActionFeedback}
+          onOpenCoachInsightSource={() => undefined}
           onNavigate={onNavigate}
+          onOpenLibrary={() => undefined}
           onOpenPdf={() => undefined}
           onResetToTodaySession={() => undefined}
           onSessionChange={onSessionChange}
           players={[player]}
+          postSessionWork={null}
           selectedSession={selectedSession}
           selectedSessionId={selectedSession.id}
           sessions={[selectedSession, featuredSession]}
@@ -425,5 +523,15 @@ describe('TodayDashboard', () => {
     expect(baselineMarkup).toContain('Baseline')
     expect(recheckMarkup).toContain('Re-Check')
     expect(transitionMarkup).toContain('Übergang')
+  })
+
+  it('shows compact coach insights and keeps the dashboard empty state quiet', () => {
+    const emptyMarkup = renderDashboardMarkup()
+    const insightMarkup = renderDashboardMarkup({ coachInsights: [coachInsight] })
+
+    expect(emptyMarkup).toContain('Keine offenen Coach Insights.')
+    expect(insightMarkup).toContain('Coach Insights')
+    expect(insightMarkup).toContain('sRPE fehlt')
+    expect(insightMarkup).toContain('Max')
   })
 })
