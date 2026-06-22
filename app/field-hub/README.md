@@ -248,6 +248,35 @@ Diese UX-Aenderungen betreffen nur Frontend/UI. Es ist keine Supabase-Migration,
 
 Hinweis fuer lokale Browser-QA: Die PWA/Service-Worker-Cache-Schicht kann auf `127.0.0.1` alten Build-Code anzeigen. Fuer aktuelle Vite-Dev-Pruefungen entweder Service Worker/Cache loeschen oder `http://localhost:5173/` verwenden.
 
+## Progress-Tracking-Roadmap ab Sprint 12
+
+Die geplante Weiterentwicklung fuer Spielerprofile, gefuehrte Live-Sessions,
+Planned-vs-Actual, Exposures, flexible Testmetriken, strukturierte Kraftprogression,
+Analyse und Coach Insights liegt in:
+
+- `../../docs/superpowers/plans/2026-06-20-field-hub-progress-tracking-roadmap.md`
+
+Vor neuen Datenmodell-Sprints beachten:
+
+- keine hochvolumigen Fact-Tabellen ohne Sync-Scope und Dexie-/Backup-/RLS-Plan
+- erst stabile `SessionBlock`-Keys, `order` und Exposure-Tags, dann Live-Stepper,
+  Block-Logs oder Exposure-Automatik
+- Metric- und Exercise-Definitionen bleiben zunaechst statischer TypeScript-Content;
+  dynamisch gesynct werden nur Ergebnisse
+
+## Release-Hardening Sprint 12-24
+
+Nach Sprint 24 ist der Field Hub weiterhin ein browserseitiger Offline-first-Coach-MVP:
+
+- Keine Edge Functions, keine Player Accounts, keine OpenAI/API-Integration und keine neuen Backends.
+- Kein `service_role` Key im Client; die App nutzt nur URL und Publishable Key.
+- Dynamische Sprint-16-bis-20-Tabellen folgen dem bestehenden Supabase/Dexie/Pending-Queue-Muster mit `user_id`, RLS, Backup/Import und CSV-Export, wo die Daten ausserhalb der App sinnvoll nutzbar sind.
+- Public Check-ins nutzen keinen Supabase-Realtime-Kanal. Die bestehende leichte, session-scoped Refresh-/Polling-/Sync-Logik bleibt der MVP-Pfad; es gibt keinen Vollsync-Poll.
+- JSON-Backup umfasst Spieler, Einheiten, Check-ins/Nachbereitung, Progression, Baseline, Returner, Blockstatus, Exposures, Exercise Results und Metrics.
+- CSV-Export umfasst Spieler, Check-ins, Progression, Baseline/Testwerte, Blockstatus, Exposures, Exercise Results und Metrics.
+- Analyse, Spielerprofile und Coach Insights leiten Daten weiterhin lokal aus Dexie ab. Das ist fuer 15-20 Spieler MVP-tauglich, bleibt aber bei deutlich groesserer Historie ein bewusst dokumentiertes Performance-Risiko.
+- Safety-Grenze: Die App gibt Hinweise fuer Coaching-Entscheidungen, aber keine Diagnosen, keine medizinische Freigabe und keine Return-to-Play-Entscheidung.
+
 ## Sprint-2-Quellen
 
 - `templates/kw25_coach_script_2026-06-16_18.md`

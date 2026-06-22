@@ -1188,6 +1188,24 @@ Fertig, wenn:
 - Papier-/PDF-Fallback fuer Dienstag liegt bereit.
 - `supabase db push --dry-run` bleibt sauber oder ein noetiger Push wurde bewusst ausgefuehrt und dokumentiert.
 
+## Progress-Tracking-/Analyse-Roadmap ab Sprint 12
+
+Die naechste groessere Produktlinie fuer Spielerprogress, Live-Session-Fuehrung,
+Planned-vs-Actual, Exposures, flexible Metrics, strukturierte Kraftprogression,
+Team-/Spieler-Analyse, Bibliotheks-Cleanup und Coach Insights liegt hier:
+
+- `docs/superpowers/plans/2026-06-20-field-hub-progress-tracking-roadmap.md`
+
+Wichtig fuer neue Sessions:
+
+- Vor Sprint 16-20 keine neuen hochvolumigen Fact-Tabellen bauen, ohne Sync-Scope,
+  Dexie, Pending Queue, Backup/Import und RLS sauber zu planen.
+- Vor Live-Session- oder Exposure-Arbeit zuerst stabile SessionBlock-Keys,
+  `order` und Exposure-Tags in den statischen Session-Definitionen klaeren.
+- Metric- und Exercise-Definitionen sollen zunaechst statischer TypeScript-Content
+  bleiben; dynamisch gesynct werden nur Ergebnisse, wenn der konkrete Sprint das
+  braucht.
+
 ## 8. MVP-Cutline
 
 Minimal sinnvoll nutzbar:

@@ -1083,7 +1083,7 @@ Entscheidungen fuer Folgesessions:
 - Der Reset loescht Check-in-/Pre-Session-Felder, aber erhaelt Post-Session-Daten wie sRPE, Dauer, Session Load, Post-Pain, E2 und Next Step.
 - Public-Link-Submissions erhalten den Status `reset`, damit bereits importierte oder noch offene Link-Eingaenge nach einem Reset nicht erneut in dieselbe Session laufen.
 - Public-Import ist session-scoped: Pending Submissions duerfen nur ueber lokale Links der aktuell gewaehlten `session_definition_id` importiert werden.
-- Es gibt eine bewusste, enge Realtime-Ausnahme zum urspruenglichen MVP-Verbot: Nur `INSERT` auf `public.public_checkin_submissions` wird genutzt, damit WhatsApp/QR-Check-ins schneller im Coach-UI erscheinen. Kein breites Realtime fuer Coach-Daten, keine UPDATE-Self-Echos.
+- Historischer Stand dieser Runde: Es gab eine bewusste, enge Realtime-Ausnahme zum urspruenglichen MVP-Verbot. Diese Ausnahme wurde im Sprint-12-bis-24-Release-Hardening am 22. Juni 2026 wieder entfernt.
 - Public-Check-in-Polling laeuft wieder unabhaengig vom aktiven Tab, bleibt aber sichtbar/online-gebunden und session-scoped.
 - Manueller Sync bekommt die aktuell gewaehlte Session, damit Public-Check-ins fuer diese Session mitgezogen/importiert werden.
 - Public-Check-in-Fehler fliessen in die globale Sync-Uebersicht ein; der manuelle Sync darf bei Public-Refresh-/Import-Fehlern nicht ungefangen abbrechen.
@@ -1127,6 +1127,115 @@ Verifikation fuer diese Nachhaertung:
 - `npm test`
 - `npm run typecheck`
 - `npm run build`
+
+## Field Hub Sprint 19 Flexible Metrics 2026-06-21
+
+Kontext:
+
+- Sprint 19 fuehrte `metric_results` als ergaenzendes Modell ein. Bestehende `baseline_entries` bleiben erhalten, sichtbar und exportierbar.
+- Sprint 20 / `exercise_results` wurde bewusst nicht begonnen.
+
+Entscheidungen fuer Folgesessions:
+
+- Flexible Metrics nutzen die statischen Definitionen aus `content/metricDefinitions.ts`; keine dynamische Metric-Konfiguration im MVP.
+- `metric_results` wird offline-first wie andere Field-Data-Tabellen behandelt: Dexie, Pending Queue, Supabase Push, session-scoped Pull und bounded Player-History-Pull.
+- Die Supabase-Migration verwendet einen vollstaendigen Unique Constraint auf `(user_id, session_log_id, player_id, metric_key, attempt, body_side)` statt nur eines partial unique index. Grund: Supabase/PostgREST braucht fuer `upsert(... onConflict ...)` eine echte Unique Constraint.
+- Leeren eines bestehenden Metric-Felds soll Soft-Delete erzeugen; leere neue Felder erzeugen weiterhin keine Session-/Metric-Zeile.
+- Fuer Supabase-CLI-Checks die nicht getrackte `.env.supabase.local` lokal laden. Keine Secrets committen und keinen `service_role` Key verwenden.
+
+Supabase-Status:
+
+- Remote-Migration `20260621204025_metric_results.sql` wurde am 21. Juni 2026 per `supabase db push` angewendet.
+- Direkt danach meldete `supabase db push --dry-run`: `Remote database is up to date`.
+- `supabase migration list` zeigt `20260621204025` lokal und remote.
+- `supabase db query --linked` scheiterte mit 401 wegen fehlender Management-Auth; direkte Pooler-Query scheiterte mit Passwortauthentifizierung. Migration-History und Dry-Run waren erfolgreich.
+
+Verifikation fuer diese Runde:
+
+- `git diff --check`
+- `npm run typecheck`
+- `npm run lint`
+- `npm test` mit 378 Tests
+- `npm run build`
+- `supabase db push --dry-run`
+
+## Field Hub Sprint 20 Structured Exercise Progression 2026-06-22
+
+Kontext:
+
+- Sprint 20 fuehrte `exercise_results` als strukturierte Ergaenzung zu bestehenden `progress_entries` ein. Legacy-Progression bleibt sichtbar und exportierbar.
+- Sprint 21 / Analysis Tab wurde bewusst nicht begonnen.
+
+Entscheidungen fuer Folgesessions:
+
+- `exercise_results` ist pro Coach-User, Session, Spieler und Uebung stabil upsertbar. Die normale App-Erfassung verlangt einen Spieler; anonymisierte/null-player Exercise Results sind nicht Teil dieses Sprint-Scopes.
+- Uebungswechsel in der Nachbereitung wird als Replacement behandelt: alte sichtbare Uebung wird soft-deleted, neue Uebung wird aktiv gespeichert. So bleiben Remote-Upserts mit Natural-Key-Constraint sauber.
+- Remote Exercise-Pulls duerfen nicht auf `deleted_at is null` eingeschraenkt werden, weil andere Geraete sonst Soft-Delete-Tombstones nicht erhalten.
+- Der gemeinsame Field-Data-Sync muss Exercise-only Pending Writes im Rerun-Guard mitzaehlen; sonst koennen Writes, die waehrend eines laufenden Syncs entstehen, bis zum naechsten manuellen/background Sync pending bleiben.
+- Fuer Supabase-CLI-Checks die nicht getrackte `.env.supabase.local` lokal laden. Keine Secrets committen und keinen `service_role` Key verwenden.
+
+Supabase-Status:
+
+- Remote-Migration `20260622113554_exercise_results.sql` wurde am 22. Juni 2026 per `supabase db push --yes` angewendet.
+- Direkt danach meldete `supabase db push --dry-run`: `Remote database is up to date`.
+- `supabase migration list` zeigt `20260622113554` lokal und remote.
+- Direkte Pooler-Query bestaetigte: Tabelle `public.exercise_results` vorhanden, RLS aktiv, Policies fuer SELECT/INSERT/UPDATE/DELETE auf `authenticated`, Grants nur fuer `authenticated`.
+- `supabase db query --linked` und `supabase db advisors --linked` scheiterten mit 401 wegen fehlender Management-Auth; direkte Pooler-Pruefung funktionierte.
+
+Verifikation fuer diese Runde:
+
+- `git diff --check`
+- `npm run typecheck`
+- `npm run lint`
+- `npm test` mit 404 Tests
+- `npm run build`
+- `supabase db push --dry-run`
+- Headless Dev-Server-Smoke auf `http://127.0.0.1:5174/`
+
+## Field Hub Sprint 12-24 Release-Hardening 2026-06-22
+
+Kontext:
+
+- Nach dem Abschluss-Audit der Sprint-12-bis-24-Roadmap wurden nur Hardening-/Korrekturpunkte umgesetzt, kein neuer Feature-Sprint.
+- Die fruehere enge Public-Check-in-Realtime-Ausnahme wurde bewusst wieder entfernt. Public Check-ins laufen MVP-gerecht ueber leichte, session-scoped Refresh-/Polling-/Sync-Logik, nicht ueber Supabase Realtime und nicht ueber einen Vollsync-Poll.
+- Die App bleibt browserseitig/offline-first: keine Edge Functions, keine Player Accounts, kein neues Backend, keine OpenAI/API-Integration und keine `service_role` Keys.
+
+Entscheidungen fuer Folgesessions:
+
+- Remote-Pulls fuer `metric_results`, `player_exposure_summaries` und `session_block_logs` duerfen nicht auf `deleted_at is null` eingeschraenkt werden, weil sonst Soft-Delete-Tombstones andere Geraete nicht erreichen.
+- Der gemeinsame Field-Data-Sync muss Session-Block-, Exposure-, Metric- und Exercise-only Pending Writes im Rerun-Guard mitzaehlen.
+- Rolling-Load-, Team-Analysis- und Coach-Insight-Berechnungen muessen am aktuellen App-Tag verankert bleiben, nicht an der neuesten historischen Zeile. Load-Spikes brauchen mindestens 21 Tage lokale Load-Abdeckung.
+- `exercise_results.player_id` und `exercise_results.session_log_id` duerfen fuer anonymisierte historische Daten `null` sein. Normale App-Erfassung bleibt weiter spieler-/sessionbezogen.
+- Analyse, Spielerprofile und Coach Insights lesen weiterhin lokale Dexie-Daten. Das ist fuer 15-20 Spieler MVP-tauglich; bei deutlich groesserer Historie bleibt bounded/historische Read-Optimierung ein Performance-Follow-up.
+
+Supabase-Status:
+
+- Remote-Migration `20260622135201_harden_release_audit_sync_rls_realtime.sql` wurde am 22. Juni 2026 per `supabase db push --yes` angewendet.
+- Direkt danach meldete `supabase db push --dry-run`: `Remote database is up to date`.
+- `supabase migration list` zeigt `20260622135201` lokal und remote.
+- Direkte `psql`-Kontrolle bestaetigte: RLS ist auf `public.session_block_logs` und `public.exercise_results` aktiv, `exercise_results.player_id` und `exercise_results.session_log_id` sind nullable, und `public.public_checkin_submissions` ist nicht mehr in `supabase_realtime`.
+- `supabase db advisors --linked` scheiterte mit `401 Unauthorized` wegen fehlender Management-Auth; direkte Postgres-Pruefungen funktionierten.
+
+Verifikation fuer diese Runde:
+
+- `git diff --check`
+- `npm run typecheck`
+- `npm run lint`
+- `npm test` mit 450 Tests
+- `npm run build`
+- `npm run test:e2e:kiosk`
+- `supabase db push --dry-run`
+- `supabase migration list`
+- Direkte `psql`-Kontrolle der betroffenen RLS-/FK-/Realtime-Eigenschaften
+- Headless Desktop-/iPad-Smoke auf `http://127.0.0.1:5173/`
+
+Nachbesserung nach externem Review:
+
+- Team Analysis, Player Analysis und Coach Insights nutzen jetzt einen gemeinsamen Load-Analysis-Helper. Load-Spike-Advisories brauchen mindestens 4 Load-Eintraege, 7d-Load, positiven 28d-Load und mindestens 21 Tage lokale Load-Abdeckung.
+- Player Analysis darf ohne expliziten `todayKey` nicht auf die neueste historische Session als Rolling-Load-Anker zurueckfallen.
+- Returner-Cap-Parsing bleibt fail-safe: explizite Stop-/No-Training-Phrasen gewinnen gegen Allow-/No-Limit-Phrasen.
+- Public-Check-in-Polling bleibt bewusst erhalten, aber nur als leichte, session-scoped Refresh-/Sync-Logik. Es ist kein Supabase Realtime und kein Vollsync-Poll.
+- Fuer diese Nachbesserung war keine Supabase-Migration noetig; `supabase db push --dry-run --yes` meldete weiterhin `Remote database is up to date`.
 
 ## Empfohlener Startprompt fuer eine Trainingsplan-Session
 
