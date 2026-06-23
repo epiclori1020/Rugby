@@ -565,6 +565,8 @@ function CoachApp() {
         <PlayersView
           authState={authState}
           canOpenSourceSession={canOpenPlayerSourceSession}
+          metricActions={metricActions}
+          metricSessionLabel={`${selectedSession.title} · ${selectedSession.date}`}
           onOpenSourceSession={handleOpenPlayerSourceSession}
           playerActions={playerActions}
           todayKey={appTodayKey}
@@ -586,7 +588,9 @@ function CoachApp() {
         <TrainingView
           authState={authState}
           checkInActions={checkInActions}
+          exerciseActions={exerciseActions}
           exposureActions={exposureActions}
+          metricActions={metricActions}
           onOpenLibraryItem={handleOpenLibraryItem}
           onNavigate={handleTabChange}
           onSessionChange={setSelectedSessionId}

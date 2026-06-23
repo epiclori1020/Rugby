@@ -4,6 +4,7 @@ import type { SessionDefinition } from '../content/types'
 import {
   getSessionBlockSyncOverview,
   listSessionBlockLogsForSession,
+  resetSessionBlockLogsForSession,
   rowFromSessionBlockLog,
   saveSessionBlockLog,
   sessionBlockLogFromRow,
@@ -111,6 +112,53 @@ describe('sessionBlockRepository', () => {
     await expect(localDb.pendingWrites.count()).resolves.toBe(1)
     await expect(listSessionBlockLogsForSession(userId, 'session-log-1')).resolves.toMatchObject([
       { blockKey: 'kw25-do-2026-06-18:speed', status: 'changed', reason: 'weather' },
+    ])
+  })
+
+  it('soft-deletes all active block logs for a session and queues sync writes', async () => {
+    const saved = await saveSessionBlockLog(userId, 'session-log-1', sessionDefinition, 'kw25-do-2026-06-18:speed', {
+      status: 'done',
+      reason: 'none',
+    })
+
+    await expect(resetSessionBlockLogsForSession(userId, 'session-log-1')).resolves.toEqual({ resetCount: 1 })
+    await expect(listSessionBlockLogsForSession(userId, 'session-log-1')).resolves.toEqual([])
+
+    const deleted = await localDb.sessionBlockLogs.get(saved.id)
+    expect(deleted?.deletedAt).toBeTruthy()
+    expect(deleted?.syncStatus).toBe('pending')
+    await expect(localDb.pendingWrites.toArray()).resolves.toMatchObject([
+      { table: 'session_block_logs', recordId: saved.id, operation: 'upsert' },
+    ])
+  })
+
+  it('reuses a soft-deleted block log when saving the same session and block again', async () => {
+    const saved = await saveSessionBlockLog(userId, 'session-log-1', sessionDefinition, 'kw25-do-2026-06-18:speed', {
+      status: 'done',
+      reason: 'none',
+    })
+
+    await resetSessionBlockLogsForSession(userId, 'session-log-1')
+
+    const restarted = await saveSessionBlockLog(userId, 'session-log-1', sessionDefinition, 'kw25-do-2026-06-18:speed', {
+      status: 'skipped',
+      reason: 'time',
+      coachNote: ' Neustart ',
+    })
+
+    expect(restarted.id).toBe(saved.id)
+    expect(restarted.deletedAt).toBeNull()
+    expect(restarted.status).toBe('skipped')
+    expect(restarted.reason).toBe('time')
+    expect(restarted.coachNote).toBe('Neustart')
+    await expect(
+      localDb.sessionBlockLogs
+        .where('[userId+sessionLogId+blockKey]')
+        .equals([userId, 'session-log-1', 'kw25-do-2026-06-18:speed'])
+        .toArray(),
+    ).resolves.toHaveLength(1)
+    await expect(localDb.pendingWrites.toArray()).resolves.toMatchObject([
+      { table: 'session_block_logs', recordId: saved.id, operation: 'upsert' },
     ])
   })
 

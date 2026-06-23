@@ -11,6 +11,8 @@ import {
   saveMetricResult,
 } from '../lib/metricRepository'
 
+export type SaveMetricResult = { ok: true } | { ok: false; errorMessage: string }
+
 export function useMetrics(userId: string | null, sessionDefinition: SessionDefinition, players: Player[]) {
   const [results, setResults] = useState<MetricResult[]>([])
   const [syncOverview, setSyncOverview] = useState<PlayerSyncOverview>(defaultPlayerSyncOverview)
@@ -96,9 +98,11 @@ export function useMetrics(userId: string | null, sessionDefinition: SessionDefi
       .catch(() => undefined)
   }, [refreshMetrics])
 
-  async function savePlayerMetric(player: Player, patch: MetricResultPatch) {
+  async function savePlayerMetric(player: Player, patch: MetricResultPatch): Promise<SaveMetricResult> {
     if (!userId) {
-      throw new Error('Login erforderlich.')
+      const message = 'Login erforderlich.'
+      setErrorMessage(message)
+      return { ok: false, errorMessage: message }
     }
 
     const parsedValue = patch.value === null ? null : typeof patch.value === 'string' ? patch.value.trim() : patch.value
@@ -112,7 +116,7 @@ export function useMetrics(userId: string | null, sessionDefinition: SessionDefi
           !result.deletedAt,
       )
       if (!existingResult) {
-        return
+        return { ok: true }
       }
     }
 
@@ -125,9 +129,11 @@ export function useMetrics(userId: string | null, sessionDefinition: SessionDefi
       if (typeof navigator === 'undefined' || navigator.onLine) {
         scheduleBackgroundSync(userId, 'metrics', runBackgroundSync)
       }
+      return { ok: true }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Metric-Wert konnte nicht gespeichert werden.'
       setErrorMessage(message)
+      return { ok: false, errorMessage: message }
     }
   }
 

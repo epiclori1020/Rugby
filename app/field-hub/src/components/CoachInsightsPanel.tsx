@@ -10,10 +10,15 @@ type CoachInsightsPanelProps = {
   onOpenSource?: (source: CoachInsightSource) => void
 }
 
+type InsightPresentation = {
+  label: string
+  explanation?: string
+}
+
 const severityLabels: Record<CoachInsight['severity'], string> = {
-  high: 'hoch',
-  medium: 'mittel',
-  low: 'niedrig',
+  high: 'Warnung',
+  medium: 'Hinweis',
+  low: 'Info',
 }
 
 const targetLabels: Record<CoachInsight['targetTab'], string> = {
@@ -33,6 +38,20 @@ function sourceLabel(source: CoachInsightSource) {
   ].filter(Boolean)
 
   return parts.join(' · ')
+}
+
+function insightPresentation(insight: CoachInsight): InsightPresentation {
+  if (insight.rule === 'missing_srpe_completed_session') {
+    return {
+      label: 'Aufgabe',
+      explanation:
+        'sRPE = subjektive Belastung der gesamten Einheit auf einer Skala von 0-10. Session Load = sRPE × Dauer in Minuten. Dieser Insight erscheint, weil ein anwesender Spieler nach abgeschlossener Einheit noch keinen sRPE-Wert hat. Wert nachtragen oder bewusst offen lassen; das ist keine medizinische Warnung.',
+    }
+  }
+
+  return {
+    label: severityLabels[insight.severity],
+  }
 }
 
 export function CoachInsightsPanel({ dismissKey, emptyText, insights, limit, onOpenSource }: CoachInsightsPanelProps) {
@@ -68,11 +87,12 @@ export function CoachInsightsPanel({ dismissKey, emptyText, insights, limit, onO
       ) : (
         <div className="coach-insight-list">
           {visibleInsights.map((insight) => {
+            const presentation = insightPresentation(insight)
             return (
               <section className={`coach-insight coach-insight-${insight.severity}`} key={insight.id}>
                 <div className="coach-insight-heading">
                   <div>
-                    <span className="tag compact">{severityLabels[insight.severity]}</span>
+                    <span className="tag compact">{presentation.label}</span>
                     <h4>{insight.title}</h4>
                   </div>
                   <button
@@ -86,6 +106,7 @@ export function CoachInsightsPanel({ dismissKey, emptyText, insights, limit, onO
                   </button>
                 </div>
                 <p>{insight.reason}</p>
+                {presentation.explanation ? <p className="privacy-note">{presentation.explanation}</p> : null}
                 {insight.correctionHint ? <p className="privacy-note">{insight.correctionHint}</p> : null}
                 {insight.sources.length > 0 ? (
                   <div className="coach-insight-sources">

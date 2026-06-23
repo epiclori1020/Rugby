@@ -8,6 +8,7 @@ import { mergeRecordIntoList } from '../lib/optimisticUpdates'
 import {
   getSessionBlockSyncOverview,
   listSessionBlockLogsForSession,
+  resetSessionBlockLogsForSession,
   saveSessionBlockLog,
 } from '../lib/sessionBlockRepository'
 
@@ -117,6 +118,34 @@ export function useSessionBlocks(userId: string | null, sessionDefinition: Sessi
     }
   }
 
+  async function resetSessionBlockLogs() {
+    if (!userId) {
+      throw new Error('Login erforderlich.')
+    }
+
+    if (!sessionLogId) {
+      return { resetCount: 0 }
+    }
+
+    setIsLoading(true)
+    try {
+      setErrorMessage(null)
+      const result = await resetSessionBlockLogsForSession(userId, sessionLogId)
+      setBlockLogs([])
+      setSyncOverview(await getSessionBlockSyncOverview(userId))
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        scheduleBackgroundSync(userId, 'session-blocks', runBackgroundSync)
+      }
+      return result
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : 'Training konnte nicht zurueckgesetzt werden.'
+      setErrorMessage(message)
+      return { resetCount: 0 }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   function getLogForBlock(blockKey: string) {
     return blockLogs.find((entry) => entry.blockKey === blockKey) ?? null
   }
@@ -130,6 +159,7 @@ export function useSessionBlocks(userId: string | null, sessionDefinition: Sessi
     refreshSessionBlocks,
     runSync,
     saveBlockLog,
+    resetSessionBlockLogs,
     syncOverview,
   }
 }

@@ -117,4 +117,49 @@ describe('session block keys', () => {
       }
     }
   })
+
+  test('KW26 Tuesday pilot carries structured exercise details for the live coach flow', () => {
+    const session = sessionDefinitions.find((candidate) => candidate.id === 'kw26-di-2026-06-23')
+    expect(session).toBeDefined()
+
+    const mobility = session?.timeline.find((block) => block.key.endsWith(':mobility-activation'))
+    const makeUp = session?.timeline.find((block) => block.key.endsWith(':make-up-tests'))
+    const strength = session?.timeline.find((block) => block.key.endsWith(':strength-pods'))
+
+    expect(mobility?.exercises?.map((exercise) => exercise.name)).toContain('Hip Switch')
+    expect(mobility?.exercises?.find((exercise) => exercise.name === 'Knee-to-Wall')?.prescription).toContain('8/Seite')
+    expect(mobility?.exercises?.every((exercise) => exercise.coachingCues.length > 0)).toBe(true)
+
+    expect(makeUp?.exercises?.find((exercise) => exercise.name === 'Artur Med-Ball')?.recording).toBe('metric')
+    expect(makeUp?.exercises?.find((exercise) => exercise.name === 'Christopher/David Broad Jump')?.playerNames).toEqual([
+      'Christopher',
+      'David',
+    ])
+
+    expect(strength?.exercises?.find((exercise) => exercise.name === 'Deadlift')?.prescription).toContain('3x5')
+    expect(strength?.exercises?.find((exercise) => exercise.name === 'Deadlift')?.recording).toBe('exercise')
+  })
+
+  test('KW26 Tuesday structured exercises keep targeting and recording keys complete', () => {
+    const session = sessionDefinitions.find((candidate) => candidate.id === 'kw26-di-2026-06-23')
+    expect(session).toBeDefined()
+
+    for (const exercise of session?.timeline.flatMap((block) => block.exercises ?? []) ?? []) {
+      if (exercise.recording === 'metric') {
+        expect(exercise.metricKey, `${exercise.key} metric recording needs metricKey`).toBeTruthy()
+      }
+
+      if (exercise.recording === 'exercise') {
+        expect(exercise.exerciseKey, `${exercise.key} exercise recording needs exerciseKey`).toBeTruthy()
+      }
+
+      if (exercise.targeting === 'named') {
+        expect(exercise.playerNames.length, `${exercise.key} named targeting needs playerNames`).toBeGreaterThan(0)
+      }
+
+      if (exercise.targeting === 'cluster') {
+        expect(exercise.clusters.length, `${exercise.key} cluster targeting needs clusters`).toBeGreaterThan(0)
+      }
+    }
+  })
 })

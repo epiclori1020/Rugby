@@ -1,3 +1,7 @@
+import type { ExerciseKey } from './exerciseDefinitions'
+import type { MetricKey } from './metricDefinitions'
+import type { PlayerCluster } from '../domain/players'
+
 export type SessionType = 'training' | 'baseline' | 'recheck' | 'transition'
 
 export type LibraryCategory =
@@ -29,6 +33,67 @@ export type ExposureTag =
   | 'mobility'
   | 'reconditioning'
 
+type SessionBlockExerciseBase = {
+  key: string
+  name: string
+  prescription: string
+  coachingCues: string[]
+  setup?: string
+  regression?: string
+  safety?: string
+}
+
+type SessionBlockExerciseTarget =
+  | {
+      targeting: 'all'
+      clusters?: never
+      playerNames?: never
+    }
+  | {
+      targeting: 'cluster'
+      clusters: PlayerCluster[]
+      playerNames?: never
+    }
+  | {
+      targeting: 'named'
+      clusters?: never
+      playerNames: string[]
+    }
+  | {
+      targeting: 'returner'
+      clusters?: never
+      playerNames?: never
+      returnerRule?: string
+    }
+  | {
+      targeting: 'optional'
+      clusters?: never
+      playerNames?: never
+    }
+
+type SessionBlockExerciseRecordingOption =
+  | {
+      recording: 'none' | 'observation'
+      exerciseKey?: ExerciseKey
+      metricKey?: never
+    }
+  | {
+      recording: 'metric'
+      exerciseKey?: never
+      metricKey: MetricKey
+    }
+  | {
+      recording: 'exercise'
+      exerciseKey: ExerciseKey
+      metricKey?: never
+    }
+
+export type SessionBlockExerciseTargeting = SessionBlockExerciseTarget['targeting']
+
+export type SessionBlockExerciseRecording = SessionBlockExerciseRecordingOption['recording']
+
+export type SessionBlockExercise = SessionBlockExerciseBase & SessionBlockExerciseTarget & SessionBlockExerciseRecordingOption
+
 export type SessionBlock = {
   key: string
   order: number
@@ -38,6 +103,7 @@ export type SessionBlock = {
   dose?: string
   note?: string
   exposureTags?: ExposureTag[]
+  exercises?: SessionBlockExercise[]
   libraryRefs?: string[]
 }
 

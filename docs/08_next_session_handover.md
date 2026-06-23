@@ -1237,6 +1237,47 @@ Nachbesserung nach externem Review:
 - Public-Check-in-Polling bleibt bewusst erhalten, aber nur als leichte, session-scoped Refresh-/Sync-Logik. Es ist kein Supabase Realtime und kein Vollsync-Poll.
 - Fuer diese Nachbesserung war keine Supabase-Migration noetig; `supabase db push --dry-run --yes` meldete weiterhin `Remote database is up to date`.
 
+## Field Hub Check-in Guidance 2026-06-23
+
+Kontext:
+
+- Der Check-in Screen erklaert offene Warnungen jetzt als coachbare Hinweise mit Bedeutung, Relevanz, Coach-Aktion und Konsequenz.
+- Die Produktentscheidung bleibt: alle Check-in-Hinweise sind beratend. Keine Red Flag, rote Ampel oder Returner-Klaerung sperrt eine Coach-Aktion in der UI.
+- `Returner offen` ist eine offene Tagesentscheidung, kein Belastungsalarm. `Returner ja` ist der heutige Status und bleibt getrennt von Returner-Caps aus dem Belastungsplan.
+- Carry-over aus der letzten Einheit wird sprachlich als `Mitnehmen aus letzter Einheit` / `Vorwarnung` gefuehrt, nicht als neuer Tagesbefund.
+
+Entscheidungen fuer Folgesessions:
+
+- Angezeigte Konsequenzen werden live und Coach-Override-bewusst aus dem sichtbaren Check-in-Zustand abgeleitet. Sie sollen nicht blind aus dem gespeicherten `limits`-Feld kommen, weil dieses Feld historisch sticky sein kann.
+- Gespeicherte Limits, die strenger sind als die aktuelle Coach-Ampel, werden als `Gespeicherte Limits pruefen` angezeigt und nicht automatisch als heutige Einschraenkung verkauft.
+- Die Guidance im Spieler-Sheet ist standardmaessig eingeklappt. Die Summary zeigt maximal drei priorisierte Chips plus `+N`; Prioritaet ist `check_today`, dann `adjust_load`/`recommended_limit`, dann `decision_open`, dann `info`. Red-Flag-Chips nennen in der geschlossenen Summary bewusst `keine normale Progression`, damit die wichtigste Konsequenz sofort sichtbar bleibt.
+- Red-Flag-Copy sagt bewusst klarer `keine normale Progression` und `Medical/Physio klaeren`, bleibt aber eine beratende UI ohne technische Sperre.
+- `deriveLimits` wurde in diesem Sprint bewusst nicht als Domain-Migration umgebaut. Wenn spaeter persistierte Limits non-sticky werden sollen, braucht das einen eigenen testbaren Sprint.
+- Fuer diesen Sprint war keine Supabase-Migration, kein RLS-Update und kein DB-Push noetig.
+
+Review-Risiken:
+
+- Signed-in Player-Sheet wurde ohne E2E-Credentials nur ueber Komponenten-/Domain-Tests abgesichert; Browser-Smoke pruefte die Check-in-Route ohne Login auf Desktop/iPad.
+- Wenn Coaches im Feld trotzdem zu wenig Kontext sehen, kann spaeter ein kleiner UX-Test entscheiden, ob die Summary initial bei `check_today` offen sein soll. Aktuelle Entscheidung bleibt: schnelle Eingabe zuerst, Details bei Bedarf aufklappen.
+
+## Field Hub Training Live Flow 2026-06-23
+
+Kontext:
+
+- Der Training-Tab hat jetzt eine explizite Live-Session-Steuerung: starten, fortsetzen, abbrechen, zurueck zum Session-Start und Training neu starten.
+- `Training neu starten` ist bewusst ein Soft-Reset fuer den aktuellen Trainingslauf, kein kompletter Session-Datenloescher.
+- Zurueckgesetzt werden nur aktive `session_block_logs` und `player_exposure_summaries`; Check-ins, sRPE/Pain/E2, Metrics, Exercise-Results, Progression und Baselines bleiben erhalten.
+- KW26 Dienstag ist der erste Pilot fuer strukturierte `SessionBlock.exercises` mit Prescriptions, Coaching-Cues, Safety/Regression, Zielgruppe und Recording-Typ.
+- Live-Metric-/Exercise-Erfassung nutzt die vorhandenen Metric-/Exercise-Hooks. Es wurde keine neue Task- oder Form-Engine eingefuehrt.
+- Fuer diesen Sprint war keine Supabase-Migration, kein RLS-Update und kein DB-Push noetig.
+
+Entscheidungen fuer Folgesessions:
+
+- Strukturierte Uebungsdetails sollen erst nach Bewertung des KW26-Piloten auf weitere Sessions migriert werden.
+- Die Spielerfilter im Training bleiben MVP-gerecht lokal aus Check-in, Returner-Caps und aktuellem Block abgeleitet; ein eigenes Task-Modell ist ein spaeteres Follow-up, falls der Pilot fachlich passt.
+- Externer Review identifizierte sinnvolle Nachbesserungen; diese wurden im Hardening direkt nachgezogen: `SessionBlockExercise` ist strenger typisiert, Exercise-Capture-Inputs remounten beim Spielerwechsel, und offene Aufgaben fuer named/returner Metrics werden nach gespeicherten Ergebnissen als erledigt behandelt.
+- Fuer den Hardening-Sprint war keine Supabase-Migration, kein RLS-Update und kein DB-Push noetig.
+
 ## Empfohlener Startprompt fuer eine Trainingsplan-Session
 
 ```text

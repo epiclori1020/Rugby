@@ -108,4 +108,18 @@ describe('CoachInsightsPanel', () => {
 
     root.unmount()
   })
+
+  it('explains missing sRPE as a post-session task', () => {
+    const markup = renderToStaticMarkup(
+      <CoachInsightsPanel
+        emptyText="Leer"
+        insights={[insight]}
+      />,
+    )
+
+    expect(markup).toContain('Aufgabe')
+    expect(markup).toContain('sRPE = subjektive Belastung')
+    expect(markup).toContain('Session Load = sRPE × Dauer')
+    expect(markup).toContain('keine medizinische Warnung')
+  })
 })

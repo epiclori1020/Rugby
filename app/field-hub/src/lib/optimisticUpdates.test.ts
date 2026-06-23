@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest'
-import type { PlayerSessionEntry } from '../domain/checkIn'
+import type { CheckInLimit, PlayerSessionEntry } from '../domain/checkIn'
+import { deriveAdvisoryConsequences } from '../domain/checkInWarningGuidance'
 import type { ReturnerEntry } from '../domain/returners'
 import { applyOptimisticCheckInPatch, applyOptimisticReturnerPatch, mergeRecordIntoList } from './optimisticUpdates'
 
@@ -95,6 +96,22 @@ describe('optimisticUpdates', () => {
     expect(nextEntry.trafficLight).toBe('red')
     expect(nextEntry.trafficLightWasManual).toBe(true)
     expect(nextEntry.trafficLightSuggestion).toBe('green')
+  })
+
+  it('lets guidance treat old optimistic limits as review items after a manual green correction', () => {
+    const previousRedEntry = {
+      ...checkInEntry,
+      trafficLight: 'red' as const,
+      trafficLightSuggestion: 'red' as const,
+      limits: ['kein_sprint', 'kein_cond', 'kein_schweres_heben', 'klaeren'] satisfies CheckInLimit[],
+    }
+    const nextEntry = applyOptimisticCheckInPatch(previousRedEntry, {}, 'green')
+    const consequences = deriveAdvisoryConsequences(nextEntry)
+
+    expect(nextEntry.trafficLight).toBe('green')
+    expect(nextEntry.trafficLightWasManual).toBe(true)
+    expect(consequences.recommendedLimits).toEqual([])
+    expect(consequences.staleStoredLimits).toEqual(['kein_sprint', 'kein_cond', 'kein_schweres_heben', 'klaeren'])
   })
 
   it('applies returner decisions immediately', () => {

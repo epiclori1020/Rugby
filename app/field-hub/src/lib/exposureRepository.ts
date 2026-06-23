@@ -176,11 +176,12 @@ export async function savePlayerExposureSummaries(
   userId: string,
   input: SavePlayerExposureSummariesInput,
 ) {
-  const existingSummaries = await localDb.playerExposureSummaries
+  const allExistingSummaries = await localDb.playerExposureSummaries
     .where('[userId+sessionLogId]')
     .equals([userId, input.sessionLog.id])
-    .and((summary) => !summary.deletedAt)
     .toArray()
+  const existingSummaries = allExistingSummaries.filter((summary) => !summary.deletedAt)
+  const summariesForReuse = allExistingSummaries.filter((summary) => summary.playerId !== null)
   const summaries = buildPlayerExposureSummaries({
     userId,
     sessionLog: input.sessionLog,
@@ -188,7 +189,7 @@ export async function savePlayerExposureSummaries(
     blockLogs: input.blockLogs,
     entries: input.entries,
     returnerCaps: input.returnerCaps,
-    existingSummaries,
+    existingSummaries: summariesForReuse,
   })
   const generatedPlayerIds = new Set(summaries.flatMap((summary) => (summary.playerId ? [summary.playerId] : [])))
   const timestamp = nowIso()
@@ -251,6 +252,30 @@ export async function saveManualExposureOverride(
   await queueExposureWrite(updated)
 
   return updated
+}
+
+export async function resetExposureSummariesForSession(userId: string, sessionLogId: string) {
+  const summaries = await localDb.playerExposureSummaries
+    .where('[userId+sessionLogId]')
+    .equals([userId, sessionLogId])
+    .and((summary) => !summary.deletedAt)
+    .toArray()
+  const timestamp = nowIso()
+
+  for (const summary of summaries) {
+    const deletedSummary: PlayerExposureSummary = {
+      ...summary,
+      deletedAt: timestamp,
+      updatedAt: timestamp,
+      clientUpdatedAt: timestamp,
+      syncStatus: 'pending',
+      syncError: null,
+    }
+    await localDb.playerExposureSummaries.put(deletedSummary)
+    await queueExposureWrite(deletedSummary)
+  }
+
+  return { resetCount: summaries.length }
 }
 
 export async function getExposureSyncOverview(userId: string): Promise<PlayerSyncOverview> {

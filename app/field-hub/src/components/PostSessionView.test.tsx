@@ -201,7 +201,7 @@ function renderPostSessionView() {
     isLoading: false,
     refreshMetrics: async () => undefined,
     runSync: async () => syncOverview,
-    savePlayerMetric: async () => undefined,
+    savePlayerMetric: async () => ({ ok: true as const }),
     getMetricForPlayer: () => null,
     clearError: () => undefined,
   } satisfies ReturnType<typeof useMetrics>
@@ -226,6 +226,7 @@ function renderPostSessionView() {
     errorMessage: null,
     refreshExposures: async () => undefined,
     generateExposureSummaries: async () => [],
+    resetExposureSummaries: async () => ({ resetCount: 0 }),
     saveManualOverride: async () => undefined,
     clearError: () => undefined,
   }
@@ -254,6 +255,9 @@ describe('PostSessionView closure checklist', () => {
   it('shows missing required post-session data without hiding existing inputs', () => {
     const markup = renderPostSessionView()
 
+    expect(markup).toContain('Nachzutragen')
+    expect(markup).toContain('sRPE nachtragen')
+    expect(markup).toContain('Subjektive Belastung 0-10')
     expect(markup).toContain('Closure Checklist')
     expect(markup).toContain('Nachbereitungsstatus: teilweise abgeschlossen')
     expect(markup).toContain('sRPE fehlt bei anwesenden Spielern.')

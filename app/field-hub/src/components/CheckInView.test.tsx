@@ -4,7 +4,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SessionDefinition } from '../content/types'
-import type { PlayerSessionEntry, PlayerWarning } from '../domain/checkIn'
+import type { CheckInLimit, PlayerSessionEntry, PlayerWarning } from '../domain/checkIn'
 import type { PlayerObservation } from '../domain/checkIn'
 import type { Player } from '../domain/players'
 import type { PlayerSyncOverview } from '../domain/sync'
@@ -746,6 +746,21 @@ describe('CheckInView multi-select check-in fields', () => {
 })
 
 describe('CheckInView active player metrics', () => {
+  let root: Root | null = null
+
+  beforeEach(() => {
+    ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+  })
+
+  afterEach(async () => {
+    if (root) {
+      await act(async () => {
+        root?.unmount()
+      })
+      root = null
+    }
+  })
+
   it('renders a compact player finder instead of full open forms by default', () => {
     const secondPlayer: Player = { ...activePlayer, id: 'player-second', name: 'Anton' }
     const checkInActions = {
@@ -800,6 +815,39 @@ describe('CheckInView active player metrics', () => {
     expect(markup).toContain('Anton')
     expect(markup).not.toContain('aria-label="Readiness Max"')
     expect(markup).not.toContain('aria-label="Schmerz Max"')
+  })
+
+  it('opens a quick player editor from the selected player sheet settings icon', async () => {
+    const savePlayer = vi.fn(async () => undefined)
+    const rendered = await renderInteractiveCheckInView({
+      playerActions: createPlayerActions({ savePlayer }),
+    })
+    root = rendered.root
+
+    await openPlayerSheet(rendered.container)
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('button[aria-label="Spieler bearbeiten"]')?.click()
+    })
+
+    expect(rendered.container.textContent).toContain('Spieler-Stammdaten')
+    expect(rendered.container.textContent).not.toContain('Deaktivieren')
+    expect(rendered.container.textContent).not.toContain('Loeschen')
+
+    const nameInput = Array.from(rendered.container.querySelectorAll<HTMLInputElement>('input')).find(
+      (input) => input.value === activePlayer.name,
+    )
+    expect(nameInput).toBeTruthy()
+
+    await changeInput(nameInput as HTMLInputElement, 'Max Muster')
+    await act(async () => {
+      rendered.container.querySelector<HTMLFormElement>('.checkin-player-editor form')?.dispatchEvent(
+        new Event('submit', { bubbles: true, cancelable: true }),
+      )
+      await Promise.resolve()
+    })
+
+    expect(savePlayer).toHaveBeenCalledWith(expect.objectContaining({ name: 'Max Muster' }), activePlayer)
+    expect(rendered.container.textContent).toContain('Check-in')
   })
 
   it('does not count stale entries for deleted players', () => {
@@ -959,6 +1007,143 @@ describe('CheckInView active player metrics', () => {
     expect(markup).not.toContain('traffic-chip green active')
     expect(markup).not.toContain('class="segmented active danger" type="button">Keine Red Flag')
     expect(markup).not.toContain('segmented active danger')
+  })
+
+  it('uses coaching guidance labels instead of ambiguous warning labels', () => {
+    const entryWithReturnerClarification = {
+      ...autoGreenEntry,
+      returnerFlag: 'offen' as const,
+      trafficLight: 'green' as const,
+      trafficLightSuggestion: 'green' as const,
+    }
+    const activeWarning: PlayerWarning = {
+      ...deletedPlayerWarning,
+      playerId: activePlayer.id,
+      trafficLight: 'yellow',
+      returnerFlag: 'nein',
+      observation: '',
+    }
+    const checkInActions = createCheckInActions({
+      entries: [entryWithReturnerClarification],
+      warnings: [activeWarning],
+      getEntryForPlayer: () => entryWithReturnerClarification,
+    })
+    const markup = renderToStaticMarkup(
+      <CheckInView
+        authState={authState}
+        checkInActions={checkInActions}
+        onNavigate={() => undefined}
+        onSessionChange={() => undefined}
+        onStartKiosk={() => undefined}
+        playerActions={createPlayerActions()}
+        returnerCaps={[]}
+        selectedSession={selectedSession}
+        selectedSessionId={selectedSession.id}
+        sessions={[selectedSession]}
+      />,
+    )
+
+    expect(markup).toContain('Mitnehmen aus letzter Einheit')
+    expect(markup).toContain('Vorwarnung')
+    expect(markup).toContain('Returner klären')
+    expect(markup).not.toContain('Offene Warnungen')
+    expect(markup).not.toContain('>Warnung<')
+    expect(markup).not.toContain('Klärung offen')
+  })
+
+  it('shows today guidance and advisory legend in the player sheet', async () => {
+    const redEntry = {
+      ...autoGreenEntry,
+      trafficLight: 'red' as const,
+      trafficLightSuggestion: 'red' as const,
+      redFlag: 'head_neck_neuro' as const,
+      returnerFlag: 'ja' as const,
+    }
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({
+        entries: [redEntry],
+        getEntryForPlayer: () => redEntry,
+      }),
+    })
+    root = rendered.root
+
+    await openPlayerSheet(rendered.container)
+
+    expect(rendered.container.textContent).toContain('Heute beachten')
+    expect(rendered.container.textContent).toContain('Rot: heute prüfen')
+    expect(rendered.container.textContent).toContain('Red Flag prüfen')
+    expect(rendered.container.textContent).toContain('Alle Hinweise sind beratend')
+    expect(rendered.container.textContent).toContain('Returner-Status heute')
+  })
+
+  it('keeps player-sheet guidance collapsed with prioritized summary chips', async () => {
+    const highSignalEntry = {
+      ...autoGreenEntry,
+      trafficLight: 'red' as const,
+      trafficLightSuggestion: 'red' as const,
+      redFlag: 'head_neck_neuro' as const,
+      returnerFlag: 'ja' as const,
+      limits: ['kein_sprint', 'kein_cond', 'klaeren'] satisfies CheckInLimit[],
+    }
+    const activeWarning: PlayerWarning = {
+      ...deletedPlayerWarning,
+      playerId: activePlayer.id,
+      trafficLight: 'red',
+      returnerFlag: 'ja',
+      limits: ['kein_sprint', 'klaeren'],
+      e2Decision: 'kein_sprint',
+      nextStep: 'klaeren',
+      postPainScore: 6,
+      postPainLocation: 'Knie',
+      observation: '',
+    }
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({
+        entries: [highSignalEntry],
+        warnings: [activeWarning],
+        getEntryForPlayer: () => highSignalEntry,
+      }),
+    })
+    root = rendered.root
+
+    await openPlayerSheet(rendered.container)
+
+    const disclosure = rendered.container.querySelector<HTMLDetailsElement>('.guidance-disclosure')
+    const summary = disclosure?.querySelector<HTMLElement>('.guidance-summary')
+    const chips = [...(summary?.querySelectorAll('.guidance-summary-chip') ?? [])].map((chip) => chip.textContent?.trim())
+
+    expect(disclosure).not.toBeNull()
+    expect(disclosure?.open).toBe(false)
+    expect(summary?.textContent).toContain('Heute beachten')
+    expect(summary?.textContent).toContain('Hinweise')
+    expect(chips).toEqual(['Rot: heute prüfen', 'Red Flag: keine normale Progression', 'Vorwarnung aus letzter Einheit'])
+    expect(summary?.textContent).toContain('+6')
+    expect(disclosure?.textContent).toContain('Bedeutung')
+    expect(disclosure?.textContent).toContain('Coach-Aktion')
+    expect(disclosure?.textContent).toContain('Konsequenz')
+  })
+
+  it('does not disable check-in controls for red traffic or red flags', async () => {
+    const redEntry = {
+      ...autoGreenEntry,
+      trafficLight: 'red' as const,
+      trafficLightSuggestion: 'red' as const,
+      redFlag: 'head_neck_neuro' as const,
+      returnerFlag: 'nein' as const,
+    }
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({
+        entries: [redEntry],
+        getEntryForPlayer: () => redEntry,
+      }),
+    })
+    root = rendered.root
+
+    await openPlayerSheet(rendered.container)
+
+    expect(getButton(rendered.container, 'Da').disabled).toBe(false)
+    expect(getButton(rendered.container, 'Gruen').disabled).toBe(false)
+    expect(getButton(rendered.container, 'Keine Red Flag').disabled).toBe(false)
   })
 
   it('shows player observations separately from safety warnings', () => {

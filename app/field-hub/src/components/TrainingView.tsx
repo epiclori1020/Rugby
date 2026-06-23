@@ -13,9 +13,9 @@ import { useState, type FormEvent } from 'react'
 import type { HubTab } from '../App'
 import { libraryItems } from '../content/library'
 import { exerciseMappings, variantCards } from '../content/trainingReference'
-import type { SessionDefinition } from '../content/types'
+import type { SessionBlock, SessionBlockExercise, SessionDefinition } from '../content/types'
 import type { CheckInEntryPatch, CheckInLimit, PlayerSessionEntry, PlayerWarning, TrafficLight } from '../domain/checkIn'
-import type { Player } from '../domain/players'
+import { clusterOptions, type Player } from '../domain/players'
 import type { ReturnerCapSummary } from '../domain/returners'
 import { sessionBlockStatusLabels } from '../domain/sessionBlocks'
 import {
@@ -25,7 +25,9 @@ import {
   type TrainingQuickAction,
 } from '../domain/training'
 import type { useCheckIns } from '../hooks/useCheckIns'
+import type { useExercises } from '../hooks/useExercises'
 import type { useExposures } from '../hooks/useExposures'
+import type { useMetrics } from '../hooks/useMetrics'
 import type { useSessionBlocks } from '../hooks/useSessionBlocks'
 import type { AuthSessionState } from '../lib/auth'
 import { hasPlayerId } from '../lib/playerId'
@@ -37,11 +39,15 @@ import { SessionPicker } from './SessionPicker'
 type TrainingActions = ReturnType<typeof useCheckIns>
 type SessionBlockActions = ReturnType<typeof useSessionBlocks>
 type ExposureActions = ReturnType<typeof useExposures>
+type MetricActions = ReturnType<typeof useMetrics>
+type ExerciseActions = ReturnType<typeof useExercises>
 
 type TrainingViewProps = {
   authState: AuthSessionState
   checkInActions: TrainingActions
+  exerciseActions?: ExerciseActions
   exposureActions: ExposureActions
+  metricActions?: MetricActions
   onOpenLibraryItem: (itemId: string) => void
   onNavigate: (tab: HubTab) => void
   onSessionChange: (sessionId: string) => void
@@ -51,6 +57,8 @@ type TrainingViewProps = {
   sessionBlockActions: SessionBlockActions
   sessions: SessionDefinition[]
 }
+
+type TrainingPlayerFilter = 'open' | 'present' | 'warning' | 'returner' | 'cluster' | 'all'
 
 const trafficLabels: Record<TrafficLight, string> = {
   green: 'Gruen',
@@ -85,6 +93,128 @@ const liveObservationCategories: LiveObservationCategory[] = [
   'Kontakt',
   'Orga',
 ]
+
+const playerFilterOptions: Array<{ value: TrainingPlayerFilter; label: string }> = [
+  { value: 'open', label: 'Offene Aufgaben' },
+  { value: 'present', label: 'Anwesend' },
+  { value: 'warning', label: 'Gelb/Rot' },
+  { value: 'returner', label: 'Returner' },
+  { value: 'cluster', label: 'Cluster' },
+  { value: 'all', label: 'Alle' },
+]
+
+function trainingCollapsedStorageKey(userId: string, sessionId: string) {
+  return `fieldHub:trainingLiveCollapsed:${userId}:${sessionId}`
+}
+
+function readTrainingCollapsed(userId: string | null, sessionId: string) {
+  if (!userId || typeof window === 'undefined') {
+    return false
+  }
+
+  try {
+    return window.localStorage.getItem(trainingCollapsedStorageKey(userId, sessionId)) === 'true'
+  } catch {
+    return false
+  }
+}
+
+function writeTrainingCollapsed(userId: string | null, sessionId: string, collapsed: boolean) {
+  if (!userId || typeof window === 'undefined') {
+    return
+  }
+
+  try {
+    const key = trainingCollapsedStorageKey(userId, sessionId)
+    if (collapsed) {
+      window.localStorage.setItem(key, 'true')
+    } else {
+      window.localStorage.removeItem(key)
+    }
+  } catch {
+    // Live state remains available in memory when storage is blocked.
+  }
+}
+
+function normalizeTargetName(value: string) {
+  return value
+    .toLocaleLowerCase('de-AT')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .replace(/[^a-z0-9]/g, '')
+}
+
+function normalizeTargetTokens(value: string) {
+  return value
+    .toLocaleLowerCase('de-AT')
+    .normalize('NFKD')
+    .replace(/[\u0300-\u036f]/g, '')
+    .split(/[^a-z0-9]+/)
+    .filter(Boolean)
+}
+
+function playerMatchesTargetName(playerName: string, targetName: string) {
+  const normalizedTarget = normalizeTargetName(targetName)
+  if (!normalizedTarget) {
+    return false
+  }
+
+  const playerFullName = normalizeTargetName(playerName)
+  const targetTokens = normalizeTargetTokens(targetName)
+
+  return (
+    playerFullName === normalizedTarget ||
+    normalizeTargetTokens(playerName).includes(normalizedTarget) ||
+    (targetTokens.length > 1 && playerFullName.endsWith(normalizedTarget))
+  )
+}
+
+function firstBlockKey(session: SessionDefinition) {
+  return session.timeline[0]?.key ?? null
+}
+
+function exerciseTargetsPlayer(exercise: SessionBlockExercise, player: Player) {
+  if (exercise.targeting === 'named') {
+    return exercise.playerNames?.some((name) => playerMatchesTargetName(player.name, name)) ?? false
+  }
+
+  if (exercise.targeting === 'cluster') {
+    return exercise.clusters?.includes(player.cluster) ?? false
+  }
+
+  if (exercise.targeting === 'returner') {
+    return player.returnerStatus === 'ja'
+  }
+
+  return true
+}
+
+function blockHasOpenCaptureTask(
+  block: SessionBlock | undefined,
+  player: Player,
+  metricActions: MetricActions | undefined,
+  exerciseActions: ExerciseActions | undefined,
+) {
+  if (!block?.exercises) {
+    return false
+  }
+
+  return block.exercises.some((exercise) => {
+    if (!exerciseTargetsPlayer(exercise, player)) {
+      return false
+    }
+
+    if (exercise.recording === 'metric' && exercise.metricKey) {
+      return metricActions ? !metricActions.getMetricForPlayer(player, exercise.metricKey) : true
+    }
+
+    if (exercise.recording === 'exercise' && exercise.exerciseKey) {
+      return exerciseActions ? !exerciseActions.getExerciseResultForPlayer(player, exercise.exerciseKey) : true
+    }
+
+    return false
+  })
+}
 
 function formatTrafficLight(trafficLight: TrafficLight | null) {
   return trafficLight ? trafficLabels[trafficLight] : 'Offen'
@@ -251,7 +381,9 @@ function TrainingPlayerRow({
 export function TrainingView({
   authState,
   checkInActions,
+  exerciseActions,
   exposureActions,
+  metricActions,
   onOpenLibraryItem,
   onNavigate,
   onSessionChange,
@@ -275,6 +407,7 @@ export function TrainingView({
     sessionLog,
     clearError,
   } = checkInActions
+  const signedInUserId = authState.status === 'signed-in' ? authState.user.id : null
   const blockSyncAttention = shouldShowSyncAttention(sessionBlockActions.syncOverview)
   const exposureSyncAttention = shouldShowSyncAttention(exposureActions.syncOverview)
   const showSyncAttention = shouldShowSyncAttention(syncOverview)
@@ -297,9 +430,32 @@ export function TrainingView({
   const [liveObservationCategory, setLiveObservationCategory] = useState<LiveObservationCategory>('Movement')
   const [liveObservationText, setLiveObservationText] = useState('')
   const [liveObservationFeedback, setLiveObservationFeedback] = useState<string | null>(null)
-  const [liveModeState, setLiveModeState] = useState({ sessionId: selectedSession.id, started: false })
-  const isLiveModeStarted = liveModeState.sessionId === selectedSession.id && liveModeState.started
-  const showLiveStepper = isLiveModeStarted || sessionBlockActions.blockLogs.length > 0
+  const [liveModeState, setLiveModeState] = useState({
+    collapsed: readTrainingCollapsed(signedInUserId, selectedSession.id),
+    currentBlockKey: null as string | null,
+    sessionId: selectedSession.id,
+    started: false,
+  })
+  const [restartConfirmSessionId, setRestartConfirmSessionId] = useState<string | null>(null)
+  const [trainingPlayerFilter, setTrainingPlayerFilter] = useState<TrainingPlayerFilter>('open')
+  const [trainingPlayerSearch, setTrainingPlayerSearch] = useState('')
+  const [trainingClusterFilter, setTrainingClusterFilter] = useState('offen')
+  const hasTrainingProgress = sessionBlockActions.blockLogs.length > 0
+  const isLiveModeForSession = liveModeState.sessionId === selectedSession.id
+  const isLiveModeStarted = isLiveModeForSession && liveModeState.started
+  const isLiveCollapsed = isLiveModeForSession
+    ? liveModeState.collapsed
+    : readTrainingCollapsed(signedInUserId, selectedSession.id)
+  const showLiveStepper = isLiveModeStarted && !isLiveCollapsed
+  const currentLiveBlockKey = isLiveModeForSession ? liveModeState.currentBlockKey : null
+  const currentLiveBlock =
+    selectedSession.timeline.find((block) => block.key === currentLiveBlockKey) ?? selectedSession.timeline[0]
+  const canResumeTraining = hasTrainingProgress || isLiveCollapsed
+  const trainingActionLabel = showLiveStepper ? 'Training laeuft' : canResumeTraining ? 'Training fortsetzen' : 'Training starten'
+  const activeExposureSummaryCount = sessionLog
+    ? exposureActions.summaries.filter((summary) => summary.sessionLogId === sessionLog.id && !summary.deletedAt).length
+    : 0
+  const showRestartConfirm = restartConfirmSessionId === selectedSession.id
 
   function handleSessionTextBlur(field: 'contactIndex' | 'speedExposureNote') {
     return (event: FormEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -316,6 +472,57 @@ export function TrainingView({
         status: 'in_progress',
       })
     }
+  }
+
+  function handleStartOrResumeTraining() {
+    writeTrainingCollapsed(signedInUserId, selectedSession.id, false)
+    setLiveModeState({
+      collapsed: false,
+      currentBlockKey: currentLiveBlockKey,
+      sessionId: selectedSession.id,
+      started: true,
+    })
+  }
+
+  function handleAbortTraining() {
+    writeTrainingCollapsed(signedInUserId, selectedSession.id, true)
+    setLiveModeState({
+      collapsed: true,
+      currentBlockKey: currentLiveBlockKey,
+      sessionId: selectedSession.id,
+      started: false,
+    })
+  }
+
+  function handleResetToStart() {
+    setLiveModeState({
+      collapsed: false,
+      currentBlockKey: firstBlockKey(selectedSession),
+      sessionId: selectedSession.id,
+      started: true,
+    })
+  }
+
+  async function handleRestartTraining() {
+    await sessionBlockActions.resetSessionBlockLogs()
+    await exposureActions.resetExposureSummaries(sessionLog?.id)
+    writeTrainingCollapsed(signedInUserId, selectedSession.id, false)
+    setRestartConfirmSessionId(null)
+    setLiveModeState({
+      collapsed: false,
+      currentBlockKey: firstBlockKey(selectedSession),
+      sessionId: selectedSession.id,
+      started: true,
+    })
+  }
+
+  function handleCurrentBlockChange(blockKey: string | null) {
+    setLiveModeState({
+      collapsed: false,
+      currentBlockKey: blockKey,
+      sessionId: selectedSession.id,
+      started: true,
+    })
   }
 
   function handleLiveObservationSubmit(event: FormEvent<HTMLFormElement>) {
@@ -349,6 +556,53 @@ export function TrainingView({
     setLiveObservationText('')
   }
 
+  function playerHasOpenTask(player: Player) {
+    const entry = getEntryForPlayer(player)
+    const trafficLight = entry.trafficLight ?? entry.trafficLightSuggestion
+
+    return (
+      trafficLight === 'yellow' ||
+      trafficLight === 'red' ||
+      entry.limits.length > 0 ||
+      entry.returnerFlag === 'ja' ||
+      player.returnerStatus === 'ja' ||
+      Boolean(returnerCapByPlayerId.get(player.id)) ||
+      blockHasOpenCaptureTask(currentLiveBlock, player, metricActions, exerciseActions)
+    )
+  }
+
+  const filteredTrainingPlayers = orderedPlayers.filter((player) => {
+    const entry = getEntryForPlayer(player)
+    const trafficLight = entry.trafficLight ?? entry.trafficLightSuggestion
+    const searchMatches = player.name.toLocaleLowerCase('de-AT').includes(trainingPlayerSearch.toLocaleLowerCase('de-AT'))
+
+    if (!searchMatches) {
+      return false
+    }
+
+    if (trainingPlayerFilter === 'present') {
+      return entry.present
+    }
+
+    if (trainingPlayerFilter === 'warning') {
+      return trafficLight === 'yellow' || trafficLight === 'red'
+    }
+
+    if (trainingPlayerFilter === 'returner') {
+      return entry.returnerFlag === 'ja' || player.returnerStatus === 'ja' || Boolean(returnerCapByPlayerId.get(player.id))
+    }
+
+    if (trainingPlayerFilter === 'cluster') {
+      return player.cluster === trainingClusterFilter
+    }
+
+    if (trainingPlayerFilter === 'open') {
+      return playerHasOpenTask(player)
+    }
+
+    return true
+  })
+
   if (authState.status !== 'signed-in') {
     return (
       <div className="content-stack">
@@ -378,12 +632,27 @@ export function TrainingView({
           <button
             className="primary-action"
             type="button"
-            onClick={() => setLiveModeState({ sessionId: selectedSession.id, started: true })}
+            onClick={handleStartOrResumeTraining}
             disabled={showLiveStepper}
           >
             <Play className="nav-icon" aria-hidden />
-            <span>{showLiveStepper ? 'Training laeuft' : 'Training starten'}</span>
+            <span>{trainingActionLabel}</span>
           </button>
+          {showLiveStepper ? (
+            <>
+              <button className="secondary-action" type="button" onClick={handleAbortTraining}>
+                Training abbrechen
+              </button>
+              <button className="secondary-action" type="button" onClick={handleResetToStart}>
+                Zurueck zum Start
+              </button>
+            </>
+          ) : null}
+          {hasTrainingProgress || activeExposureSummaryCount > 0 ? (
+            <button className="secondary-action" type="button" onClick={() => setRestartConfirmSessionId(selectedSession.id)}>
+              Training neu starten
+            </button>
+          ) : null}
           {syncOverview.status === 'error' ? (
             <button className="secondary-action" type="button" onClick={runSync} disabled={isLoading}>
               <RefreshCw className="nav-icon" aria-hidden />
@@ -497,13 +766,44 @@ export function TrainingView({
         </div>
       ) : null}
 
+      {showRestartConfirm ? (
+        <section className="panel error-panel" role="alert" aria-labelledby="restart-training-heading">
+          <strong id="restart-training-heading">Training neu starten?</strong>
+          <span>
+            Es werden {sessionBlockActions.blockLogs.length} Blockstatus und {activeExposureSummaryCount} Exposure-Summary
+            {activeExposureSummaryCount === 1 ? '' : 's'} fuer diese Session zurueckgesetzt.
+          </span>
+          <span>Check-ins bleiben erhalten. sRPE/Pain/E2, Metrics, Exercise-Results, Progression und Baselines bleiben erhalten.</span>
+          <div className="button-row training-actions">
+            <button
+              className="segmented danger"
+              type="button"
+              onClick={() => {
+                void handleRestartTraining()
+              }}
+              disabled={sessionBlockActions.isLoading || exposureActions.isLoading}
+            >
+              Neu starten
+            </button>
+            <button className="segmented" type="button" onClick={() => setRestartConfirmSessionId(null)}>
+              Abbrechen
+            </button>
+          </div>
+        </section>
+      ) : null}
+
       {showLiveStepper ? (
         <LiveSessionStepper
           blockLogs={sessionBlockActions.blockLogs}
+          currentBlockKey={currentLiveBlockKey}
+          exerciseActions={exerciseActions}
           isSavingDisabled={isLoading || sessionBlockActions.isLoading}
+          metricActions={metricActions}
+          onCurrentBlockKeyChange={handleCurrentBlockChange}
           onSaveBlockLog={(blockKey, patch) => {
             void sessionBlockActions.saveBlockLog(blockKey, patch)
           }}
+          players={orderedPlayers}
           session={selectedSession}
         />
       ) : null}
@@ -692,21 +992,61 @@ export function TrainingView({
           <UserCheck className="nav-icon" aria-hidden />
           <h3>Spieler Quick Actions</h3>
         </div>
+        <div className="training-coach-fields">
+          <label className="inline-field">
+            <span>Suche</span>
+            <input
+              value={trainingPlayerSearch}
+              placeholder="Spieler suchen"
+              onChange={(event) => setTrainingPlayerSearch(event.target.value)}
+            />
+          </label>
+          <div className="control-group">
+            <span>Filter</span>
+            <div className="button-row">
+              {playerFilterOptions.map((option) => (
+                <button
+                  className={trainingPlayerFilter === option.value ? 'segmented active' : 'segmented'}
+                  key={option.value}
+                  type="button"
+                  onClick={() => setTrainingPlayerFilter(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {trainingPlayerFilter === 'cluster' ? (
+            <label className="inline-field">
+              <span>Cluster</span>
+              <select value={trainingClusterFilter} onChange={(event) => setTrainingClusterFilter(event.target.value)}>
+                {clusterOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
         <div className="training-player-list">
-          {orderedPlayers.map((player) => (
+          {filteredTrainingPlayers.map((player) => (
             <TrainingPlayerRow
               entry={getEntryForPlayer(player)}
               isSavingDisabled={isLoading}
               key={player.id}
-            onSave={(selectedPlayer, patch) => {
-              void saveEntry(selectedPlayer, patch)
-            }}
-            player={player}
-            returnerCap={returnerCapByPlayerId.get(player.id)}
-            warning={warningByPlayerId.get(player.id)}
-          />
+              onSave={(selectedPlayer, patch) => {
+                void saveEntry(selectedPlayer, patch)
+              }}
+              player={player}
+              returnerCap={returnerCapByPlayerId.get(player.id)}
+              warning={warningByPlayerId.get(player.id)}
+            />
           ))}
         </div>
+        {activePlayers.length > 0 && filteredTrainingPlayers.length === 0 ? (
+          <p className="action-feedback visible">Keine Spieler fuer diesen Filter.</p>
+        ) : null}
         {activePlayers.length === 0 ? (
           <section className="placeholder">
             <UserCheck className="placeholder-icon" aria-hidden />

@@ -1,6 +1,7 @@
-import { Camera, RefreshCw, Save, Search, Trash2, UserMinus, UserPlus, Users, X } from 'lucide-react'
+import { Camera, RefreshCw, Search, Settings, Trash2, UserMinus, UserPlus, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
 import { sprint30mOptionalLabel } from '../domain/baseline'
+import { metricDefinitions, type MetricDefinition } from '../content/metricDefinitions'
 import { formatExerciseResult, getExerciseDefinition, type ExerciseResult } from '../domain/exercises'
 import { exposureTypes, type PlayerExposureSummary } from '../domain/exposures'
 import { getMetricDefinition, type MetricResult } from '../domain/metrics'
@@ -12,12 +13,8 @@ import {
   photoConsentOptions,
   playerToFormValues,
   returnerStatusOptions,
-  type ConsentStatus,
-  type PhotoConsentStatus,
   type Player,
-  type PlayerCluster,
   type PlayerFormValues,
-  type ReturnerStatus,
 } from '../domain/players'
 import type { AuthSessionState } from '../lib/auth'
 import { triggerHapticFeedback } from '../lib/interactionFeedback'
@@ -26,6 +23,7 @@ import { refreshRemoteExerciseResults } from '../lib/exerciseRepository'
 import { refreshRemoteMetricResults } from '../lib/metricRepository'
 import { downloadPlayerPhotoUrl } from '../lib/playerRepository'
 import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
+import type { useMetrics } from '../hooks/useMetrics'
 import type { usePlayers } from '../hooks/usePlayers'
 import { usePlayerProfiles } from '../hooks/usePlayerProfiles'
 import type { PlayerProfileSummary } from '../domain/playerProfile'
@@ -37,18 +35,22 @@ import {
   ReturnerAnalysis,
   TrainingAnalysis,
 } from './PlayerAnalysisCharts'
+import { PlayerEditorForm } from './PlayerEditorForm'
 
 type PlayerActions = ReturnType<typeof usePlayers>
+type MetricActions = ReturnType<typeof useMetrics>
 
 type PlayersViewProps = {
   authState: AuthSessionState
   canOpenSourceSession?: (source: PlayerAnalysisSource) => boolean
   onOpenSourceSession?: (source: PlayerAnalysisSource) => void
+  metricActions?: MetricActions
+  metricSessionLabel?: string
   playerActions: PlayerActions
   todayKey?: string
 }
 
-type PlayerDetailTab = 'overview' | 'training' | 'tests' | 'load' | 'issues' | 'returner' | 'edit'
+type PlayerDetailTab = 'overview' | 'training' | 'tests' | 'load' | 'issues' | 'returner'
 
 const playerDetailTabs: Array<{ id: PlayerDetailTab; label: string }> = [
   { id: 'overview', label: 'Übersicht' },
@@ -57,7 +59,6 @@ const playerDetailTabs: Array<{ id: PlayerDetailTab; label: string }> = [
   { id: 'load', label: 'Load' },
   { id: 'issues', label: 'Issues' },
   { id: 'returner', label: 'Returner' },
-  { id: 'edit', label: 'Bearbeiten' },
 ]
 
 const attendanceLabels = {
@@ -250,6 +251,49 @@ function MetricCard({ label, value }: { label: string; value: ReactNode }) {
   )
 }
 
+const editableProfileMetricDefinitions = metricDefinitions.filter(
+  (definition) =>
+    definition.active &&
+    (definition.key === 'broad_jump' || definition.key === 'med_ball_chest_pass' || definition.key === 'sprint_10m'),
+)
+
+function baselineFallbackForMetric(profile: PlayerProfileSummary | undefined, metricKey: string) {
+  if (!profile?.latestBaseline) {
+    return null
+  }
+
+  if (metricKey === 'broad_jump') {
+    return profile.latestBaseline.broadJumpCm
+  }
+
+  if (metricKey === 'med_ball_chest_pass') {
+    return profile.latestBaseline.medBallChestPassM
+  }
+
+  return null
+}
+
+function latestMetricForKey(profile: PlayerProfileSummary | undefined, metricKey: string) {
+  return profile?.recentMetrics.find((result) => result.metricKey === metricKey) ?? null
+}
+
+function displayProfileMetricValue(
+  profile: PlayerProfileSummary | undefined,
+  definition: MetricDefinition,
+): { label: string; source: 'metric' | 'baseline' | 'missing' } {
+  const metric = latestMetricForKey(profile, definition.key)
+  if (metric) {
+    return { label: `${metric.value} ${definition.unit}`, source: 'metric' }
+  }
+
+  const fallback = baselineFallbackForMetric(profile, definition.key)
+  if (fallback !== null) {
+    return { label: `${fallback} ${definition.unit}`, source: 'baseline' }
+  }
+
+  return { label: '-', source: 'missing' }
+}
+
 function ProfileSection({
   children,
   emptyText,
@@ -270,7 +314,16 @@ function ProfileSection({
 function PlayerDetailView({
   activeTab,
   canOpenSourceSession,
-  editContent,
+  metricActions,
+  metricDrafts,
+  metricError,
+  metricNotice,
+  metricSessionLabel,
+  isModal,
+  onClose,
+  onEdit,
+  onMetricDraftChange,
+  onMetricSave,
   onPhotoLoadError,
   onOpenSourceSession,
   onTabChange,
@@ -280,7 +333,16 @@ function PlayerDetailView({
 }: {
   activeTab: PlayerDetailTab
   canOpenSourceSession?: (source: PlayerAnalysisSource) => boolean
-  editContent: ReactNode
+  metricActions?: MetricActions
+  metricDrafts: Record<string, string>
+  metricError: string | null
+  metricNotice: string | null
+  metricSessionLabel?: string
+  isModal: boolean
+  onClose: () => void
+  onEdit: () => void
+  onMetricDraftChange: (metricKey: string, value: string) => void
+  onMetricSave: (definition: MetricDefinition) => Promise<void> | void
   onPhotoLoadError: () => void
   onOpenSourceSession?: (source: PlayerAnalysisSource) => void
   onTabChange: (tab: PlayerDetailTab) => void
@@ -289,14 +351,29 @@ function PlayerDetailView({
   profile: PlayerProfileSummary | undefined
 }) {
   return (
-    <article className={`panel player-detail ${profileTrafficClass(profile)}`} aria-labelledby="player-detail-heading">
+    <article
+      className={`panel player-detail ${profileTrafficClass(profile)}`}
+      role={isModal ? 'dialog' : undefined}
+      aria-modal={isModal ? 'true' : undefined}
+      aria-labelledby="player-detail-heading"
+    >
       <div className="player-detail-heading">
-        <PlayerAvatar onPhotoLoadError={onPhotoLoadError} player={player} previewUrl={photoPreviewUrl} />
-        <div>
-          <p className="eyebrow">Spielerprofil</p>
-          <h3 id="player-detail-heading">{player.name}</h3>
-          <p>{player.position} · {optionLabel(clusterOptions, player.cluster)}</p>
-          <PlayerBadgeRow player={player} profile={profile} />
+        <div className="player-detail-title">
+          <PlayerAvatar onPhotoLoadError={onPhotoLoadError} player={player} previewUrl={photoPreviewUrl} />
+          <div>
+            <p className="eyebrow">Spielerprofil</p>
+            <h3 id="player-detail-heading">{player.name}</h3>
+            <p>{player.position} · {optionLabel(clusterOptions, player.cluster)}</p>
+            <PlayerBadgeRow player={player} profile={profile} />
+          </div>
+        </div>
+        <div className="player-detail-actions">
+          <button className="icon-button" type="button" aria-label="Spieler bearbeiten" onClick={onEdit}>
+            <Settings className="nav-icon" aria-hidden />
+          </button>
+          <button className="icon-button" type="button" aria-label="Spielerprofil schließen" onClick={onClose}>
+            <X className="nav-icon" aria-hidden />
+          </button>
         </div>
       </div>
 
@@ -405,6 +482,47 @@ function PlayerDetailView({
 
       {activeTab === 'tests' ? (
         <div className="player-profile-content">
+          <ProfileSection title="Direkt erfassen">
+            {metricSessionLabel ? (
+              <p className="privacy-note">Wird in Einheit {metricSessionLabel} als Versuch 1 erfasst.</p>
+            ) : null}
+            <div className="profile-test-grid" aria-label="Testwerte direkt bearbeiten">
+              {editableProfileMetricDefinitions.map((definition) => {
+                const displayedValue = displayProfileMetricValue(profile, definition)
+                return (
+                  <div className="profile-test-card" key={definition.key}>
+                    <div>
+                      <strong>{definition.name}</strong>
+                      <span>
+                        {displayedValue.label}
+                        {displayedValue.source === 'baseline' ? ' · Baseline-Fallback' : ''}
+                      </span>
+                    </div>
+                    <label>
+                      <span className="sr-only">{definition.name} Wert</span>
+                      <input
+                        aria-label={`${definition.name} Wert`}
+                        inputMode="decimal"
+                        placeholder={definition.unit}
+                        value={metricDrafts[definition.key] ?? ''}
+                        onChange={(event) => onMetricDraftChange(definition.key, event.target.value)}
+                      />
+                    </label>
+                    <button
+                      className="secondary-action compact-action"
+                      type="button"
+                      disabled={!metricActions || !(metricDrafts[definition.key] ?? '').trim()}
+                      onClick={() => onMetricSave(definition)}
+                    >
+                      {definition.name} speichern
+                    </button>
+                  </div>
+                )
+              })}
+            </div>
+            {metricNotice ? <p className="form-notice">{metricNotice}</p> : null}
+            {metricError ? <p className="form-error">{metricError}</p> : null}
+          </ProfileSection>
           <ProfileSection title="Mini-Baseline" emptyText="Noch keine Mini-Baseline erfasst.">
             {profile?.latestBaseline ? (
               <div className="metric-grid mini">
@@ -502,12 +620,19 @@ function PlayerDetailView({
         </div>
       ) : null}
 
-      {activeTab === 'edit' ? editContent : null}
     </article>
   )
 }
 
-export function PlayersView({ authState, canOpenSourceSession, onOpenSourceSession, playerActions, todayKey }: PlayersViewProps) {
+export function PlayersView({
+  authState,
+  canOpenSourceSession,
+  metricActions,
+  metricSessionLabel,
+  onOpenSourceSession,
+  playerActions,
+  todayKey,
+}: PlayersViewProps) {
   const { players, syncOverview, isLoading, runSync, savePlayer, deactivatePlayer, deletePlayer, uploadPlayerPhoto } =
     playerActions
   const { removePlayerPhoto } = playerActions
@@ -521,6 +646,14 @@ export function PlayersView({ authState, canOpenSourceSession, onOpenSourceSessi
   const [formError, setFormError] = useState<string | null>(null)
   const [formNotice, setFormNotice] = useState<string | null>(null)
   const [viewNotice, setViewNotice] = useState<string | null>(null)
+  const [metricDrafts, setMetricDrafts] = useState<Record<string, string>>({})
+  const [metricError, setMetricError] = useState<string | null>(null)
+  const [metricNotice, setMetricNotice] = useState<string | null>(null)
+  const [isMobileDetailOverlay, setIsMobileDetailOverlay] = useState(() =>
+    typeof window === 'undefined' || typeof window.matchMedia !== 'function'
+      ? true
+      : window.matchMedia('(max-width: 760px)').matches,
+  )
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState<Record<string, string>>({})
   const photoPreviewUrlsRef = useRef<Record<string, string>>({})
   const { clearPhotoLoadError, markPhotoLoadError, photoLoadError } = usePhotoLoadError()
@@ -532,6 +665,18 @@ export function PlayersView({ authState, canOpenSourceSession, onOpenSourceSessi
     [players, selectedPlayerId],
   )
   const selectedPlayerProfile = selectedPlayer ? profileActions.profilesByPlayerId[selectedPlayer.id] : undefined
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return undefined
+    }
+
+    const mediaQuery = window.matchMedia('(max-width: 760px)')
+    const updateMobileDetailOverlay = () => setIsMobileDetailOverlay(mediaQuery.matches)
+    updateMobileDetailOverlay()
+    mediaQuery.addEventListener('change', updateMobileDetailOverlay)
+    return () => mediaQuery.removeEventListener('change', updateMobileDetailOverlay)
+  }, [])
 
   useEffect(() => {
     if (authState.status !== 'signed-in' || !selectedPlayerId || (typeof navigator !== 'undefined' && !navigator.onLine)) {
@@ -575,6 +720,8 @@ export function PlayersView({ authState, canOpenSourceSession, onOpenSourceSessi
     setFormError(null)
     setFormNotice(null)
     setViewNotice(null)
+    setMetricError(null)
+    setMetricNotice(null)
     clearPhotoLoadError()
     setIsEditorOpen(true)
   }
@@ -586,8 +733,30 @@ export function PlayersView({ authState, canOpenSourceSession, onOpenSourceSessi
     setFormError(null)
     setFormNotice(null)
     setViewNotice(null)
+    setMetricError(null)
+    setMetricNotice(null)
     clearPhotoLoadError()
     setIsEditorOpen(false)
+  }
+
+  const closePlayerProfile = useCallback(() => {
+    setSelectedPlayerId(null)
+    setActiveDetailTab('overview')
+    setMetricDrafts({})
+    setMetricError(null)
+    setMetricNotice(null)
+  }, [])
+
+  function openSelectedPlayerEditor() {
+    if (!selectedPlayer) {
+      return
+    }
+
+    setFormValues(playerToFormValues(selectedPlayer))
+    setFormError(null)
+    setFormNotice(null)
+    setIsEditorOpen(true)
+    clearPhotoLoadError()
   }
 
   const closePlayerSheet = useCallback(() => {
@@ -612,15 +781,72 @@ export function PlayersView({ authState, canOpenSourceSession, onOpenSourceSessi
     return () => window.removeEventListener('keydown', handleKeyDown)
   }, [closePlayerSheet, isEditorOpen])
 
-  function handleDetailTabChange(tab: PlayerDetailTab) {
-    if (tab === 'edit' && selectedPlayer) {
-      setFormValues(playerToFormValues(selectedPlayer))
-      setFormError(null)
-      setFormNotice(null)
-      clearPhotoLoadError()
+  useEffect(() => {
+    if (!selectedPlayerId || isEditorOpen) {
+      return undefined
     }
 
+    function handleKeyDown(event: KeyboardEvent) {
+      if (event.key === 'Escape') {
+        closePlayerProfile()
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => window.removeEventListener('keydown', handleKeyDown)
+  }, [closePlayerProfile, isEditorOpen, selectedPlayerId])
+
+  function handleDetailTabChange(tab: PlayerDetailTab) {
     setActiveDetailTab(tab)
+  }
+
+  function updateMetricDraft(metricKey: string, value: string) {
+    setMetricDrafts((currentDrafts) => ({ ...currentDrafts, [metricKey]: value }))
+    setMetricError(null)
+    setMetricNotice(null)
+    metricActions?.clearError()
+  }
+
+  async function saveProfileMetric(definition: MetricDefinition) {
+    if (!selectedPlayer || !metricActions) {
+      return
+    }
+
+    const value = metricDrafts[definition.key]?.trim() ?? ''
+    if (!value) {
+      setMetricError('Bitte zuerst einen Wert eintragen.')
+      return
+    }
+
+    setMetricError(null)
+    setMetricNotice(null)
+    metricActions.clearError()
+    triggerHapticFeedback('selection')
+
+    try {
+      const result = await metricActions.savePlayerMetric(selectedPlayer, {
+        attempt: 1,
+        bodySide: 'none',
+        metricKey: definition.key,
+        value,
+      })
+      if (!result.ok) {
+        setMetricError(result.errorMessage)
+        triggerHapticFeedback('warning')
+        return
+      }
+      await Promise.all([metricActions.refreshMetrics(), profileActions.refreshPlayerProfiles()])
+      setMetricDrafts((currentDrafts) => {
+        const nextDrafts = { ...currentDrafts }
+        delete nextDrafts[definition.key]
+        return nextDrafts
+      })
+      setMetricNotice(`${definition.name} gespeichert.`)
+      triggerHapticFeedback('success')
+    } catch (caughtError) {
+      triggerHapticFeedback('warning')
+      setMetricError(caughtError instanceof Error ? caughtError.message : 'Testwert konnte nicht gespeichert werden.')
+    }
   }
 
   useEffect(
@@ -802,141 +1028,47 @@ export function PlayersView({ authState, canOpenSourceSession, onOpenSourceSessi
   }
 
   const playerForm = (
-    <form className="field-form player-form" onSubmit={handleSubmit}>
-          <label>
-            <span>Name</span>
-            <input
-              value={formValues.name}
-              onChange={(event) => updateField('name', event.target.value)}
-              required
-            />
-          </label>
-
-          <label>
-            <span>Position</span>
-            <input
-              value={formValues.position}
-              placeholder="z. B. Prop, Lock, 9, Centre"
-              onChange={(event) => updateField('position', event.target.value)}
-            />
-          </label>
-
-          <div className="form-grid">
-            <label>
-              <span>Cluster</span>
-              <select
-                value={formValues.cluster}
-                onChange={(event) => updateField('cluster', event.target.value as PlayerCluster)}
-              >
-                {clusterOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              <span>Consent</span>
-              <select
-                value={formValues.consentStatus}
-                onChange={(event) => updateField('consentStatus', event.target.value as ConsentStatus)}
-              >
-                {consentStatusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              <span>Returner</span>
-              <select
-                value={formValues.returnerStatus}
-                onChange={(event) => updateField('returnerStatus', event.target.value as ReturnerStatus)}
-              >
-                {returnerStatusOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-
-            <label>
-              <span>Foto-Erlaubnis</span>
-              <select
-                value={formValues.photoConsentStatus}
-                onChange={(event) => updateField('photoConsentStatus', event.target.value as PhotoConsentStatus)}
-              >
-                {photoConsentOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          </div>
-
-          <label className="toggle-row">
-            <input
-              type="checkbox"
-              checked={formValues.active}
-              onChange={(event) => updateField('active', event.target.checked)}
-            />
-            <span>Aktiv</span>
-          </label>
-
-          <label>
-            <span>Coach-Notizen, keine Diagnosen</span>
-            <textarea
-              value={formValues.notes}
-              rows={4}
-              onChange={(event) => updateField('notes', event.target.value)}
-            />
-          </label>
-
-          <div className="form-actions">
-            <button className="primary-action" type="submit" disabled={isSubmitting}>
-              <Save className="nav-icon" aria-hidden />
-              <span>{isSubmitting ? 'Speichert...' : 'Speichern'}</span>
+    <PlayerEditorForm
+      actionChildren={
+        selectedPlayer ? (
+          <>
+            <button className="secondary-action danger" type="button" onClick={handleDeactivate}>
+              <UserMinus className="nav-icon" aria-hidden />
+              <span>Deaktivieren</span>
             </button>
-            {selectedPlayer ? (
-              <button className="secondary-action danger" type="button" onClick={handleDeactivate}>
-                <UserMinus className="nav-icon" aria-hidden />
-                <span>Deaktivieren</span>
-              </button>
-            ) : null}
-            {selectedPlayer ? (
-              <button className="secondary-action danger" type="button" onClick={handleDelete}>
-                <Trash2 className="nav-icon" aria-hidden />
-                <span>Loeschen</span>
-              </button>
-            ) : null}
-          </div>
-
-          {selectedPlayer && selectedPlayer.photoConsentStatus === 'allowed' ? (
-            <div className="photo-actions">
-              <label className="secondary-action file-action">
-                <Camera className="nav-icon" aria-hidden />
-                <span>Foto aufnehmen/waehlen</span>
-                <input type="file" accept="image/jpeg,image/webp,image/png" onChange={handlePhotoChange} />
-              </label>
-              {selectedPlayer.photoPath ? (
-                <button className="secondary-action danger" type="button" onClick={handlePhotoRemove}>
-                  <Trash2 className="nav-icon" aria-hidden />
-                  <span>Foto entfernen</span>
-                </button>
-              ) : null}
-            </div>
+            <button className="secondary-action danger" type="button" onClick={handleDelete}>
+              <Trash2 className="nav-icon" aria-hidden />
+              <span>Loeschen</span>
+            </button>
+          </>
+        ) : null
+      }
+      formError={formError}
+      formNotice={formNotice}
+      isSubmitting={isSubmitting}
+      onFieldChange={updateField}
+      onSubmit={handleSubmit}
+      photoLoadError={photoLoadError}
+      values={formValues}
+    >
+      {selectedPlayer && selectedPlayer.photoConsentStatus === 'allowed' ? (
+        <div className="photo-actions">
+          <label className="secondary-action file-action">
+            <Camera className="nav-icon" aria-hidden />
+            <span>Foto aufnehmen/waehlen</span>
+            <input type="file" accept="image/jpeg,image/webp,image/png" onChange={handlePhotoChange} />
+          </label>
+          {selectedPlayer.photoPath ? (
+            <button className="secondary-action danger" type="button" onClick={handlePhotoRemove}>
+              <Trash2 className="nav-icon" aria-hidden />
+              <span>Foto entfernen</span>
+            </button>
           ) : null}
-
-          {formNotice ? <p className="form-notice">{formNotice}</p> : null}
-          {photoLoadError ? <p className="form-error">Profilfoto konnte nicht geladen werden.</p> : null}
-          {formError ? <p className="form-error">{formError}</p> : null}
-    </form>
+        </div>
+      ) : null}
+    </PlayerEditorForm>
   )
+  const visibleMetricError = metricError ?? metricActions?.errorMessage ?? null
 
   return (
     <section className={selectedPlayer ? 'players-layout has-detail' : 'players-layout'} aria-labelledby="players-heading">
@@ -1028,11 +1160,29 @@ export function PlayersView({ authState, canOpenSourceSession, onOpenSourceSessi
         </div>
       </aside>
 
+      {selectedPlayer && !isEditorOpen && isMobileDetailOverlay ? (
+        <button
+          className="player-detail-backdrop"
+          type="button"
+          aria-label="Spielerprofil-Hintergrund schließen"
+          onClick={closePlayerProfile}
+        />
+      ) : null}
+
       {selectedPlayer ? (
         <PlayerDetailView
           activeTab={activeDetailTab}
           canOpenSourceSession={canOpenSourceSession}
-          editContent={playerForm}
+          metricActions={metricActions}
+          metricDrafts={metricDrafts}
+          metricError={visibleMetricError}
+          metricNotice={metricNotice}
+          metricSessionLabel={metricSessionLabel}
+          isModal={isMobileDetailOverlay}
+          onClose={closePlayerProfile}
+          onEdit={openSelectedPlayerEditor}
+          onMetricDraftChange={updateMetricDraft}
+          onMetricSave={saveProfileMetric}
           onPhotoLoadError={markPhotoLoadError}
           onOpenSourceSession={onOpenSourceSession}
           onTabChange={handleDetailTabChange}

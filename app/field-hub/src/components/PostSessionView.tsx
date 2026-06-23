@@ -23,9 +23,10 @@ import {
   type ExerciseResultPatch,
   type ExerciseVariant,
 } from '../domain/exercises'
-import { formatMetricValue, parseOptionalMetricValue, type MetricResult, type MetricResultPatch } from '../domain/metrics'
+import { formatMetricValue, getMetricDefinition, parseOptionalMetricValue, type MetricResult, type MetricResultPatch } from '../domain/metrics'
 import type { PlayerSessionEntry, PlayerWarning } from '../domain/checkIn'
 import { derivePostSessionCompletion, type PostSessionCompletion } from '../domain/postSessionCompletion'
+import { deriveMissingPostSessionValues, type MissingPostSessionValue } from '../domain/postSessionMissingValues'
 import type { Player } from '../domain/players'
 import type { ReturnerCapSummary } from '../domain/returners'
 import type { SessionBlockLog } from '../domain/sessionBlocks'
@@ -202,6 +203,214 @@ function ClosureChecklist({ completion }: { completion: PostSessionCompletion })
           ))}
         </div>
       ) : null}
+    </section>
+  )
+}
+
+function MissingValuesPanel({
+  isMetricSavingDisabled,
+  isPostSavingDisabled,
+  items,
+  onMetricParseError,
+  onMetricSave,
+  onNavigate,
+  onPostSave,
+  onProgressSave,
+  onSessionSave,
+  playersById,
+}: {
+  isMetricSavingDisabled: boolean
+  isPostSavingDisabled: boolean
+  items: MissingPostSessionValue[]
+  onMetricParseError: (message: string | null) => void
+  onMetricSave: MetricActions['savePlayerMetric']
+  onNavigate: (tab: HubTab) => void
+  onPostSave: PostSessionActions['savePlayerPostSession']
+  onProgressSave: PostSessionActions['savePlayerProgress']
+  onSessionSave: PostSessionActions['saveSessionPatch']
+  playersById: Map<string, Player>
+}) {
+  if (items.length === 0) {
+    return null
+  }
+
+  function saveMetric(player: Player, item: MissingPostSessionValue, rawValue: string) {
+    if (!item.metricKey) {
+      return
+    }
+
+    if (!rawValue) {
+      onMetricParseError(null)
+      return
+    }
+
+    const parsedValue = parseOptionalMetricValue(rawValue)
+    if (parsedValue === null) {
+      onMetricParseError('Metric-Wert muss eine Zahl sein.')
+      return
+    }
+
+    onMetricParseError(null)
+    void onMetricSave(player, {
+      metricKey: item.metricKey,
+      value: parsedValue,
+      attempt: 1,
+      bodySide: 'none',
+      contextNote: '',
+    })
+  }
+
+  function renderAction(item: MissingPostSessionValue) {
+    if (item.kind === 'missing_duration') {
+      return (
+        <label className="inline-field compact-missing-input">
+          <span>Minuten</span>
+          <input
+            disabled={isPostSavingDisabled}
+            inputMode="numeric"
+            placeholder="z. B. 75"
+            onBlur={(event) => {
+              const rawValue = event.currentTarget.value.trim()
+              const parsedValue = rawValue ? Number(rawValue) : null
+              if (parsedValue !== null && (!Number.isFinite(parsedValue) || parsedValue < 0)) {
+                return
+              }
+
+              void onSessionSave({ durationMinutes: parsedValue })
+            }}
+          />
+        </label>
+      )
+    }
+
+    if (item.kind === 'backup_export') {
+      return (
+        <button className="secondary-action compact-action" type="button" onClick={() => onNavigate('export')}>
+          Export
+        </button>
+      )
+    }
+
+    const player = item.playerId ? playersById.get(item.playerId) : undefined
+    if (!player) {
+      return null
+    }
+
+    if (item.kind === 'missing_srpe' || item.kind === 'missing_post_pain') {
+      return (
+        <div className="button-row compact pain-scale missing-value-scale">
+          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
+            <button
+              className="number-chip"
+              disabled={isPostSavingDisabled}
+              key={value}
+              type="button"
+              onClick={() => {
+                const patch = item.kind === 'missing_srpe' ? { sessionRpe: value } : { postPainScore: value }
+                void onPostSave(player, patch)
+              }}
+            >
+              {value}
+            </button>
+          ))}
+        </div>
+      )
+    }
+
+    if (item.kind === 'missing_e2') {
+      return (
+        <div className="button-row compact">
+          {e2Options.map((option) => (
+            <button
+              className="segmented"
+              disabled={isPostSavingDisabled}
+              key={option.value}
+              type="button"
+              onClick={() => void onPostSave(player, { e2Decision: option.value })}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )
+    }
+
+    if (item.kind === 'missing_next_step') {
+      return (
+        <div className="button-row compact">
+          {nextStepOptions.map((option) => (
+            <button
+              className="segmented"
+              disabled={isPostSavingDisabled}
+              key={option.value}
+              type="button"
+              onClick={() => void onProgressSave(player, { nextStep: option.value })}
+            >
+              {option.label}
+            </button>
+          ))}
+        </div>
+      )
+    }
+
+    if (item.kind === 'missing_progression') {
+      return (
+        <label className="inline-field compact-missing-input">
+          <span>Hauptuebung</span>
+          <input
+            disabled={isPostSavingDisabled}
+            placeholder="z. B. Trap Bar"
+            onBlur={(event) => {
+              const value = event.currentTarget.value.trim()
+              if (value) {
+                void onProgressSave(player, { mainExercise: value })
+              }
+            }}
+          />
+        </label>
+      )
+    }
+
+    if (item.kind === 'missing_metric' && item.metricKey) {
+      const definition = getMetricDefinition(item.metricKey)
+      return (
+        <label className="inline-field compact-missing-input">
+          <span>{definition.unit}</span>
+          <input
+            disabled={isMetricSavingDisabled}
+            inputMode="decimal"
+            placeholder={definition.unit}
+            onBlur={(event) => saveMetric(player, item, event.currentTarget.value.trim())}
+          />
+        </label>
+      )
+    }
+
+    return null
+  }
+
+  return (
+    <section className="panel missing-values-panel" aria-labelledby="missing-values-heading">
+      <div className="library-heading">
+        <p className="eyebrow">Nachzutragen</p>
+        <h3 id="missing-values-heading">Offene Werte und Aufgaben</h3>
+        <p>Fehlende Pflichtwerte zuerst erfassen; optionale Testwerte bleiben bewusst kein Abschlussblocker.</p>
+      </div>
+
+      <div className="missing-values-list">
+        {items.map((item) => (
+          <article className={`missing-value-row missing-value-${item.severity}`} key={item.id}>
+            <div className="missing-value-copy">
+              <span className="tag compact">
+                {item.severity === 'required' ? 'Pflicht' : item.severity === 'expected' ? 'Erwartet' : 'Optional'}
+              </span>
+              <strong>{item.playerName ? `${item.playerName}: ${item.label}` : item.label}</strong>
+              <p>{item.helperText}</p>
+            </div>
+            <div className="missing-value-action">{renderAction(item)}</div>
+          </article>
+        ))}
+      </div>
     </section>
   )
 }
@@ -1021,6 +1230,16 @@ export function PostSessionView({
     baselineEntries: baselineActions.entries,
     lastExportAt,
   })
+  const missingValues = deriveMissingPostSessionValues({
+    activePlayers,
+    sessionLog,
+    sessionType: selectedSession.type,
+    entries,
+    progressEntries,
+    metricResults: metricActions.entries,
+    lastExportAt,
+  })
+  const playersById = new Map(activePlayers.map((player) => [player.id, player]))
 
   function handleSessionNumberBlur(field: 'durationMinutes' | 'groupSize') {
     return (event: FormEvent<HTMLInputElement>) => {
@@ -1112,6 +1331,19 @@ export function PostSessionView({
           </strong>
         </div>
       </div>
+
+      <MissingValuesPanel
+        isMetricSavingDisabled={metricActions.isLoading}
+        isPostSavingDisabled={isLoading}
+        items={missingValues}
+        onMetricParseError={setMetricFormError}
+        onMetricSave={metricActions.savePlayerMetric}
+        onNavigate={onNavigate}
+        onPostSave={savePlayerPostSession}
+        onProgressSave={savePlayerProgress}
+        onSessionSave={saveSessionPatch}
+        playersById={playersById}
+      />
 
       <ClosureChecklist completion={completion} />
 

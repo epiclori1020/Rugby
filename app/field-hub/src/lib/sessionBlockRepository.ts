@@ -128,7 +128,6 @@ export async function saveSessionBlockLog(
   const existing = await localDb.sessionBlockLogs
     .where('[userId+sessionLogId+blockKey]')
     .equals([userId, sessionLogId, blockKey])
-    .and((entry) => !entry.deletedAt)
     .first()
   const status = patch.status ?? existing?.status ?? 'planned'
   const reason = patch.reason ?? existing?.reason ?? 'none'
@@ -149,7 +148,7 @@ export async function saveSessionBlockLog(
     coachNote: patch.coachNote !== undefined ? patch.coachNote.trim() : (existing?.coachNote ?? ''),
     createdAt: existing?.createdAt ?? timestamp,
     updatedAt: timestamp,
-    deletedAt: existing?.deletedAt ?? null,
+    deletedAt: null,
     clientUpdatedAt: timestamp,
     syncStatus: 'pending',
     syncError: null,
@@ -159,6 +158,30 @@ export async function saveSessionBlockLog(
   await queueSessionBlockWrite(entry)
 
   return entry
+}
+
+export async function resetSessionBlockLogsForSession(userId: string, sessionLogId: string) {
+  const entries = await localDb.sessionBlockLogs
+    .where('[userId+sessionLogId]')
+    .equals([userId, sessionLogId])
+    .and((entry) => !entry.deletedAt)
+    .toArray()
+  const timestamp = nowIso()
+
+  for (const entry of entries) {
+    const deletedEntry: SessionBlockLog = {
+      ...entry,
+      deletedAt: timestamp,
+      updatedAt: timestamp,
+      clientUpdatedAt: timestamp,
+      syncStatus: 'pending',
+      syncError: null,
+    }
+    await localDb.sessionBlockLogs.put(deletedEntry)
+    await queueSessionBlockWrite(deletedEntry)
+  }
+
+  return { resetCount: entries.length }
 }
 
 export async function getSessionBlockSyncOverview(userId: string): Promise<PlayerSyncOverview> {

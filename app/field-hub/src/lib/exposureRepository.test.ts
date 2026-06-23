@@ -6,6 +6,7 @@ import type { SessionBlockLog } from '../domain/sessionBlocks'
 import {
   getExposureSyncOverview,
   listExposureSummariesForSession,
+  resetExposureSummariesForSession,
   rowFromExposureSummary,
   saveManualExposureOverride,
   savePlayerExposureSummaries,
@@ -196,6 +197,65 @@ describe('exposureRepository', () => {
     expect(updated.manualOverrides.speed?.note).toBe('Coach Override')
     await expect(listExposureSummariesForSession(userId, sessionLog.id)).resolves.toMatchObject([
       { statuses: { speed: 'reduced' } },
+    ])
+  })
+
+  it('soft-deletes active summaries for one session including manual overrides', async () => {
+    const [summary] = await savePlayerExposureSummaries(userId, {
+      sessionLog,
+      sessionDefinition,
+      blockLogs: [blockLog],
+      entries: [entry],
+      returnerCaps: [],
+    })
+    await saveManualExposureOverride(userId, summary.id, 'speed', {
+      status: 'reduced',
+      note: 'Coach Override',
+    })
+
+    await expect(resetExposureSummariesForSession(userId, sessionLog.id)).resolves.toEqual({ resetCount: 1 })
+    await expect(listExposureSummariesForSession(userId, sessionLog.id)).resolves.toEqual([])
+
+    const deleted = await localDb.playerExposureSummaries.get(summary.id)
+    expect(deleted?.deletedAt).toBeTruthy()
+    expect(deleted?.manualOverrides.speed?.note).toBe('Coach Override')
+    expect(deleted?.syncStatus).toBe('pending')
+    await expect(localDb.pendingWrites.toArray()).resolves.toMatchObject([
+      { table: 'player_exposure_summaries', recordId: summary.id, operation: 'upsert' },
+    ])
+  })
+
+  it('reuses a soft-deleted summary when regenerating the same player and session', async () => {
+    const [summary] = await savePlayerExposureSummaries(userId, {
+      sessionLog,
+      sessionDefinition,
+      blockLogs: [blockLog],
+      entries: [entry],
+      returnerCaps: [],
+    })
+
+    await resetExposureSummariesForSession(userId, sessionLog.id)
+
+    const regenerated = await savePlayerExposureSummaries(userId, {
+      sessionLog,
+      sessionDefinition,
+      blockLogs: [blockLog],
+      entries: [entry],
+      returnerCaps: [],
+    })
+
+    expect(regenerated).toHaveLength(1)
+    expect(regenerated[0].id).toBe(summary.id)
+    expect(regenerated[0].deletedAt).toBeNull()
+    await expect(
+      localDb.playerExposureSummaries
+        .where('[userId+sessionLogId]')
+        .equals([userId, sessionLog.id])
+        .and((candidate) => candidate.playerId === entry.playerId)
+        .toArray(),
+    ).resolves.toHaveLength(1)
+    await expect(localDb.pendingWrites.toArray()).resolves.toMatchObject([
+      { table: 'player_exposure_summaries', recordId: summary.id, operation: 'upsert' },
     ])
   })
 

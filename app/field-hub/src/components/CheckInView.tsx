@@ -1,5 +1,5 @@
-import { AlertTriangle, ClipboardCheck, FileText, Link2, Plus, RefreshCw, ShieldAlert, UserCheck, X } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { ClipboardCheck, FileText, Link2, Plus, RefreshCw, Settings, ShieldAlert, UserCheck, X } from 'lucide-react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { HubTab } from '../App'
 import type { SessionDefinition } from '../content/types'
 import type {
@@ -20,7 +20,12 @@ import {
   splitCheckInTextList,
   toggleCheckInTextListValue,
 } from '../domain/checkIn'
-import type { Player } from '../domain/players'
+import {
+  buildCheckInGuidance,
+  type CheckInGuidanceItem,
+  type CheckInGuidanceLevel,
+} from '../domain/checkInWarningGuidance'
+import { playerToFormValues, type Player, type PlayerFormValues } from '../domain/players'
 import type { ReturnerCapSummary } from '../domain/returners'
 import type { useCheckIns } from '../hooks/useCheckIns'
 import type { usePlayers } from '../hooks/usePlayers'
@@ -37,6 +42,7 @@ import {
 } from '../lib/publicCheckInShare'
 import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
 import { PublicCheckInSharePanel } from './PublicCheckInSharePanel'
+import { PlayerEditorForm } from './PlayerEditorForm'
 import { SessionPicker } from './SessionPicker'
 
 type CheckInActions = ReturnType<typeof useCheckIns>
@@ -133,6 +139,22 @@ type NativeShareStatus = 'idle' | 'sharing' | 'shared' | 'aborted' | 'error'
 type CopyStatus = 'idle' | 'copied' | 'error'
 type QrCodeStatus = 'idle' | 'loading' | 'ready' | 'error'
 
+const guidanceLevelLabels: Record<CheckInGuidanceLevel, string> = {
+  check_today: 'Heute prüfen',
+  recommended_limit: 'Einschränkung empfohlen',
+  adjust_load: 'Belastung anpassen',
+  decision_open: 'Entscheidung offen',
+  info: 'Info',
+}
+
+const guidanceLevelPriority: Record<CheckInGuidanceLevel, number> = {
+  check_today: 0,
+  recommended_limit: 1,
+  adjust_load: 1,
+  decision_open: 2,
+  info: 3,
+}
+
 function entryRenderKey(entry: PlayerSessionEntry) {
   return `${entry.id}:${entry.clientUpdatedAt}:${entry.syncStatus}`
 }
@@ -169,13 +191,13 @@ function statusTags(entry: PlayerSessionEntry, warning: PlayerWarning | undefine
   }
 
   if (entry.returnerFlag === 'ja') {
-    tags.push('Returner')
+    tags.push('Returner heute')
   } else if (signals.needsReturnerClarification) {
-    tags.push('Klärung offen')
+    tags.push('Returner klären')
   }
 
   if (warning) {
-    tags.push('Warnung')
+    tags.push('Vorwarnung')
   }
 
   if (entry.checkInSource === 'player_link' || entry.checkInSource === 'player_kiosk') {
@@ -185,52 +207,123 @@ function statusTags(entry: PlayerSessionEntry, warning: PlayerWarning | undefine
   return tags
 }
 
-function WarningNote({ warning }: { warning: PlayerWarning | undefined }) {
-  if (!warning) {
-    return null
-  }
-
-  const followUps = [
-    warning.e2Decision && warning.e2Decision !== 'normal' ? `E2 ${warning.e2Decision}` : null,
-    warning.nextStep ? `Next ${warning.nextStep}` : null,
-    warning.postPainScore !== null ? `Post-Pain ${warning.postPainScore}/10` : null,
-  ].filter(Boolean)
-
+function GuidanceCard({ item }: { item: CheckInGuidanceItem }) {
   return (
-    <div className="warning-note">
-      <AlertTriangle className="nav-icon" aria-hidden />
-      <span>
-        Vorwarnung {warning.sessionDate}: {formatTrafficLight(warning.trafficLight)}
-        {warning.returnerFlag !== 'nein' ? ` · Returner ${warning.returnerFlag}` : ''}
-        {warning.limits.length > 0 ? ` · Limits ${warning.limits.join(', ')}` : ''}
-        {followUps.length > 0 ? ` · ${followUps.join(' · ')}` : ''}
-      </span>
-    </div>
+    <article className={`guidance-card guidance-${item.level}`}>
+      <div className="guidance-card-head">
+        <span className={`guidance-badge guidance-${item.level}`}>{guidanceLevelLabels[item.level]}</span>
+        <strong>{item.title}</strong>
+      </div>
+      <dl className="guidance-copy">
+        <div>
+          <dt>Bedeutung</dt>
+          <dd>{item.meaning}</dd>
+        </div>
+        <div>
+          <dt>Warum</dt>
+          <dd>{item.why}</dd>
+        </div>
+        <div>
+          <dt>Coach-Aktion</dt>
+          <dd>{item.coachAction}</dd>
+        </div>
+        <div>
+          <dt>Konsequenz</dt>
+          <dd>{item.consequence}</dd>
+        </div>
+      </dl>
+    </article>
   )
 }
 
-function ReturnerCapNote({ cap }: { cap: ReturnerCapSummary | undefined }) {
-  if (!cap) {
+function guidanceSummaryLabel(item: CheckInGuidanceItem) {
+  if (item.id.startsWith('today:red-flag:')) {
+    return 'Red Flag: keine normale Progression'
+  }
+
+  return item.title
+}
+
+function GuidanceList({
+  collapsible = false,
+  compact = false,
+  guidance,
+  title,
+}: {
+  collapsible?: boolean
+  compact?: boolean
+  guidance: CheckInGuidanceItem[]
+  title: string
+}) {
+  if (guidance.length === 0) {
     return null
   }
 
-  const parts = [
-    cap.currentStage ? `Stufe ${cap.currentStage}` : null,
-    cap.speedCap ? `Speed: ${cap.speedCap}` : null,
-    cap.codDecelCap ? `COD: ${cap.codDecelCap}` : null,
-    cap.conditioningCap ? `Cond: ${cap.conditioningCap}` : null,
-    cap.contactCap ? `Kontakt: ${cap.contactCap}` : null,
-  ].filter(Boolean)
+  if (collapsible) {
+    const summaryItems = guidance
+      .map((item, index) => ({ item, index }))
+      .sort((a, b) => guidanceLevelPriority[a.item.level] - guidanceLevelPriority[b.item.level] || a.index - b.index)
+      .slice(0, 3)
+      .map(({ item }) => item)
+    const hiddenCount = Math.max(guidance.length - summaryItems.length, 0)
+    const guidanceCountLabel = guidance.length === 1 ? '1 Hinweis' : `${guidance.length} Hinweise`
 
-  if (parts.length === 0) {
-    return null
+    return (
+      <details className={compact ? 'guidance-section compact-guidance guidance-disclosure' : 'guidance-section guidance-disclosure'}>
+        <summary className="guidance-summary">
+          <span className="guidance-summary-main">
+            <ShieldAlert className="nav-icon" aria-hidden />
+            <span>
+              <strong>{title}</strong>
+              <small>{guidanceCountLabel}</small>
+            </span>
+          </span>
+          <span className="guidance-summary-tags" aria-label="Wichtigste Hinweise">
+            {summaryItems.map((item) => (
+              <span className={`guidance-summary-chip guidance-${item.level}`} key={item.id}>
+                {guidanceSummaryLabel(item)}
+              </span>
+            ))}
+            {hiddenCount > 0 ? <span className="guidance-summary-more">+{hiddenCount}</span> : null}
+          </span>
+        </summary>
+        <div className={compact ? 'guidance-list compact-guidance-list' : 'guidance-list'}>
+          {guidance.map((item) => (
+            <GuidanceCard item={item} key={item.id} />
+          ))}
+        </div>
+      </details>
+    )
   }
 
   return (
-    <div className="warning-note returner-cap-note">
-      <ShieldAlert className="nav-icon" aria-hidden />
-      <span>Returner-Caps {cap.sessionDate}: {parts.join(' · ')}. Keine medizinische Freigabe.</span>
-    </div>
+    <section className={compact ? 'guidance-section compact-guidance' : 'guidance-section'} aria-label={title}>
+      <div className="status-line">
+        <ShieldAlert className="nav-icon" aria-hidden />
+        <h4>{title}</h4>
+      </div>
+      <div className={compact ? 'guidance-list compact-guidance-list' : 'guidance-list'}>
+        {guidance.map((item) => (
+          <GuidanceCard item={item} key={item.id} />
+        ))}
+      </div>
+    </section>
+  )
+}
+
+function CheckInGuidanceLegend() {
+  return (
+    <details className="panel guidance-legend">
+      <summary>Legende</summary>
+      <div className="guidance-legend-grid">
+        <p><strong>Ampel:</strong> Grün, Gelb und Rot sind Coach-Hinweise zur heutigen Belastung.</p>
+        <p><strong>Red Flags:</strong> Kopf/Nacken/Neuro oder akute Instabilität konservativ prüfen.</p>
+        <p><strong>Returner:</strong> Status heute ist getrennt von Returner-Caps aus dem Belastungsplan.</p>
+        <p><strong>Vorwarnung:</strong> Mitnahme aus letzter Einheit, kein neuer Tagesbefund.</p>
+        <p><strong>Gespeicherte Limits:</strong> können aus früheren Eingaben stammen und werden geprüft statt automatisch übernommen.</p>
+        <p><strong>Alle Hinweise sind beratend.</strong> Die App sperrt keine Coach-Entscheidung.</p>
+      </div>
+    </details>
   )
 }
 
@@ -269,6 +362,7 @@ function CheckInPlayerRow({
   const controlsDisabled = isSavingDisabled || isResetPending
   const sourceEntryKey = entryRenderKey(entry)
   const displayEntry = localEntryOverride?.baseKey === sourceEntryKey ? localEntryOverride.entry : entry
+  const guidance = buildCheckInGuidance({ entry: displayEntry, warning, returnerCap })
   const canReset = !displayEntry.id.startsWith('preview:')
   const [textValues, setTextValues] = useState(() => {
     const painLocationParts = splitPainLocationParts(displayEntry.painLocation)
@@ -465,8 +559,7 @@ function CheckInPlayerRow({
         </div>
       </div>
 
-      <WarningNote warning={warning} />
-      <ReturnerCapNote cap={returnerCap} />
+      <GuidanceList collapsible guidance={guidance} title="Heute beachten" />
 
       <div className="checkin-controls">
         <div className="control-group">
@@ -660,7 +753,7 @@ function CheckInPlayerRow({
         </div>
 
         <div className="control-group">
-          <span>Returner-Status</span>
+          <span>Returner-Status heute</span>
           <div className="button-row">
             {returnerOptions.map((option) => (
               <button
@@ -862,6 +955,11 @@ export function CheckInView({
   const [searchTerm, setSearchTerm] = useState('')
   const [activeFilter, setActiveFilter] = useState<'all' | 'open' | 'present' | 'issues' | 'returner' | 'clarify' | 'warning'>('all')
   const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
+  const [isPlayerEditorOpen, setIsPlayerEditorOpen] = useState(false)
+  const [playerEditorValues, setPlayerEditorValues] = useState<PlayerFormValues | null>(null)
+  const [playerEditorError, setPlayerEditorError] = useState<string | null>(null)
+  const [playerEditorNotice, setPlayerEditorNotice] = useState<string | null>(null)
+  const [isPlayerEditorSubmitting, setIsPlayerEditorSubmitting] = useState(false)
   const [resetFeedback, setResetFeedback] = useState<string | null>(null)
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false)
   const selectedSheetRef = useRef<HTMLDivElement | null>(null)
@@ -978,6 +1076,55 @@ export function CheckInView({
       typeof navigator.canShare !== 'function' ||
       navigator.canShare(selectedSessionSharePayload))
 
+  function openPlayerEditor(player: Player) {
+    setPlayerEditorValues(playerToFormValues(player))
+    setPlayerEditorError(null)
+    setPlayerEditorNotice(null)
+    setIsPlayerEditorOpen(true)
+  }
+
+  function closeSelectedPlayerSheet() {
+    setSelectedPlayerId(null)
+    setIsPlayerEditorOpen(false)
+    setPlayerEditorValues(null)
+    setPlayerEditorError(null)
+    setPlayerEditorNotice(null)
+  }
+
+  function closePlayerEditor() {
+    setIsPlayerEditorOpen(false)
+    setPlayerEditorError(null)
+    setPlayerEditorNotice(null)
+  }
+
+  function updatePlayerEditorField<K extends keyof PlayerFormValues>(field: K, value: PlayerFormValues[K]) {
+    setPlayerEditorValues((currentValues) => (currentValues ? { ...currentValues, [field]: value } : currentValues))
+  }
+
+  async function saveSelectedPlayer(event: FormEvent<HTMLFormElement>) {
+    event.preventDefault()
+    if (!selectedPlayer || !playerEditorValues) {
+      return
+    }
+
+    setPlayerEditorError(null)
+    setPlayerEditorNotice(null)
+    setIsPlayerEditorSubmitting(true)
+    triggerHapticFeedback('selection')
+
+    try {
+      await playerActions.savePlayer(playerEditorValues, selectedPlayer)
+      await playerActions.refreshLocalPlayers()
+      setPlayerEditorNotice('Spieler aktualisiert.')
+      triggerHapticFeedback('success')
+    } catch (caughtError) {
+      triggerHapticFeedback('warning')
+      setPlayerEditorError(caughtError instanceof Error ? caughtError.message : 'Spieler konnte nicht gespeichert werden.')
+    } finally {
+      setIsPlayerEditorSubmitting(false)
+    }
+  }
+
   useEffect(() => {
     if (!selectedPlayerId) {
       return undefined
@@ -988,7 +1135,11 @@ export function CheckInView({
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
-        setSelectedPlayerId(null)
+        if (isPlayerEditorOpen) {
+          closePlayerEditor()
+        } else {
+          closeSelectedPlayerSheet()
+        }
       }
     }
 
@@ -997,7 +1148,7 @@ export function CheckInView({
       window.removeEventListener('keydown', handleKeyDown)
       previousActiveElement?.focus()
     }
-  }, [selectedPlayerId])
+  }, [isPlayerEditorOpen, selectedPlayerId])
 
   useEffect(() => {
     if (!isResetConfirmOpen) {
@@ -1286,27 +1437,31 @@ export function CheckInView({
         </p>
       </section>
 
+      <CheckInGuidanceLegend />
+
       {activeWarnings.length > 0 ? (
-        <aside className="panel warning-panel" aria-label="Offene Warnungen">
+        <aside className="panel warning-panel" aria-label="Mitnehmen aus letzter Einheit">
           <div className="status-line">
             <ShieldAlert className="nav-icon" aria-hidden />
-            <h3>Offene Warnungen</h3>
+            <h3>Mitnehmen aus letzter Einheit</h3>
           </div>
           <div className="warning-list">
             {activeWarnings.map((warning) => {
               const player = playerActions.players.find((item) => item.id === warning.playerId)
+              const playerEntry = player ? getEntryForPlayer(player) : null
+              const carryoverGuidance = playerEntry
+                ? buildCheckInGuidance({ entry: playerEntry, warning }).filter((item) => item.source === 'carryover')
+                : []
               return (
-                <div className="warning-note" key={`${warning.playerId}-${warning.sessionDate}`}>
-                  <AlertTriangle className="nav-icon" aria-hidden />
-                  <span>
-                    <strong>{player?.name ?? 'Spieler'}</strong>: {formatTrafficLight(warning.trafficLight)}
-                    {warning.returnerFlag !== 'nein' ? ` · Returner ${warning.returnerFlag}` : ''}
-                    {warning.e2Decision && warning.e2Decision !== 'normal' ? ` · E2 ${warning.e2Decision}` : ''}
-                    {warning.nextStep ? ` · Next ${warning.nextStep}` : ''}
-                    {warning.postPainScore !== null ? ` · Post-Pain ${warning.postPainScore}/10` : ''}
-                    {warning.observation ? ` · ${warning.observation}` : ''}
-                  </span>
-                </div>
+                <article className="carryover-player-guidance" key={`${warning.playerId}-${warning.sessionDate}`}>
+                  <strong>{player?.name ?? 'Spieler'}</strong>
+                  <div className="guidance-list compact-guidance-list">
+                    {carryoverGuidance.map((item) => (
+                      <GuidanceCard item={item} key={item.id} />
+                    ))}
+                  </div>
+                  {warning.observation ? <p className="sync-help">Notiz: {warning.observation}</p> : null}
+                </article>
               )
             })}
           </div>
@@ -1353,8 +1508,8 @@ export function CheckInView({
                 ['present', 'Da'],
                 ['issues', 'Gelb/Rot'],
                 ['returner', 'Returner'],
-                ['clarify', 'Klärung offen'],
-                ['warning', 'Warnung'],
+                ['clarify', 'Returner klären'],
+                ['warning', 'Vorwarnung'],
               ].map(([value, label]) => (
                 <button
                   className={activeFilter === value ? 'filter-chip active' : 'filter-chip'}
@@ -1377,7 +1532,13 @@ export function CheckInView({
                       entry={entry}
                       isExpected={expectedPlayerSet.has(player.id)}
                       key={player.id}
-                      onSelect={() => setSelectedPlayerId(player.id)}
+                      onSelect={() => {
+                        setSelectedPlayerId(player.id)
+                        setIsPlayerEditorOpen(false)
+                        setPlayerEditorValues(null)
+                        setPlayerEditorError(null)
+                        setPlayerEditorNotice(null)
+                      }}
                       player={player}
                       warning={warning}
                     />
@@ -1405,23 +1566,55 @@ export function CheckInView({
                 <p className="eyebrow">Spieler-Check-in</p>
                 <h3 id={selectedSheetHeadingId}>{selectedPlayer.name}</h3>
               </div>
-              <button className="secondary-action compact-action" type="button" onClick={() => setSelectedPlayerId(null)}>
-                Schliessen
-              </button>
+              <div className="sheet-heading-actions">
+                <button
+                  className="icon-button"
+                  type="button"
+                  aria-label="Spieler bearbeiten"
+                  onClick={() => openPlayerEditor(selectedPlayer)}
+                >
+                  <Settings className="nav-icon" aria-hidden />
+                </button>
+                <button className="icon-button" type="button" aria-label="Check-in schließen" onClick={closeSelectedPlayerSheet}>
+                  <X className="nav-icon" aria-hidden />
+                </button>
+              </div>
             </div>
-            <CheckInPlayerRow
-              entry={getEntryForPlayer(selectedPlayer)}
-              isExpected={expectedPlayerSet.has(selectedPlayer.id)}
-              isSavingDisabled={false}
-              key={selectedPlayer.id}
-              onSave={(selectedPlayer, patch, manualTrafficLight) => {
-                return saveEntry(selectedPlayer, patch, manualTrafficLight)
-              }}
-              onReset={(entry) => resetEntry(entry.id)}
-              player={selectedPlayer}
-              returnerCap={returnerCapByPlayerId.get(selectedPlayer.id)}
-              warning={warningByPlayerId.get(selectedPlayer.id)}
-            />
+            {isPlayerEditorOpen && playerEditorValues ? (
+              <section className="checkin-player-editor" aria-label="Spieler-Stammdaten">
+                <div className="library-heading compact-heading">
+                  <div>
+                    <p className="eyebrow">Bearbeiten</p>
+                    <h3>Spieler-Stammdaten</h3>
+                  </div>
+                  <button className="icon-button" type="button" aria-label="Spieler-Editor schließen" onClick={closePlayerEditor}>
+                    <X className="nav-icon" aria-hidden />
+                  </button>
+                </div>
+                <PlayerEditorForm
+                  formError={playerEditorError}
+                  formNotice={playerEditorNotice}
+                  isSubmitting={isPlayerEditorSubmitting}
+                  onFieldChange={updatePlayerEditorField}
+                  onSubmit={saveSelectedPlayer}
+                  values={playerEditorValues}
+                />
+              </section>
+            ) : (
+              <CheckInPlayerRow
+                entry={getEntryForPlayer(selectedPlayer)}
+                isExpected={expectedPlayerSet.has(selectedPlayer.id)}
+                isSavingDisabled={false}
+                key={selectedPlayer.id}
+                onSave={(selectedPlayer, patch, manualTrafficLight) => {
+                  return saveEntry(selectedPlayer, patch, manualTrafficLight)
+                }}
+                onReset={(entry) => resetEntry(entry.id)}
+                player={selectedPlayer}
+                returnerCap={returnerCapByPlayerId.get(selectedPlayer.id)}
+                warning={warningByPlayerId.get(selectedPlayer.id)}
+              />
+            )}
           </div>
         </section>
       ) : null}

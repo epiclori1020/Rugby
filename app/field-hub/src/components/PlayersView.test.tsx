@@ -3,13 +3,15 @@ import 'fake-indexeddb/auto'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { ExerciseResult } from '../domain/exercises'
 import type { Player } from '../domain/players'
 import type { PlayerSessionEntry, SessionLog } from '../domain/checkIn'
 import { emptyCheckInDraft } from '../domain/checkIn'
+import type { BaselineEntry } from '../domain/baseline'
 import type { MetricResult } from '../domain/metrics'
 import type { PlayerSyncOverview } from '../domain/sync'
+import type { useMetrics } from '../hooks/useMetrics'
 import type { usePlayers } from '../hooks/usePlayers'
 import type { AuthSessionState } from '../lib/auth'
 import { localDb } from '../lib/localDb'
@@ -167,6 +169,24 @@ const metricResult: MetricResult = {
   syncError: null,
 }
 
+const baselineEntry: BaselineEntry = {
+  id: 'baseline-1',
+  userId: 'user-1',
+  playerId: player.id,
+  sessionLogId: sessionLog.id,
+  broadJumpCm: 230,
+  medBallChestPassM: 6.1,
+  medBallWeightKg: 3,
+  sprint30m: null,
+  note: '',
+  createdAt: '2026-06-18T18:00:00.000Z',
+  updatedAt: '2026-06-18T20:00:00.000Z',
+  deletedAt: null,
+  clientUpdatedAt: '2026-06-18T20:00:00.000Z',
+  syncStatus: 'synced',
+  syncError: null,
+}
+
 function buildPlayerActions() {
   return {
     players: [player],
@@ -180,6 +200,22 @@ function buildPlayerActions() {
     uploadPlayerPhoto: async () => undefined,
     removePlayerPhoto: async () => undefined,
   } satisfies ReturnType<typeof usePlayers>
+}
+
+function buildMetricActions(overrides: Partial<ReturnType<typeof useMetrics>> = {}): ReturnType<typeof useMetrics> {
+  return {
+    activePlayers: [player],
+    clearError: () => undefined,
+    entries: [],
+    errorMessage: null,
+    getMetricForPlayer: () => null,
+    isLoading: false,
+    refreshMetrics: async () => undefined,
+    runSync: async () => syncOverview,
+    savePlayerMetric: async () => ({ ok: true as const }),
+    syncOverview,
+    ...overrides,
+  }
 }
 
 function renderPlayersView() {
@@ -225,7 +261,57 @@ describe('PlayersView default layout', () => {
 
     expect(container.textContent).toContain('Spielerprofil')
     expect(container.textContent).toContain('Übersicht')
-    expect(container.textContent).toContain('Bearbeiten')
+    expect(container.textContent).not.toContain('Bearbeiten')
+    expect(container.querySelector('[role="dialog"][aria-modal="true"]')).toBeTruthy()
+    expect(container.querySelector('button[aria-label="Spieler bearbeiten"]')).toBeTruthy()
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    })
+
+    expect(container.textContent).not.toContain('Spielerprofil')
+
+    await act(async () => {
+      playerButton?.click()
+    })
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="Spielerprofil-Hintergrund schließen"]')?.click()
+    })
+
+    expect(container.textContent).not.toContain('Spielerprofil')
+
+    await act(async () => {
+      playerButton?.click()
+    })
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="Spielerprofil schließen"]')?.click()
+    })
+
+    expect(container.textContent).not.toContain('Spielerprofil')
+
+    root.unmount()
+  })
+
+  it('opens player editing from the profile settings icon', async () => {
+    await localDb.delete()
+    await localDb.open()
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(<PlayersView authState={authState} playerActions={buildPlayerActions()} />)
+    })
+
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Sabine'))?.click()
+    })
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('button[aria-label="Spieler bearbeiten"]')?.click()
+    })
+
+    expect(container.textContent).toContain('Spieler-Stammdaten')
+    expect(container.textContent).toContain('Deaktivieren')
+    expect(container.textContent).toContain('Loeschen')
 
     root.unmount()
   })
@@ -322,6 +408,151 @@ describe('PlayersView default layout', () => {
 
     expect(container.textContent).toContain('Metric History')
     expect(container.textContent).toContain('Broad Jump')
+
+    root.unmount()
+  })
+
+  it('prefers saved metric results over legacy baseline fallback in profile test cards', async () => {
+    await localDb.delete()
+    await localDb.open()
+    await localDb.sessionLogs.put(sessionLog)
+    await localDb.baselineEntries.put(baselineEntry)
+    await localDb.metricResults.put(metricResult)
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(<PlayersView authState={authState} playerActions={buildPlayerActions()} />)
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Sabine'))?.click()
+    })
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Tests')?.click()
+    })
+
+    const broadJumpCard = Array.from(container.querySelectorAll('.profile-test-card')).find((card) =>
+      card.textContent?.includes('Broad Jump'),
+    )
+
+    expect(broadJumpCard?.textContent).toContain('246 cm')
+    expect(broadJumpCard?.textContent).not.toContain('230 cm')
+
+    root.unmount()
+  })
+
+  it('saves profile test values directly through metric actions', async () => {
+    await localDb.delete()
+    await localDb.open()
+    const savePlayerMetric = vi.fn(async () => ({ ok: true as const }))
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <PlayersView
+          authState={authState}
+          metricActions={buildMetricActions({ savePlayerMetric })}
+          playerActions={buildPlayerActions()}
+          metricSessionLabel="Donnerstag · 2026-06-18"
+        />,
+      )
+    })
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Sabine'))?.click()
+    })
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Tests')?.click()
+    })
+
+    const broadJumpInput = Array.from(container.querySelectorAll<HTMLInputElement>('input')).find(
+      (input) => input.getAttribute('aria-label') === 'Broad Jump Wert',
+    )
+    expect(broadJumpInput).toBeTruthy()
+
+    await act(async () => {
+      const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+      valueSetter?.call(broadJumpInput, '250')
+      broadJumpInput?.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Broad Jump speichern')?.click()
+      await Promise.resolve()
+    })
+
+    expect(savePlayerMetric).toHaveBeenCalledWith(
+      player,
+      expect.objectContaining({ attempt: 1, bodySide: 'none', metricKey: 'broad_jump', value: '250' }),
+    )
+    expect(container.textContent).toContain('Wird in Einheit Donnerstag · 2026-06-18 als Versuch 1 erfasst.')
+
+    root.unmount()
+  })
+
+  it('keeps profile test drafts and shows metric errors when direct save fails', async () => {
+    await localDb.delete()
+    await localDb.open()
+    const savePlayerMetric = vi.fn(async () => ({
+      ok: false as const,
+      errorMessage: 'Metric-Wert konnte nicht gespeichert werden.',
+    }))
+    const clearError = vi.fn()
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <PlayersView
+          authState={authState}
+          metricActions={buildMetricActions({ clearError, savePlayerMetric })}
+          playerActions={buildPlayerActions()}
+        />,
+      )
+    })
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Sabine'))?.click()
+    })
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Tests')?.click()
+    })
+
+    const broadJumpInput = Array.from(container.querySelectorAll<HTMLInputElement>('input')).find(
+      (input) => input.getAttribute('aria-label') === 'Broad Jump Wert',
+    )
+    expect(broadJumpInput).toBeTruthy()
+
+    await act(async () => {
+      const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+      valueSetter?.call(broadJumpInput, '250')
+      broadJumpInput?.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Broad Jump speichern')?.click()
+      await Promise.resolve()
+    })
+
+    expect(clearError).toHaveBeenCalledTimes(2)
+    expect(savePlayerMetric).toHaveBeenCalledWith(
+      player,
+      expect.objectContaining({ attempt: 1, bodySide: 'none', metricKey: 'broad_jump', value: '250' }),
+    )
+    expect(broadJumpInput?.value).toBe('250')
+    expect(container.textContent).toContain('Metric-Wert konnte nicht gespeichert werden.')
+    expect(container.textContent).not.toContain('Broad Jump gespeichert.')
+
+    clearError.mockClear()
+
+    await act(async () => {
+      const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+      valueSetter?.call(broadJumpInput, '251')
+      broadJumpInput?.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+
+    expect(clearError).toHaveBeenCalledTimes(1)
+    expect(broadJumpInput?.value).toBe('251')
 
     root.unmount()
   })

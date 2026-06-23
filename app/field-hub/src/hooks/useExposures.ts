@@ -10,6 +10,7 @@ import { findSessionLog, pushPendingCheckIns } from '../lib/checkInRepository'
 import {
   getExposureSyncOverview,
   listExposureSummariesForSession,
+  resetExposureSummariesForSession,
   saveManualExposureOverride,
   savePlayerExposureSummaries,
 } from '../lib/exposureRepository'
@@ -141,12 +142,41 @@ export function useExposures(userId: string | null, sessionDefinition: SessionDe
     }
   }
 
+  async function resetExposureSummaries(sessionLogId: string | null | undefined) {
+    if (!userId) {
+      throw new Error('Login erforderlich.')
+    }
+
+    if (!sessionLogId) {
+      return { resetCount: 0 }
+    }
+
+    setIsLoading(true)
+    try {
+      setErrorMessage(null)
+      const result = await resetExposureSummariesForSession(userId, sessionLogId)
+      setSummaries([])
+      setSyncOverview(await getExposureSyncOverview(userId))
+      if (typeof navigator === 'undefined' || navigator.onLine) {
+        scheduleBackgroundSync(userId, 'exposures', runBackgroundSync)
+      }
+      return result
+    } catch (caughtError) {
+      const message = caughtError instanceof Error ? caughtError.message : 'Exposures konnten nicht zurueckgesetzt werden.'
+      setErrorMessage(message)
+      return { resetCount: 0 }
+    } finally {
+      setIsLoading(false)
+    }
+  }
+
   return {
     clearError: () => setErrorMessage(null),
     errorMessage,
     generateExposureSummaries,
     isLoading,
     refreshExposures,
+    resetExposureSummaries,
     saveManualOverride,
     summaries,
     syncOverview,
