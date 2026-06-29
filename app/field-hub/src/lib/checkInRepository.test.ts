@@ -17,10 +17,12 @@ import {
   saveCheckInEntry,
   saveKioskCheckInEntry,
   savePostSessionEntry,
+  savePublicCheckInEntry,
   saveSessionLogPatch,
   type PlayerSessionEntryRow,
 } from './checkInRepository'
 import { localDb } from './localDb'
+import { publicSubmissionPatch, type PublicCheckInSubmission } from '../domain/publicCheckIn'
 
 const userId = '00000000-0000-4000-8000-000000000001'
 
@@ -444,6 +446,62 @@ describe('checkInRepository session logs', () => {
     expect(row.session_rpe).toBe(7)
     expect(row.duration_minutes).toBe(75)
     expect('session_load' in row).toBe(false)
+  })
+
+  it('does not let public self-check-in submissions overwrite returner status', async () => {
+    await localDb.playerSessionEntries.put({
+      ...emptyCheckInDraft,
+      ...postSessionDefaults,
+      id: 'entry-public-returner',
+      userId,
+      sessionLogId: 'session-public',
+      playerId: player.id,
+      present: true,
+      returnerFlag: 'ja',
+      createdAt: '2026-06-16T18:00:00.000Z',
+      updatedAt: '2026-06-16T18:00:00.000Z',
+      deletedAt: null,
+      clientUpdatedAt: '2026-06-16T18:00:00.000Z',
+      syncStatus: 'synced',
+      syncError: null,
+    })
+
+    const submission: PublicCheckInSubmission = {
+      id: 'submission-public-returner',
+      userId,
+      linkId: 'link-1',
+      linkPlayerId: 'link-player-1',
+      playerId: player.id,
+      readiness: 4,
+      lifeFlag: '',
+      painScore: 1,
+      painLocation: 'Knie',
+      returnerFlag: 'nein',
+      sessionReaction: 'none',
+      playerNote: '',
+      status: 'pending',
+      submittedAt: '2026-06-16T17:40:00.000Z',
+      importedAt: null,
+      conflictReason: null,
+      createdAt: '2026-06-16T17:40:00.000Z',
+      updatedAt: '2026-06-16T17:40:00.000Z',
+      deletedAt: null,
+      clientUpdatedAt: '2026-06-16T17:40:00.000Z',
+      syncStatus: 'synced',
+      syncError: null,
+    }
+
+    const saved = await savePublicCheckInEntry(
+      userId,
+      'session-public',
+      player,
+      publicSubmissionPatch(submission),
+      submission.submittedAt,
+    )
+
+    expect(saved.returnerFlag).toBe('ja')
+    expect(saved.readiness).toBe(4)
+    expect(saved.checkInSource).toBe('player_link')
   })
 
   it('preserves traffic-light audit metadata when saving post-session fields', async () => {

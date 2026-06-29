@@ -645,7 +645,6 @@ export type PublicSubmissionInput = {
   lifeFlag: string
   painScore: number | null
   painLocation: string
-  returnerFlag: PublicCheckInSubmission['returnerFlag']
   sessionReaction: PublicCheckInSubmission['sessionReaction']
   playerNote: string
 }
@@ -665,7 +664,7 @@ export async function submitPublicCheckIn(token: string, input: PublicSubmission
     life_flag: input.lifeFlag.trim(),
     pain_score: input.painScore,
     pain_location: input.painLocation.trim(),
-    returner_flag: input.returnerFlag,
+    returner_flag: 'offen',
     session_reaction: input.sessionReaction,
     player_note: input.playerNote.trim(),
     submitted_at: timestamp,

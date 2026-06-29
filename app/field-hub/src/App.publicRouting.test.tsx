@@ -15,7 +15,6 @@ const publicRouteState = vi.hoisted(() => ({
       lifeFlag: string
       painScore: number
       painLocation: string
-      returnerFlag: 'nein' | 'ja' | 'offen'
       sessionReaction: 'none' | 'new_or_worse' | 'unsure'
       playerNote: string
     }) => Promise<unknown>
@@ -115,7 +114,6 @@ vi.mock('./components/KioskCheckInView', async () => {
         lifeFlag: string
         painScore: number
         painLocation: string
-        returnerFlag: 'nein' | 'ja' | 'offen'
         sessionReaction: 'none' | 'new_or_worse' | 'unsure'
         playerNote: string
       }) => Promise<unknown>
@@ -495,7 +493,6 @@ describe('App public check-in routing', () => {
         lifeFlag: 'Stress',
         painScore: 1,
         painLocation: 'Kopf/Nacken',
-        returnerFlag: 'nein',
         sessionReaction: 'none',
         playerNote: 'direkt von Arbeit',
       })
@@ -509,7 +506,6 @@ describe('App public check-in routing', () => {
         lifeFlag: 'Stress',
         painScore: 1,
         painLocation: 'Kopf/Nacken',
-        returnerFlag: 'nein',
         sessionReaction: 'none',
         redFlag: 'head_neck_neuro',
         playerNote: 'direkt von Arbeit',
@@ -531,7 +527,6 @@ describe('App public check-in routing', () => {
         lifeFlag: '',
         painScore: 0,
         painLocation: '',
-        returnerFlag: 'nein',
         sessionReaction: 'none',
         playerNote: '',
       }),

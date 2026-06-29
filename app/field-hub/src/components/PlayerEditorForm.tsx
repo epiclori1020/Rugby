@@ -80,7 +80,7 @@ export function PlayerEditorForm({
         </label>
 
         <label>
-          <span>Returner</span>
+          <span>Returner / Rückkehrstatus</span>
           <select
             value={values.returnerStatus}
             onChange={(event) => onFieldChange('returnerStatus', event.target.value as ReturnerStatus)}

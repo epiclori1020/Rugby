@@ -595,8 +595,8 @@ function CheckInPlayerRow({
           </div>
         </div>
 
-        <div className="control-group" aria-label={`Readiness ${player.name}`}>
-          <span>Readiness · 1 = schlecht, 5 = bereit</span>
+        <div className="control-group" aria-label={`Belastbarkeit heute ${player.name}`}>
+          <span>Belastbarkeit heute · 1 = schlecht, 5 = voll bereit</span>
           <div className="button-row compact">
             {[1, 2, 3, 4, 5].map((value) => (
               <button
@@ -605,7 +605,7 @@ function CheckInPlayerRow({
                 type="button"
                 disabled={controlsDisabled || savingActionKey === `readiness:${value}`}
                 onClick={() =>
-                  void saveWithFeedback('Readiness', `readiness:${value}`, { readiness: value, previousWarning: Boolean(warning) })
+                  void saveWithFeedback('Belastbarkeit', `readiness:${value}`, { readiness: value, previousWarning: Boolean(warning) })
                 }
               >
                 {value}
@@ -615,7 +615,7 @@ function CheckInPlayerRow({
         </div>
 
         <div className="control-group">
-          <span>Schlaf / Stress / Muskelkater</span>
+          <span>Was beeinflusst heute?</span>
           <div className="button-row">
             {lifeFlagOptions.map((option) => (
               <button
@@ -664,7 +664,7 @@ function CheckInPlayerRow({
         </label>
 
         <div className="control-group" aria-label={`Schmerz ${player.name}`}>
-          <span>Schmerz heute</span>
+          <span>Schmerz/Beschwerden heute</span>
           <div className="button-row compact pain-scale">
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
               <button
@@ -731,7 +731,7 @@ function CheckInPlayerRow({
         </label>
 
         <div className="control-group">
-          <span>Seit letzter Einheit neu oder schlechter?</span>
+          <span>Seit dem letzten Training: etwas neu oder schlechter?</span>
           <div className="button-row">
             {sessionReactionOptions.map((option) => (
               <button
@@ -753,7 +753,7 @@ function CheckInPlayerRow({
         </div>
 
         <div className="control-group">
-          <span>Returner-Status heute</span>
+          <span>Returner heute (Coach)</span>
           <div className="button-row">
             {returnerOptions.map((option) => (
               <button
@@ -1294,7 +1294,7 @@ export function CheckInView({
           <p className="eyebrow">Vor dem Training</p>
           <h3 id="checkin-heading">Pre-Session Check-in</h3>
           <p>
-            {selectedSession.title}: Anwesenheit, Readiness, Life-Flag, Schmerz, Returner und Ampel vor dem
+            {selectedSession.title}: Anwesenheit, Belastbarkeit, Alltag, Schmerz, Returner und Ampel vor dem
             Training.
           </p>
         </div>

@@ -59,10 +59,11 @@ const submission: PublicCheckInSubmission = {
 }
 
 describe('publicCheckIn domain', () => {
-  it('imports player self-report fields and derives head-neck red flags', () => {
+  it('imports player self-report fields without treating returner as player input and derives head-neck red flags', () => {
     const headNeckSubmission = {
       ...submission,
       painLocation: 'Kopf/Nacken',
+      returnerFlag: 'ja' as const,
     }
     const patch = publicSubmissionPatch(headNeckSubmission)
 
@@ -72,11 +73,11 @@ describe('publicCheckIn domain', () => {
       lifeFlag: 'muede',
       painScore: 2,
       painLocation: 'Kopf/Nacken',
-      returnerFlag: 'nein',
       sessionReaction: 'new_or_worse',
       redFlag: 'head_neck_neuro',
       playerNote: 'komme direkt von Arbeit',
     })
+    expect(patch).not.toHaveProperty('returnerFlag')
     expect(patch).not.toHaveProperty('trafficLight')
     expect(patch).not.toHaveProperty('limits')
     expect(patch).not.toHaveProperty('observation')
@@ -91,11 +92,11 @@ describe('publicCheckIn domain', () => {
       lifeFlag: 'muede',
       painScore: 2,
       painLocation: 'Wade rechts',
-      returnerFlag: 'nein',
       sessionReaction: 'new_or_worse',
       redFlag: 'none',
       playerNote: 'komme direkt von Arbeit',
     })
+    expect(patch).not.toHaveProperty('returnerFlag')
     expect(patch).not.toHaveProperty('trafficLight')
     expect(patch).not.toHaveProperty('limits')
     expect(patch).not.toHaveProperty('observation')

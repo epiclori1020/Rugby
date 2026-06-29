@@ -153,4 +153,20 @@ describe('refreshRemotePublicCheckIns protective merge', () => {
     // Local older than remote -> remote applied.
     expect(older?.readiness).toBe(9)
   })
+
+  it('keeps legacy remote submissions without session_reaction readable as none', async () => {
+    supabaseState.rowsByTable = {
+      public_checkin_links: [linkRow()],
+      public_checkin_link_players: [],
+      public_checkin_submissions: [
+        submissionRow({ id: 'legacy-submission', session_reaction: undefined }),
+      ],
+    }
+
+    await refreshRemotePublicCheckIns(userId, { sessionDefinitionId: 'test-session' })
+
+    const legacySubmission = await localDb.publicCheckInSubmissions.get('legacy-submission')
+
+    expect(legacySubmission?.sessionReaction).toBe('none')
+  })
 })

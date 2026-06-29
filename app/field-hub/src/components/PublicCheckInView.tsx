@@ -48,7 +48,6 @@ export function PublicCheckInView({ token }: PublicCheckInViewProps) {
         lifeFlag: input.lifeFlag,
         painScore: input.painScore,
         painLocation: input.painLocation,
-        returnerFlag: input.returnerFlag,
         sessionReaction: input.sessionReaction,
         playerNote: input.playerNote,
       })

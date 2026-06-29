@@ -1073,7 +1073,7 @@ describe('CheckInView active player metrics', () => {
     expect(rendered.container.textContent).toContain('Rot: heute prüfen')
     expect(rendered.container.textContent).toContain('Red Flag prüfen')
     expect(rendered.container.textContent).toContain('Alle Hinweise sind beratend')
-    expect(rendered.container.textContent).toContain('Returner-Status heute')
+    expect(rendered.container.textContent).toContain('Returner heute (Coach)')
   })
 
   it('keeps player-sheet guidance collapsed with prioritized summary chips', async () => {

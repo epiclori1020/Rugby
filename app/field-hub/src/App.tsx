@@ -504,7 +504,6 @@ function CoachApp() {
       painScore: input.painScore,
       painLocation: input.painLocation,
       redFlag: deriveRedFlagFromPainLocation(input.painLocation),
-      returnerFlag: input.returnerFlag,
       sessionReaction: input.sessionReaction,
       playerNote: input.playerNote,
     }

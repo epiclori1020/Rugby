@@ -82,7 +82,6 @@ export function publicSubmissionPatch(submission: PublicCheckInSubmission): Chec
     painScore: submission.painScore,
     painLocation: submission.painLocation.trim(),
     redFlag: deriveRedFlagFromPainLocation(submission.painLocation),
-    returnerFlag: submission.returnerFlag,
     sessionReaction: submission.sessionReaction,
     playerNote: submission.playerNote.trim(),
   }

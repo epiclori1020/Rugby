@@ -110,7 +110,6 @@ describe('SelfCheckInFlow', () => {
       getButton(container, 'Wade/Achilles').click()
       getButton(container, 'Knie').click()
       getButton(container, 'Ja, neu/schlechter').click()
-      getButtons(container, 'Nein').at(-1)?.click()
     })
     await act(async () => {
       container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
@@ -122,7 +121,6 @@ describe('SelfCheckInFlow', () => {
       lifeFlag: 'Stress; Muskelkater',
       painScore: 3,
       painLocation: 'Wade/Achilles; Knie',
-      returnerFlag: 'nein',
       sessionReaction: 'new_or_worse',
       playerNote: '',
     })
@@ -144,7 +142,7 @@ describe('SelfCheckInFlow', () => {
       getButton(container, 'Max Muster').click()
       getButton(container, '5').click()
       getButton(container, '0').click()
-      getButtons(container, 'Nein').at(0)?.click()
+      getButton(container, 'Nein').click()
     })
 
     await act(async () => {
@@ -156,7 +154,7 @@ describe('SelfCheckInFlow', () => {
     )
   })
 
-  it('allows submitting without an explicit session reaction and stores none', async () => {
+  it('requires an explicit session reaction before submitting', async () => {
     const onSubmit = vi.fn(async () => undefined)
     const container = document.createElement('div')
     root = createRoot(container)
@@ -172,6 +170,18 @@ describe('SelfCheckInFlow', () => {
       getButton(container, '0').click()
     })
 
+    expect(getSubmitButton(container).disabled).toBe(true)
+
+    await act(async () => {
+      container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+    })
+
+    expect(onSubmit).not.toHaveBeenCalled()
+
+    await act(async () => {
+      getButton(container, 'Nein').click()
+    })
+
     expect(getSubmitButton(container).disabled).toBe(false)
 
     await act(async () => {
@@ -179,6 +189,18 @@ describe('SelfCheckInFlow', () => {
     })
 
     expect(onSubmit).toHaveBeenCalledWith(expect.objectContaining({ sessionReaction: 'none' }))
+  })
+
+  it('does not show returner controls in player self-check-in', async () => {
+    const container = document.createElement('div')
+    root = createRoot(container)
+
+    await act(async () => {
+      root?.render(<SelfCheckInFlow onSubmit={async () => undefined} players={[{ id: 'player-1', displayName: 'Max Muster' }]} />)
+    })
+
+    expect(container.textContent).not.toContain('Returner')
+    expect(container.textContent).not.toContain('Returner-Status')
   })
 
   it('appends life freetext to selected life chips', async () => {
@@ -197,6 +219,7 @@ describe('SelfCheckInFlow', () => {
       getButton(container, 'Stress').click()
       getButton(container, 'Muskelkater').click()
       getButton(container, '0').click()
+      getButton(container, 'Nein').click()
     })
     await changeInput(getInputByPlaceholder(container, 'leer lassen, wenn unauffällig'), 'Pruefungsstress')
 
@@ -221,6 +244,7 @@ describe('SelfCheckInFlow', () => {
       getButton(container, 'Max Muster').click()
       getButton(container, '5').click()
       getButtons(container, '2').at(-1)?.click()
+      getButton(container, 'Nein').click()
     })
     await act(async () => {
       getButton(container, 'Knie').click()
@@ -316,7 +340,7 @@ describe('SelfCheckInFlow', () => {
       getButton(container, 'Unauffällig').click()
       getButton(container, '5').click()
       getButton(container, '0').click()
-      getButtons(container, 'Nein').at(0)?.click()
+      getButton(container, 'Nein').click()
     })
     await act(async () => {
       container.querySelector('form')?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))

@@ -29,7 +29,7 @@ const tabMeta: Record<HubTab, { eyebrow: string; title: string; description: str
   'check-in': {
     eyebrow: 'Vor dem Training',
     title: 'Check-in',
-    description: 'Anwesenheit, Readiness, Schmerz, Returner und Ampel schnell erfassen.',
+    description: 'Anwesenheit, Belastbarkeit, Schmerz, Returner und Ampel schnell erfassen.',
   },
   training: {
     eyebrow: 'Am Feld',

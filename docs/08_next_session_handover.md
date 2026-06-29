@@ -1278,6 +1278,21 @@ Entscheidungen fuer Folgesessions:
 - Externer Review identifizierte sinnvolle Nachbesserungen; diese wurden im Hardening direkt nachgezogen: `SessionBlockExercise` ist strenger typisiert, Exercise-Capture-Inputs remounten beim Spielerwechsel, und offene Aufgaben fuer named/returner Metrics werden nach gespeicherten Ergebnissen als erledigt behandelt.
 - Fuer den Hardening-Sprint war keine Supabase-Migration, kein RLS-Update und kein DB-Push noetig.
 
+Nachreview-Fixes 2026-06-23:
+
+- Exercise-Inline-Capture speichert bewusst keine leeren Exercise-Results. `notes` bleibt nur Kontext bei echten Werten und darf eine Aufgabe nicht allein als erledigt markieren.
+- Returner-Targeting und Returner-Filter behandeln nur `ja` als aktiven Returner. `offen` bleibt ein Klaerungssignal, erzeugt aber keine automatischen offenen Returner-Aufgaben fuer den ganzen Kader.
+- Soft-deleted `session_block_logs` und `player_exposure_summaries` werden beim Neustart/Regenerieren per Natural Key wiederverwendet. Deshalb war fuer diese Nachbesserung keine Supabase-Migration und kein DB-Push noetig.
+- `recording: none` und `recording: observation` erzeugen keine offenen Capture-Aufgaben, solange es kein eigenes Inline-Quittier- oder Observation-Feld gibt.
+
+Check-in-UX-Fix 2026-06-29:
+
+- Kiosk- und Public-Link-Check-ins sind jetzt reine Spieler-Selbstauskunft: Belastbarkeit, Alltag, Schmerz/Beschwerden, Reaktion seit letztem Training und optionale Notiz.
+- Returner bleibt Coach-/Staff-Kontext. Spieler-Check-ins duerfen Returner weder hochstufen noch herabstufen und importieren kein `returnerFlag` in `player_session_entries`.
+- `public_checkin_submissions.returner_flag` bleibt nur als technischer Schema-Kompatibilitaetsdefault (`offen`) bestehen. Zukuenftige Sessions duerfen diesen Wert nicht als Spielerentscheidung behandeln.
+- `sessionReaction` muss in neuen Self-/Kiosk-Check-ins explizit beantwortet werden; alte Submissions mit `none` bleiben aus Kompatibilitaetsgruenden lesbar.
+- Fuer diese Nachbesserung war keine Supabase-Migration, kein RLS-Update und kein DB-Push noetig.
+
 ## Empfohlener Startprompt fuer eine Trainingsplan-Session
 
 ```text
