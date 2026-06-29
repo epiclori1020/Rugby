@@ -137,6 +137,72 @@ export const libraryItems: LibraryItem[] = [
     ],
   },
   {
+    id: 'kw27-tuesday-active-pack',
+    category: 'Aktive Pläne',
+    title: 'Dienstag 30.06: aktives PDF-Paket',
+    summary:
+      'Aktuelle iPad- und Druckunterlagen fuer KW27 Session 2A: Training kompakt, Check-in/Beobachtung und Deep Playbook.',
+    sourcePath: 'plans/offseason_coach_sheets/KW27_tuesday_training_compact_2026-06-30.md',
+    tags: ['KW27', 'Dienstag', '30.06', 'Training kompakt', 'Check-in', 'Deep Playbook', 'Cluster'],
+    sections: [
+      {
+        title: 'Am Feld',
+        body: [
+          'Training kompakt ist die kurze Klemmbrett-Referenz.',
+          'Check-in + Beobachtung ist als zweiseitige Querformat-PDF gebaut.',
+          'Deep Playbook ist Vorbereitung/iPad-Referenz und erklaert Wording, Zweck, Beobachtung, Entscheidung und Fallbacks.',
+        ],
+      },
+      {
+        title: 'Kernentscheidungen',
+        body: [
+          'Mobility/Activation aus dem 23.06-Deep-Playbook bleibt als klarer Einstieg erhalten.',
+          'Track/Acceleration ist cluster-spezifisch: Collision Forwards kurz, Hybrid 10-20 m, Speed/Space Backs smooth build-ups.',
+          'A-March bleibt fuer Dienstag aktiv; A-Skip wird erst fuer Donnerstag eingeplant.',
+          'Kraft-Pods laufen mit 2 Runden als Default. Conditioning wird zuerst gekuerzt und ist kein Finisher.',
+        ],
+      },
+    ],
+    pdfRefs: [
+      pdfRefs.kw27TuesdayTrainingCompact,
+      pdfRefs.kw27TuesdayCheckIn,
+      pdfRefs.kw27TuesdayDeepPlaybook,
+    ],
+  },
+  {
+    id: 'kw27-thursday-active-pack',
+    category: 'Aktive Pläne',
+    title: 'Donnerstag 02.07: aktives PDF-Paket',
+    summary:
+      'Aktuelle iPad- und Druckunterlagen fuer KW27 Session 2B: Training kompakt, Check-in/Beobachtung und Deep Playbook.',
+    sourcePath: 'plans/offseason_coach_sheets/KW27_thursday_training_compact_2026-07-02.md',
+    tags: ['KW27', 'Donnerstag', '02.07', 'Training kompakt', 'Check-in', 'Deep Playbook', 'Primer'],
+    sections: [
+      {
+        title: 'Am Feld',
+        body: [
+          'Training kompakt ist die kurze Klemmbrett-Referenz fuer Session 2B.',
+          'Check-in + Beobachtung ist als zweiseitige Querformat-PDF gebaut, mit separatem Check-in- und Beobachtungszettel.',
+          'Deep Playbook erklaert A-Skip-Einfuehrung, Speed-Primer, Kraftsignal, Robustheit, Tempo-Fallback und Safety-Grenzen.',
+        ],
+      },
+      {
+        title: 'Kernentscheidungen',
+        body: [
+          'Donnerstag bleibt Primer: Qualitaet und Frische statt zweiter Hauptreiz.',
+          'A-Skip wird erstmals eingefuehrt, aber klein und technisch.',
+          'Speed/Max-V-Annaeherung ist cluster-spezifisch: Collision Forwards kurz smooth, Hybrid smooth, Speed/Space Backs build 20 + fly 10 nur Gruen.',
+          'Kraftsignal laeuft mit 2 Saetzen Default @ RPE 5-6. Tempo ist optional und wird zuerst gestrichen.',
+        ],
+      },
+    ],
+    pdfRefs: [
+      pdfRefs.kw27ThursdayTrainingCompact,
+      pdfRefs.kw27ThursdayCheckIn,
+      pdfRefs.kw27ThursdayDeepPlaybook,
+    ],
+  },
+  {
     id: 'spieler-briefing-start',
     category: 'Quellen',
     title: 'Spieler-Briefing: S&C Start',
@@ -189,9 +255,9 @@ export const libraryItems: LibraryItem[] = [
       {
         title: 'Positionen und Cluster',
         body: [
-          'Front Row und Locks = CF: short accel, carry, sled, brace, neck/shoulder/trunk.',
-          'Back Row und Centres = HY: decel/re-accel, Split Squat, Adduktor, Schulter/Rumpf.',
-          'Halves und Back Three = SB: build-ups/fly-ins nur Gruen, Hamstring/Calf/Fuss, weniger Kontakt-Dichte.',
+          'Collision Forwards: Front Row und Locks; short accel, carry, sled, brace, neck/shoulder/trunk.',
+          'Hybrid: Back Row und Centres; decel/re-accel, Split Squat, Adduktor, Schulter/Rumpf.',
+          'Speed/Space Backs: Halves und Back Three; build-ups/fly-ins nur Gruen, Hamstring/Calf/Fuss, weniger Kontakt-Dichte.',
         ],
       },
       {
@@ -245,7 +311,7 @@ export const libraryItems: LibraryItem[] = [
     summary:
       'Feldtaugliche Auswahlmatrix fuer Prep, Speed, Power, Kraft, Microdoses, Contact Prep, Conditioning und Cluster Add-ons.',
     sourcePath: 'templates/exercise_pool_offseason_mapping.md',
-    tags: ['Exercise Pool', 'CF', 'HY', 'SB', 'Returner', 'Equipment'],
+    tags: ['Exercise Pool', 'Collision Forwards', 'Hybrid', 'Speed/Space Backs', 'Returner', 'Equipment'],
     sections: [
       {
         title: 'Schnelle Regeln',

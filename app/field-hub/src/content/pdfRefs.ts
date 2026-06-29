@@ -46,6 +46,36 @@ export const pdfRefs = {
     href: '/library/kw26_tuesday_2026-06-23_deep_playbook.pdf',
     sourcePath: 'docs/19_kw26_tuesday_deep_playbook_2026-06-23.md',
   },
+  kw27TuesdayTrainingCompact: {
+    label: 'Di 30.06 Training kompakt',
+    href: '/library/kw27_tuesday_2026-06-30_training_kompakt.pdf',
+    sourcePath: 'plans/offseason_coach_sheets/KW27_tuesday_training_compact_2026-06-30.md',
+  },
+  kw27TuesdayCheckIn: {
+    label: 'Di 30.06 Check-in + Beobachtung',
+    href: '/library/kw27_tuesday_2026-06-30_checkin_beobachtung.pdf',
+    sourcePath: 'templates/kw27_tuesday_checkin_observation_2026-06-30.md',
+  },
+  kw27TuesdayDeepPlaybook: {
+    label: 'Di 30.06 Deep Playbook',
+    href: '/library/kw27_tuesday_2026-06-30_deep_playbook.pdf',
+    sourcePath: 'docs/20_kw27_tuesday_deep_playbook_2026-06-30.md',
+  },
+  kw27ThursdayTrainingCompact: {
+    label: 'Do 02.07 Training kompakt',
+    href: '/library/kw27_thursday_2026-07-02_training_kompakt.pdf',
+    sourcePath: 'plans/offseason_coach_sheets/KW27_thursday_training_compact_2026-07-02.md',
+  },
+  kw27ThursdayCheckIn: {
+    label: 'Do 02.07 Check-in + Beobachtung',
+    href: '/library/kw27_thursday_2026-07-02_checkin_beobachtung.pdf',
+    sourcePath: 'templates/kw27_thursday_checkin_observation_2026-07-02.md',
+  },
+  kw27ThursdayDeepPlaybook: {
+    label: 'Do 02.07 Deep Playbook',
+    href: '/library/kw27_thursday_2026-07-02_deep_playbook.pdf',
+    sourcePath: 'docs/21_kw27_thursday_deep_playbook_2026-07-02.md',
+  },
   consent: {
     label: 'Einwilligung 20x',
     href: '/library/5_OPTIONAL_einwilligung_20x.pdf',
