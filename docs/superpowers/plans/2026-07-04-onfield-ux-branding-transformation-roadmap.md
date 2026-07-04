@@ -517,7 +517,7 @@ Nicht automatisch kopieren oder aktivieren:
 
 ## Sprint 0B - Research-Synthese und SSOT-Freeze
 
-Status: **naechster Sprint**
+Status: **abgeschlossen**
 
 ### Was genau machen wir?
 
@@ -584,7 +584,7 @@ Wichtig:
 
 ## Sprint 0C - Hook Review & Automation Guardrails
 
-Status: **geplant nach Sprint 0B**
+Status: **naechster Sprint**
 
 ### Was genau machen wir?
 
@@ -1968,8 +1968,8 @@ Spaeter moeglich:
 Nicht springen, ausser es gibt einen klaren Grund.
 
 1. Sprint 0A: OnField Memory System v1. **Abgeschlossen.**
-2. Sprint 0B: Research-Synthese und SSOT-Freeze. **Naechster Sprint.**
-3. Sprint 0C: Hook Review & Automation Guardrails.
+2. Sprint 0B: Research-Synthese und SSOT-Freeze. **Abgeschlossen.**
+3. Sprint 0C: Hook Review & Automation Guardrails. **Naechster Sprint.**
 4. Sprint 1: Agenten-Setup Review & Finalisierung.
 5. Sprint 2: IA-Spezifikation.
 6. Sprint 3: Brand Foundation.
