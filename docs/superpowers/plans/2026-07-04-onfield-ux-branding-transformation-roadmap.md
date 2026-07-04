@@ -34,10 +34,10 @@ Ziel: Agenten sollen nicht blind die komplette Roadmap, beide Researches und all
 Jeder Agent liest vor OnField-Arbeit immer:
 
 1. `AGENTS.md`
-2. den passenden OnField-Skill in `.agents/skills/...`
+2. `docs/field-hub/memory/index.md`
 3. `docs/field-hub/onfield_current_state.md`
 4. `docs/field-hub/onfield_decision_log.md`
-5. `docs/field-hub/memory/index.md`
+5. den passenden OnField-Skill in `.agents/skills/...`
 
 Danach entscheidet der Memory-/Context-Router, welche weiteren Dateien relevant sind.
 
@@ -348,8 +348,8 @@ Zweck:
 
 Muss Agenten zwingen:
 
-- Roadmap lesen.
-- Pflichtkontext lesen.
+- Memory Index und relevanten Sprint-Abschnitt lesen.
+- Pflichtkontext aus dem Context Router lesen.
 - Sprint-Scope restaten.
 - Keine spaeteren Sprints nebenbei umsetzen.
 - Tests/QA dokumentieren.
@@ -680,7 +680,7 @@ Codex/OpenAI-Recherche beachten:
 - MCP/Plugins fuer externe Werkzeuge.
 - Subagents nur fuer read-heavy Aufgaben.
 - Worktrees fuer parallele Sprint-Arbeit.
-- Hooks nur vorbereiten, nicht aktivieren.
+- Hook-Entscheidung aus Sprint 0C respektieren; keine zusaetzliche Hook-Automatik ohne neue Entscheidung.
 
 ### Deliverables
 

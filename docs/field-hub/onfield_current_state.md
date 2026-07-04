@@ -53,7 +53,7 @@ Letztes Update: 2026-07-04
 
 - OnField nutzt ein schlankes, LUVI-/Karpathy-inspiriertes Memory-System v1.
 - Ziel ist nicht mehr Kontext, sondern besseres Context Routing: Agenten sollen nur die fuer ihre Aufgabe relevanten SSOTs, Researches und Skills laden.
-- Sprint 0A ist umgesetzt und steht vor dem SSOT-Freeze.
+- Sprint 0A ist abgeschlossen und steht vor dem SSOT-Freeze.
 - Aktive Memory-Dateien:
   - `docs/field-hub/onfield_memory_governance.md`
   - `docs/field-hub/memory/index.md`
