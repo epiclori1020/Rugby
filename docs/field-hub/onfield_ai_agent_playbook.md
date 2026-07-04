@@ -20,10 +20,18 @@ Danach nur die fuer die Aufgabe relevanten Dateien laden. Der Memory Index ist d
 Wenn der Memory Index in einer alten Branch-/Session-Situation fehlt, gilt als Fallback:
 
 - Roadmap-/Sprintarbeit: relevante Abschnitte aus `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md` lesen.
-- Produkt-/IA-Arbeit: relevante Roadmap-Abschnitte und `docs/field-hub/2026-07-04_ux_design_roadmap_principles.md` lesen.
-- Design-/Brand-Arbeit: Branding-Research nur bei Bedarf lesen; spaeter bevorzugt Brand Kit und Designsystem-SSOT.
-- UX-/Workflow-Arbeit: UX-Research nur bei Bedarf lesen; spaeter bevorzugt Product Brief, Component Inventory und passende Sprint-SSOTs.
+- Produkt-/IA-Arbeit: `docs/field-hub/onfield_product_brief.md`, `docs/field-hub/onfield_sports_configuration_model.md` und relevante Roadmap-Abschnitte lesen.
+- Design-/Brand-Arbeit: `docs/field-hub/onfield_brand_kit.md`, `docs/field-hub/onfield_tone_of_voice.md`, `docs/field-hub/onfield_design_system.md` und `docs/field-hub/onfield_component_inventory.md` lesen.
+- UX-/Workflow-Arbeit: `docs/field-hub/onfield_product_brief.md`, `docs/field-hub/onfield_component_inventory.md` und passende Sprint-SSOTs lesen.
+- PWA/A11y-Arbeit: `docs/field-hub/onfield_pwa_accessibility_qa.md` lesen.
 - Codearbeit: zusaetzlich die betroffenen Dateien in `app/field-hub/src` lesen.
+
+Die langen Research-Dateien bleiben Quellenmaterial:
+
+- `docs/field-hub/2026-07-04_deep_research_ux_ui_guardrails.md`
+- `docs/field-hub/2026-07-04_deep_research_branding_design_system.md`
+
+Sie werden nur geladen, wenn eine Frage nicht aus den SSOTs, dem Current State oder dem Decision Log ableitbar ist.
 
 Je nach Aufgabe zusaetzlich passenden Skill laden:
 
@@ -44,6 +52,18 @@ Je nach Aufgabe zusaetzlich passenden Skill laden:
 - Keine realen sensiblen Spielerdaten committen.
 - UI-Arbeit immer mit Designsystem/Token-Logik begruenden.
 - Nach jeder OnField-Aufgabe Memory-Closeout durchfuehren.
+
+## SSOT-Routing nach Sprint 0B
+
+| Aufgabe | Primaere SSOTs |
+|---|---|
+| Produkt, Positionierung, MVP-Grenzen | `onfield_product_brief.md` |
+| Brand, App-Icon, Install-/Marketing-Surfaces | `onfield_brand_kit.md`, `onfield_tone_of_voice.md` |
+| Copy, Safety, Sync, Fehler, Empty/Disabled States | `onfield_tone_of_voice.md` |
+| Tokens, Layout, Status, Accessibility-Regeln | `onfield_design_system.md` |
+| Komponentenwahl und Screen-Muster | `onfield_component_inventory.md` |
+| Rugby vs. generische Architektur | `onfield_sports_configuration_model.md` |
+| iPhone/iPad/PWA/A11y/Offline QA | `onfield_pwa_accessibility_qa.md` |
 
 ## Memory Closeout
 

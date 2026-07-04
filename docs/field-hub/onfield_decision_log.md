@@ -30,6 +30,10 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | 2026-07-04 | OnField Memory v1 richtet keine aktiven Hooks ein. | Hook-Automation wird erst separat geprueft; v1 bleibt dokumenten- und skillbasiert. | Aktiv |
 | 2026-07-04 | Sprint 0C wird als Hook Review & Automation Guardrails eingefuegt. | Die Roadmap soll selbsterklaerend zeigen, wann Hook-Automation geprueft wird und warum sie nicht Teil von Sprint 0A war. | Aktiv |
 | 2026-07-04 | Sprint 1 wird zum Agenten-Setup Review & Finalisierungssprint. | Der Grossteil des Agenten-Setups ist durch Sprint 0A bereits erledigt; Sprint 1 soll nur noch Luecken und Widersprueche pruefen. | Aktiv |
+| 2026-07-04 | Sprint 0B friert sieben OnField-SSOTs ein. | Product Brief, Brand Kit, Tone of Voice, Designsystem, Component Inventory, Sports Configuration und PWA/A11y QA reduzieren Research-Neuinterpretation. | Aktiv |
+| 2026-07-04 | Nach Sprint 0B sind SSOTs der Standardkontext; Researches bleiben Quellenmaterial. | Agenten sollen zuerst kompakte Regeln lesen und lange Research-Dateien nur bei offenen Fragen laden. | Aktiv |
+| 2026-07-04 | Field Graphite ist die v1-Farb- und Brand-Basis. | Die Palette passt zur ruhigen iPadOS Performance Console mit Field-Operations-DNA und bleibt sportlich ohne klinisch oder laut zu wirken. | Aktiv |
+| 2026-07-04 | Komponenten werden sportartenuebergreifend benannt; OnField Rugby liefert Preset-Inhalte. | Das verhindert, dass Rugby-Begriffe dauerhaft in generische OnField-Architektur eingebrannt werden. | Aktiv |
 
 ## Markenarchitektur
 
@@ -49,6 +53,7 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 - Spieler/Athletenobjekte sind standardmaessig Listen/Rows, nicht Card-Walls.
 - Status wird nie nur ueber Farbe kommuniziert.
 - Agenten sollen zuerst gezielt Kontext routen und nur relevante SSOTs/Researches laden.
+- Nach Sprint 0B sind die neuen OnField-SSOTs primaere Arbeitsgrundlage fuer Produkt, Brand, Copy, Designsystem, Komponenten, Sport-Konfiguration und PWA/A11y QA.
 - Nach Sprint 0A braucht jede OnField-Aufgabe am Ende eine Memory-Closeout-Pruefung: Current State, Decision Log oder Gotchas aktualisieren, falls die Aufgabe kuenftige Sessions betrifft.
 
 ## Zurueckgestellte Entscheidungen

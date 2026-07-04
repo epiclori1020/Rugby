@@ -27,7 +27,7 @@ Letztes Update: 2026-07-04
 | Bereich | Stand |
 |---|---|
 | Navigation | App hat aktuell noch die alte breite Tab-Struktur mit vielen Hauptbereichen. Ziel ist `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr`. |
-| Designsystem | Es gibt CSS-Variablen und viele bestehende UI-Muster, aber noch kein vollstaendiges OnField Token-/Komponenten-SSOT. |
+| Designsystem | Sprint 0B hat Brand-, Token- und Komponenten-SSOTs erstellt. Code und Figma/Designartefakte sind noch nicht angepasst. |
 | iPhone | Muss kuenftig vollen Funktionsumfang haben; Ziel ist Bottom Tab Bar plus Sheets/Stacks. |
 | iPad | Soll Sidebar + Content + optional Detailpane nutzen. |
 | Check-in | Hat bereits Ansaetze fuer Finder/Rows/Sheet, muss aber roster-first und sekundaer strukturierter werden. |
@@ -35,11 +35,18 @@ Letztes Update: 2026-07-04
 | Nachbereitung | `MissingValuesPanel` ist ein guter Anfang fuer Queue-first, aber noch nicht Hauptworkflow. |
 | Sync/Offline | Pending/Sync-Logik existiert, muss global ruhiger und einheitlicher kommuniziert werden. |
 | Kiosk/Public | Separate Komponenten existieren und sollen als eigene reduzierte Experience weiterentwickelt werden. |
-| Sport-Konfiguration | Rugby ist faktisch hart im Produktkontext verankert; Ziel ist OnField Rugby als erster Preset mit spaeterer Multi-Sport-Faehigkeit. |
+| Sport-Konfiguration | Sprint 0B hat das SSOT fuer generische Kernobjekte und OnField Rugby als ersten Preset erstellt. Code ist noch nicht extrahiert. |
 
 ## Aktuelle massgebliche Dokumente
 
 - Roadmap: `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md`
+- Product Brief: `docs/field-hub/onfield_product_brief.md`
+- Brand Kit: `docs/field-hub/onfield_brand_kit.md`
+- Tone of Voice: `docs/field-hub/onfield_tone_of_voice.md`
+- Designsystem: `docs/field-hub/onfield_design_system.md`
+- Component Inventory: `docs/field-hub/onfield_component_inventory.md`
+- Sports Configuration Model: `docs/field-hub/onfield_sports_configuration_model.md`
+- PWA/A11y QA: `docs/field-hub/onfield_pwa_accessibility_qa.md`
 - UX Research: `docs/field-hub/2026-07-04_deep_research_ux_ui_guardrails.md`
 - Branding Research: `docs/field-hub/2026-07-04_deep_research_branding_design_system.md`
 - Roadmap-Prinzipien: `docs/field-hub/2026-07-04_ux_design_roadmap_principles.md`
@@ -53,12 +60,13 @@ Letztes Update: 2026-07-04
 
 - OnField nutzt ein schlankes, LUVI-/Karpathy-inspiriertes Memory-System v1.
 - Ziel ist nicht mehr Kontext, sondern besseres Context Routing: Agenten sollen nur die fuer ihre Aufgabe relevanten SSOTs, Researches und Skills laden.
-- Sprint 0A ist abgeschlossen und steht vor dem SSOT-Freeze.
+- Sprint 0A ist abgeschlossen.
+- Sprint 0B ist abgeschlossen: Product Brief, Brand Kit, Tone of Voice, Designsystem, Component Inventory, Sports Configuration und PWA/A11y QA existieren als SSOTs.
 - Aktive Memory-Dateien:
   - `docs/field-hub/onfield_memory_governance.md`
   - `docs/field-hub/memory/index.md`
   - `docs/field-hub/memory/gotchas.md`
-- `docs/field-hub/onfield_ai_agent_playbook.md` wurde auf gezieltes Context Routing statt pauschales Roadmap-Voll-Laden umgestellt.
+- `docs/field-hub/onfield_ai_agent_playbook.md` wurde auf gezieltes Context Routing und SSOT-first nach Sprint 0B umgestellt.
 - Die OnField-Skills enthalten Memory-Closeout-Regeln:
   - `.agents/skills/rugby-field-hub-implementation/SKILL.md`
   - `.agents/skills/onfield-roadmap-execution/SKILL.md`
@@ -69,19 +77,18 @@ Letztes Update: 2026-07-04
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 0B aus der OnField-Roadmap vervollstaendigen: SSOTs fuer Product Brief, Brand Kit, Tone of Voice, Designsystem, Component Inventory, Sports Configuration und PWA/A11y QA erstellen.
-2. Danach Sprint 0C durchfuehren: Hook Review & Automation Guardrails, ohne blinde Memory-Automatik.
-3. Danach Sprint 1 als Agenten-Setup Review & Finalisierung ausfuehren.
-4. Danach Sprint 2 angehen: IA-Spezifikation fuer `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` ausarbeiten.
-5. Danach App Shell planen/implementieren, bevor einzelne Screens gross umgebaut werden.
+1. Sprint 0C durchfuehren: Hook Review & Automation Guardrails, ohne blinde Memory-Automatik.
+2. Danach Sprint 1 als Agenten-Setup Review & Finalisierung ausfuehren.
+3. Danach Sprint 2 angehen: IA-Spezifikation fuer `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` ausarbeiten.
+4. Danach App Shell planen/implementieren, bevor einzelne Screens gross umgebaut werden.
 
 ## Offene Risiken
 
 | Risiko | Auswirkung | Naechster Schritt |
 |---|---|---|
 | Alte Navigation bleibt zu lange bestehen. | Neue Marke wirkt weiterhin wie altes Dashboard. | IA-Sprint priorisieren. |
-| Designsystem wird nur in CSS gebaut. | Spaetere Agenten und ggf. Figma/Native-Arbeit verlieren Orientierung. | Figma oder gleichwertiges Designsystem-Artefakt ab Sprint 3-5 erstellen. |
+| Designsystem bleibt nur dokumentiert. | Code, Figma/Designartefakt und SSOT koennen auseinanderlaufen. | Figma oder gleichwertiges Designsystem-Artefakt ab Sprint 3-5 erstellen und Tokens im Code mappen. |
 | iPhone wird wieder als Nebenansicht behandelt. | Externe Nutzung und App-Store-Perspektive werden geschwaecht. | iPhone-Paritaet in jedem Sprint pruefen. |
-| Rugby bleibt zu stark in generischer Architektur. | Multi-Sport-Faehigkeit wird spaeter teuer. | Sport-Konfiguration schrittweise extrahieren. |
+| Rugby bleibt im Code zu stark in generischer Architektur. | Multi-Sport-Faehigkeit wird spaeter teuer. | Sport-Konfiguration schrittweise extrahieren. |
 | Memory wird als Archiv statt Router genutzt. | Agenten laden zu viel Kontext und das System wird traege. | Memory Governance und Index in jeder OnField-Session beachten. |
 | Aktive Hooks kommen zu frueh. | Agentenworkflow wird schwerer wartbar. | Hooks erst in Sprint 0C pruefen; Sprint 0A hat keine aktiven Hooks eingerichtet. |
