@@ -45,25 +45,33 @@ Letztes Update: 2026-07-04
 - Roadmap-Prinzipien: `docs/field-hub/2026-07-04_ux_design_roadmap_principles.md`
 - Decision Log: `docs/field-hub/onfield_decision_log.md`
 - Agent Playbook: `docs/field-hub/onfield_ai_agent_playbook.md`
+- Memory Governance: `docs/field-hub/onfield_memory_governance.md`
+- Memory Index: `docs/field-hub/memory/index.md`
+- Gotchas: `docs/field-hub/memory/gotchas.md`
 
-## Geplantes Memory-System
+## Aktives Memory-System
 
-- OnField soll ein schlankes, LUVI-/Karpathy-inspiriertes Memory-System bekommen.
+- OnField nutzt ein schlankes, LUVI-/Karpathy-inspiriertes Memory-System v1.
 - Ziel ist nicht mehr Kontext, sondern besseres Context Routing: Agenten sollen nur die fuer ihre Aufgabe relevanten SSOTs, Researches und Skills laden.
-- Sprint 0A ist dafuer vor den SSOT-Freeze gesetzt.
-- Geplante Sprint-0A-Dateien:
+- Sprint 0A ist umgesetzt und steht vor dem SSOT-Freeze.
+- Aktive Memory-Dateien:
   - `docs/field-hub/onfield_memory_governance.md`
   - `docs/field-hub/memory/index.md`
   - `docs/field-hub/memory/gotchas.md`
-- `docs/field-hub/onfield_ai_agent_playbook.md` wurde bereits auf gezieltes Context Routing statt pauschales Roadmap-Voll-Laden umgestellt.
-- Hooks sollen hoechstens als Absicherung dienen, z.B. fuer Stop-/PreCompact-Memory-Checks. Sie duerfen nicht blind unkontrollierte Memories schreiben.
+- `docs/field-hub/onfield_ai_agent_playbook.md` wurde auf gezieltes Context Routing statt pauschales Roadmap-Voll-Laden umgestellt.
+- Die OnField-Skills enthalten Memory-Closeout-Regeln:
+  - `.agents/skills/rugby-field-hub-implementation/SKILL.md`
+  - `.agents/skills/onfield-roadmap-execution/SKILL.md`
+  - `.agents/skills/onfield-design-system/SKILL.md`
+  - `.agents/skills/onfield-screen-redesign/SKILL.md`
+  - `.agents/skills/onfield-pwa-accessibility-qa/SKILL.md`
+- Hooks sind nicht aktiv. Sie bleiben ein spaeterer Pruefpunkt.
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 0A planen/umsetzen: Memory Governance, Memory Index, Gotchas und Memory-Closeout-Regeln fuer Skills.
-2. Danach Sprint 0B aus der OnField-Roadmap vervollstaendigen: SSOTs fuer Product Brief, Brand Kit, Tone of Voice, Designsystem, Component Inventory, Sports Configuration und PWA/A11y QA erstellen.
-3. Danach Sprint 2 angehen: IA-Spezifikation fuer `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` ausarbeiten.
-4. Danach App Shell planen/implementieren, bevor einzelne Screens gross umgebaut werden.
+1. Sprint 0B aus der OnField-Roadmap vervollstaendigen: SSOTs fuer Product Brief, Brand Kit, Tone of Voice, Designsystem, Component Inventory, Sports Configuration und PWA/A11y QA erstellen.
+2. Danach Sprint 2 angehen: IA-Spezifikation fuer `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` ausarbeiten.
+3. Danach App Shell planen/implementieren, bevor einzelne Screens gross umgebaut werden.
 
 ## Offene Risiken
 
@@ -73,5 +81,5 @@ Letztes Update: 2026-07-04
 | Designsystem wird nur in CSS gebaut. | Spaetere Agenten und ggf. Figma/Native-Arbeit verlieren Orientierung. | Figma oder gleichwertiges Designsystem-Artefakt ab Sprint 3-5 erstellen. |
 | iPhone wird wieder als Nebenansicht behandelt. | Externe Nutzung und App-Store-Perspektive werden geschwaecht. | iPhone-Paritaet in jedem Sprint pruefen. |
 | Rugby bleibt zu stark in generischer Architektur. | Multi-Sport-Faehigkeit wird spaeter teuer. | Sport-Konfiguration schrittweise extrahieren. |
-| Memory wird als Archiv statt Router gebaut. | Agenten laden zu viel Kontext und das System wird traege. | Sprint 0A muss Context Routing und Memory-Governance vor SSOT-Freeze klaeren. |
-| Aktive Hooks kommen zu frueh. | Agentenworkflow wird schwerer wartbar. | Hooks erst nach klarer Memory-Governance vorbereiten oder aktivieren. |
+| Memory wird als Archiv statt Router genutzt. | Agenten laden zu viel Kontext und das System wird traege. | Memory Governance und Index in jeder OnField-Session beachten. |
+| Aktive Hooks kommen zu frueh. | Agentenworkflow wird schwerer wartbar. | Hooks erst separat pruefen; Sprint 0A hat keine aktiven Hooks eingerichtet. |

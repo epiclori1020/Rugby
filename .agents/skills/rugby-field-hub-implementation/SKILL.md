@@ -12,10 +12,10 @@ Use this skill for all work on the app in `app/field-hub`. Rugby S&C Field Hub /
 Before changing product architecture, UI, navigation, branding, or sprint scope, read:
 
 1. `AGENTS.md`
-2. `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md`
-3. `docs/field-hub/onfield_decision_log.md`
-4. `docs/field-hub/onfield_current_state.md`
-5. `docs/field-hub/2026-07-04_ux_design_roadmap_principles.md`
+2. `docs/field-hub/memory/index.md`
+3. `docs/field-hub/onfield_current_state.md`
+4. `docs/field-hub/onfield_decision_log.md`
+5. Relevant sprint sections or SSOTs routed by the Memory Index.
 
 For implementation work, also read the files relevant to the current sprint:
 
@@ -156,3 +156,15 @@ Before calling work complete, verify:
 - UI works for 15-20 players and remains usable on both iPhone and iPad.
 - no feature is accidentally iPad-only.
 - medical/safety copy does not imply diagnosis or return-to-play clearance.
+
+## Memory Closeout
+
+Before the final response:
+
+1. Check whether `docs/field-hub/onfield_current_state.md` needs an update.
+2. Check whether `docs/field-hub/onfield_decision_log.md` needs an update for a durable decision.
+3. Check whether `docs/field-hub/memory/gotchas.md` needs an update for a repeatable lesson or trap.
+4. Update only the matching memory file when `docs/field-hub/onfield_memory_governance.md` says the information qualifies.
+5. In the final response, state one of:
+   - `Memory updated: <file>`
+   - `No memory update needed`

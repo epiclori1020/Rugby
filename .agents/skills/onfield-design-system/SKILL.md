@@ -12,11 +12,11 @@ Use this skill for OnField brand, tokens, components, and design-system work.
 Read before design-system changes:
 
 1. `AGENTS.md`
-2. `docs/field-hub/onfield_decision_log.md`
+2. `docs/field-hub/memory/index.md`
 3. `docs/field-hub/onfield_current_state.md`
-4. `docs/field-hub/2026-07-04_deep_research_branding_design_system.md`
-5. `docs/field-hub/2026-07-04_ux_design_roadmap_principles.md`
-6. Roadmap Sprint 3, Sprint 4, and Sprint 5 in `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md`
+4. `docs/field-hub/onfield_decision_log.md`
+5. Relevant design-system SSOTs or, until they exist, `docs/field-hub/2026-07-04_deep_research_branding_design_system.md`
+6. Roadmap Sprint 3, Sprint 4, and Sprint 5 if the task changes roadmap scope.
 
 If SSOT files exist, prefer them over re-reading the full research:
 
@@ -48,3 +48,15 @@ If SSOT files exist, prefer them over re-reading the full research:
 - Figma or equivalent design artifact is updated when relevant.
 - iPhone/iPad implications are addressed.
 - Accessibility and touch-target risks are noted.
+
+## Memory Closeout
+
+Before the final response:
+
+1. Check whether `docs/field-hub/onfield_current_state.md` needs an update.
+2. Check whether `docs/field-hub/onfield_decision_log.md` needs an update for a durable decision.
+3. Check whether `docs/field-hub/memory/gotchas.md` needs an update for a repeatable lesson or trap.
+4. Update only the matching memory file when `docs/field-hub/onfield_memory_governance.md` says the information qualifies.
+5. In the final response, state one of:
+   - `Memory updated: <file>`
+   - `No memory update needed`

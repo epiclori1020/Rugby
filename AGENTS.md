@@ -95,11 +95,13 @@ When adding research notes:
 
 The app formerly discussed as Rugby S&C Field Hub is now planned as **OnField Coach**. Treat **OnField** as the main brand, **OnField Coach** as the current app, **OnField Performance** as the later platform direction, and **OnField Rugby** as the first sport-specific configuration.
 
-For OnField app work, load the current roadmap and memory before making product or UI decisions:
+For OnField app work, use the Memory Index first when it exists. It routes agents to the relevant roadmap, SSOT, research, skill, and code context without loading everything blindly:
 
-- `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md`
+- `docs/field-hub/memory/index.md`
 - `docs/field-hub/onfield_decision_log.md`
 - `docs/field-hub/onfield_current_state.md`
+
+After OnField work, run Memory Closeout: update Current State, Decision Log, or Gotchas only when the Memory Governance says the information qualifies. Do not copy long roadmap or research content into this file.
 
 OnField app rules:
 

@@ -12,11 +12,12 @@ Use this skill for screen-by-screen rollout of the OnField UX and design system.
 Read before screen work:
 
 1. `AGENTS.md`
-2. `docs/field-hub/onfield_decision_log.md`
+2. `docs/field-hub/memory/index.md`
 3. `docs/field-hub/onfield_current_state.md`
-4. `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md`
+4. `docs/field-hub/onfield_decision_log.md`
 5. Relevant design-system SSOTs if they exist.
-6. The current screen component and its tests under `app/field-hub/src`.
+6. Relevant sprint section from `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md`.
+7. The current screen component and its tests under `app/field-hub/src`.
 
 ## Workflow
 
@@ -44,3 +45,15 @@ Read before screen work:
 - iPhone and iPad behavior is documented.
 - Relevant tests are updated or verified.
 - Visual risks and remaining inconsistencies are listed.
+
+## Memory Closeout
+
+Before the final response:
+
+1. Check whether `docs/field-hub/onfield_current_state.md` needs an update.
+2. Check whether `docs/field-hub/onfield_decision_log.md` needs an update for a durable decision.
+3. Check whether `docs/field-hub/memory/gotchas.md` needs an update for a repeatable lesson or trap.
+4. Update only the matching memory file when `docs/field-hub/onfield_memory_governance.md` says the information qualifies.
+5. In the final response, state one of:
+   - `Memory updated: <file>`
+   - `No memory update needed`

@@ -25,6 +25,9 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | 2026-07-04 | OnField bekommt Sprint 0A fuer ein schlankes LUVI-/Karpathy-inspiriertes Memory-System. | Memory soll nicht von Arwin manuell entschieden werden muessen, sondern Agenten durch Regeln, Context Routing und Closeout-Pruefungen fuehren. | Aktiv |
 | 2026-07-04 | Memory wird als Context-Router gebaut, nicht als grosses Pflichtarchiv. | Das reduziert Kontextverbrauch und verhindert, dass Agenten Roadmap, Researches und alle SSOTs blind laden. | Aktiv |
 | 2026-07-04 | Memory darf nicht blind vollautomatisch schreiben. | Automatische Hooks duerfen erinnern und pruefen; der Agent dokumentiert nach Governance-Regeln, damit kein Memory-Bloat entsteht. | Aktiv |
+| 2026-07-04 | OnField Memory System v1 ist aktiv. | Sprint 0A hat Memory Governance, Memory Index, Gotchas und Skill-Closeout-Regeln eingefuehrt. | Aktiv |
+| 2026-07-04 | Der Memory Index ist der primaere Context Router fuer OnField-Agenten. | Agenten sollen zuerst routen und danach nur relevante SSOTs, Researches, Skills und Code-Dateien laden. | Aktiv |
+| 2026-07-04 | OnField Memory v1 richtet keine aktiven Hooks ein. | Hook-Automation wird erst separat geprueft; v1 bleibt dokumenten- und skillbasiert. | Aktiv |
 
 ## Markenarchitektur
 
@@ -55,7 +58,7 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | Multi-Tenant SaaS, Billing, Organisationen | Nicht Teil des Coach-Operations-MVP. | In eigener OnField Performance Plattform-Roadmap. |
 | Player Accounts / Player Portal | Erhoeht Auth-, Datenschutz- und Support-Komplexitaet. | Wenn Public/Kiosk-Flow validiert ist und Player-Modul klar definiert wurde. |
 | Leaderboards, Feed, Social Features | Nicht Teil des aktuellen Coach-Operations-Kerns. | Spaeter als eigenes Engagement-Modul pruefen. |
-| Aktive Codex Hooks | Memory Governance und Context Routing muessen zuerst stabil sein. | Nach Sprint 0A pruefen; zuerst hoechstens Stop-/PreCompact-Checks, keine blinde Memory-Automatik. |
+| Aktive Codex Hooks | Memory Governance und Context Routing muessen sich erst in echten Sprints bewaehren. | Nach Sprint 0B oder den ersten Umsetzungssprints separat pruefen; zuerst hoechstens Stop-/PreCompact-Checks, keine blinde Memory-Automatik. |
 
 ## Verworfene Optionen
 

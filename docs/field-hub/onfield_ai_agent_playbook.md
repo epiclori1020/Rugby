@@ -11,15 +11,13 @@ Dieses Playbook beschreibt, wie KI-Agenten OnField-Arbeit vorbereiten, ausfuehre
 Vor OnField-App-Arbeit immer lesen:
 
 1. `AGENTS.md`
-2. `.agents/skills/rugby-field-hub-implementation/SKILL.md`
+2. `docs/field-hub/memory/index.md`
 3. `docs/field-hub/onfield_decision_log.md`
 4. `docs/field-hub/onfield_current_state.md`
 
-Wenn Sprint 0A umgesetzt ist, zusaetzlich zuerst den Memory Index lesen:
+Danach nur die fuer die Aufgabe relevanten Dateien laden. Der Memory Index ist der primaere Context Router.
 
-- `docs/field-hub/memory/index.md`
-
-Wenn der Memory Index noch nicht existiert, gilt als Fallback:
+Wenn der Memory Index in einer alten Branch-/Session-Situation fehlt, gilt als Fallback:
 
 - Roadmap-/Sprintarbeit: relevante Abschnitte aus `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md` lesen.
 - Produkt-/IA-Arbeit: relevante Roadmap-Abschnitte und `docs/field-hub/2026-07-04_ux_design_roadmap_principles.md` lesen.
@@ -44,6 +42,19 @@ Je nach Aufgabe zusaetzlich passenden Skill laden:
 - Keine medizinische Diagnose- oder Freigabe-Sprache.
 - Keine realen sensiblen Spielerdaten committen.
 - UI-Arbeit immer mit Designsystem/Token-Logik begruenden.
+- Nach jeder OnField-Aufgabe Memory-Closeout durchfuehren.
+
+## Memory Closeout
+
+Vor der finalen Antwort pruefen:
+
+1. Muss `docs/field-hub/onfield_current_state.md` aktualisiert werden?
+2. Muss `docs/field-hub/onfield_decision_log.md` fuer eine dauerhafte Entscheidung aktualisiert werden?
+3. Muss `docs/field-hub/memory/gotchas.md` fuer eine wiederholbare Falle oder Lesson aktualisiert werden?
+4. Aktualisiere nur die passende Memory-Datei, wenn `docs/field-hub/onfield_memory_governance.md` die Information qualifiziert.
+5. In der finalen Antwort eine der folgenden Zeilen nennen:
+   - `Memory updated: <file>`
+   - `No memory update needed`
 
 ## Empfohlene Tool-Nutzung
 
@@ -85,6 +96,7 @@ Jeder Agentenlauf soll am Ende nennen:
 
 - geaenderte Dateien.
 - durchgefuehrte Verifikation.
+- Memory updated / no memory update needed.
 - nicht ausgefuehrte Tests mit Grund.
 - offene Risiken.
 - naechster sinnvoller Schritt.

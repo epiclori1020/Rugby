@@ -12,10 +12,11 @@ Use this skill when working from the OnField sprint roadmap.
 Read before changing files:
 
 1. `AGENTS.md`
-2. `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md`
-3. `docs/field-hub/onfield_decision_log.md`
-4. `docs/field-hub/onfield_current_state.md`
-5. Relevant SSOT or source files for the specific sprint.
+2. `docs/field-hub/memory/index.md`
+3. `docs/field-hub/onfield_current_state.md`
+4. `docs/field-hub/onfield_decision_log.md`
+5. Relevant sprint sections in `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md`
+6. Relevant SSOT or source files for the specific sprint.
 
 ## Workflow
 
@@ -42,3 +43,15 @@ Read before changing files:
 - Required OnField context was loaded.
 - Verification was run or clearly marked as not applicable.
 - Open risks and follow-ups are listed.
+
+## Memory Closeout
+
+Before the final response:
+
+1. Check whether `docs/field-hub/onfield_current_state.md` needs an update.
+2. Check whether `docs/field-hub/onfield_decision_log.md` needs an update for a durable decision.
+3. Check whether `docs/field-hub/memory/gotchas.md` needs an update for a repeatable lesson or trap.
+4. Update only the matching memory file when `docs/field-hub/onfield_memory_governance.md` says the information qualifies.
+5. In the final response, state one of:
+   - `Memory updated: <file>`
+   - `No memory update needed`
