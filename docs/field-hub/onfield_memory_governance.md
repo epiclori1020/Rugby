@@ -82,35 +82,59 @@ Jede OnField-Aufgabe endet mit dieser Pruefung:
 
 ## Hook-Policy
 
-Sprint 0A richtet keine aktiven Hooks ein.
+Sprint 0C aktiviert minimale passive Codex-Hooks fuer OnField. Sprint 0D erweitert diese Hooks um eine lokale, fail-open Runtime-Memory-Pipeline:
 
-Nicht erstellen:
+- `SessionStart` zeigt nur den kleinen Hot Cache aus `.onfield-memory/knowledge/hot.md`.
+- `Stop` und `PreCompact` capturen redigiertes lokales Rohmaterial, schreiben Daily Logs und erinnern weiter an Memory-Closeout.
+- `PostToolUse` prueft Schreibaktionen auf klare Secret-Leaks.
+- Safety-/Memory-Checks warnen, aber treffen keine Produktentscheidung.
 
-- `.codex/hooks.json`
+Hooks duerfen:
+
+- erinnern.
+- warnen.
+- bei klaren Secret-Mustern blockieren.
+- redigierte lokale Captures und Daily Logs schreiben.
+- generierte Knowledge-Artikel, Index, Hot Cache, Reports, Backups und Orphans unter `.onfield-memory/` verwalten.
+
+Hooks duerfen nicht:
+
+- Current State, Decision Log, Roadmap oder OnField-SSOTs automatisch schreiben, loeschen oder ueberschreiben.
+- Produkt-, Architektur- oder Roadmap-Entscheidungen selbst treffen.
+- alle Memories in jede Session laden.
+- echte Secrets speichern.
+- personenbezogene Spieler-, Kontakt- oder Gesundheitsdaten bewusst sammeln. Redaction ist ein Sicherheitsnetz, kein vollstaendiges Datenschutzmodell.
+
+Wenn Codex beim ersten Hook-Lauf Trust/Approval verlangt, wird der Hook bewusst geprueft und bestaetigt. `--dangerously-bypass-hook-trust` wird fuer OnField nicht genutzt.
+
+Nicht erstellen oder aktivieren:
+
 - `.claude/settings.local.json`
 - `.claude/memory`
-- Hook-Scripts
-- automatische Session-Capture- oder Compile-Pipeline
+- Claude-Hooks ohne eigene Entscheidung
 
 Wenn eine lokale ignored `.claude/settings.local.json` bereits existiert, bleibt sie unberuehrt. Sie ist keine OnField-Memory-Runtime und gehoert nicht in Git.
 
-Spaetere Hooks duerfen erinnern oder pruefen, aber nicht blind Memory schreiben. Stop-/PreCompact-Checks sind Kandidaten fuer einen spaeteren Sprint, wenn Governance und Skills stabil sind.
+Weitere Hooks duerfen erst nach konkretem wiederholbarem Nutzen ergaenzt werden. Keine blinde Memory-Automatik: Runtime Memory darf Vorschlaege und lokale Knowledge erzeugen, aber die dauerhafte Memory-Closeout-Entscheidung bleibt beim Agenten.
 
 ## LUVI-Bezug
 
-Von LUVI uebernehmen wir fuer OnField v1:
+Von LUVI uebernehmen wir fuer OnField:
 
 - Routing vor Vollkontext.
 - Governance vor Automation.
 - klare Trennung von Current State, Decisions und Gotchas.
 - Memory-Closeout am Ende von Agentenarbeit.
 - Index als Einstieg fuer Menschen und Agenten.
+- Local-first Runtime Memory.
+- kleiner SessionStart Hot Cache.
+- Daily Logs als lokales Rohmaterial.
+- Compiler in generierte Knowledge-Artikel.
+- Lint/Health, Backups, Orphans und Recovery.
 
-Nicht uebernehmen fuer OnField v1:
+Nicht uebernehmen fuer OnField jetzt:
 
 - komplette `.claude/memory` Script-Suite.
-- Runtime Daily Logs.
-- automatische Knowledge Compilation.
 - Archon-Integration.
-- lokale Hook-/Session-Capture-Pipeline.
 - grosse agentenspezifische Memory-Struktur auf Vorrat.
+- Claude-Hook-Paritaet.

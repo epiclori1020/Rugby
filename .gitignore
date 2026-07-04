@@ -21,11 +21,25 @@ build/
 coverage/
 playwright-report/
 test-results/
+__pycache__/
 
 # Local Codex / temporary logs
 .codex-log/
 .tmp/
 tmp/
+
+# OnField local runtime memory outputs
+.onfield-memory/.venv/
+.onfield-memory/backups/
+.onfield-memory/captures/
+.onfield-memory/daily/
+.onfield-memory/knowledge/
+.onfield-memory/orphans/
+.onfield-memory/reports/
+.onfield-memory/tmp/
+.onfield-memory/state.json
+.onfield-memory/*.log
+.onfield-memory/*.lock
 
 # Local player data exports or imported club data.
 # Keep the folder available, but do not commit real player/health data by default.

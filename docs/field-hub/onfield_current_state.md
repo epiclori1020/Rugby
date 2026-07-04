@@ -21,6 +21,7 @@ Letztes Update: 2026-07-04
   - `.agents/skills/onfield-design-system/SKILL.md`
   - `.agents/skills/onfield-screen-redesign/SKILL.md`
   - `.agents/skills/onfield-pwa-accessibility-qa/SKILL.md`
+  - `.agents/skills/onfield-runtime-memory/SKILL.md`
 
 ## Aktueller App-Zustand
 
@@ -47,6 +48,7 @@ Letztes Update: 2026-07-04
 - Component Inventory: `docs/field-hub/onfield_component_inventory.md`
 - Sports Configuration Model: `docs/field-hub/onfield_sports_configuration_model.md`
 - PWA/A11y QA: `docs/field-hub/onfield_pwa_accessibility_qa.md`
+- Runtime Memory FAQ: `docs/field-hub/onfield_runtime_memory_faq.md`
 - UX Research: `docs/field-hub/2026-07-04_deep_research_ux_ui_guardrails.md`
 - Branding Research: `docs/field-hub/2026-07-04_deep_research_branding_design_system.md`
 - Roadmap-Prinzipien: `docs/field-hub/2026-07-04_ux_design_roadmap_principles.md`
@@ -73,14 +75,19 @@ Letztes Update: 2026-07-04
   - `.agents/skills/onfield-design-system/SKILL.md`
   - `.agents/skills/onfield-screen-redesign/SKILL.md`
   - `.agents/skills/onfield-pwa-accessibility-qa/SKILL.md`
-- Hooks sind nicht aktiv. Sie bleiben ein spaeterer Pruefpunkt.
+  - `.agents/skills/onfield-runtime-memory/SKILL.md`
+- Sprint 0C hat minimale passive Codex-Hooks aktiviert.
+- Sprint 0D hat lokales Runtime Memory unter `.onfield-memory/` aktiviert:
+  - `SessionStart` zeigt nur einen kleinen Hot Cache.
+  - `Stop` und `PreCompact` capturen redigiertes Rohmaterial, schreiben lokale Daily Logs und triggern throttled Compile/Index/Lint.
+  - `PostToolUse` prueft Schreibaktionen weiter auf klare Secret-Leaks und warnt bei Safety-/Memory-Risiken.
+  - Runtime Memory ist lokal/ignored und darf keine SSOTs, keinen Decision Log, keinen Current State und keine Roadmap automatisch ersetzen.
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 0C durchfuehren: Hook Review & Automation Guardrails, ohne blinde Memory-Automatik.
-2. Danach Sprint 1 als Agenten-Setup Review & Finalisierung ausfuehren.
-3. Danach Sprint 2 angehen: IA-Spezifikation fuer `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` ausarbeiten.
-4. Danach App Shell planen/implementieren, bevor einzelne Screens gross umgebaut werden.
+1. Sprint 1 als Agenten-Setup Review & Finalisierung ausfuehren.
+2. Danach Sprint 2 angehen: IA-Spezifikation fuer `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` ausarbeiten.
+3. Danach App Shell planen/implementieren, bevor einzelne Screens gross umgebaut werden.
 
 ## Offene Risiken
 
@@ -91,4 +98,4 @@ Letztes Update: 2026-07-04
 | iPhone wird wieder als Nebenansicht behandelt. | Externe Nutzung und App-Store-Perspektive werden geschwaecht. | iPhone-Paritaet in jedem Sprint pruefen. |
 | Rugby bleibt im Code zu stark in generischer Architektur. | Multi-Sport-Faehigkeit wird spaeter teuer. | Sport-Konfiguration schrittweise extrahieren. |
 | Memory wird als Archiv statt Router genutzt. | Agenten laden zu viel Kontext und das System wird traege. | Memory Governance und Index in jeder OnField-Session beachten. |
-| Aktive Hooks kommen zu frueh. | Agentenworkflow wird schwerer wartbar. | Hooks erst in Sprint 0C pruefen; Sprint 0A hat keine aktiven Hooks eingerichtet. |
+| Hook-Automatik erzeugt falsche Sicherheit. | Agenten verlassen sich auf Runtime Memory statt Memory Governance. | Sprint 0D-Runtime bleibt lokal/ignored, fail-open und unterhalb von AGENTS, Decision Log, Current State und SSOTs. |

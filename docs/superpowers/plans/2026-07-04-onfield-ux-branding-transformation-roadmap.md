@@ -110,14 +110,15 @@ Aus der offiziellen Codex-Dokumentation ergeben sich diese Arbeitsregeln:
 - **MCP/Plugins** sind sinnvoll, wenn Codex externe Werkzeuge oder Kontext braucht, z.B. Figma, GitHub, Vercel, Browser/Chrome DevTools, Supabase oder OpenAI Docs.
 - **Subagents** sind sinnvoll fuer read-heavy Aufgaben wie Inventar, QA-Audit, Test-Sichtung oder Research-Synthese. Fuer parallele schreibende UI-Umbauten sind sie riskant, weil Konflikte entstehen.
 - **Worktrees** sind sinnvoll, wenn mehrere Sprint-Aufgaben parallel laufen sollen, ohne den lokalen Hauptcheckout zu stoeren.
-- **Hooks** sind spaeter sinnvoll fuer stabile Checks, z.B. "kein Service Role Key", "kein harter Rugby-Begriff in generischer Komponente", "Tests muessen vor Abschluss laufen". Nicht als erstes bauen.
+- **Hooks** sind nach Sprint 0C/0D nur dort aktiv, wo sie stabilen Nutzen haben: Secret-Guardrails, Memory-Closeout-Erinnerung und lokale fail-open Runtime Memory.
 - **Plugins** lohnen sich erst, wenn Skills/MCP/Workflows stabil sind oder im Team geteilt werden sollen.
 
 Aktuelle Hook-Entscheidung:
 
-- Hooks werden in dieser Roadmap vorbereitet, aber nicht aktiv eingerichtet.
-- Es wird jetzt keine `.codex/hooks.json` angelegt.
-- Hook-Kandidaten werden im Agent Playbook dokumentiert und erst nach stabilen SSOTs/Skills aktiviert.
+- Sprint 0C hat minimale passive Codex-Hooks aktiviert.
+- Sprint 0D hat lokales Codex-first Runtime Memory unter `.onfield-memory/` aktiviert.
+- Runtime Memory darf lokale Captures, Daily Logs, Knowledge, Hot Cache, Reports, Backups und Orphans verwalten.
+- Runtime Memory darf keine SSOTs, keinen Current State, keinen Decision Log und keine Roadmap automatisch ersetzen.
 
 Empfohlene Tools/Plugins/Connectoren:
 
@@ -584,7 +585,7 @@ Wichtig:
 
 ## Sprint 0C - Hook Review & Automation Guardrails
 
-Status: **naechster Sprint**
+Status: **abgeschlossen**
 
 ### Was genau machen wir?
 
@@ -612,7 +613,7 @@ Hooks koennen helfen, aber zu frueh aktivierte Hooks machen den Workflow schwere
 
 - `docs/field-hub/onfield_ai_agent_playbook.md`
 - `docs/field-hub/onfield_memory_governance.md`
-- optional spaeter `.codex/hooks.json`, aber nur nach expliziter Entscheidung
+- `.codex/hooks.json`
 - kein App-Code
 
 ### Kontext fuer Agenten
@@ -634,23 +635,65 @@ Wichtig:
 
 ### Deliverables
 
-- Entscheidung: keine Hooks / nur dokumentierte Hook-Kandidaten / minimale aktive Hooks.
-- Falls aktive Hooks eingefuehrt werden: klare Rollback-Anleitung.
-- Falls keine Hooks eingefuehrt werden: Begruendung im Decision Log.
+- Entscheidung: minimale passive Codex-Hooks sind aktiv.
+- Rollback: `.codex/hooks.json` und `.codex/hooks/onfield_guardrails.sh` entfernen und die Sprint-0C-Entscheidung im Decision Log als ersetzt markieren.
 - Memory Governance und Agent Playbook sind synchron.
+- Sprint-0C-Hooks schreiben, loeschen oder ueberschreiben kein Memory. Sprint 0D erweitert dies spaeter auf lokale ignored Runtime-Artefakte unter `.onfield-memory/`, ohne SSOTs zu ersetzen.
 
 ### Akzeptanzkriterien
 
 - Hook-Entscheidung ist im Decision Log dokumentiert.
 - Keine blinde Memory-Automatik wurde eingefuehrt.
-- Falls `.codex/hooks.json` entsteht, enthaelt sie nur minimale, gut begruendete Checks.
-- Worktree enthaelt keine untracked Runtime-Memory-Dateien.
+- `.codex/hooks.json` enthaelt nur minimale, gut begruendete Checks.
+- Sprint 0C selbst fuehrt keine Runtime-Memory-Dateien ein. Sprint 0D fuehrt danach tracked Runtime-Scripts und ignored Runtime-Outputs ein.
+
+## Sprint 0D - Local Runtime Memory
+
+Status: **abgeschlossen**
+
+### Was genau machen wir?
+
+Wir ergaenzen nach Sprint 0C ein lokales, Codex-first Runtime-Memory-System. Es captured Stop/PreCompact-Events, redigiert vor Speicherung, schreibt Daily Logs, erzeugt deterministische Knowledge-Artikel, baut Index und Hot Cache, fuehrt Lint/Health Checks aus und unterstuetzt Backups/Recovery.
+
+### Wieso?
+
+Arwin ist einziger Developer und soll wenig Wartungsarbeit haben. Das System soll wiederkehrende Session-Informationen lokal erhalten, ohne alle Memories in jede Session zu laden oder SSOTs automatisch umzuschreiben.
+
+### Wo?
+
+- `.onfield-memory/`
+- `.codex/hooks.json`
+- Memory-/Agentendokumente unter `docs/field-hub`
+- kein App-Code
+
+### Wichtig
+
+- Codex-first, Claude-Hook-Paritaet spaeter.
+- Auto-Compile ist throttled und fail-open.
+- Der Compiler ist deterministisch lokal; Hooks starten kein `codex exec`.
+- Generated Runtime Knowledge ist on-demand Kontext, kein SSOT.
+- Current State, Decision Log, Roadmap und SSOTs bleiben manuelle Memory-Closeout-Entscheidungen.
+
+### Deliverables
+
+- Lokale Runtime-Struktur mit Scripts, Tests und Config.
+- `SessionStart`, `Stop` und `PreCompact` Hooks fuer Hot Cache und Capture.
+- Redaction vor jeder lokalen Speicherung.
+- Daily Logs, Knowledge Index, Hot Cache, Lint Reports, Backups, Orphans und Recovery.
+
+### Akzeptanzkriterien
+
+- SessionStart laedt nur kleinen Hot Cache.
+- Stop/PreCompact schreiben redigierte lokale Daily Logs.
+- Compile/Index/Hot Cache laufen nur bei Bedarf und blockieren Codex nicht.
+- Fake Secrets erscheinen nicht in generierten Outputs.
+- Runtime schreibt keine OnField-SSOTs automatisch.
 
 ## Sprint 1 - Agenten-Setup Review & Finalisierung
 
 ### Was genau machen wir?
 
-Wir pruefen und finalisieren die bereits angelegte KI-Arbeitsumgebung nach Sprint 0A/0B/0C. Dieser Sprint baut nicht alles neu, sondern beseitigt Luecken, Widersprueche und veraltete Agentenregeln.
+Wir pruefen und finalisieren die bereits angelegte KI-Arbeitsumgebung nach Sprint 0A/0B/0C/0D. Dieser Sprint baut nicht alles neu, sondern beseitigt Luecken, Widersprueche und veraltete Agentenregeln.
 
 Arbeiten:
 
@@ -658,7 +701,7 @@ Arbeiten:
 - OnField-Skills auf Kontext-Routing, Trigger, Done Definition und Memory Closeout pruefen.
 - `AGENTS.md` auf Laenge, Relevanz und Widersprueche pruefen.
 - `docs/field-hub/onfield_ai_agent_playbook.md` gegen Memory Index und Roadmap pruefen.
-- Hook-Entscheidung aus Sprint 0C respektieren.
+- Hook- und Runtime-Memory-Entscheidung aus Sprint 0C/0D respektieren.
 
 ### Wieso?
 
@@ -1969,20 +2012,21 @@ Nicht springen, ausser es gibt einen klaren Grund.
 
 1. Sprint 0A: OnField Memory System v1. **Abgeschlossen.**
 2. Sprint 0B: Research-Synthese und SSOT-Freeze. **Abgeschlossen.**
-3. Sprint 0C: Hook Review & Automation Guardrails. **Naechster Sprint.**
-4. Sprint 1: Agenten-Setup Review & Finalisierung.
-5. Sprint 2: IA-Spezifikation.
-6. Sprint 3: Brand Foundation.
-7. Sprint 4: Tokens.
-8. Sprint 5: Core Components.
-9. Sprint 6: App Shell/Navigation.
-10. Sprint 7: Hero/Brand Surfaces.
-11. Sprint 8: Einheit Container.
-12. Sprint 9: Check-in.
-13. Sprint 10: Training.
-14. Sprint 11: Nachbereitung.
-15. Sprint 12: Spieler/Athleten.
-16. Sprint 13: Analyse.
+3. Sprint 0C: Hook Review & Automation Guardrails. **Abgeschlossen.**
+4. Sprint 0D: Local Runtime Memory. **Abgeschlossen.**
+5. Sprint 1: Agenten-Setup Review & Finalisierung.
+6. Sprint 2: IA-Spezifikation.
+7. Sprint 3: Brand Foundation.
+8. Sprint 4: Tokens.
+9. Sprint 5: Core Components.
+10. Sprint 6: App Shell/Navigation.
+11. Sprint 7: Hero/Brand Surfaces.
+12. Sprint 8: Einheit Container.
+13. Sprint 9: Check-in.
+14. Sprint 10: Training.
+15. Sprint 11: Nachbereitung.
+16. Sprint 12: Spieler/Athleten.
+17. Sprint 13: Analyse.
 17. Sprint 14: Mehr/Utility.
 18. Sprint 15: Public/Kiosk.
 19. Sprint 16: Sport Config.

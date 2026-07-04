@@ -40,6 +40,7 @@ Je nach Aufgabe zusaetzlich passenden Skill laden:
 - Designsystem/Brand/Tokens: `.agents/skills/onfield-design-system/SKILL.md`
 - Screen-Umbau: `.agents/skills/onfield-screen-redesign/SKILL.md`
 - PWA/A11y/Responsive QA: `.agents/skills/onfield-pwa-accessibility-qa/SKILL.md`
+- Runtime-Memory-Arbeit: `.agents/skills/onfield-runtime-memory/SKILL.md`
 
 ## Arbeitsregeln
 
@@ -92,24 +93,27 @@ Vor der finalen Antwort pruefen:
 - Parallele schreibende UI-Umbauten vermeiden, weil Konflikte wahrscheinlich sind.
 - Worktrees sind sinnvoll, wenn mehrere Sprint-Aufgaben parallel laufen sollen.
 
-## Hook-Vorbereitung
+## Aktive Hook- und Runtime-Memory-Regeln
 
-Aktive Hooks werden jetzt noch nicht eingerichtet.
+Sprint 0C aktiviert minimale passive Codex-Hooks in `.codex/hooks.json`. Sprint 0D ergaenzt lokales Runtime Memory unter `.onfield-memory/`.
 
-Spaetere Hook-Kandidaten:
+Aktive Checks:
 
-- Secret-/Service-Role-Key-Check.
-- Erinnerung, bei OnField-Code relevante Skills zu laden.
-- Check auf verbotene medizinische Freigabe-Sprache.
-- Check auf neue unkommentierte Hex-Farben im UI-Code.
-- Stop-Hook mit kurzer Handover-Zusammenfassung.
+- `SessionStart` zeigt nur den kleinen Hot Cache aus `.onfield-memory/knowledge/hot.md`, falls vorhanden.
+- `Stop` und `PreCompact` capturen redigiertes lokales Rohmaterial, schreiben Daily Logs, triggern throttled Compile/Index/Lint und erinnern weiter an Memory-Closeout.
+- `PostToolUse` nach Schreibaktionen prueft Diffs auf klare Secret-Leaks.
+- Safety- und Memory-State-Hinweise warnen, ohne den Agenten zu ersetzen.
 
-Aktivierung erst, wenn:
+Regeln:
 
-- SSOTs existieren.
-- Skills stabil sind.
-- erste OnField-Sprints umgesetzt wurden.
-- Hook-Vertrauen/Review bewusst erfolgt ist.
+- Runtime Memory ist lokal, ignored und nicht kanonisch.
+- Hooks duerfen `.onfield-memory/` verwalten, aber keine OnField-SSOTs, keinen Current State, keinen Decision Log und keine Roadmap automatisch ersetzen.
+- Agenten laden generierte Knowledge-Artikel nur on-demand ueber den Memory Index.
+- Klare Secret-Muster duerfen blockieren.
+- Safety-/Memory-Hinweise sind Warnungen und muessen vom Agenten bewertet werden.
+- Falls Codex beim ersten Hook-Lauf Trust/Approval verlangt: Hook bewusst pruefen und bestaetigen, nicht `--dangerously-bypass-hook-trust` nutzen.
+- Weitere Hooks nur nach wiederholbarem Nutzen und neuer Entscheidung ergaenzen.
+- Fuer Details und Standardchecks: `docs/field-hub/onfield_runtime_memory_faq.md`.
 
 ## Abschlussbericht pro Agentenlauf
 
