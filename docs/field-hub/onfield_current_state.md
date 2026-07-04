@@ -70,8 +70,10 @@ Letztes Update: 2026-07-04
 ## Naechste empfohlene Schritte
 
 1. Sprint 0B aus der OnField-Roadmap vervollstaendigen: SSOTs fuer Product Brief, Brand Kit, Tone of Voice, Designsystem, Component Inventory, Sports Configuration und PWA/A11y QA erstellen.
-2. Danach Sprint 2 angehen: IA-Spezifikation fuer `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` ausarbeiten.
-3. Danach App Shell planen/implementieren, bevor einzelne Screens gross umgebaut werden.
+2. Danach Sprint 0C durchfuehren: Hook Review & Automation Guardrails, ohne blinde Memory-Automatik.
+3. Danach Sprint 1 als Agenten-Setup Review & Finalisierung ausfuehren.
+4. Danach Sprint 2 angehen: IA-Spezifikation fuer `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` ausarbeiten.
+5. Danach App Shell planen/implementieren, bevor einzelne Screens gross umgebaut werden.
 
 ## Offene Risiken
 
@@ -82,4 +84,4 @@ Letztes Update: 2026-07-04
 | iPhone wird wieder als Nebenansicht behandelt. | Externe Nutzung und App-Store-Perspektive werden geschwaecht. | iPhone-Paritaet in jedem Sprint pruefen. |
 | Rugby bleibt zu stark in generischer Architektur. | Multi-Sport-Faehigkeit wird spaeter teuer. | Sport-Konfiguration schrittweise extrahieren. |
 | Memory wird als Archiv statt Router genutzt. | Agenten laden zu viel Kontext und das System wird traege. | Memory Governance und Index in jeder OnField-Session beachten. |
-| Aktive Hooks kommen zu frueh. | Agentenworkflow wird schwerer wartbar. | Hooks erst separat pruefen; Sprint 0A hat keine aktiven Hooks eingerichtet. |
+| Aktive Hooks kommen zu frueh. | Agentenworkflow wird schwerer wartbar. | Hooks erst in Sprint 0C pruefen; Sprint 0A hat keine aktiven Hooks eingerichtet. |

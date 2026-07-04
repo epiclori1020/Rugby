@@ -436,6 +436,9 @@ Dann iPhone und iPad ueber Browser/Simulator pruefen.
 
 ## Sprint 0A - OnField Memory System v1
 
+Status: **abgeschlossen**
+Commits: `e9d94d9` und Nachbesserung `cbebc37`
+
 ### Was genau machen wir?
 
 Wir planen und verankern ein leichtes, LUVI-/Karpathy-inspiriertes Memory-System fuer OnField, bevor die grossen SSOTs gebaut werden.
@@ -514,6 +517,8 @@ Nicht automatisch kopieren oder aktivieren:
 
 ## Sprint 0B - Research-Synthese und SSOT-Freeze
 
+Status: **naechster Sprint**
+
 ### Was genau machen wir?
 
 Wir vervollstaendigen die SSOT-Dokumente und ueberfuehren die beiden Deep Researches plus unsere Entscheidungen in klare, kuerzere Arbeitsdokumente.
@@ -577,26 +582,87 @@ Wichtig:
   - Welche Sprache fuer Safety/Sync/Errors gilt.
   - Welche UI-Komponenten genutzt werden sollen.
 
-## Sprint 1 - Codex-/Agenten-Setup aktualisieren
+## Sprint 0C - Hook Review & Automation Guardrails
+
+Status: **geplant nach Sprint 0B**
 
 ### Was genau machen wir?
 
-Wir machen die KI-Arbeitsumgebung OnField-ready.
+Wir pruefen nach den ersten echten Memory- und SSOT-Arbeiten, ob minimale Hooks sinnvoll sind. Sprint 0C aktiviert nur Hooks, wenn sie klaren Nutzen bringen und keine blinde Memory-Automatik erzeugen.
 
-Arbeiten:
+Pruefen:
 
-- Bestehenden Skill `.agents/skills/rugby-field-hub-implementation/SKILL.md` aktualisieren.
-- Neue Skills anlegen:
-  - `.agents/skills/onfield-roadmap-execution/SKILL.md`
-  - `.agents/skills/onfield-design-system/SKILL.md`
-  - `.agents/skills/onfield-screen-redesign/SKILL.md`
-  - `.agents/skills/onfield-pwa-accessibility-qa/SKILL.md`
-- `AGENTS.md` minimal ergaenzen, aber nur mit dauerhaften OnField-Regeln und Verweisen.
-- Hook-Konfiguration vorbereiten, aber nicht aktivieren: keine `.codex/hooks.json` in diesem Sprint.
+- Hat Memory-Closeout in Sprint 0B zuverlaessig funktioniert?
+- Haben Agenten den Memory Index genutzt?
+- Wurde Current State bei relevanten Aenderungen aktualisiert?
+- Gab es wiederkehrende Fehler, die ein Hook verhindern koennte?
+
+Moegliche Hook-Kandidaten:
+
+- Stop-/PreCompact-Warnung: Memory-Closeout pruefen.
+- Secret-Check: keine Supabase Service Role Keys oder andere Secrets.
+- Safety-Copy-Check: keine medizinische Freigabe-/Diagnose-Sprache.
+- SSOT-State-Check: Roadmap, Skills oder SSOTs geaendert, aber Current State nicht geprueft.
 
 ### Wieso?
 
-Codex arbeitet besser, wenn wiederkehrende Aufgaben als Skills beschrieben sind. AGENTS.md soll nicht ueberladen werden. Die Skills sorgen dafuer, dass kuenftige Agenten die richtigen SSOTs laden und nicht jedes Mal bei Null starten.
+Hooks koennen helfen, aber zu frueh aktivierte Hooks machen den Workflow schwerer und erzeugen falsche Sicherheit. Erst muss sich zeigen, welche Checks wirklich wiederkehrende Fehler verhindern.
+
+### Wo?
+
+- `docs/field-hub/onfield_ai_agent_playbook.md`
+- `docs/field-hub/onfield_memory_governance.md`
+- optional spaeter `.codex/hooks.json`, aber nur nach expliziter Entscheidung
+- kein App-Code
+
+### Kontext fuer Agenten
+
+Lies:
+
+- `docs/field-hub/memory/index.md`
+- `docs/field-hub/onfield_memory_governance.md`
+- `docs/field-hub/memory/gotchas.md`
+- `docs/field-hub/onfield_current_state.md`
+- Ergebnisse aus Sprint 0B
+
+Wichtig:
+
+- Keine automatische Memory-Schreibung.
+- Keine komplette LUVI `.claude/memory` Runtime kopieren.
+- Keine Hooks aktivieren, nur weil sie technisch moeglich sind.
+- Eine vorhandene ignored `.claude/settings.local.json` nicht bearbeiten oder committen.
+
+### Deliverables
+
+- Entscheidung: keine Hooks / nur dokumentierte Hook-Kandidaten / minimale aktive Hooks.
+- Falls aktive Hooks eingefuehrt werden: klare Rollback-Anleitung.
+- Falls keine Hooks eingefuehrt werden: Begruendung im Decision Log.
+- Memory Governance und Agent Playbook sind synchron.
+
+### Akzeptanzkriterien
+
+- Hook-Entscheidung ist im Decision Log dokumentiert.
+- Keine blinde Memory-Automatik wurde eingefuehrt.
+- Falls `.codex/hooks.json` entsteht, enthaelt sie nur minimale, gut begruendete Checks.
+- Worktree enthaelt keine untracked Runtime-Memory-Dateien.
+
+## Sprint 1 - Agenten-Setup Review & Finalisierung
+
+### Was genau machen wir?
+
+Wir pruefen und finalisieren die bereits angelegte KI-Arbeitsumgebung nach Sprint 0A/0B/0C. Dieser Sprint baut nicht alles neu, sondern beseitigt Luecken, Widersprueche und veraltete Agentenregeln.
+
+Arbeiten:
+
+- Bestehenden Skill `.agents/skills/rugby-field-hub-implementation/SKILL.md` auf Aktualitaet pruefen.
+- OnField-Skills auf Kontext-Routing, Trigger, Done Definition und Memory Closeout pruefen.
+- `AGENTS.md` auf Laenge, Relevanz und Widersprueche pruefen.
+- `docs/field-hub/onfield_ai_agent_playbook.md` gegen Memory Index und Roadmap pruefen.
+- Hook-Entscheidung aus Sprint 0C respektieren.
+
+### Wieso?
+
+Ein grosser Teil des Agenten-Setups ist bereits durch Sprint 0A erledigt. Sprint 1 dient deshalb als Review- und Finalisierungssprint, damit spaetere App-Sprints nicht von veralteten Skill- oder Kontextregeln ausgebremst werden.
 
 ### Wo?
 
@@ -618,17 +684,17 @@ Codex/OpenAI-Recherche beachten:
 
 ### Deliverables
 
-- Bestehender Skill nennt OnField.
-- Neue Skills haben klare Trigger, Required Context und Done Definition.
-- `AGENTS.md` bleibt kurz und verweist nur auf SSOTs/Skills, falls noetig.
-- Hook-Kandidaten sind dokumentiert, aber es gibt keine aktive Hook-Konfiguration.
+- Alle OnField-Skills sind synchron mit Memory Index und Roadmap.
+- `AGENTS.md` bleibt kurz und verweist auf Memory/SSOTs statt lange Regeln zu duplizieren.
+- Agent Playbook, Current State und Decision Log widersprechen sich nicht.
+- Hook-Entscheidung aus Sprint 0C ist umgesetzt oder bewusst nicht umgesetzt.
 
 ### Akzeptanzkriterien
 
 - Wenn ein User "OnField Coach Screen redesignen" sagt, laedt Codex den passenden Skill.
 - Kein Skill zwingt Agenten, alle langen Research-Dateien immer voll zu laden, wenn SSOTs reichen.
 - Kein komplexes Agenten-Framework wird eingefuehrt.
-- Keine `.codex/hooks.json` wurde angelegt.
+- Falls Hooks existieren, sind sie aus Sprint 0C begruendet, minimal und dokumentiert.
 
 ## Sprint 2 - Produktarchitektur und Informationsarchitektur spezifizieren
 
@@ -1901,28 +1967,29 @@ Spaeter moeglich:
 
 Nicht springen, ausser es gibt einen klaren Grund.
 
-1. Sprint 0A: OnField Memory System v1.
-2. Sprint 0B: Research-Synthese und SSOT-Freeze.
-3. Sprint 1: Agenten-/Skill-Setup.
-4. Sprint 2: IA-Spezifikation.
-5. Sprint 3: Brand Foundation.
-6. Sprint 4: Tokens.
-7. Sprint 5: Core Components.
-8. Sprint 6: App Shell/Navigation.
-9. Sprint 7: Hero/Brand Surfaces.
-10. Sprint 8: Einheit Container.
-11. Sprint 9: Check-in.
-12. Sprint 10: Training.
-13. Sprint 11: Nachbereitung.
-14. Sprint 12: Spieler/Athleten.
-15. Sprint 13: Analyse.
-16. Sprint 14: Mehr/Utility.
-17. Sprint 15: Public/Kiosk.
-18. Sprint 16: Sport Config.
-19. Sprint 17: Sync/Backup.
-20. Sprint 18: PWA/A11y.
-21. Sprint 19: Full Rollout QA.
-22. Sprint 20: External Beta.
+1. Sprint 0A: OnField Memory System v1. **Abgeschlossen.**
+2. Sprint 0B: Research-Synthese und SSOT-Freeze. **Naechster Sprint.**
+3. Sprint 0C: Hook Review & Automation Guardrails.
+4. Sprint 1: Agenten-Setup Review & Finalisierung.
+5. Sprint 2: IA-Spezifikation.
+6. Sprint 3: Brand Foundation.
+7. Sprint 4: Tokens.
+8. Sprint 5: Core Components.
+9. Sprint 6: App Shell/Navigation.
+10. Sprint 7: Hero/Brand Surfaces.
+11. Sprint 8: Einheit Container.
+12. Sprint 9: Check-in.
+13. Sprint 10: Training.
+14. Sprint 11: Nachbereitung.
+15. Sprint 12: Spieler/Athleten.
+16. Sprint 13: Analyse.
+17. Sprint 14: Mehr/Utility.
+18. Sprint 15: Public/Kiosk.
+19. Sprint 16: Sport Config.
+20. Sprint 17: Sync/Backup.
+21. Sprint 18: PWA/A11y.
+22. Sprint 19: Full Rollout QA.
+23. Sprint 20: External Beta.
 
 ## Definition of Done fuer die gesamte Roadmap
 

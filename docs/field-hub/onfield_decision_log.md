@@ -28,6 +28,8 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | 2026-07-04 | OnField Memory System v1 ist aktiv. | Sprint 0A hat Memory Governance, Memory Index, Gotchas und Skill-Closeout-Regeln eingefuehrt. | Aktiv |
 | 2026-07-04 | Der Memory Index ist der primaere Context Router fuer OnField-Agenten. | Agenten sollen zuerst routen und danach nur relevante SSOTs, Researches, Skills und Code-Dateien laden. | Aktiv |
 | 2026-07-04 | OnField Memory v1 richtet keine aktiven Hooks ein. | Hook-Automation wird erst separat geprueft; v1 bleibt dokumenten- und skillbasiert. | Aktiv |
+| 2026-07-04 | Sprint 0C wird als Hook Review & Automation Guardrails eingefuegt. | Die Roadmap soll selbsterklaerend zeigen, wann Hook-Automation geprueft wird und warum sie nicht Teil von Sprint 0A war. | Aktiv |
+| 2026-07-04 | Sprint 1 wird zum Agenten-Setup Review & Finalisierungssprint. | Der Grossteil des Agenten-Setups ist durch Sprint 0A bereits erledigt; Sprint 1 soll nur noch Luecken und Widersprueche pruefen. | Aktiv |
 
 ## Markenarchitektur
 
@@ -58,7 +60,7 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | Multi-Tenant SaaS, Billing, Organisationen | Nicht Teil des Coach-Operations-MVP. | In eigener OnField Performance Plattform-Roadmap. |
 | Player Accounts / Player Portal | Erhoeht Auth-, Datenschutz- und Support-Komplexitaet. | Wenn Public/Kiosk-Flow validiert ist und Player-Modul klar definiert wurde. |
 | Leaderboards, Feed, Social Features | Nicht Teil des aktuellen Coach-Operations-Kerns. | Spaeter als eigenes Engagement-Modul pruefen. |
-| Aktive Codex Hooks | Memory Governance und Context Routing muessen sich erst in echten Sprints bewaehren. | Nach Sprint 0B oder den ersten Umsetzungssprints separat pruefen; zuerst hoechstens Stop-/PreCompact-Checks, keine blinde Memory-Automatik. |
+| Aktive Codex Hooks | Memory Governance und Context Routing muessen sich erst in echten Sprints bewaehren. | Sprint 0C; zuerst hoechstens Stop-/PreCompact-Checks, keine blinde Memory-Automatik. |
 
 ## Verworfene Optionen
 
