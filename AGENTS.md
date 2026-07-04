@@ -91,6 +91,24 @@ When adding research notes:
 - `codex/skills/`: project-local skill playbooks for research synthesis, annual planning, session programming, and safety review.
 - `data/`: local data exports if the club provides them. Do not commit sensitive player data without explicit approval.
 
+## OnField App Work
+
+The app formerly discussed as Rugby S&C Field Hub is now planned as **OnField Coach**. Treat **OnField** as the main brand, **OnField Coach** as the current app, **OnField Performance** as the later platform direction, and **OnField Rugby** as the first sport-specific configuration.
+
+For OnField app work, load the current roadmap and memory before making product or UI decisions:
+
+- `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md`
+- `docs/field-hub/onfield_decision_log.md`
+- `docs/field-hub/onfield_current_state.md`
+
+OnField app rules:
+
+- iPhone and iPad must have feature parity. Differences may be layout, navigation, and interaction depth only.
+- Use OnField naming consistently; Rugby-specific language belongs to the OnField Rugby configuration, not generic product architecture.
+- Do not use medical diagnosis or clearance language. The app can support coaching decisions, but it must not present return-to-play clearance.
+- Marketing or hero-style branding belongs on brand surfaces such as welcome, login, install, empty demo, kiosk welcome, splash, and landing pages. Live coaching flows must stay quiet, operational, and field-ready.
+- Prefer durable SSOT docs and focused skills over putting long roadmap details into this file.
+
 ## Codex Workflow
 
 Use the project workflow in `docs/05_codex_workflow.md`.

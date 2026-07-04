@@ -1,22 +1,27 @@
 ---
 name: rugby-field-hub-implementation
-description: Use when implementing, reviewing, or planning the Rugby S&C Field Hub app for Arwin. Triggers: Rugby Field Hub, S&C app, Field Hub app, iPad coach dashboard, check-in app, player tracking app, app/field-hub.
+description: Use when implementing, reviewing, or planning the OnField Coach app for Arwin. Triggers: OnField, OnField Coach, OnField Rugby, OnField Performance, Rugby Field Hub, S&C app, Field Hub app, iPad coach dashboard, iPhone coach app, check-in app, player tracking app, app/field-hub.
 ---
 
-# Rugby Field Hub Implementation
+# OnField Coach Implementation
 
-Use this skill for all work on the Rugby S&C Field Hub app.
+Use this skill for all work on the app in `app/field-hub`. Rugby S&C Field Hub / Field Hub is the old working name. The current product direction is **OnField Coach**, with **OnField Rugby** as the first sport-specific configuration.
 
 ## Required Context
 
-Before changing code or scaffolding the app, read:
+Before changing product architecture, UI, navigation, branding, or sprint scope, read:
 
 1. `AGENTS.md`
-2. `app/README.md`
-3. `app/ROADMAP.md`
-4. `app/CODEX_SETUP_AUDIT.md`
-5. `app/SUPABASE_SETUP_GUIDE.md`
-6. `print_pdfs/00_manifest.txt`
+2. `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md`
+3. `docs/field-hub/onfield_decision_log.md`
+4. `docs/field-hub/onfield_current_state.md`
+5. `docs/field-hub/2026-07-04_ux_design_roadmap_principles.md`
+
+For implementation work, also read the files relevant to the current sprint:
+
+- `app/field-hub/README.md`
+- affected files under `app/field-hub/src`
+- relevant tests next to the affected domain, hook, lib, or component files
 
 For content and domain rules, read only the files relevant to the current sprint. Common sources:
 
@@ -35,7 +40,14 @@ For content and domain rules, read only the files relevant to the current sprint
 
 ## Product Definition
 
-Build a personal training-operations dashboard for Arwin, not a player portal and not a PDF archive.
+Build **OnField Coach**: a field-ready training-operations app for coaches. It is not primarily a player portal, a PDF archive, or a generic SaaS dashboard.
+
+Brand architecture:
+
+- **OnField**: main brand.
+- **OnField Coach**: current app.
+- **OnField Performance**: later SaaS/platform direction.
+- **OnField Rugby**: first sport-specific configuration.
 
 The app must support:
 
@@ -43,6 +55,7 @@ The app must support:
 - during training: check-in, attendance, traffic light, variants, quick observations.
 - after training: sRPE, duration, session load, pain/issue, E2 decision, progression and follow-ups.
 - between sessions: carry-over of warnings, returner caps, consent status and next tasks.
+- later multi-sport configuration without hard-coding Rugby into generic product architecture.
 
 ## MVP Architecture
 
@@ -68,6 +81,7 @@ Do not use in the MVP unless the user explicitly changes the architecture:
 - digital consent signature flow.
 - automatic Markdown/PDF parser pipeline.
 - large dashboard templates or chart libraries.
+- a native rewrite before information architecture, core workflows, design system, and PWA quality are stable.
 
 Supabase rules:
 
@@ -86,9 +100,16 @@ Supabase rules:
 ## UI Rules
 
 - Start screen is the `Heute` dashboard, never a landing page.
-- iPad-first and touch-first.
+- iPhone and iPad must have feature parity. Differences may be layout, navigation, density, and sheet/pane behavior only.
+- iPad should use a sidebar plus content area and optional detail pane.
+- iPhone should use a visible bottom tab bar for the 5 top-level areas.
+- Top-level navigation target: `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr`.
+- `Check-in`, `Training`, and `Nachbereitung` belong under `Einheit`.
+- `Bibliothek`, `Export/Backup`, and `Einstellungen` belong under `Mehr`.
 - Use large tap targets and low-friction forms.
 - Keep screens practical and quiet, not marketing-like.
+- Marketing or hero-style branding is allowed on welcome, login, onboarding, PWA install, app icon/splash, empty demo states, kiosk welcome, and landing surfaces. Live coaching flows must stay operational and low-noise.
+- Use OnField naming consistently. Rugby-specific terminology belongs to the OnField Rugby configuration or rugby content, not generic component architecture.
 - Make key actions available without searching:
   - Check-in.
   - Training.
@@ -110,15 +131,16 @@ Supabase rules:
 
 ## Implementation Process
 
-Follow `app/ROADMAP.md` sprint order.
+Follow the OnField roadmap sprint order in `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md`.
 
 For each sprint:
 
 1. Restate the sprint goal briefly.
-2. Implement only the sprint scope.
-3. Run the relevant build/typecheck/test command once available.
-4. For UI changes, start the dev server and use the Browser plugin for visual checks when practical.
-5. Summarize changed files, verification and open risks.
+2. Read the required OnField memory and relevant SSOT docs.
+3. Implement only the sprint scope.
+4. Run the relevant build/typecheck/test command once available.
+5. For UI changes, start the dev server and use the Browser plugin for iPhone/iPad visual checks when practical.
+6. Summarize changed files, verification and open risks.
 
 ## Review Expectations
 
@@ -131,4 +153,6 @@ Before calling work complete, verify:
 - RLS expectations are documented for all dynamic tables.
 - export/backup remains visible once dynamic data exists.
 - sync status remains visible once dynamic data exists.
-- UI works for 15-20 players and remains usable on iPad-sized screens.
+- UI works for 15-20 players and remains usable on both iPhone and iPad.
+- no feature is accidentally iPad-only.
+- medical/safety copy does not imply diagnosis or return-to-play clearance.
