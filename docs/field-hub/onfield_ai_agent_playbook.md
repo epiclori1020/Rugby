@@ -12,8 +12,8 @@ Vor OnField-App-Arbeit immer lesen:
 
 1. `AGENTS.md`
 2. `docs/field-hub/memory/index.md`
-3. `docs/field-hub/onfield_decision_log.md`
-4. `docs/field-hub/onfield_current_state.md`
+3. `docs/field-hub/onfield_current_state.md`
+4. `docs/field-hub/onfield_decision_log.md`
 
 Danach nur die fuer die Aufgabe relevanten Dateien laden. Der Memory Index ist der primaere Context Router.
 
@@ -114,6 +114,7 @@ Regeln:
 - Falls Codex beim ersten Hook-Lauf Trust/Approval verlangt: Hook bewusst pruefen und bestaetigen, nicht `--dangerously-bypass-hook-trust` nutzen.
 - Weitere Hooks nur nach wiederholbarem Nutzen und neuer Entscheidung ergaenzen.
 - Fuer Details und Standardchecks: `docs/field-hub/onfield_runtime_memory_faq.md`.
+- Runtime-Checks sind fuer Hook-/Runtime-Memory-Arbeit relevant. App-Typecheck, Build, Browser-, Responsive- oder Supabase-Checks nur ausfuehren, wenn App-, UI- oder Supabase-Dateien betroffen sind.
 
 ## Abschlussbericht pro Agentenlauf
 

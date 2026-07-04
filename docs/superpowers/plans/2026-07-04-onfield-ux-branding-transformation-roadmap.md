@@ -699,6 +699,7 @@ Arbeiten:
 
 - Bestehenden Skill `.agents/skills/rugby-field-hub-implementation/SKILL.md` auf Aktualitaet pruefen.
 - OnField-Skills auf Kontext-Routing, Trigger, Done Definition und Memory Closeout pruefen.
+- Neuen Skill `.agents/skills/onfield-runtime-memory/SKILL.md`, Runtime FAQ, Memory Index Routing, Agent Playbook und Hook-/Runtime-Memory-Governance gegeneinander pruefen.
 - `AGENTS.md` auf Laenge, Relevanz und Widersprueche pruefen.
 - `docs/field-hub/onfield_ai_agent_playbook.md` gegen Memory Index und Roadmap pruefen.
 - Hook- und Runtime-Memory-Entscheidung aus Sprint 0C/0D respektieren.
@@ -723,21 +724,21 @@ Codex/OpenAI-Recherche beachten:
 - MCP/Plugins fuer externe Werkzeuge.
 - Subagents nur fuer read-heavy Aufgaben.
 - Worktrees fuer parallele Sprint-Arbeit.
-- Hook-Entscheidung aus Sprint 0C respektieren; keine zusaetzliche Hook-Automatik ohne neue Entscheidung.
+- Hook- und Runtime-Memory-Entscheidung aus Sprint 0C/0D respektieren; keine zusaetzliche Hook-Automatik ohne neue Entscheidung.
 
 ### Deliverables
 
 - Alle OnField-Skills sind synchron mit Memory Index und Roadmap.
 - `AGENTS.md` bleibt kurz und verweist auf Memory/SSOTs statt lange Regeln zu duplizieren.
 - Agent Playbook, Current State und Decision Log widersprechen sich nicht.
-- Hook-Entscheidung aus Sprint 0C ist umgesetzt oder bewusst nicht umgesetzt.
+- Hook- und Runtime-Memory-Entscheidung aus Sprint 0C/0D ist umgesetzt oder bewusst nicht umgesetzt.
 
 ### Akzeptanzkriterien
 
 - Wenn ein User "OnField Coach Screen redesignen" sagt, laedt Codex den passenden Skill.
 - Kein Skill zwingt Agenten, alle langen Research-Dateien immer voll zu laden, wenn SSOTs reichen.
 - Kein komplexes Agenten-Framework wird eingefuehrt.
-- Falls Hooks existieren, sind sie aus Sprint 0C begruendet, minimal und dokumentiert.
+- Falls Hooks oder Runtime Memory existieren, sind sie aus Sprint 0C/0D begruendet, minimal und dokumentiert.
 
 ## Sprint 2 - Produktarchitektur und Informationsarchitektur spezifizieren
 
@@ -2014,7 +2015,7 @@ Nicht springen, ausser es gibt einen klaren Grund.
 2. Sprint 0B: Research-Synthese und SSOT-Freeze. **Abgeschlossen.**
 3. Sprint 0C: Hook Review & Automation Guardrails. **Abgeschlossen.**
 4. Sprint 0D: Local Runtime Memory. **Abgeschlossen.**
-5. Sprint 1: Agenten-Setup Review & Finalisierung.
+5. Sprint 1: Agenten-Setup Review & Finalisierung. **Abgeschlossen.**
 6. Sprint 2: IA-Spezifikation.
 7. Sprint 3: Brand Foundation.
 8. Sprint 4: Tokens.
@@ -2027,13 +2028,13 @@ Nicht springen, ausser es gibt einen klaren Grund.
 15. Sprint 11: Nachbereitung.
 16. Sprint 12: Spieler/Athleten.
 17. Sprint 13: Analyse.
-17. Sprint 14: Mehr/Utility.
-18. Sprint 15: Public/Kiosk.
-19. Sprint 16: Sport Config.
-20. Sprint 17: Sync/Backup.
-21. Sprint 18: PWA/A11y.
-22. Sprint 19: Full Rollout QA.
-23. Sprint 20: External Beta.
+18. Sprint 14: Mehr/Utility.
+19. Sprint 15: Public/Kiosk.
+20. Sprint 16: Sport Config.
+21. Sprint 17: Sync/Backup.
+22. Sprint 18: PWA/A11y.
+23. Sprint 19: Full Rollout QA.
+24. Sprint 20: External Beta.
 
 ## Definition of Done fuer die gesamte Roadmap
 

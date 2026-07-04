@@ -98,8 +98,8 @@ The app formerly discussed as Rugby S&C Field Hub is now planned as **OnField Co
 For OnField app work, use the Memory Index first when it exists. It routes agents to the relevant roadmap, SSOT, research, skill, and code context without loading everything blindly:
 
 - `docs/field-hub/memory/index.md`
-- `docs/field-hub/onfield_decision_log.md`
 - `docs/field-hub/onfield_current_state.md`
+- `docs/field-hub/onfield_decision_log.md`
 
 After OnField work, run Memory Closeout: update Current State, Decision Log, or Gotchas only when the Memory Governance says the information qualifies. Do not copy long roadmap or research content into this file.
 

@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from __future__ import annotations
 
+import json
 import shutil
 import subprocess
 import sys
@@ -45,6 +46,31 @@ def test_lint_and_recovery() -> None:
     assert (ROOT / "knowledge" / "index.md").exists()
 
 
+def test_compile_clears_pending_without_daily_logs() -> None:
+    reset_runtime()
+    (ROOT / "state.json").write_text(
+        json.dumps(
+            {
+                "schema_version": 1,
+                "captures": {},
+                "daily_hashes": {},
+                "knowledge_hashes": {},
+                "last_compile_at": None,
+                "last_compile_status": "failed",
+                "pending_compile": True,
+            }
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    result = subprocess.run([sys.executable, str(SCRIPTS / "compile.py")], text=True, capture_output=True, check=False)
+    assert result.returncode == 0
+    assert "no daily logs" in result.stdout
+    state = json.loads((ROOT / "state.json").read_text(encoding="utf-8"))
+    assert state["pending_compile"] is False
+
+
 if __name__ == "__main__":
     test_lint_and_recovery()
+    test_compile_clears_pending_without_daily_logs()
     print("test_lint_recover.py PASS")

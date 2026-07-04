@@ -80,6 +80,7 @@ def test_pending_compile_message() -> None:
     start = subprocess.run([sys.executable, str(SCRIPTS / "session_start.py")], text=True, capture_output=True, check=False)
     assert start.returncode == 0
     assert "pending" in start.stdout
+    reset_runtime()
 
 
 if __name__ == "__main__":

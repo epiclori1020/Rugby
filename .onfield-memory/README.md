@@ -10,6 +10,7 @@ Tracked files are scripts, tests, and configuration. Generated memory outputs ar
 - `backups/`: generated knowledge snapshots before replacement.
 - `orphans/`: invalid or unparsable captures.
 - `reports/`: lint, setup, and compile reports.
+- `tmp/`: temporary runtime working files.
 - `state.json`: local runtime state.
 
 Authority order stays unchanged:

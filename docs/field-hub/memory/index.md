@@ -61,7 +61,7 @@ Sprint 0D ergaenzt ein lokales, ignored Runtime-Memory unter `.onfield-memory/`.
 
 - `knowledge/hot.md` darf bei SessionStart als kleiner Hot Cache angezeigt werden.
 - `knowledge/index.md` ist nur on-demand Kontext fuer Memory-Arbeit oder wiederkehrende Workflow-Fragen.
-- `daily/`, `captures/`, `reports/`, `backups/` und `orphans/` sind lokales Rohmaterial und keine SSOTs.
+- `daily/`, `captures/`, `reports/`, `backups/`, `orphans/`, `tmp/` und `state.json` sind lokale Runtime-Artefakte und keine SSOTs.
 - Runtime Memory steht unter AGENTS, Decision Log, Current State und OnField-SSOTs.
 - Agenten laden nicht automatisch alle generierten Knowledge-Artikel.
 - Details stehen in `docs/field-hub/onfield_runtime_memory_faq.md`.

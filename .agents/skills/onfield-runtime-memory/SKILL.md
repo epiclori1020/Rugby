@@ -68,7 +68,7 @@ bash .codex/hooks/onfield_guardrails.sh post-write-check
 ## Common Pitfalls
 
 - Do not treat `knowledge/hot.md` as an SSOT.
-- Do not add generated `daily/`, `captures/`, `knowledge/`, `reports/`, `backups/`, `orphans/`, or `state.json` to Git.
+- Do not add generated `daily/`, `captures/`, `knowledge/`, `reports/`, `backups/`, `orphans/`, `tmp/`, or `state.json` to Git.
 - Do not leave fixture-generated Runtime data behind after tests.
 - Do not weaken redaction to make tests pass.
 - Do not broaden 0D into Claude parity, cloud sync, vector search, or LLM curation without a new sprint decision.

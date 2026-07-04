@@ -187,6 +187,8 @@ def compile_memory(force: bool = False) -> str:
     state = load_state()
     if not should_run:
         state["last_compile_status"] = reason
+        if reason == "no daily logs":
+            state["pending_compile"] = False
         save_state(state)
         return reason
 

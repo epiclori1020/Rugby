@@ -53,6 +53,7 @@ Wenn Runtime Memory einem SSOT widerspricht, gilt der SSOT.
 | `.onfield-memory/reports/` | Lint, Setup, Hook-Reports, SSOT-Vorschlaege | ignored |
 | `.onfield-memory/backups/` | Knowledge-Backups | ignored |
 | `.onfield-memory/orphans/` | ungueltige Captures | ignored |
+| `.onfield-memory/tmp/` | temporaere Runtime-Arbeitsdateien | ignored |
 | `.onfield-memory/state.json` | lokaler Runtime-State | ignored |
 
 ## Wann Nutzt Ein Agent Das?
