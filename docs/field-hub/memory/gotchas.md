@@ -14,6 +14,7 @@ Dieses Dokument speichert wiederkehrende Fehler, Fallen und konkrete Vermeidungs
 | active | Rugby darf nicht in generische OnField-Architektur eingebrannt werden. | Rugby-spezifische Begriffe gehoeren in OnField Rugby oder Content-Konfiguration, nicht in generische Komponenten- oder Produktlogik. |
 | active | Hero/Marketing kann Live-Coaching stoeren. | Hero-Optik nur auf Brand-Surfaces wie Welcome, Login, Install, Empty Demo, Kiosk Welcome, Splash und Landing verwenden. Live-Flows bleiben ruhig und operativ. |
 | active | Blinde Hook-/Memory-Automatik erzeugt falsches Vertrauen. | Hooks duerfen spaeter erinnern oder pruefen, aber nicht ohne Governance Memory schreiben. Sprint 0A aktiviert keine Hooks. |
+| active | Lokale ignored Claude-Konfiguration kann existieren. | Eine vorhandene `.claude/settings.local.json` nicht als Sprint-0A-Hook werten und nicht bearbeiten oder committen. Entscheidend ist, dass keine Hook-/Runtime-Dateien neu erstellt oder getrackt werden. |
 | active | PDFs und kopierte Researches koennen Whitespace-Warnungen erzeugen. | PDFs nicht mechanisch formatieren, weil PDF-Strukturen beschaedigt werden koennen. Research-Markdown nur gezielt bereinigen, wenn es keine Quellenstruktur zerstoert. |
 
 ## Wann Neue Gotchas Hinzukommen

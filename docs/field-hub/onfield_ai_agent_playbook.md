@@ -27,6 +27,7 @@ Wenn der Memory Index in einer alten Branch-/Session-Situation fehlt, gilt als F
 
 Je nach Aufgabe zusaetzlich passenden Skill laden:
 
+- Code/App-Arbeit: `.agents/skills/rugby-field-hub-implementation/SKILL.md`
 - Roadmap-Sprintarbeit: `.agents/skills/onfield-roadmap-execution/SKILL.md`
 - Designsystem/Brand/Tokens: `.agents/skills/onfield-design-system/SKILL.md`
 - Screen-Umbau: `.agents/skills/onfield-screen-redesign/SKILL.md`

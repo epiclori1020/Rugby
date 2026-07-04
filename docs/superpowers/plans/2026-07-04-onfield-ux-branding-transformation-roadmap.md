@@ -37,17 +37,9 @@ Jeder Agent liest vor OnField-Arbeit immer:
 2. den passenden OnField-Skill in `.agents/skills/...`
 3. `docs/field-hub/onfield_current_state.md`
 4. `docs/field-hub/onfield_decision_log.md`
-5. sofern nach Sprint 0A vorhanden: `docs/field-hub/memory/index.md`
+5. `docs/field-hub/memory/index.md`
 
 Danach entscheidet der Memory-/Context-Router, welche weiteren Dateien relevant sind.
-
-Wenn der Memory Index noch nicht existiert, gilt bis Sprint 0A als Fallback:
-
-- Roadmap-/Sprint-Arbeit: dieses Roadmap-Dokument lesen.
-- Produkt-/IA-Arbeit: `docs/field-hub/2026-07-04_ux_design_roadmap_principles.md` und relevante Sprint-Abschnitte lesen.
-- Design-/Brand-Arbeit: Branding-Research nur bei Bedarf lesen, spaeter bevorzugt `onfield_brand_kit.md` und `onfield_design_system.md`.
-- UX-/Workflow-Arbeit: UX-Research nur bei Bedarf lesen, spaeter bevorzugt Product Brief, Component Inventory und passende Sprint-SSOTs.
-- Code-Sprints: zusaetzlich die betroffenen Dateien in `app/field-hub/src` lesen.
 
 Wenn SSOT-Dokumente aus Sprint 0B bereits existieren, werden sie nur geladen, wenn sie fuer die Aufgabe relevant sind:
 
@@ -456,20 +448,20 @@ Sprint 0A legt fest, wie kuenftige Agenten:
 - alte oder ersetzte Informationen markieren.
 - am Ende einer Session pruefen, ob Memory angepasst werden muss.
 
-Geplante Dateien fuer die Umsetzung von Sprint 0A:
+Umgesetzte Dateien aus Sprint 0A:
 
 - `docs/field-hub/onfield_memory_governance.md`
 - `docs/field-hub/memory/index.md`
 - `docs/field-hub/memory/gotchas.md`
 
-Geplante Skill-/Workflow-Aenderungen fuer Sprint 0A:
+Umgesetzte Skill-/Workflow-Aenderungen aus Sprint 0A:
 
 - Alle OnField-Skills bekommen eine Memory-Closeout-Regel.
 - Der Memory Index wird als Context-Router eingefuehrt.
 - `onfield_current_state.md` bleibt kurz und wird ersetzt statt endlos erweitert.
 - `onfield_decision_log.md` bleibt fuer dauerhafte Entscheidungen.
 - `gotchas.md` nimmt nur wiederkehrende oder riskante Fehler auf.
-- Hook-Strategie wird dokumentiert; aktive Hooks bleiben optional und werden nicht blind eingefuehrt.
+- Hook-Strategie ist dokumentiert; aktive Hooks wurden nicht eingerichtet.
 
 ### Wieso?
 
@@ -495,11 +487,12 @@ Lies:
 - diese Roadmap
 - LUVI dient als Vorbild, aber OnField bekommt eine schlankere MVP-Version.
 
-Nicht automatisch kopieren:
+Nicht automatisch kopieren oder aktivieren:
 
 - komplette LUVI-Script-Suite.
 - grosse Agent-Memory-Struktur auf Vorrat.
 - aktive Hooks ohne klaren Nutzen und Review.
+- lokale ignored Dateien wie `.claude/settings.local.json` weder erstellen noch bearbeiten.
 
 ### Deliverables
 

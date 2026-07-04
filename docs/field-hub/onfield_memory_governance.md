@@ -92,6 +92,8 @@ Nicht erstellen:
 - Hook-Scripts
 - automatische Session-Capture- oder Compile-Pipeline
 
+Wenn eine lokale ignored `.claude/settings.local.json` bereits existiert, bleibt sie unberuehrt. Sie ist keine OnField-Memory-Runtime und gehoert nicht in Git.
+
 Spaetere Hooks duerfen erinnern oder pruefen, aber nicht blind Memory schreiben. Stop-/PreCompact-Checks sind Kandidaten fuer einen spaeteren Sprint, wenn Governance und Skills stabil sind.
 
 ## LUVI-Bezug
