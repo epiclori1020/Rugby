@@ -2287,6 +2287,11 @@ button {
   background: var(--of-color-status-success-bg);
 }
 
+.live-session-stepper-preview {
+  border-color: var(--line);
+  background: var(--of-color-surface-default);
+}
+
 .live-step-heading {
   display: flex;
   align-items: start;
@@ -2422,6 +2427,11 @@ button {
   gap: 12px;
 }
 
+.training-secondary-tools {
+  display: grid;
+  gap: var(--of-space-sm);
+}
+
 .training-player-list {
   display: grid;
   gap: 12px;
@@ -2435,6 +2445,30 @@ button {
   display: grid;
   gap: 12px;
   padding: 14px;
+}
+
+.training-player-scan-row {
+  cursor: pointer;
+  text-align: left;
+}
+
+.training-player-scan-row:hover {
+  border-color: var(--brand);
+}
+
+.training-player-scan-row:focus-visible {
+  outline: 3px solid var(--of-color-focus-ring-soft);
+  outline-offset: 2px;
+}
+
+.training-player-scan-row p {
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.4;
+}
+
+.training-row-focus {
+  justify-self: start;
 }
 
 .training-player-row.traffic-green {
@@ -2452,6 +2486,20 @@ button {
 .training-limits,
 .training-actions {
   min-width: 0;
+}
+
+.training-player-sheet {
+  width: min(680px, 100%);
+}
+
+.training-player-detail {
+  display: grid;
+  gap: 12px;
+}
+
+.exposure-review-panel.embedded {
+  display: grid;
+  gap: 12px;
 }
 
 .field-form {

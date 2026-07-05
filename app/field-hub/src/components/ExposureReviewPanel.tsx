@@ -10,6 +10,7 @@ import type { Player } from '../domain/players'
 import { hasPlayerId } from '../lib/playerId'
 
 type ExposureReviewPanelProps = {
+  embedded?: boolean
   entries: PlayerSessionEntry[]
   isSavingDisabled: boolean
   onGenerate: () => void
@@ -41,6 +42,7 @@ function activeExposureLabels(summary: PlayerExposureSummary | undefined) {
 }
 
 export function ExposureReviewPanel({
+  embedded = false,
   entries,
   isSavingDisabled,
   onGenerate,
@@ -54,12 +56,12 @@ export function ExposureReviewPanel({
   const summaryByPlayerId = new Map(summaries.flatMap((summary) => (summary.playerId ? [[summary.playerId, summary]] : [])))
 
   return (
-    <section className="panel exposure-review-panel" aria-labelledby="exposure-review-heading">
+    <section className={embedded ? 'exposure-review-panel embedded' : 'panel exposure-review-panel'} aria-labelledby="exposure-review-heading">
       <div className="status-line">
         <Activity className="nav-icon" aria-hidden />
         <div>
           <h3 id="exposure-review-heading">Exposures</h3>
-          <p>Dokumentation aus Blockstatus, Anwesenheit und Limits; keine medizinische Freigabe.</p>
+          <p>Dokumentation aus Blockstatus, Anwesenheit und Limits; medizinische Entscheidungen bleiben extern.</p>
         </div>
       </div>
 

@@ -5,11 +5,11 @@ import {
   Gauge,
   Play,
   RefreshCw,
-  Route,
   ShieldAlert,
   UserCheck,
+  X,
 } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import type { HubTab } from '../navigation'
 import { libraryItems } from '../content/library'
 import { exerciseMappings, variantCards } from '../content/trainingReference'
@@ -279,12 +279,78 @@ function ReturnerCapNote({ cap }: { cap: ReturnerCapSummary | undefined }) {
   return (
     <div className="warning-note returner-cap-note">
       <ShieldAlert className="nav-icon" aria-hidden />
-      <span>Returner-Caps {cap.sessionDate}: {parts.join(' · ')}. Keine medizinische Freigabe.</span>
+      <span>Returner-Caps {cap.sessionDate}: {parts.join(' · ')}. Medizinische Entscheidungen bleiben extern.</span>
     </div>
   )
 }
 
 function TrainingPlayerRow({
+  entry,
+  onSelect,
+  player,
+  returnerCap,
+  warning,
+}: {
+  entry: PlayerSessionEntry
+  onSelect: (player: Player) => void
+  player: Player
+  returnerCap: ReturnerCapSummary | undefined
+  warning: PlayerWarning | undefined
+}) {
+  const trafficLight = entry.trafficLight ?? entry.trafficLightSuggestion
+  const isStop = trafficLight === 'red' || entry.trainingVariant === 'D' || entry.limits.includes('klaeren')
+  const rowSummary = [
+    `Ampel ${formatTrafficLight(trafficLight)}`,
+    entry.limits.length > 0 ? `Limits ${entry.limits.map((limit) => limitLabels[limit]).join(', ')}` : null,
+    returnerCap ? 'Returner-Caps' : null,
+    warning ? 'Vorwarnung' : null,
+  ].filter(Boolean)
+
+  return (
+    <article
+      className={`training-player-row training-player-scan-row traffic-${trafficLight ?? 'open'}`}
+      role="button"
+      tabIndex={0}
+      onClick={() => onSelect(player)}
+      onKeyDown={(event) => {
+        if (event.key === 'Enter' || event.key === ' ') {
+          event.preventDefault()
+          onSelect(player)
+        }
+      }}
+    >
+      <div className="checkin-player-head">
+        <div>
+          <div className="player-name-line">
+            <strong>{player.name}</strong>
+            {entry.trainingVariant ? <span className="tag compact">Variante {entry.trainingVariant}</span> : null}
+            {isStop ? <span className="tag danger compact">Stop/klaeren</span> : null}
+          </div>
+          <p>
+            {player.position} · {player.cluster} · Ampel {formatTrafficLight(trafficLight)}
+          </p>
+        </div>
+        <span className={`sync-pill ${entry.syncStatus}`}>{syncStatusLabel(entry.syncStatus)}</span>
+      </div>
+
+      <p>{rowSummary.join(' · ')}</p>
+      <div className="training-limits" aria-label={`Training Status ${player.name}`}>
+        {entry.limits.length > 0 ? (
+          entry.limits.map((limit) => (
+            <span className={limit === 'klaeren' || limit === 'physio' ? 'tag danger compact' : 'tag compact'} key={limit}>
+              {limitLabels[limit]}
+            </span>
+          ))
+        ) : (
+          <span className="tag compact">keine Limits gesetzt</span>
+        )}
+      </div>
+      <span className="text-action training-row-focus">Fokus oeffnen</span>
+    </article>
+  )
+}
+
+function TrainingPlayerDetail({
   entry,
   isSavingDisabled,
   onSave,
@@ -314,18 +380,10 @@ function TrainingPlayerRow({
   const isStop = trafficLight === 'red' || entry.trainingVariant === 'D' || entry.limits.includes('klaeren')
 
   return (
-    <article className={`training-player-row traffic-${trafficLight ?? 'open'}`}>
-      <div className="checkin-player-head">
-        <div>
-          <div className="player-name-line">
-            <strong>{player.name}</strong>
-            {entry.trainingVariant ? <span className="tag compact">Variante {entry.trainingVariant}</span> : null}
-            {isStop ? <span className="tag danger compact">Stop/klaeren</span> : null}
-          </div>
-          <p>
-            {player.position} · {player.cluster} · Ampel {formatTrafficLight(trafficLight)}
-          </p>
-        </div>
+    <article className={`training-player-detail traffic-${trafficLight ?? 'open'}`}>
+      <div className="status-line">
+        <span className={`tag compact traffic-${trafficLight ?? 'open'}`}>Ampel {formatTrafficLight(trafficLight)}</span>
+        {entry.trainingVariant ? <span className="tag compact">Variante {entry.trainingVariant}</span> : null}
         <span className={`sync-pill ${entry.syncStatus}`}>{syncStatusLabel(entry.syncStatus)}</span>
       </div>
 
@@ -344,7 +402,7 @@ function TrainingPlayerRow({
         )}
       </div>
 
-      <div className="button-row training-actions">
+      <div className="button-row training-actions" aria-label={`Training Quick Actions ${player.name}`}>
         {quickActions.map((item) => (
           <button
             className={item.tone === 'danger' ? 'segmented danger' : 'segmented'}
@@ -361,7 +419,7 @@ function TrainingPlayerRow({
       {isStop ? (
         <div className="warning-note danger">
           <ShieldAlert className="nav-icon" aria-hidden />
-          <span>D/Rot wirkt nicht als normaler Trainingsblock. Keine automatische medizinische Freigabe.</span>
+          <span>D/Rot wirkt nicht als normaler Trainingsblock. Medizinische Entscheidungen bleiben extern.</span>
         </div>
       ) : null}
 
@@ -442,22 +500,34 @@ export function TrainingView({
   const [trainingPlayerFilter, setTrainingPlayerFilter] = useState<TrainingPlayerFilter>('open')
   const [trainingPlayerSearch, setTrainingPlayerSearch] = useState('')
   const [trainingClusterFilter, setTrainingClusterFilter] = useState('offen')
+  const [selectedTrainingPlayerId, setSelectedTrainingPlayerId] = useState<string | null>(null)
+  const selectedTrainingPlayerSheetRef = useRef<HTMLDivElement | null>(null)
   const hasTrainingProgress = sessionBlockActions.blockLogs.length > 0
   const isLiveModeForSession = liveModeState.sessionId === selectedSession.id
   const isLiveModeStarted = isLiveModeForSession && liveModeState.started
   const isLiveCollapsed = isLiveModeForSession
     ? liveModeState.collapsed
     : readTrainingCollapsed(signedInUserId, selectedSession.id)
-  const showLiveStepper = isLiveModeStarted && !isLiveCollapsed
+  const showLiveControls = isLiveModeStarted && !isLiveCollapsed
   const currentLiveBlockKey = isLiveModeForSession ? liveModeState.currentBlockKey : null
   const currentLiveBlock =
     selectedSession.timeline.find((block) => block.key === currentLiveBlockKey) ?? selectedSession.timeline[0]
   const canResumeTraining = hasTrainingProgress || isLiveCollapsed
-  const trainingActionLabel = showLiveStepper ? 'Training laeuft' : canResumeTraining ? 'Training fortsetzen' : 'Training starten'
+  const trainingActionLabel = showLiveControls ? 'Training laeuft' : canResumeTraining ? 'Training fortsetzen' : 'Training starten'
   const activeExposureSummaryCount = sessionLog
     ? exposureActions.summaries.filter((summary) => summary.sessionLogId === sessionLog.id && !summary.deletedAt).length
     : 0
   const showRestartConfirm = restartConfirmSessionId === selectedSession.id
+  const selectedTrainingPlayer = orderedPlayers.find((player) => player.id === selectedTrainingPlayerId) ?? null
+  const selectedTrainingPlayerHeadingId = selectedTrainingPlayer
+    ? `training-player-sheet-heading-${selectedTrainingPlayer.id}`
+    : undefined
+
+  useEffect(() => {
+    if (selectedTrainingPlayer) {
+      selectedTrainingPlayerSheetRef.current?.focus()
+    }
+  }, [selectedTrainingPlayer])
 
   function handleSessionTextBlur(field: 'contactIndex' | 'speedExposureNote') {
     return (event: FormEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -637,12 +707,12 @@ export function TrainingView({
             className="primary-action"
             type="button"
             onClick={handleStartOrResumeTraining}
-            disabled={showLiveStepper}
+            disabled={showLiveControls}
           >
             <Play className="nav-icon" aria-hidden />
             <span>{trainingActionLabel}</span>
           </button>
-          {showLiveStepper ? (
+          {showLiveControls ? (
             <>
               <button className="secondary-action" type="button" onClick={handleAbortTraining}>
                 Training abbrechen
@@ -667,25 +737,6 @@ export function TrainingView({
             <UserCheck className="nav-icon" aria-hidden />
             <span>Check-in</span>
           </button>
-        </div>
-      </div>
-
-      <div className="metric-grid checkin-metrics">
-        <div className="metric">
-          <span>Bloecke</span>
-          <strong>{selectedSession.timeline.length}</strong>
-        </div>
-        <div className="metric">
-          <span>Spieler</span>
-          <strong>{activePlayers.length}</strong>
-        </div>
-        <div className="metric">
-          <span>Varianten</span>
-          <strong>{variantCount}</strong>
-        </div>
-        <div className="metric">
-          <span>Limits</span>
-          <strong>{limitedCount}</strong>
         </div>
       </div>
 
@@ -796,42 +847,100 @@ export function TrainingView({
         </section>
       ) : null}
 
-      {showLiveStepper ? (
-        <LiveSessionStepper
-          blockLogs={sessionBlockActions.blockLogs}
-          currentBlockKey={currentLiveBlockKey}
-          exerciseActions={exerciseActions}
-          isSavingDisabled={isLoading || sessionBlockActions.isLoading}
-          metricActions={metricActions}
-          onCurrentBlockKeyChange={handleCurrentBlockChange}
-          onSaveBlockLog={(blockKey, patch) => {
-            void sessionBlockActions.saveBlockLog(blockKey, patch)
-          }}
-          players={orderedPlayers}
-          session={selectedSession}
-        />
-      ) : null}
-
-      <ExposureReviewPanel
-        entries={checkInActions.entries}
-        isSavingDisabled={isLoading || exposureActions.isLoading}
-        onGenerate={() => {
-          void exposureActions.generateExposureSummaries({
-            sessionLog,
-            blockLogs: sessionBlockActions.blockLogs,
-            entries: checkInActions.entries,
-            returnerCaps,
-          })
+      <LiveSessionStepper
+        blockLogs={sessionBlockActions.blockLogs}
+        currentBlockKey={currentLiveBlockKey}
+        exerciseActions={exerciseActions}
+        isLiveActive={showLiveControls}
+        isSavingDisabled={isLoading || sessionBlockActions.isLoading}
+        metricActions={metricActions}
+        onCurrentBlockKeyChange={handleCurrentBlockChange}
+        onSaveBlockLog={(blockKey, patch) => {
+          void sessionBlockActions.saveBlockLog(blockKey, patch)
         }}
-        onManualOverride={(summary, type, override) => {
-          void exposureActions.saveManualOverride(summary, type, override)
-        }}
-        players={activePlayers}
-        sessionLog={sessionLog}
-        summaries={exposureActions.summaries}
+        players={orderedPlayers}
+        session={selectedSession}
       />
 
-      <section className="panel live-observation-panel" aria-labelledby="live-observation-heading">
+      <section className="panel training-player-panel" aria-label="Athleten im Training">
+        <div className="status-line">
+          <UserCheck className="nav-icon" aria-hidden />
+          <div>
+            <h3>Athletenliste</h3>
+            <p>Spieler antippen fuer Status, Limits, Caps, Quick Actions und Live-Notiz.</p>
+          </div>
+        </div>
+        <div className="training-coach-fields">
+          <label className="inline-field">
+            <span>Suche</span>
+            <input
+              value={trainingPlayerSearch}
+              placeholder="Spieler suchen"
+              onChange={(event) => setTrainingPlayerSearch(event.target.value)}
+            />
+          </label>
+          <div className="control-group">
+            <span>Filter</span>
+            <div className="button-row">
+              {playerFilterOptions.map((option) => (
+                <button
+                  className={trainingPlayerFilter === option.value ? 'segmented active' : 'segmented'}
+                  key={option.value}
+                  type="button"
+                  onClick={() => setTrainingPlayerFilter(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </div>
+          {trainingPlayerFilter === 'cluster' ? (
+            <label className="inline-field">
+              <span>Cluster</span>
+              <select value={trainingClusterFilter} onChange={(event) => setTrainingClusterFilter(event.target.value)}>
+                {clusterOptions.map((option) => (
+                  <option key={option.value} value={option.value}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          ) : null}
+        </div>
+        <div className="training-player-list">
+          {filteredTrainingPlayers.map((player) => (
+            <TrainingPlayerRow
+              entry={getEntryForPlayer(player)}
+              key={player.id}
+              onSelect={(selectedPlayer) => setSelectedTrainingPlayerId(selectedPlayer.id)}
+              player={player}
+              returnerCap={returnerCapByPlayerId.get(player.id)}
+              warning={warningByPlayerId.get(player.id)}
+            />
+          ))}
+        </div>
+        {activePlayers.length > 0 && filteredTrainingPlayers.length === 0 ? (
+          <p className="action-feedback visible">Keine Spieler fuer diesen Filter.</p>
+        ) : null}
+        {activePlayers.length === 0 ? (
+          <section className="placeholder">
+            <UserCheck className="placeholder-icon" aria-hidden />
+            <h2>Noch keine aktiven Spieler</h2>
+            <p>Lege zuerst Spieler im Spieler-Tab an. Danach erscheinen sie hier automatisch im Training.</p>
+          </section>
+        ) : null}
+      </section>
+
+      <div className="training-secondary-tools" aria-label="Sekundaere Training-Werkzeuge">
+        <details className="panel checkin-secondary-panel">
+          <summary>
+            <span>
+              Live-Beobachtung
+              <small>Gruppen-Notiz oder iPad-Diktat fuer den Trainingstag.</small>
+            </span>
+          </summary>
+          <div className="checkin-secondary-body">
+            <section className="live-observation-panel" aria-labelledby="live-observation-heading">
         <div className="status-line">
           <Gauge className="nav-icon" aria-hidden />
           <h3 id="live-observation-heading">Live-Beobachtung</h3>
@@ -877,17 +986,68 @@ export function TrainingView({
             Speichern
           </button>
         </form>
-        <p className={liveObservationFeedback ? 'action-feedback visible' : 'action-feedback'} aria-live="polite">
-          {liveObservationFeedback ?? ''}
-        </p>
-      </section>
+              <p className={liveObservationFeedback ? 'action-feedback visible' : 'action-feedback'} aria-live="polite">
+                {liveObservationFeedback ?? ''}
+              </p>
+            </section>
+          </div>
+        </details>
 
-      <div className="training-grid">
-        <div className="content-stack">
-          <article className="panel">
-            <div className="status-line">
-              <Route className="nav-icon" aria-hidden />
-              <h3>Timeline und Blockstatus</h3>
+        <details className="panel checkin-secondary-panel">
+          <summary>
+            <span>
+              Exposures
+              <small>Generieren und manuell pruefen, wenn im Live-Flow Zeit ist.</small>
+            </span>
+          </summary>
+          <div className="checkin-secondary-body">
+            <ExposureReviewPanel
+              embedded
+              entries={checkInActions.entries}
+              isSavingDisabled={isLoading || exposureActions.isLoading}
+              onGenerate={() => {
+                void exposureActions.generateExposureSummaries({
+                  sessionLog,
+                  blockLogs: sessionBlockActions.blockLogs,
+                  entries: checkInActions.entries,
+                  returnerCaps,
+                })
+              }}
+              onManualOverride={(summary, type, override) => {
+                void exposureActions.saveManualOverride(summary, type, override)
+              }}
+              players={activePlayers}
+              sessionLog={sessionLog}
+              summaries={exposureActions.summaries}
+            />
+          </div>
+        </details>
+
+        <details className="panel checkin-secondary-panel">
+          <summary>
+            <span>
+              Timeline, Kontakt und Speed
+              <small>Blockuebersicht, Quellenlinks und Einheitsebene.</small>
+            </span>
+          </summary>
+          <div className="checkin-secondary-body">
+            <div className="metric-grid checkin-metrics">
+              <div className="metric">
+                <span>Bloecke</span>
+                <strong>{selectedSession.timeline.length}</strong>
+              </div>
+              <div className="metric">
+                <span>Spieler</span>
+                <strong>{activePlayers.length}</strong>
+              </div>
+              <div className="metric">
+                <span>Varianten</span>
+                <strong>{variantCount}</strong>
+              </div>
+              <div className="metric">
+                <span>Limits</span>
+                <strong>{limitedCount}</strong>
+              </div>
             </div>
             <div className="session-timeline training-timeline">
               {selectedSession.timeline.map((block) => (
@@ -927,13 +1087,6 @@ export function TrainingView({
                 </div>
               ))}
             </div>
-          </article>
-
-          <article className="panel">
-            <div className="status-line">
-              <Gauge className="nav-icon" aria-hidden />
-              <h3>Kontaktindex und Speed-Exposure</h3>
-            </div>
             <div className="training-coach-fields">
               <label className="inline-field wide">
                 <span>Kontaktindex</span>
@@ -957,108 +1110,80 @@ export function TrainingView({
                 />
               </label>
             </div>
-          </article>
-        </div>
+          </div>
+        </details>
 
-        <aside className="content-stack" aria-label="Varianten und Mapping">
-          <article className="panel">
-            <h3>Varianten A+/A/B/C/D</h3>
-            <div className="variant-grid">
-              {variantCards.map((card) => (
-                <div className={card.variant === 'D' ? 'variant-card danger' : 'variant-card'} key={card.variant}>
-                  <strong>{card.label}</strong>
-                  <span>{card.summary}</span>
-                  <p>{card.decision}</p>
-                </div>
-              ))}
-            </div>
-          </article>
+        <details className="panel checkin-secondary-panel">
+          <summary>
+            <span>
+              Varianten und Mapping
+              <small>A+/A/B/C/D und Exercise Mapping als Nachschlagewerk.</small>
+            </span>
+          </summary>
+          <div className="checkin-secondary-body training-grid">
+            <article>
+              <h3>Varianten A+/A/B/C/D</h3>
+              <div className="variant-grid">
+                {variantCards.map((card) => (
+                  <div className={card.variant === 'D' ? 'variant-card danger' : 'variant-card'} key={card.variant}>
+                    <strong>{card.label}</strong>
+                    <span>{card.summary}</span>
+                    <p>{card.decision}</p>
+                  </div>
+                ))}
+              </div>
+            </article>
 
-          <article className="panel">
-            <h3>Exercise Mapping</h3>
-            <div className="exercise-mapping-list">
-              {exerciseMappings.map((mapping) => (
-                <details className="mapping-detail" key={mapping.pattern}>
-                  <summary>{mapping.pattern}</summary>
-                  <p><strong>Default:</strong> {mapping.defaultOption}</p>
-                  <p><strong>Alternative:</strong> {mapping.alternative}</p>
-                  <p><strong>Gelb/Returner:</strong> {mapping.yellowReturner}</p>
-                  <p><strong>Fokus:</strong> {mapping.coachFocus}</p>
-                </details>
-              ))}
-            </div>
-          </article>
-        </aside>
+            <article>
+              <h3>Exercise Mapping</h3>
+              <div className="exercise-mapping-list">
+                {exerciseMappings.map((mapping) => (
+                  <details className="mapping-detail" key={mapping.pattern}>
+                    <summary>{mapping.pattern}</summary>
+                    <p><strong>Default:</strong> {mapping.defaultOption}</p>
+                    <p><strong>Alternative:</strong> {mapping.alternative}</p>
+                    <p><strong>Gelb/Returner:</strong> {mapping.yellowReturner}</p>
+                    <p><strong>Fokus:</strong> {mapping.coachFocus}</p>
+                  </details>
+                ))}
+              </div>
+            </article>
+          </div>
+        </details>
       </div>
 
-      <section className="panel training-player-panel" aria-label="Spieler-Anpassungen">
-        <div className="status-line">
-          <UserCheck className="nav-icon" aria-hidden />
-          <h3>Spieler Quick Actions</h3>
-        </div>
-        <div className="training-coach-fields">
-          <label className="inline-field">
-            <span>Suche</span>
-            <input
-              value={trainingPlayerSearch}
-              placeholder="Spieler suchen"
-              onChange={(event) => setTrainingPlayerSearch(event.target.value)}
-            />
-          </label>
-          <div className="control-group">
-            <span>Filter</span>
-            <div className="button-row">
-              {playerFilterOptions.map((option) => (
-                <button
-                  className={trainingPlayerFilter === option.value ? 'segmented active' : 'segmented'}
-                  key={option.value}
-                  type="button"
-                  onClick={() => setTrainingPlayerFilter(option.value)}
-                >
-                  {option.label}
-                </button>
-              ))}
+      {selectedTrainingPlayer ? (
+        <section className="checkin-sheet-backdrop" aria-label={`Training ${selectedTrainingPlayer.name}`}>
+          <div
+            className="checkin-sheet training-player-sheet"
+            ref={selectedTrainingPlayerSheetRef}
+            role="dialog"
+            aria-modal="true"
+            aria-labelledby={selectedTrainingPlayerHeadingId}
+            tabIndex={-1}
+          >
+            <div className="sheet-heading">
+              <div>
+                <p className="eyebrow">Training-Fokus</p>
+                <h3 id={selectedTrainingPlayerHeadingId}>{selectedTrainingPlayer.name}</h3>
+              </div>
+              <button className="icon-button" type="button" aria-label="Training-Fokus schliessen" onClick={() => setSelectedTrainingPlayerId(null)}>
+                <X className="nav-icon" aria-hidden />
+              </button>
             </div>
-          </div>
-          {trainingPlayerFilter === 'cluster' ? (
-            <label className="inline-field">
-              <span>Cluster</span>
-              <select value={trainingClusterFilter} onChange={(event) => setTrainingClusterFilter(event.target.value)}>
-                {clusterOptions.map((option) => (
-                  <option key={option.value} value={option.value}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
-          ) : null}
-        </div>
-        <div className="training-player-list">
-          {filteredTrainingPlayers.map((player) => (
-            <TrainingPlayerRow
-              entry={getEntryForPlayer(player)}
+            <TrainingPlayerDetail
+              entry={getEntryForPlayer(selectedTrainingPlayer)}
               isSavingDisabled={isLoading}
-              key={player.id}
               onSave={(selectedPlayer, patch) => {
                 void saveEntry(selectedPlayer, patch)
               }}
-              player={player}
-              returnerCap={returnerCapByPlayerId.get(player.id)}
-              warning={warningByPlayerId.get(player.id)}
+              player={selectedTrainingPlayer}
+              returnerCap={returnerCapByPlayerId.get(selectedTrainingPlayer.id)}
+              warning={warningByPlayerId.get(selectedTrainingPlayer.id)}
             />
-          ))}
-        </div>
-        {activePlayers.length > 0 && filteredTrainingPlayers.length === 0 ? (
-          <p className="action-feedback visible">Keine Spieler fuer diesen Filter.</p>
-        ) : null}
-        {activePlayers.length === 0 ? (
-          <section className="placeholder">
-            <UserCheck className="placeholder-icon" aria-hidden />
-            <h2>Noch keine aktiven Spieler</h2>
-            <p>Lege zuerst Spieler im Spieler-Tab an. Danach erscheinen sie hier automatisch im Training.</p>
-          </section>
-        ) : null}
-      </section>
+          </div>
+        </section>
+      ) : null}
     </section>
   )
 }

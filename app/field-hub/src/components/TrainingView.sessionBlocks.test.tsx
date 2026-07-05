@@ -274,7 +274,10 @@ describe('TrainingView session block status controls', () => {
       )
     })
 
-    expect(container.textContent).not.toContain('Aktuelle Phase')
+    expect(container.textContent).toContain('Aktuelle Phase')
+    expect(container.textContent).toContain('Warm-up')
+    expect(container.textContent).toContain('Training starten aktiviert Blockstatus')
+    expect(Array.from(container.querySelectorAll('button')).some((button) => button.textContent === 'Geplant')).toBe(false)
 
     await act(async () => {
       Array.from(container.querySelectorAll('button'))
@@ -284,6 +287,7 @@ describe('TrainingView session block status controls', () => {
 
     expect(container.textContent).toContain('Aktuelle Phase')
     expect(container.textContent).toContain('Warm-up')
+    expect(Array.from(container.querySelectorAll('button')).some((button) => button.textContent === 'Geplant')).toBe(true)
     expect(saveBlockLog).not.toHaveBeenCalled()
     expect(saveSessionPatch).not.toHaveBeenCalled()
     expect(saveEntry).not.toHaveBeenCalled()
@@ -383,7 +387,9 @@ describe('TrainingView session block status controls', () => {
     })
 
     expect(container.textContent).toContain('Training fortsetzen')
-    expect(container.textContent).not.toContain('Aktuelle Phase')
+    expect(container.textContent).toContain('Aktuelle Phase')
+    expect(container.textContent).toContain('Speed')
+    expect(Array.from(container.querySelectorAll('button')).some((button) => button.textContent === 'Next')).toBe(false)
 
     await act(async () => {
       Array.from(container.querySelectorAll('button'))
@@ -413,7 +419,8 @@ describe('TrainingView session block status controls', () => {
         ?.click()
     })
 
-    expect(container.textContent).not.toContain('Aktuelle Phase')
+    expect(container.textContent).toContain('Aktuelle Phase')
+    expect(container.textContent).toContain('Training starten aktiviert Blockstatus')
     expect(container.textContent).toContain('Training fortsetzen')
 
     await act(async () => {
@@ -434,6 +441,85 @@ describe('TrainingView session block status controls', () => {
 
     expect(resetSessionBlockLogs).toHaveBeenCalledTimes(1)
     expect(resetExposureSummaries).toHaveBeenCalledTimes(1)
+  })
+
+  it('keeps player quick actions hidden until a player is focused', async () => {
+    const player = activePlayer('player-focus', 'Focus Player')
+    const entry = { ...entryForPlayer(player), trafficLight: 'yellow' as const, limits: ['kein_sprint' as const] }
+    const saveEntry = vi.fn(checkInActions.saveEntry)
+    const container = document.createElement('div')
+    root = createRoot(container)
+
+    await act(async () => {
+      root?.render(
+        <TrainingView
+          authState={authState}
+          checkInActions={{
+            ...checkInActions,
+            activePlayers: [player],
+            entries: [entry],
+            getEntryForPlayer: () => entry,
+            saveEntry,
+          }}
+          exposureActions={exposureActions}
+          onOpenLibraryItem={() => undefined}
+          onNavigate={() => undefined}
+          onSessionChange={() => undefined}
+          returnerCaps={[]}
+          selectedSession={selectedSession}
+          selectedSessionId={selectedSession.id}
+          sessionBlockActions={{
+            blockLogs: [],
+            syncOverview,
+            isLoading: false,
+            errorMessage: null,
+            refreshSessionBlocks: async () => undefined,
+            runSync: async () => syncOverview,
+            saveBlockLog: async () => undefined,
+            getLogForBlock: () => null,
+            clearError: () => undefined,
+            resetSessionBlockLogs: async () => ({ resetCount: 0 }),
+          }}
+          sessions={[selectedSession]}
+        />,
+      )
+    })
+
+    expect(container.querySelector('[aria-label="Training Quick Actions Focus Player"]')).toBeNull()
+    expect(container.querySelector('.training-player-list')?.textContent).toContain('Focus Player')
+
+    await act(async () => {
+      container.querySelector<HTMLElement>('.training-player-scan-row')?.click()
+    })
+
+    expect(container.querySelector('[aria-label="Training Quick Actions Focus Player"]')).toBeTruthy()
+
+    await act(async () => {
+      Array.from(container.querySelectorAll('button'))
+        .find((button) => button.getAttribute('aria-label') === 'Training-Fokus schliessen')
+        ?.click()
+    })
+
+    expect(container.querySelector('[aria-label="Training Quick Actions Focus Player"]')).toBeNull()
+
+    await act(async () => {
+      container
+        .querySelector<HTMLElement>('.training-player-scan-row')
+        ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+    })
+
+    expect(container.querySelector('[aria-label="Training Quick Actions Focus Player"]')).toBeTruthy()
+
+    await act(async () => {
+      Array.from(container.querySelectorAll('button'))
+        .find((button) => button.textContent === 'kein Conditioning')
+        ?.click()
+    })
+
+    expect(saveEntry).toHaveBeenCalledWith(player, {
+      limits: ['kein_sprint', 'kein_cond'],
+      previousWarning: false,
+    })
   })
 
   it('refreshes exercise capture defaults when the selected player changes', async () => {
@@ -1392,8 +1478,9 @@ describe('TrainingView session block status controls', () => {
       renderWithLogs([warmupDoneLog, loadedBlockLog])
     })
 
-    expect(container.textContent).not.toContain('Aktuelle Phase')
+    expect(container.textContent).toContain('Aktuelle Phase')
     expect(container.textContent).toContain('Training fortsetzen')
+    expect(container.textContent).toContain('Speed')
 
     await act(async () => {
       Array.from(container.querySelectorAll('button'))

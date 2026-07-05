@@ -144,7 +144,7 @@ describe('ExposureReviewPanel', () => {
     expect(container.textContent).toContain('speed completed')
     expect(container.textContent).toContain('conditioning reduced')
     expect(container.textContent).toContain('contact_prep skipped')
-    expect(container.textContent).toContain('keine medizinische Freigabe')
+    expect(container.textContent).toContain('medizinische Entscheidungen bleiben extern')
 
     await act(async () => {
       Array.from(container.querySelectorAll('button'))

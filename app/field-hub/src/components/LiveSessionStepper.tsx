@@ -75,6 +75,7 @@ type LiveSessionStepperProps = {
   blockLogs: SessionBlockLog[]
   currentBlockKey: string | null
   exerciseActions?: ExerciseActions
+  isLiveActive?: boolean
   isSavingDisabled: boolean
   metricActions?: MetricActions
   onCurrentBlockKeyChange: (blockKey: string | null) => void
@@ -386,6 +387,7 @@ export function LiveSessionStepper({
   blockLogs,
   currentBlockKey,
   exerciseActions,
+  isLiveActive = true,
   isSavingDisabled,
   metricActions,
   onCurrentBlockKeyChange,
@@ -422,13 +424,17 @@ export function LiveSessionStepper({
   }
 
   return (
-    <section className="panel live-session-stepper" aria-labelledby="live-session-step-heading">
+    <section
+      className={isLiveActive ? 'panel live-session-stepper' : 'panel live-session-stepper live-session-stepper-preview'}
+      aria-labelledby="live-session-step-heading"
+    >
       <div className="live-step-heading">
         <div>
           <p className="eyebrow">Aktuelle Phase</p>
           <h3 id="live-session-step-heading">{step.block.title}</h3>
           <p>
             Schritt {step.index + 1} von {step.total} · Status {sessionBlockStatusLabels[step.status]}
+            {!isLiveActive ? ' · bereit' : ''}
           </p>
         </div>
         <span className="tag compact">{step.block.time}</span>
@@ -444,7 +450,7 @@ export function LiveSessionStepper({
         {step.block.note ? <span className="tag compact">{step.block.note}</span> : null}
       </div>
 
-      {step.block.exercises && step.block.exercises.length > 0 ? (
+      {isLiveActive && step.block.exercises && step.block.exercises.length > 0 ? (
         <div className="session-exercise-list" aria-label={`Uebungen ${step.block.title}`}>
           {step.block.exercises.map((exercise) => (
             <ExerciseDetailCard
@@ -459,7 +465,7 @@ export function LiveSessionStepper({
         </div>
       ) : null}
 
-      {session.safetyNotes.length > 0 ? (
+      {isLiveActive && session.safetyNotes.length > 0 ? (
         <div className="live-step-safety" aria-label="Safety-Hinweise der Session">
           {session.safetyNotes.map((note) => (
             <span className="tag warning compact" key={note}>
@@ -469,25 +475,31 @@ export function LiveSessionStepper({
         </div>
       ) : null}
 
-      <StepStatusControls
-        blockTitle={step.block.title}
-        blockKey={step.block.key}
-        isSavingDisabled={isSavingDisabled}
-        key={`${step.block.key}-${step.log?.clientUpdatedAt ?? 'new'}`}
-        log={step.log}
-        onSave={(patch) => onSaveBlockLog(step.block.key, patch)}
-      />
+      {isLiveActive ? (
+        <StepStatusControls
+          blockTitle={step.block.title}
+          blockKey={step.block.key}
+          isSavingDisabled={isSavingDisabled}
+          key={`${step.block.key}-${step.log?.clientUpdatedAt ?? 'new'}`}
+          log={step.log}
+          onSave={(patch) => onSaveBlockLog(step.block.key, patch)}
+        />
+      ) : (
+        <p className="sync-help">Training starten aktiviert Blockstatus, Capture und Live-Navigation.</p>
+      )}
 
-      <div className="live-step-navigation">
-        <button className="secondary-action" disabled={isFirst} type="button" onClick={goToPreviousStep}>
-          <ChevronLeft className="nav-icon" aria-hidden />
-          <span>Previous</span>
-        </button>
-        <button className="secondary-action" disabled={isLast} type="button" onClick={goToNextStep}>
-          <span>Next</span>
-          <ChevronRight className="nav-icon" aria-hidden />
-        </button>
-      </div>
+      {isLiveActive ? (
+        <div className="live-step-navigation">
+          <button className="secondary-action" disabled={isFirst} type="button" onClick={goToPreviousStep}>
+            <ChevronLeft className="nav-icon" aria-hidden />
+            <span>Previous</span>
+          </button>
+          <button className="secondary-action" disabled={isLast} type="button" onClick={goToNextStep}>
+            <span>Next</span>
+            <ChevronRight className="nav-icon" aria-hidden />
+          </button>
+        </div>
+      ) : null}
     </section>
   )
 }

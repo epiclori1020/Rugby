@@ -1305,6 +1305,8 @@ Wichtig:
 
 ## Sprint 10 - Training Live Mode Redesign
 
+Status: Abgeschlossen am 2026-07-05.
+
 ### Was genau machen wir?
 
 Wir bauen Training als Live-Coaching-Flaeche.
