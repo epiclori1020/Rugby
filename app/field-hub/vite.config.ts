@@ -33,15 +33,15 @@ export default defineConfig({
     VitePWA({
       registerType: 'autoUpdate',
       manifest: {
-        name: 'Rugby S&C Field Hub',
-        short_name: 'Field Hub',
-        description: 'Touch-first Coach-Dashboard fuer Rugby Donau S&C.',
+        name: 'OnField Coach',
+        short_name: 'OnField',
+        description: 'Field-ready coach operations for the training day.',
         start_url: '/',
         scope: '/',
         display: 'standalone',
         orientation: 'any',
-        theme_color: '#0f2f2e',
-        background_color: '#f4f7f5',
+        theme_color: '#1F6B5C',
+        background_color: '#F4F5F3',
         icons: [
           {
             src: '/pwa-192x192.png',

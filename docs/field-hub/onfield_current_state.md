@@ -28,7 +28,8 @@ Letztes Update: 2026-07-05
 | Bereich | Stand |
 |---|---|
 | Navigation | Sprint 2 hat die IA-Spezifikation fuer `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` im Product Brief ergaenzt. App-Code hat aktuell noch die alte breite 10-Tab-Struktur. |
-| Designsystem | Sprint 0B hat Brand-, Token- und Komponenten-SSOTs erstellt. Code und Figma/Designartefakte sind noch nicht angepasst. |
+| Designsystem | Sprint 3 hat Brand Kit, Tone of Voice, Research-Synthese und Figma Brand Board fuer OnField Brand Foundation erstellt. Code-Tokens und Komponenten sind noch nicht angepasst. |
+| PWA-Metadaten | Sprint 3 hat Manifest, HTML-Titel und iOS-App-Titel auf OnField Coach vorbereitet. Sichtbare App-Shell-Texte sind noch nicht umgebaut. |
 | iPhone | Muss kuenftig vollen Funktionsumfang haben; Ziel ist Bottom Tab Bar plus Sheets/Stacks. |
 | iPad | Soll Sidebar + Content + optional Detailpane nutzen. |
 | Check-in | Hat bereits Ansaetze fuer Finder/Rows/Sheet, muss aber roster-first und sekundaer strukturierter werden. |
@@ -48,6 +49,8 @@ Letztes Update: 2026-07-05
 - Component Inventory: `docs/field-hub/onfield_component_inventory.md`
 - Sports Configuration Model: `docs/field-hub/onfield_sports_configuration_model.md`
 - PWA/A11y QA: `docs/field-hub/onfield_pwa_accessibility_qa.md`
+- Sprint 3 Research-Synthese: `docs/field-hub/2026-07-05_onfield_brand_competitive_research_synthesis.md`
+- Sprint 3 Figma Brand Board: `https://www.figma.com/design/BBaL4jQKLHeOC7tP5lajdW`
 - Runtime Memory FAQ: `docs/field-hub/onfield_runtime_memory_faq.md`
 - UX Research: `docs/field-hub/2026-07-04_deep_research_ux_ui_guardrails.md`
 - Branding Research: `docs/field-hub/2026-07-04_deep_research_branding_design_system.md`
@@ -84,18 +87,19 @@ Letztes Update: 2026-07-05
   - Runtime Memory ist lokal/ignored und darf keine SSOTs, keinen Decision Log, keinen Current State und keine Roadmap automatisch ersetzen.
 - Sprint 1 ist abgeschlossen: Agenten-Setup, Roadmap-Sprinttext, Skill-/Runtime-Hinweise, Agent Playbook und Memory-Gotchas sind auf Sprint 0C/0D synchronisiert.
 - Sprint 2 ist abgeschlossen: Product Brief und Component Inventory spezifizieren die neue IA, alte/neue Tab-Mappings, iPhone/iPad-Zugriff, Back/Close-Verhalten und spaetere Code-Migrationspunkte. App-Code wurde in Sprint 2 nicht umgebaut.
+- Sprint 3 ist abgeschlossen: OnField Brand Foundation, Marketing-/Hero-System, Research-Synthese, Figma Brand Board und PWA-Metadaten wurden umgesetzt. Sichtbare Live-Coaching-UI blieb bewusst unveraendert.
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 3 angehen: OnField Brand Foundation und Marketing-/Hero-System.
-2. Danach Roadmap-Reihenfolge beibehalten: Tone of Voice, Komponenten-Foundation, dann App Shell und Navigation implementieren.
+1. Sprint 4 angehen: Design Tokens und Theme Foundation.
+2. Danach Roadmap-Reihenfolge beibehalten: Core Component Kit, dann App Shell und Navigation implementieren.
 
 ## Offene Risiken
 
 | Risiko | Auswirkung | Naechster Schritt |
 |---|---|---|
 | Alte Navigation bleibt zu lange bestehen. | Neue Marke wirkt weiterhin wie altes Dashboard. | App-Shell-Sprint nach Brand-/Komponenten-Foundation umsetzen. |
-| Designsystem bleibt nur dokumentiert. | Code, Figma/Designartefakt und SSOT koennen auseinanderlaufen. | Figma oder gleichwertiges Designsystem-Artefakt ab Sprint 3-5 erstellen und Tokens im Code mappen. |
+| Designsystem bleibt nur dokumentiert. | Code, Figma/Designartefakt und SSOT koennen auseinanderlaufen. | Sprint 4 Tokens im Code mappen und Figma/SSOT synchron halten. |
 | iPhone wird wieder als Nebenansicht behandelt. | Externe Nutzung und App-Store-Perspektive werden geschwaecht. | iPhone-Paritaet in jedem Sprint pruefen. |
 | Rugby bleibt im Code zu stark in generischer Architektur. | Multi-Sport-Faehigkeit wird spaeter teuer. | Sport-Konfiguration schrittweise extrahieren. |
 | Memory wird als Archiv statt Router genutzt. | Agenten laden zu viel Kontext und das System wird traege. | Memory Governance und Index in jeder OnField-Session beachten. |

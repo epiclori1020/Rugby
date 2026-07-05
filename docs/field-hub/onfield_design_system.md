@@ -1,6 +1,6 @@
 # OnField Design System
 
-Stand: 2026-07-04
+Stand: 2026-07-05
 
 ## Zweck
 
@@ -15,6 +15,8 @@ Dieses SSOT definiert die verbindlichen Designsystem-Regeln fuer OnField Coach. 
 - Operational UI nutzt Systemfont.
 - Light Mode ist v1-Prioritaet. Dark Mode wird erst nach stabilen Kernflows bewertet.
 - Keine zufaelligen Farben, Radiuswerte, Shadows oder Spacing-Werte ausserhalb des Token-Systems.
+- Oxblood ist Brand-/Editorial-Akzent und nie Status-, Alarm- oder Follow-up-Farbe.
+- Field-Operations-DNA wird ueber Layout, Gruppierung, Session Flow und Zonenlogik getragen, nicht ueber dekorative Feldlinien als Wallpaper.
 
 ## Tokens
 
@@ -23,7 +25,7 @@ Dieses SSOT definiert die verbindlichen Designsystem-Regeln fuer OnField Coach. 
 | Rolle | Wert | Einsatz |
 |---|---:|---|
 | `accent/primary` | `#1F6B5C` | Primaeraktionen, aktive Navigation |
-| `accent/secondary` | `#7A1F2B` | sparsamer Brand-/Session-Akzent |
+| `accent/secondary` | `#7A1F2B` | Brand-/Editorial-Akzent auf Brand-Surfaces, nicht fuer Status |
 | `bg/base` | `#F4F5F3` | App-Hintergrund |
 | `surface/default` | `#FFFFFF` | Hauptflaechen |
 | `border/default` | `#D9DED8` | ruhige Trennung |

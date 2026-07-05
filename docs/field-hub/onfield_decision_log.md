@@ -1,6 +1,6 @@
 # OnField Decision Log
 
-Stand: 2026-07-04
+Stand: 2026-07-05
 
 ## Zweck
 
@@ -38,6 +38,12 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | 2026-07-04 | Sprint 0D aktiviert lokales Codex-first Runtime Memory fuer OnField. | Redigierte Captures, Daily Logs, Knowledge-Artikel, Hot Cache, Lint, Backups und Recovery reduzieren Vergessen, bleiben aber lokal/ignored und duerfen keine SSOTs automatisch ersetzen. | Aktiv |
 | 2026-07-04 | Der automatische Runtime-Compiler ist deterministisch lokal statt `codex exec` aus Hooks. | Agentenprozesse aus Hooks waeren rekursions-, timeout- und trust-riskant. LLM-Kuration kann spaeter explizit ergaenzt werden; Hooks bleiben fail-open. | Aktiv |
 | 2026-07-04 | Runtime-Memory-Arbeit bekommt einen eigenen FAQ-Artikel und Skill. | Zukuenftige Agenten brauchen einen klaren Einstieg, ohne Runtime-Regeln in alle OnField-Skills oder AGENTS.md zu duplizieren. | Aktiv |
+| 2026-07-05 | OnField positioniert sich als **Field-ready coach operations for the training day**. | Die Deep Researches und die Claude-Kritik zeigen eine glaubwuerdige Luecke zwischen Enterprise/HPO, Hardware/Testing, Programming-first Tools und Fitness-Marketplaces. | Aktiv |
+| 2026-07-05 | Der Sprint-3-Master-Claim lautet **Check in players. Run the session. Wrap the day.** | Der Claim deckt den gesamten Trainingstag ab und trennt OnField klar von reinen Pre-Session- oder Workout-Builder-Claims. | Aktiv |
+| 2026-07-05 | OnField ist operations-first, nicht programming-first. | Die naechste Wettbewerbsnaehe liegt bei TeamBuildr, Bridge, Output und TrainHeroic; OnField muss sich ueber Trainingstag-Betrieb statt Workout-Erstellung abgrenzen. | Aktiv |
+| 2026-07-05 | Oxblood ist Brand-/Editorial-Farbe und nie Status-, Alarm- oder Follow-up-Farbe. | In einem Feldtool wird Rot-nahe Farbe schnell als Alarm gelesen; Status braucht ein getrenntes funktionales System. | Aktiv |
+| 2026-07-05 | Field-Operations-DNA lebt in Layout, IA und Session Flow, nicht als dekoratives Wallpaper. | Field-as-layout ist differenzierender und verhindert generische Sport-B2B-Tapete hinter KPI-Karten. | Aktiv |
+| 2026-07-05 | Sprint-3-Research wird kuratiert in einer Synthese dokumentiert, nicht roh in Memory kopiert. | Memory bleibt Router und Entscheidungsgedaechtnis; lange Researches bleiben Quellenmaterial. | Aktiv |
 
 ## Markenarchitektur
 
@@ -54,6 +60,10 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 - Keine medizinische Diagnose- oder Freigabe-Sprache.
 - Hero/Marketing gehoert auf Brand-Surfaces, nicht in Live-Coaching-Screens.
 - Live-Screens bleiben ruhig, operativ und feldtauglich.
+- OnField ist field-ready coach operations fuer den Trainingstag.
+- OnField grenzt sich auch von programming-first Coach-Tools ab.
+- Oxblood ist kein Status- oder Alarmton.
+- Field-DNA ist Struktur, nicht Wallpaper.
 - Spieler/Athletenobjekte sind standardmaessig Listen/Rows, nicht Card-Walls.
 - Status wird nie nur ueber Farbe kommuniziert.
 - Agenten sollen zuerst gezielt Kontext routen und nur relevante SSOTs/Researches laden.

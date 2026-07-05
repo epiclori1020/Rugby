@@ -1,6 +1,6 @@
 # OnField Tone of Voice
 
-Stand: 2026-07-04
+Stand: 2026-07-05
 
 ## Zweck
 
@@ -17,6 +17,18 @@ Dieses SSOT definiert die Sprache fuer OnField Coach. Es gilt fuer Coach-UI, Saf
 - Marketing-Sprache darf mehr Marke tragen, aber nicht laut, gamifiziert oder motivational ueberdreht werden.
 - Live-Screens verwenden keine langen Erklaertexte. Details gehoeren in Sheet, Pane oder Hilfe.
 - Disabled States muessen den Grund nennen.
+- OnField spricht operations-first: Wer ist da, wer ist eingeschraenkt, was passiert heute?
+- OnField vermeidet Programming-first-Sprache, die nach Workout Builder oder Fitness-Plan-Plattform klingt.
+
+## Claim-Hierarchie
+
+| Rolle | Text | Einsatz |
+|---|---|---|
+| Master-Claim | `Check in players. Run the session. Wrap the day.` | Landing, Welcome, Figma Board, Brand Deck |
+| Sekundaerzeile | `Know squad status before the whistle.` | Kampagne, Install, Hero-Unterzeile |
+| Descriptor | `Field-ready coach operations for the training day.` | Manifest, Store, Meta, Produktbeschreibung |
+
+`Run training day with calm control` ist kein Master-Claim. Es beschreibt die Tonalitaet und darf intern als Stimmungsreferenz dienen.
 
 ## Coach-UI Sprache
 
@@ -36,6 +48,45 @@ Vermeiden:
 - generische Fehler wie `Something went wrong`
 - motivationale Sprueche
 - alarmistische Warntexte ohne Handlung
+- Nachbar-Sprache wie `time back`, `designed by coaches, for coaches`, `ditch spreadsheets`
+
+## Operations-Sprache
+
+Gut:
+
+- `Spieler einchecken`
+- `Einheit fuehren`
+- `Trainingstag abschliessen`
+- `Squad Status pruefen`
+- `Session Flow`
+- `Offene Follow-ups`
+- `Field-ready`
+- `Offline gespeichert`
+
+Mit Vorsicht, nur in konkrete Coach-Handlung uebersetzen:
+
+- `performance`
+- `readiness`
+- `monitoring`
+- `availability`
+- `workload`
+
+Nicht verwenden:
+
+- `operating system for sports`
+- `performance intelligence`
+- `holistic athlete lifecycle`
+- `medical clearance`
+- `return-to-play`
+- `injury-risk engine`
+- `AI risk scoring`
+- `objective measurement`
+- `marketplace`
+- `leaderboards`
+- `journey of training`
+- `time back`
+- `designed by coaches, for coaches`
+- `no spreadsheets`
 
 ## Safety, Pain und Returner
 
@@ -111,10 +162,26 @@ Marketing-Surfaces duerfen OnField breiter erklaeren:
 - ruhig
 - robust
 - coach-first
+- operations-first
 - field-ready
+- offline-ready
 - sportartenuebergreifend
 
 Marketing darf nicht behaupten, medizinische Entscheidungen zu treffen, Verletzungen zu verhindern oder Leistung zu garantieren.
+
+Gute Marketing-Beispiele:
+
+- `Check in players. Run the session. Wrap the day.`
+- `Know squad status before the whistle.`
+- `Field-ready coach operations for the training day.`
+- `Built for the coach who runs the day without an analyst, admin or enterprise system.`
+
+Vermeiden:
+
+- `Prevent injuries with intelligent risk scoring.`
+- `The operating system for sports performance.`
+- `Ditch spreadsheets and get your time back.`
+- `Return-to-play decisions in one place.`
 
 ## Nicht-Regeln
 

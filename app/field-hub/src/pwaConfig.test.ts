@@ -17,6 +17,20 @@ function readPngDimensions(fileName: string) {
 }
 
 describe('Sprint 10 PWA configuration', () => {
+  it('uses OnField Coach brand metadata for install surfaces', () => {
+    const viteConfig = readFileSync(join(projectRoot, 'vite.config.ts'), 'utf8')
+    const indexHtml = readFileSync(join(projectRoot, 'index.html'), 'utf8')
+
+    expect(indexHtml).toContain('<meta name="theme-color" content="#1F6B5C" />')
+    expect(indexHtml).toContain('<meta name="apple-mobile-web-app-title" content="OnField Coach" />')
+    expect(indexHtml).toContain('<title>OnField Coach</title>')
+    expect(viteConfig).toContain("name: 'OnField Coach'")
+    expect(viteConfig).toContain("short_name: 'OnField'")
+    expect(viteConfig).toContain("description: 'Field-ready coach operations for the training day.'")
+    expect(viteConfig).toContain("theme_color: '#1F6B5C'")
+    expect(viteConfig).toContain("background_color: '#F4F5F3'")
+  })
+
   it('uses PNG install icons for iOS and PWA manifests', () => {
     const viteConfig = readFileSync(join(projectRoot, 'vite.config.ts'), 'utf8')
     const indexHtml = readFileSync(join(projectRoot, 'index.html'), 'utf8')

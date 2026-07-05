@@ -1,22 +1,31 @@
 # OnField Brand Kit
 
-Stand: 2026-07-04
+Stand: 2026-07-05
 
 ## Zweck
 
-Dieses SSOT definiert die Markenrichtung fuer OnField. Es ist die Grundlage fuer Brand, App-Icon, Install-Surfaces, Marketing-Surfaces und die visuelle Haltung der operativen App.
+Dieses SSOT definiert die Markenrichtung fuer OnField. Es ist die Grundlage fuer Brand, App-Icon, Install-Surfaces, Marketing-Surfaces, Figma Brand Board und die visuelle Haltung der operativen App.
 
 ## Verbindliche Regeln
 
-- Markenversprechen: OnField bringt Trainingsstatus, Belastungssteuerung und die naechste Coach-Entscheidung in ein ruhiges, feldtaugliches System.
+- Kategorie: **Field-ready coach operations**.
+- Markenversprechen: OnField fuehrt den Trainingstag fuer Coaches, die ihn selbst stemmen: Check-in, Squad Status, Session Flow und Wrap-up in einem ruhigen, feldtauglichen System.
+- Anti-Positioning: OnField steht gegen Enterprise-Systeme, die ohne Analyst, Admin und Budget nicht laufen, und gegen den Trainingstag aus Zettel, Gruppenchat und Bauchgefuehl.
+- OnField Coach Produktbeschreibung: Field-ready Coach-Operations-App fuer Check-in, Spielerstatus, Session-Fuehrung und Nachbereitung.
+- OnField Performance Plattformlogik: spaetere Plattformrichtung fuer mehrere Produkte und Sportarten, nicht Teil des Coach-MVP-Scope.
+- OnField Rugby: erster Sport-Preset und realer Startkontext, aber nicht die generische Produktarchitektur.
+- Descriptor: `Field-ready coach operations for the training day.`
+- Master-Claim: `Check in players. Run the session. Wrap the day.`
+- Sekundaerzeile: `Know squad status before the whistle.`
 - Designterritorium v1: ruhige iPadOS Performance Console mit Field-Operations-DNA.
 - Mischung: etwa 70 Prozent native, ruhige App-Shell und 30 Prozent robuste OnField-Marke.
 - Brand-Persoenlichkeit: Calm intensity. Die App wirkt fokussiert, robust und entscheidungsstark, ohne Hektik zu erzeugen.
+- Field-Operations-DNA lebt primaer in Struktur, Informationsarchitektur und Session-Flow, nicht in dekorativen Feldlinien.
 - Operative UI nutzt Systemfont: `-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`.
 - Eigene Brand-Font ist nur fuer Logo, App Icon, Marketing, Landingpage und spaeter getestete Display-Headlines offen.
 - Primaere Palette v1 ist **Field Graphite**:
   - Primary: `#1F6B5C`
-  - Secondary/Oxblood Accent: `#7A1F2B`
+  - Secondary/Oxblood Editorial: `#7A1F2B`
   - Background: `#F4F5F3`
   - Surface: `#FFFFFF`
   - Border: `#D9DED8`
@@ -27,8 +36,11 @@ Dieses SSOT definiert die Markenrichtung fuer OnField. Es ist die Grundlage fuer
   - Danger: `#B42318`
   - Info: `#155EEF`
   - Focus Ring: `#005FCC`
-- Primary bleibt gruen. Oxblood ist sparsam fuer Brand-Akzent, App-Icon, aktive Session-Highlights oder Coach-Decision-Akzente.
+- Primary bleibt gruen. Oxblood ist Marken- und Editorial-Farbe fuer Brand-Surfaces, App-Icon, Splash, Marketing und Kiosk-Welcome.
+- Oxblood ist nie Status-, Alarm-, Danger- oder Follow-up-Farbe.
+- In operativen Live-Screens taucht Oxblood praktisch nicht auf.
 - Warning und Danger bleiben semantisch eigenstaendig und werden nie durch Brandfarben ersetzt.
+- Follow-up oder Attention ist amber oder neutral, nicht oxblood.
 - Status wird nie nur ueber Farbe kommuniziert. Immer Text plus Farbe, optional Icon.
 
 ## Brand-Adjektive
@@ -41,6 +53,8 @@ Dieses SSOT definiert die Markenrichtung fuer OnField. Es ist die Grundlage fuer
 - robust
 - vertrauenswuerdig
 - coach-first
+- field-ready
+- operations-first
 
 ## Anti-Adjektive
 
@@ -50,9 +64,30 @@ Dieses SSOT definiert die Markenrichtung fuer OnField. Es ist die Grundlage fuer
 - klinisch
 - ueberladen
 - generisch
+- dashboardig
 - prototypisch
+- enterprise-lastig
 - fan-merch-artig
 - motivational-marketinglastig
+
+## Operations-First Abgrenzung
+
+OnField darf nicht in die Sprache der coach-first Programming-Tools driften.
+
+| Bereich | Programming-first | Operations-first |
+|---|---|---|
+| Beispiele | TeamBuildr, Bridge, Output, TrainHeroic | OnField |
+| Kernfrage | Was soll trainiert werden? | Wer ist da, wer ist eingeschraenkt, was passiert heute? |
+| Flow | Workout bauen, ausliefern, tracken | Check-in, Session fuehren, nachbereiten |
+| Merksatz | TeamBuildr baut Workouts. | OnField fuehrt den Tag. |
+
+Nicht verwenden:
+
+- `time back`
+- `designed by coaches, for coaches`
+- `ditch/no spreadsheets`
+- `built for coaches`
+- `every tool in one place`
 
 ## Erlaubte Brand- und Hero-Surfaces
 
@@ -66,6 +101,8 @@ Marketing- oder Hero-Optik ist erlaubt auf:
 - leere Demo- oder First-Run-Zustaende
 - Kiosk-Welcome, wenn keine Live-Coaching-Information verdeckt wird
 
+Auf Brand-Surfaces darf OnField markanter sein: Oxblood, ein knappes Claim-System, ruhige Field-Geometrie und produktnahe iPad-/iPhone-Kompositionen sind erlaubt.
+
 ## Verbotene Brand- und Hero-Surfaces
 
 Marketing- oder Hero-Optik ist nicht erlaubt in:
@@ -78,7 +115,19 @@ Marketing- oder Hero-Optik ist nicht erlaubt in:
 - Sync-/Offline-/Error-Zustaenden
 - Safety-, Pain- oder Returner-Hinweisen
 
-In Live-Flows ist Marke ueber Tokens, Sprache, Iconografie, Header, Statussystem und klare Komponenten spuerbar, nicht ueber grosse Werbeflaechen.
+In Live-Flows ist Marke ueber Tokens, Sprache, Iconografie, Header, Statussystem, klare Komponenten und Field-as-layout spuerbar, nicht ueber grosse Werbeflaechen, Claims oder dekorative Hintergruende.
+
+## Hero-System
+
+Hero-Systeme duerfen nur an Produkt-Raendern sitzen:
+
+- eine knappe Headline.
+- ein praeziser Descriptor.
+- echte oder realistische Produktkomposition statt abstrakter Sport-Illustration.
+- Oxblood kontrolliert als Editorial-Akzent.
+- Field-Geometrie als ruhige Struktur, nicht als Wallpaper.
+
+Live-Coaching-Screens zeigen keine Claims, keine Marketing-Heroes, keine grossen Brand-Flaechen und keine dekorativen Field-Overlays.
 
 ## Logo- und App-Icon-Richtung
 
@@ -87,14 +136,17 @@ In Live-Flows ist Marke ueber Tokens, Sprache, Iconografie, Header, Statussystem
 - Oxblood kann im Icon staerker genutzt werden als in der App-Flaeche.
 - Vor externem Launch braucht das PWA-Install-Erlebnis ein konsistentes Icon, Name, Splash/Startsurface und kurze Install-Copy.
 
+## Research-Quelle
+
+Die Sprint-3-Research-Synthese liegt in `docs/field-hub/2026-07-05_onfield_brand_competitive_research_synthesis.md`. Die langen Researches bleiben Quellenmaterial; dieses Brand Kit ist die verbindliche Arbeitsgrundlage.
+
 ## Nicht-Regeln
 
-- Field Graphite ist v1-Basis, kein Auftrag fuer eine vollstaendige visuelle Ausarbeitung in Sprint 0B.
-- Dieses Dokument ersetzt kein Figma Brand Board. Es definiert, was ein spaeteres Brand Board abbilden muss.
+- Field Graphite ist v1-Basis, kein Auftrag fuer eine vollstaendige Logo-Produktion.
+- Dieses Dokument ersetzt nicht das Figma Brand Board. Es definiert, was das Board verbindlich abbilden muss.
 - Rugby-spezifische Bildsprache darf OnField Rugby praegen, aber nicht die Hauptmarke verengen.
 
 ## Offene Fragen
 
-- Wird vor externer Beta ein Figma Brand Board oder ein anderes gleichwertiges Design-Artefakt erstellt?
 - Welche Logo-/Icon-Varianten passen am besten zu OnField als sportartenuebergreifender Marke?
 - Wann wird eine Display-Font fuer Headlines real getestet?
