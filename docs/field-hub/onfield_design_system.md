@@ -20,6 +20,23 @@ Dieses SSOT definiert die verbindlichen Designsystem-Regeln fuer OnField Coach. 
 
 ## Tokens
 
+### Code-Mapping ab Sprint 4
+
+Sprint 4 implementiert die Token-Grundlage in `app/field-hub/src/design/tokens.css`. Der Code nutzt die Prefix-Konvention:
+
+| Gruppe | Prefix | Beispiel |
+|---|---|---|
+| Farbe | `--of-color-*` | `--of-color-brand-primary` |
+| Spacing | `--of-space-*` | `--of-space-lg` |
+| Radius | `--of-radius-*` | `--of-radius-sm` |
+| Border | `--of-border-*` | `--of-border-width-default` |
+| Elevation | `--of-shadow-*` | `--of-shadow-panel` |
+| Motion | `--of-motion-*` | `--of-motion-duration-tap` |
+
+Bestehende Legacy-Aliases wie `--bg`, `--surface`, `--brand`, `--warning`, `--ok` und `--shadow` bleiben als Kompatibilitaetsschicht bestehen und mappen auf `--of-*` Tokens. Neue CSS-Werte sollen direkt die `--of-*` Tokens nutzen.
+
+Das versionierte Token Sheet liegt in `docs/field-hub/onfield_token_sheet.md`. Die technische Wahrheit bleibt `tokens.css`; Figma spiegelt die Tokens nur als visuelles Arbeitsartefakt.
+
 ### Farbe
 
 | Rolle | Wert | Einsatz |
@@ -148,12 +165,11 @@ Regeln:
 
 ## Nicht-Regeln
 
-- Dieses Dokument implementiert keine CSS-Variablen.
-- Dieses Dokument ersetzt kein spaeteres Figma- oder Komponentenbibliothek-Artefakt.
-- Dark Mode, neue UI-Library und Native-Komponenten sind nicht Teil von Sprint 0B.
+- Dieses Dokument ersetzt kein spaeteres Komponentenbibliothek-Artefakt.
+- Das Figma Token Sheet aus Sprint 4 ist visuelle Referenz, nicht die technische Quelle der Wahrheit.
+- Dark Mode, neue UI-Library und Native-Komponenten sind nicht Teil von Sprint 4.
 
 ## Offene Fragen
 
-- Wie werden die Tokens spaeter exakt in bestehende CSS-Variablen gemappt?
 - Welche Icons werden als Standardset festgelegt?
-- Wird ein Figma Design Kit vor oder parallel zu Sprint 3-5 erstellt?
+- Wann werden die Core Components auf die Token-Schicht gemappt?

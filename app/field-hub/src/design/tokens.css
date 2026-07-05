@@ -1,0 +1,115 @@
+:root {
+  color-scheme: light;
+
+  --of-font-family-system: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+
+  --of-color-brand-primary: #1F6B5C;
+  --of-color-brand-primary-strong: #155448;
+  --of-color-brand-primary-soft: #DCEBE7;
+  --of-color-brand-primary-soft-strong: #EAF6F2;
+  --of-color-brand-secondary: #7A1F2B;
+
+  --of-color-bg-base: #F4F5F3;
+  --of-color-surface-default: #FFFFFF;
+  --of-color-surface-muted: #EEF2EF;
+  --of-color-surface-warm: #FFFDF8;
+  --of-color-border-default: #D9DED8;
+
+  --of-color-text-primary: #131815;
+  --of-color-text-secondary: #5E6961;
+  --of-color-text-inverse: #FFFFFF;
+
+  --of-color-status-success: #1D7A46;
+  --of-color-status-success-bg: #EAF6EF;
+  --of-color-status-success-border: #9AC7AC;
+  --of-color-status-success-text: #24543A;
+
+  --of-color-status-warning: #D39A2B;
+  --of-color-status-warning-bg: #FFF4D7;
+  --of-color-status-warning-bg-soft: #FFF9E8;
+  --of-color-status-warning-border: #E8C56B;
+  --of-color-status-warning-text: #53370D;
+
+  --of-color-status-danger: #B42318;
+  --of-color-status-danger-bg: #FDEBE8;
+  --of-color-status-danger-bg-soft: #FFF8F6;
+  --of-color-status-danger-border: #D7A19B;
+  --of-color-status-danger-text: #7D241B;
+
+  --of-color-status-info: #155EEF;
+  --of-color-status-info-bg: #EAF2FF;
+  --of-color-status-info-bg-soft: #F7FAFF;
+  --of-color-status-info-border: #9AB8F5;
+  --of-color-status-info-text: #16499B;
+
+  --of-color-focus-ring: #005FCC;
+  --of-color-focus-ring-soft: rgba(0, 95, 204, 0.28);
+  --of-color-brand-border-subtle: rgba(31, 107, 92, 0.18);
+  --of-color-brand-border-muted: rgba(31, 107, 92, 0.28);
+  --of-color-warning-border-subtle: rgba(211, 154, 43, 0.32);
+  --of-color-danger-border-subtle: rgba(180, 35, 24, 0.34);
+  --of-color-danger-border-strong: rgba(180, 35, 24, 0.45);
+  --of-color-info-border-subtle: rgba(21, 94, 239, 0.28);
+  --of-color-overlay-scrim: rgba(19, 24, 21, 0.42);
+  --of-color-overlay-scrim-soft: rgba(19, 24, 21, 0.34);
+  --of-color-surface-overlay: rgba(255, 255, 255, 0.94);
+  --of-color-surface-overlay-muted: rgba(255, 255, 255, 0.62);
+
+  --of-space-xs: 4px;
+  --of-space-sm: 8px;
+  --of-space-md: 12px;
+  --of-space-lg: 16px;
+  --of-space-xl: 24px;
+  --of-space-xxl: 32px;
+
+  --of-radius-xs: 5px;
+  --of-radius-sm: 8px;
+  --of-radius-md: 12px;
+  --of-radius-lg: 16px;
+  --of-radius-xl: 20px;
+  --of-radius-pill: 999px;
+
+  --of-border-width-default: 1px;
+  --of-shadow-panel: 0 8px 22px rgba(19, 24, 21, 0.06);
+  --of-shadow-panel-hover: 0 8px 18px rgba(19, 24, 21, 0.08);
+  --of-shadow-sheet: 0 16px 50px rgba(19, 24, 21, 0.24);
+  --of-shadow-dialog: 0 18px 48px rgba(19, 24, 21, 0.22);
+  --of-shadow-sidebar: 16px 0 38px rgba(19, 24, 21, 0.18);
+  --of-shadow-action: 0 10px 22px rgba(31, 107, 92, 0.16);
+
+  --of-motion-duration-tap: 140ms;
+  --of-motion-duration-feedback: 160ms;
+  --of-motion-duration-sheet: 220ms;
+  --of-motion-duration-screen: 240ms;
+  --of-motion-ease-standard: ease;
+  --of-motion-ease-out: ease-out;
+
+  --bg: var(--of-color-bg-base);
+  --surface: var(--of-color-surface-default);
+  --surface-strong: var(--of-color-surface-muted);
+  --panel: var(--of-color-surface-default);
+  --ink: var(--of-color-text-primary);
+  --muted: var(--of-color-text-secondary);
+  --line: var(--of-color-border-default);
+  --brand: var(--of-color-brand-primary);
+  --brand-strong: var(--of-color-brand-primary-strong);
+  --brand-soft: var(--of-color-brand-primary-soft);
+  --focus: var(--of-color-focus-ring);
+  --warning: var(--of-color-status-warning);
+  --warning-bg: var(--of-color-status-warning-bg);
+  --ok: var(--of-color-status-success);
+  --shadow: var(--of-shadow-panel);
+  --z-navigation-backdrop: 45;
+  --z-navigation: 50;
+  --z-modal-backdrop: 70;
+  --z-modal: 80;
+  --z-toast: 90;
+
+  font-family: var(--of-font-family-system);
+  color: var(--ink);
+  background: var(--bg);
+  font-synthesis: none;
+  text-rendering: optimizeLegibility;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}

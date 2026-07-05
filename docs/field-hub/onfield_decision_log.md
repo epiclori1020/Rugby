@@ -44,6 +44,7 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | 2026-07-05 | Oxblood ist Brand-/Editorial-Farbe und nie Status-, Alarm- oder Follow-up-Farbe. | In einem Feldtool wird Rot-nahe Farbe schnell als Alarm gelesen; Status braucht ein getrenntes funktionales System. | Aktiv |
 | 2026-07-05 | Field-Operations-DNA lebt in Layout, IA und Session Flow, nicht als dekoratives Wallpaper. | Field-as-layout ist differenzierender und verhindert generische Sport-B2B-Tapete hinter KPI-Karten. | Aktiv |
 | 2026-07-05 | Sprint-3-Research wird kuratiert in einer Synthese dokumentiert, nicht roh in Memory kopiert. | Memory bleibt Router und Entscheidungsgedaechtnis; lange Researches bleiben Quellenmaterial. | Aktiv |
+| 2026-07-05 | OnField Code-Tokens nutzen den Prefix `--of-*`; `app/field-hub/src/design/tokens.css` ist die technische Token-Quelle. | Code, SSOT und Figma bleiben abgleichbar, ohne Figma zur Runtime-Quelle zu machen. Legacy-Aliase duerfen waehrend der Migration auf `--of-*` zeigen. | Aktiv |
 
 ## Markenarchitektur
 
@@ -68,6 +69,7 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 - Status wird nie nur ueber Farbe kommuniziert.
 - Agenten sollen zuerst gezielt Kontext routen und nur relevante SSOTs/Researches laden.
 - Nach Sprint 0B sind die neuen OnField-SSOTs primaere Arbeitsgrundlage fuer Produkt, Brand, Copy, Designsystem, Komponenten, Sport-Konfiguration und PWA/A11y QA.
+- Nach Sprint 4 ist `app/field-hub/src/design/tokens.css` die technische Wahrheit fuer OnField Theme Tokens; Figma Token Sheets sind visuelle Referenz und Uebergabeartefakt.
 - Nach Sprint 0A braucht jede OnField-Aufgabe am Ende eine Memory-Closeout-Pruefung: Current State, Decision Log oder Gotchas aktualisieren, falls die Aufgabe kuenftige Sessions betrifft.
 
 ## Zurueckgestellte Entscheidungen
