@@ -62,6 +62,7 @@ type PostSessionViewProps = {
   selectedSession: SessionDefinition
   selectedSessionId: string
   sessions: SessionDefinition[]
+  showSessionPicker?: boolean
 }
 
 const e2Options: Array<{ value: E2Decision; label: string }> = [
@@ -1164,6 +1165,7 @@ export function PostSessionView({
   selectedSession,
   selectedSessionId,
   sessions,
+  showSessionPicker = true,
 }: PostSessionViewProps) {
   const [baselineFormError, setBaselineFormError] = useState<string | null>(null)
   const [exerciseDefaultKey, setExerciseDefaultKey] = useState<string>('trap_bar_deadlift')
@@ -1282,11 +1284,13 @@ export function PostSessionView({
           <p>{selectedSession.title}: sRPE, Pain/Issue, E2, Progression und Follow-ups sichern.</p>
         </div>
         <div className="player-toolbar">
-          <SessionPicker
-            onSessionChange={onSessionChange}
-            selectedSessionId={selectedSessionId}
-            sessions={sessions}
-          />
+          {showSessionPicker ? (
+            <SessionPicker
+              onSessionChange={onSessionChange}
+              selectedSessionId={selectedSessionId}
+              sessions={sessions}
+            />
+          ) : null}
           {syncOverview.status === 'error' ||
           baselineActions.syncOverview.status === 'error' ||
           metricActions.syncOverview.status === 'error' ? (

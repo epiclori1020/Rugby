@@ -11,6 +11,7 @@ import { PublicCheckInView } from './components/PublicCheckInView'
 import { PwaUpdateNotice } from './components/PwaUpdateNotice'
 import { PlayersView } from './components/PlayersView'
 import { ReturnerView } from './components/ReturnerView'
+import { SessionWorkspace } from './components/SessionWorkspace'
 import { SettingsView } from './components/SettingsView'
 import type { SelfCheckInSubmissionInput } from './components/SelfCheckInFlow'
 import { TodayDashboard } from './components/TodayDashboard'
@@ -21,6 +22,7 @@ import { shouldShowBackupReminder } from './domain/backupReminder'
 import { deriveRedFlagFromPainLocation, type CheckInEntryPatch, type SessionLog } from './domain/checkIn'
 import type { CoachInsightSource } from './domain/coachInsights'
 import type { PlayerAnalysisSource } from './domain/playerAnalysis'
+import { derivePostSessionCompletion } from './domain/postSessionCompletion'
 import { useAuthSession } from './hooks/useAuthSession'
 import { useBaselines } from './hooks/useBaselines'
 import { useCheckIns } from './hooks/useCheckIns'
@@ -283,6 +285,15 @@ function CoachApp() {
     dismissedReminderKey: null,
     lastExportAt,
     reminderKey: backupReminderKey,
+  })
+  const currentPostSessionCompletion = derivePostSessionCompletion({
+    activePlayers,
+    baselineEntries: baselineEntriesForOverview,
+    entries: postSessionEntriesForOverview,
+    lastExportAt,
+    progressEntries: progressEntriesForOverview,
+    sessionLog: postSessionActions.sessionLog,
+    sessionType: selectedSession.type,
   })
 
   const showTransientNotice = useCallback((message: string) => {
@@ -609,51 +620,96 @@ function CoachApp() {
           todayKey={appTodayKey}
         />
       ) : activeTab === 'check-in' ? (
-        <CheckInView
-          authState={authState}
-          checkInActions={checkInActions}
-          onNavigate={handleTabChange}
+        <SessionWorkspace
+          activeSubTab="check-in"
+          entries={checkInActions.entries}
           onSessionChange={setSelectedSessionId}
-          onStartKiosk={handleStartKiosk}
-          playerActions={playerActions}
+          onSubTabChange={handleTabChange}
+          postSessionCompletion={currentPostSessionCompletion}
           returnerCaps={returnerActions.returnerCaps}
           selectedSession={selectedSession}
           selectedSessionId={selectedSession.id}
           sessions={sessionDefinitions}
-        />
+          syncOverview={syncOverview}
+          warnings={checkInActions.warnings}
+        >
+          <CheckInView
+            authState={authState}
+            checkInActions={checkInActions}
+            onNavigate={handleTabChange}
+            onSessionChange={setSelectedSessionId}
+            onStartKiosk={handleStartKiosk}
+            playerActions={playerActions}
+            returnerCaps={returnerActions.returnerCaps}
+            selectedSession={selectedSession}
+            selectedSessionId={selectedSession.id}
+            sessions={sessionDefinitions}
+            showSessionPicker={false}
+          />
+        </SessionWorkspace>
       ) : activeTab === 'training' ? (
-        <TrainingView
-          authState={authState}
-          checkInActions={checkInActions}
-          exerciseActions={exerciseActions}
-          exposureActions={exposureActions}
-          metricActions={metricActions}
-          onOpenLibraryItem={handleOpenLibraryItem}
-          onNavigate={handleTabChange}
+        <SessionWorkspace
+          activeSubTab="training"
+          entries={checkInActions.entries}
           onSessionChange={setSelectedSessionId}
+          onSubTabChange={handleTabChange}
+          postSessionCompletion={currentPostSessionCompletion}
           returnerCaps={returnerActions.returnerCaps}
           selectedSession={selectedSession}
           selectedSessionId={selectedSession.id}
-          sessionBlockActions={sessionBlockActions}
           sessions={sessionDefinitions}
-        />
+          syncOverview={syncOverview}
+          warnings={checkInActions.warnings}
+        >
+          <TrainingView
+            authState={authState}
+            checkInActions={checkInActions}
+            exerciseActions={exerciseActions}
+            exposureActions={exposureActions}
+            metricActions={metricActions}
+            onOpenLibraryItem={handleOpenLibraryItem}
+            onNavigate={handleTabChange}
+            onSessionChange={setSelectedSessionId}
+            returnerCaps={returnerActions.returnerCaps}
+            selectedSession={selectedSession}
+            selectedSessionId={selectedSession.id}
+            sessionBlockActions={sessionBlockActions}
+            sessions={sessionDefinitions}
+            showSessionPicker={false}
+          />
+        </SessionWorkspace>
       ) : activeTab === 'nachbereitung' ? (
-        <PostSessionView
-          authState={authState}
-          onNavigate={handleTabChange}
+        <SessionWorkspace
+          activeSubTab="nachbereitung"
+          entries={checkInActions.entries}
           onSessionChange={setSelectedSessionId}
-          baselineActions={baselineActions}
-          exposureActions={exposureActions}
-          exposureBlockLogs={sessionBlockActions.blockLogs}
-          exerciseActions={exerciseActions}
-          lastExportAt={lastExportAt}
-          metricActions={metricActions}
-          postSessionActions={postSessionActions}
+          onSubTabChange={handleTabChange}
+          postSessionCompletion={currentPostSessionCompletion}
           returnerCaps={returnerActions.returnerCaps}
           selectedSession={selectedSession}
           selectedSessionId={selectedSession.id}
           sessions={sessionDefinitions}
-        />
+          syncOverview={syncOverview}
+          warnings={checkInActions.warnings}
+        >
+          <PostSessionView
+            authState={authState}
+            onNavigate={handleTabChange}
+            onSessionChange={setSelectedSessionId}
+            baselineActions={baselineActions}
+            exposureActions={exposureActions}
+            exposureBlockLogs={sessionBlockActions.blockLogs}
+            exerciseActions={exerciseActions}
+            lastExportAt={lastExportAt}
+            metricActions={metricActions}
+            postSessionActions={postSessionActions}
+            returnerCaps={returnerActions.returnerCaps}
+            selectedSession={selectedSession}
+            selectedSessionId={selectedSession.id}
+            sessions={sessionDefinitions}
+            showSessionPicker={false}
+          />
+        </SessionWorkspace>
       ) : activeTab === 'returner' ? (
         <ReturnerView
           authState={authState}

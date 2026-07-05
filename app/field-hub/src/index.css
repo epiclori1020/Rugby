@@ -209,6 +209,49 @@ button {
   max-width: 100%;
 }
 
+.session-workspace {
+  display: grid;
+  gap: var(--of-space-lg);
+  min-width: 0;
+  max-width: 100%;
+}
+
+.session-workspace-context {
+  border: var(--of-border-width-default) solid var(--of-color-border-default);
+  border-radius: var(--of-radius-lg);
+  background: var(--of-color-surface-default);
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--of-space-sm);
+  padding: var(--of-space-md);
+}
+
+.session-workspace-context-detail {
+  color: var(--of-color-text-secondary);
+  font-size: 0.88rem;
+  font-weight: 800;
+}
+
+.session-workspace-sync-status {
+  display: inline-flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--of-space-sm);
+}
+
+.session-workspace-subnav {
+  max-width: 100%;
+}
+
+.session-workspace-subnav .of-segmented-control {
+  width: 100%;
+}
+
+.session-workspace-body {
+  min-width: 0;
+}
+
 @keyframes notice-enter {
   from {
     opacity: 0;

@@ -1,14 +1,12 @@
-import { Activity, Archive, ClipboardCheck, Dumbbell, FileDown, HeartPulse, Settings } from 'lucide-react'
+import { Archive, FileDown, HeartPulse, Settings } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { PlayerSyncOverview } from '../domain/sync'
 import type { AuthSessionState } from '../lib/auth'
 import {
   isMoreSubTab,
-  isUnitSubTab,
   type AppSection,
   type HubTab,
   type MoreSubTab,
-  type UnitSubTab,
 } from '../navigation'
 import { MainNavigation } from './MainNavigation'
 import { SyncStatusBadge } from './SyncStatusBadge'
@@ -78,12 +76,6 @@ const tabMeta: Record<HubTab, { eyebrow: string; title: string; description: str
   },
 }
 
-const unitOptions: SegmentedControlOption<UnitSubTab>[] = [
-  { value: 'check-in', label: 'Check-in', icon: <ClipboardCheck aria-hidden /> },
-  { value: 'training', label: 'Training', icon: <Dumbbell aria-hidden /> },
-  { value: 'nachbereitung', label: 'Nachbereitung', icon: <Activity aria-hidden /> },
-]
-
 const moreOptions: SegmentedControlOption<MoreSubTab>[] = [
   { value: 'bibliothek', label: 'Bibliothek', icon: <Archive aria-hidden /> },
   { value: 'export', label: 'Export & Backup', icon: <FileDown aria-hidden /> },
@@ -102,7 +94,6 @@ export function AppShell({
   transientNotice = null,
 }: AppShellProps) {
   const meta = tabMeta[activeTab]
-  const activeUnitSubTab = isUnitSubTab(activeTab) ? activeTab : 'check-in'
   const activeMoreSubTab = isMoreSubTab(activeTab) ? activeTab : 'bibliothek'
 
   return (
@@ -132,16 +123,6 @@ export function AppShell({
           <p className="app-transient-notice" role="status" aria-live="polite">
             {transientNotice}
           </p>
-        ) : null}
-        {activeSection === 'einheit' ? (
-          <div className="section-subnav">
-            <SegmentedControl
-              label="Einheit Unterbereiche"
-              onChange={onTabChange}
-              options={unitOptions}
-              value={activeUnitSubTab}
-            />
-          </div>
         ) : null}
         {activeSection === 'mehr' ? (
           <div className="section-subnav">

@@ -27,7 +27,7 @@ Letztes Update: 2026-07-05
 
 | Bereich | Stand |
 |---|---|
-| Navigation | Sprint 6 hat die App-Shell im Code auf `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` umgestellt. `Einheit` fuehrt `Check-in`, `Training`, `Nachbereitung`; `Mehr` fuehrt `Bibliothek`, `Export & Backup`, `Einstellungen`, `Returner`. |
+| Navigation | Sprint 6 hat die App-Shell im Code auf `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` umgestellt. Sprint 8 hat `Einheit` als echten Arbeitscontainer mit Session Header, Session-Auswahl, Check-in/Training/Nachbereitung-Subnavigation und gemeinsamen Kontextstatus umgesetzt. `Mehr` fuehrt `Bibliothek`, `Export & Backup`, `Einstellungen`, `Returner`. |
 | Designsystem | Sprint 5 hat das erste Core Component Kit in Code, Repo-Dokumentation und Figma-Sheet angelegt. Screen-weite Migrationen folgen spaeter. |
 | PWA-Metadaten | Sprint 7 hat Manifest-/Install-Metadaten, Brand-Surfaces und das eigene OnField Coach SVG/PNG-Icon-Set fuer PWA/iOS aktualisiert. |
 | iPhone | Hat in Sprint 6 die neue 5er-Bottom-Tab-Bar mit Safe-Area-Abstand erhalten; Unterbereiche bleiben erreichbar. |
@@ -94,17 +94,18 @@ Letztes Update: 2026-07-05
 - Sprint 5 ist abgeschlossen: Das Core Component Kit liegt unter `app/field-hub/src/components/ui/` und `app/field-hub/src/components/onfield/`, ist durch fokussierte Komponententests abgedeckt, im Component Inventory gemappt und im Figma Brand Board als `Sprint 5 Core Component Kit` gespiegelt.
 - Sprint 6 ist abgeschlossen: App Shell und Navigation nutzen im Code die neue 5er-Hauptnavigation; bestehende Screens bleiben ueber kompatibles `HubTab`-Mapping erreichbar.
 - Sprint 7 ist abgeschlossen: Auth, Today-Empty/Welcome, Settings-Install, Public Check-in und Kiosk-Welcome nutzen OnField Brand-Surfaces; PWA/iOS-Icons sind als eigenes OnField Coach SVG/PNG-Set aktualisiert.
+- Sprint 8 ist abgeschlossen: `Einheit` besitzt jetzt den gemeinsamen Session-Workspace fuer Check-in, Training und Nachbereitung. Die Child-Screens sind nur eingebettet und noch nicht final roster-/live-/queue-first umgebaut.
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 8 angehen: Einheit-Container als Kernworkflow.
+1. Sprint 9 angehen: Check-in Roster-first Redesign.
 2. Danach Roadmap-Reihenfolge beibehalten und die Sprint-5-Komponenten schrittweise in Screen-Sprints nutzen.
 
 ## Offene Risiken
 
 | Risiko | Auswirkung | Naechster Schritt |
 |---|---|---|
-| Neue Navigation ist erst Shell-Level umgesetzt. | Einzelne Screens nutzen intern noch Legacy-Klassen und koennen in Dichte/Flow uneinheitlich wirken. | In den naechsten Screen-Sprints gezielt migrieren, ohne spaetere Features vorzuziehen. |
+| Einheit ist jetzt Container, aber Child-Screens sind noch Legacy-Flow. | Check-in, Training und Nachbereitung sind erreichbar, wirken intern aber noch nicht roster-/live-/queue-first. | In Sprint 9 ff. die Child-Screens gezielt migrieren, ohne spaetere Features vorzuziehen. |
 | Core Components sind noch nicht screen-weit ausgerollt. | Das Kit existiert, aber viele Screens nutzen weiterhin Legacy-Klassen und Inline-Muster. | In den naechsten Screen-Sprints gezielt migrieren, ohne Sprint-6-IA vorzuziehen. |
 | iPhone wird wieder als Nebenansicht behandelt. | Externe Nutzung und App-Store-Perspektive werden geschwaecht. | iPhone-Paritaet in jedem Sprint pruefen. |
 | Rugby bleibt im Code zu stark in generischer Architektur. | Multi-Sport-Faehigkeit wird spaeter teuer. | Sport-Konfiguration schrittweise extrahieren. |

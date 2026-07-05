@@ -117,7 +117,7 @@ describe('AppShell page title', () => {
     expect(markup).toContain('Check-in geöffnet.')
   })
 
-  it('renders unit subnavigation for Check-in, Training and Nachbereitung', () => {
+  it('leaves unit subnavigation to the Einheit workspace', () => {
     const markup = renderToStaticMarkup(
       <AppShell
         activeSection="einheit"
@@ -131,10 +131,9 @@ describe('AppShell page title', () => {
       </AppShell>,
     )
 
-    expect(markup).toContain('aria-label="Einheit Unterbereiche"')
-    expect(markup).toContain('Check-in')
-    expect(markup).toContain('Training')
-    expect(markup).toContain('Nachbereitung')
+    expect(markup).not.toContain('aria-label="Einheit Unterbereiche"')
+    expect(markup).not.toContain('Nachbereitung')
+    expect(markup).toContain('Training content')
   })
 
   it('renders more subnavigation with Returner as a utility, not a top-level tab', () => {

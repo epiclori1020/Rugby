@@ -56,6 +56,7 @@ type TrainingViewProps = {
   selectedSessionId: string
   sessionBlockActions: SessionBlockActions
   sessions: SessionDefinition[]
+  showSessionPicker?: boolean
 }
 
 type TrainingPlayerFilter = 'open' | 'present' | 'warning' | 'returner' | 'cluster' | 'all'
@@ -392,6 +393,7 @@ export function TrainingView({
   selectedSessionId,
   sessionBlockActions,
   sessions,
+  showSessionPicker = true,
 }: TrainingViewProps) {
   const {
     activePlayers,
@@ -624,11 +626,13 @@ export function TrainingView({
           <p>{selectedSession.title}: Plan, Varianten, Quick Actions, Kontaktindex und Speed-Exposure.</p>
         </div>
         <div className="player-toolbar">
-          <SessionPicker
-            onSessionChange={onSessionChange}
-            selectedSessionId={selectedSessionId}
-            sessions={sessions}
-          />
+          {showSessionPicker ? (
+            <SessionPicker
+              onSessionChange={onSessionChange}
+              selectedSessionId={selectedSessionId}
+              sessions={sessions}
+            />
+          ) : null}
           <button
             className="primary-action"
             type="button"

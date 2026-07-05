@@ -1399,6 +1399,8 @@ Nach dem Training ist Energie niedrig. Die App muss fuehren, nicht alles gleichz
 
 Die existierende `MissingValuesPanel`-Logik ist ein guter Anfang. Nicht ersetzen, sondern zur Hauptstruktur machen.
 
+Sprint 8 zeigt Nachbereitungsstatus im Einheit-Container noch als groben Kontext. Sprint 11 soll die Queue dagegen praezise auf einzelne offene Spieler-/Pflichtaufgaben herunterbrechen, nicht nur Blocker-/Advisory-Gruppen zaehlen.
+
 ### Deliverables
 
 - Queue-first UI.

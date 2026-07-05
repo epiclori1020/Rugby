@@ -59,6 +59,7 @@ type CheckInViewProps = {
   selectedSession: SessionDefinition
   selectedSessionId: string
   sessions: SessionDefinition[]
+  showSessionPicker?: boolean
 }
 
 const trafficLabels: Record<TrafficLight, string> = {
@@ -928,6 +929,7 @@ export function CheckInView({
   selectedSession,
   selectedSessionId,
   sessions,
+  showSessionPicker = true,
 }: CheckInViewProps) {
   const {
     activePlayers,
@@ -1299,11 +1301,13 @@ export function CheckInView({
           </p>
         </div>
         <div className="player-toolbar">
-          <SessionPicker
-            onSessionChange={handleSessionChange}
-            selectedSessionId={selectedSessionId}
-            sessions={sessions}
-          />
+          {showSessionPicker ? (
+            <SessionPicker
+              onSessionChange={handleSessionChange}
+              selectedSessionId={selectedSessionId}
+              sessions={sessions}
+            />
+          ) : null}
           {syncOverview.status === 'error' ? (
             <button className="secondary-action" type="button" onClick={runSync} disabled={isLoading}>
               <RefreshCw className="nav-icon" aria-hidden />
