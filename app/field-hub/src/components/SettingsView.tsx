@@ -64,6 +64,30 @@ function storageStatusDotClassName(status: StoragePersistenceState['status']) {
   return status === 'persisted' ? 'status-dot online' : 'status-dot'
 }
 
+function manualSyncDisabledReason({
+  authState,
+  isManualSyncing,
+  isOnline,
+}: {
+  authState: AuthSessionState
+  isManualSyncing: boolean
+  isOnline: boolean
+}) {
+  if (isManualSyncing) {
+    return 'Sync laeuft gerade.'
+  }
+
+  if (authState.status !== 'signed-in') {
+    return 'Coach-Login noetig.'
+  }
+
+  if (!isOnline) {
+    return 'Offline - Aenderungen bleiben lokal gespeichert.'
+  }
+
+  return null
+}
+
 export function SettingsView({
   authState,
   backupRecommended,
@@ -78,8 +102,14 @@ export function SettingsView({
   syncFeedback,
   syncOverview,
 }: SettingsViewProps) {
-  const canManualSync = authState.status === 'signed-in' && syncOverview.isOnline && !isManualSyncing
+  const syncDisabledReason = manualSyncDisabledReason({
+    authState,
+    isManualSyncing,
+    isOnline: syncOverview.isOnline,
+  })
+  const canManualSync = syncDisabledReason === null
   const SyncIcon = syncOverview.isOnline ? Cloud : CloudOff
+  const syncDisabledReasonId = 'manual-sync-disabled-reason'
 
   return (
     <div className="settings-layout">
@@ -90,7 +120,7 @@ export function SettingsView({
           <SyncIcon className="nav-icon" aria-hidden />
           <div>
             <h3 id="settings-sync-heading">Synchronisierung</h3>
-            <p>Ein Button fuer Spieler, Check-ins, Training, Nachbereitung, Baseline und Returner.</p>
+            <p>Coach-nahe Ablage fuer Spieler, Check-ins, Training, Nachbereitung, Baseline und Returner.</p>
           </div>
         </div>
         <div className="metric-grid mini">
@@ -99,7 +129,7 @@ export function SettingsView({
             <strong>{syncOverview.isOnline ? 'Online' : 'Offline'}</strong>
           </div>
           <div className="metric">
-            <span>Aenderungen</span>
+            <span>Warten auf Sync</span>
             <strong>{syncOverview.pendingCount}</strong>
           </div>
           <div className="metric">
@@ -114,13 +144,26 @@ export function SettingsView({
         </div>
         {syncOverview.errorMessage ? <p className="form-error">{syncOverview.errorMessage}</p> : null}
         {syncFeedback ? <p className={manualSyncFeedbackClassName(syncFeedback.kind)}>{syncFeedback.message}</p> : null}
-        <button className="primary-action" disabled={!canManualSync} type="button" onClick={onManualSync}>
+        <button
+          aria-describedby={!canManualSync ? syncDisabledReasonId : undefined}
+          className="primary-action"
+          disabled={!canManualSync}
+          type="button"
+          onClick={onManualSync}
+        >
           <RefreshCw className="nav-icon" aria-hidden />
-          <span>{isManualSyncing ? 'Synchronisiere...' : 'Jetzt synchronisieren'}</span>
+          <span>{isManualSyncing ? 'Sync laeuft gerade' : 'Jetzt synchronisieren'}</span>
         </button>
+        {!canManualSync ? (
+          <p className="disabled-action-reason" id={syncDisabledReasonId}>
+            {syncDisabledReason}
+          </p>
+        ) : null}
         <p className="sync-help">
-          {pendingCountLabel(syncOverview.pendingCount)}. Bei Unterschieden zwischen Geraeten zaehlt die zuletzt
-          gespeicherte Version.
+          {syncOverview.pendingCount > 0
+            ? `${pendingCountLabel(syncOverview.pendingCount)} warten auf Sync.`
+            : `${pendingCountLabel(syncOverview.pendingCount)}.`}{' '}
+          Bei Unterschieden zwischen Geraeten zaehlt die zuletzt gespeicherte Version.
         </p>
       </section>
 
@@ -129,7 +172,7 @@ export function SettingsView({
           <Download className="nav-icon" aria-hidden />
           <div>
             <h3 id="settings-backup-heading">Backup</h3>
-            <p>Supabase ist der normale Geraete-Sync. JSON bleibt das zusaetzliche Backup.</p>
+            <p>Supabase ist der normale Geraete-Sync. JSON bleibt das zusaetzliche Wiederherstellungsbackup.</p>
           </div>
         </div>
         <div className={backupRecommended ? 'warning-note' : 'sync-mini'}>

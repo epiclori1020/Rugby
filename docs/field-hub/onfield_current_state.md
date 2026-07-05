@@ -27,7 +27,7 @@ Letztes Update: 2026-07-05
 
 | Bereich | Stand |
 |---|---|
-| Navigation | Sprint 6 hat die App-Shell im Code auf `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` umgestellt. Sprint 8 hat `Einheit` als echten Arbeitscontainer mit Session Header, Session-Auswahl, Check-in/Training/Nachbereitung-Subnavigation und gemeinsamen Kontextstatus umgesetzt. `Mehr` fuehrt `Bibliothek`, `Export & Backup`, `Einstellungen`, `Returner`. |
+| Navigation | Sprint 6 hat die App-Shell im Code auf `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` umgestellt. Sprint 8 hat `Einheit` als echten Arbeitscontainer mit Session Header, Session-Auswahl, Check-in/Training/Nachbereitung-Subnavigation und gemeinsamen Kontextstatus umgesetzt. Sprint 14 hat `Mehr` als ruhige Utility-Zone fuer `Bibliothek`, `Export & Backup`, `Einstellungen` und `Returner` geschaerft. |
 | Designsystem | Sprint 5 hat das erste Core Component Kit in Code, Repo-Dokumentation und Figma-Sheet angelegt. Screen-weite Migrationen folgen spaeter. |
 | PWA-Metadaten | Sprint 7 hat Manifest-/Install-Metadaten, Brand-Surfaces und das eigene OnField Coach SVG/PNG-Icon-Set fuer PWA/iOS aktualisiert. |
 | iPhone | Hat in Sprint 6 die neue 5er-Bottom-Tab-Bar mit Safe-Area-Abstand erhalten; Unterbereiche bleiben erreichbar. |
@@ -37,6 +37,7 @@ Letztes Update: 2026-07-05
 | Nachbereitung | Sprint 11 ist umgesetzt: Nachbereitung ist queue-first mit Dauer oben, priorisierten Pflichtaufgaben, aktivem Detail-Schritt, `session_status` als Abschlussaufgabe und sekundaeren Bereichen fuer Exposures, Coach Review, Metrics, Exercise, Mini-Baseline und Spielerdetails. |
 | Spieler | Sprint 12 ist umgesetzt: Spieler ist ein list-detail Athletenbereich. Die Liste bleibt zuerst, Profile starten mit aktuellem Status, letzter Teilnahme, aktuellen Limits, offenen Themen und kurzem Verlauf. Stammdaten, Consent, Foto-Status, Tests, Training, Load, Issues und Returner bleiben darunter bzw. in Detail-Tabs erreichbar. |
 | Analyse | Sprint 13 ist umgesetzt: Analyse ist ein separater, ruhiger Auswertungsraum mit kompaktem Kontext, aktiven Filter-Chips, vier Coach-Fragen, Kernwerten und sekundaeren Detailpanels. Live-Erfassung, Check-in- und Trainingsaktionen bleiben ausserhalb der Analyse. |
+| Mehr | Sprint 14 ist umgesetzt: Bibliothek ist Referenzbereich mit sichtbarem `Heute relevant`-Filter, Export & Backup trennt JSON-Backup, CSV-Tabellen und Import-Vorschau, und Einstellungen zeigen Sync-/Offline-/Backup-Zustaende mit coachnaher Sprache und sichtbaren Disabled-Gruenden. |
 | Sync/Offline | Pending/Sync-Logik existiert, muss global ruhiger und einheitlicher kommuniziert werden. |
 | Kiosk/Public | Separate Komponenten existieren und sollen als eigene reduzierte Experience weiterentwickelt werden. |
 | Brand-Surfaces | Sprint 7 hat eine wiederverwendbare `BrandSurface` fuer Auth, Welcome/Empty, Install, Public Check-in und Kiosk-Welcome eingefuehrt. Live-Coaching-Flows bleiben ohne Hero-Flaechen. |
@@ -102,17 +103,18 @@ Letztes Update: 2026-07-05
 - Sprint 11 ist abgeschlossen: Nachbereitung wurde als echte Aufgabenqueue umgesetzt; Dauer steht einmal oben, Pflichtwerte/Abschluss/sekundaere Aufgaben sind priorisiert, und iPhone/iPad behalten denselben fachlichen Funktionsumfang.
 - Sprint 12 ist abgeschlossen: `Spieler` ist roster-/list-first, Profil-Detail oeffnet auf iPhone als Sheet und auf iPad als Pane, und das Profil startet arbeitsrelevant mit Status, Teilnahme, Limits, offenen Themen und kurzem Verlauf. OnField Rugby bleibt als erster Preset sichtbar, ohne eine Config-Engine oder Supabase-Migration einzufuehren.
 - Sprint 13 ist abgeschlossen: `Analyse` ist ein eigener Auswertungsraum fuer Beobachten, Modifizieren, Progression und Rueckmeldung. Die Ansicht nutzt bestehende lokale Daten, verzichtet auf Live-Quick-Actions und behaelt iPhone/iPad-Funktionsparitaet.
+- Sprint 14 ist abgeschlossen: `Mehr` ist als Utility-Zone geschaerft. Bibliothek/Export/Einstellungen bleiben Unterbereiche, Backup/Sync-Sprache ist coachnah, Import laeuft ueber Vorschau und explizite Bestaetigung, und das Figma Brand Board enthaelt den Frame `Sprint 14 Mehr Utility Zone`.
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 14 angehen: `Mehr` als klare Utility-Zone fuer Bibliothek, Export/Backup und Einstellungen.
+1. Sprint 15 angehen: Public/Kiosk Check-in als eigene reduzierte Experience.
 2. Danach Roadmap-Reihenfolge beibehalten und die Sprint-5-Komponenten schrittweise in Screen-Sprints nutzen.
 
 ## Offene Risiken
 
 | Risiko | Auswirkung | Naechster Schritt |
 |---|---|---|
-| `Mehr` ist noch nicht als Utility-Zone geschaerft. | Bibliothek, Export/Backup und Einstellungen koennen weiterhin administrativ oder technisch wirken statt als ruhiger Nebenbereich. | In Sprint 14 `Mehr` gezielt umbauen, ohne neue Plattform- oder SaaS-Funktionen vorzuziehen. |
+| Public/Kiosk ist noch keine eigene reduzierte Experience. | Self-Check-in kann zu nah an Coach-Adminflaechen bleiben. | In Sprint 15 Public/Kiosk als getrennten, reduzierten Flow schaerfen. |
 | Core Components sind noch nicht screen-weit ausgerollt. | Das Kit existiert, aber viele Screens nutzen weiterhin Legacy-Klassen und Inline-Muster. | In den naechsten Screen-Sprints gezielt migrieren, ohne Sprint-6-IA vorzuziehen. |
 | iPhone wird wieder als Nebenansicht behandelt. | Externe Nutzung und App-Store-Perspektive werden geschwaecht. | iPhone-Paritaet in jedem Sprint pruefen. |
 | Rugby bleibt im Code zu stark in generischer Architektur. | Multi-Sport-Faehigkeit wird spaeter teuer. | Sport-Konfiguration schrittweise extrahieren. |

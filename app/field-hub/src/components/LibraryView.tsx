@@ -81,11 +81,14 @@ function buildTodaySessionItem(selectedSession: SessionDefinition): LibraryItem 
 }
 
 function buildTodayRelevantItems(selectedSession: SessionDefinition | undefined) {
+  const libraryItemById = new Map(libraryItems.map((item) => [item.id, item]))
+
   if (!selectedSession) {
-    return []
+    return defaultTodayLibraryRefs
+      .map((libraryRef) => libraryItemById.get(libraryRef))
+      .filter((item): item is LibraryItem => Boolean(item))
   }
 
-  const libraryItemById = new Map(libraryItems.map((item) => [item.id, item]))
   const sessionItem = buildTodaySessionItem(selectedSession)
   const referencedItems = selectedSession.libraryRefs
     .map((libraryRef) => libraryItemById.get(libraryRef))
@@ -222,9 +225,9 @@ export function LibraryView({
     <section className="library-layout" aria-labelledby="library-heading">
       <div className="library-sidebar panel">
         <div className="library-heading">
-          <p className="eyebrow">Unterlagen</p>
+          <p className="eyebrow">Referenzbereich</p>
           <h3 id="library-heading">Bibliothek</h3>
-          <p>Coachbare Arbeitsflaeche fuer Plaene, Playbooks, Session-Inhalte und Quellen. PDFs bleiben Fallback.</p>
+          <p>Ruhiger Nachschlagebereich fuer Plaene, Playbooks, Session-Inhalte und Quellen. PDFs bleiben Fallback.</p>
         </div>
 
         <label className="search-box">
@@ -245,6 +248,13 @@ export function LibraryView({
             onClick={() => chooseCategory(allCategoriesLabel)}
           >
             {allCategoriesLabel}
+          </button>
+          <button
+            className={selectedCategory === todayCategory ? 'filter-chip active' : 'filter-chip'}
+            type="button"
+            onClick={() => chooseCategory(todayCategory)}
+          >
+            {todayCategory}
           </button>
           {libraryCategories.map((category) => (
             <button

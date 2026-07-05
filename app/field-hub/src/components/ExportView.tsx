@@ -21,6 +21,8 @@ import {
   downloadTextFile,
 } from '../lib/csvExport'
 
+type CsvExportKind = 'players' | 'checkIns' | 'progress' | 'baseline' | 'sessionBlocks' | 'exposures' | 'exercises' | 'metrics'
+
 type ExportViewProps = {
   authState: AuthSessionState
   lastExportAt: string | null
@@ -54,6 +56,30 @@ const emptySummary: ExportSummary = {
   metricResults: 0,
 }
 
+const csvExportActions: Array<{ kind: CsvExportKind; label: string; resultLabel: string }> = [
+  { kind: 'players', label: 'Spieler', resultLabel: 'Spieler' },
+  { kind: 'checkIns', label: 'Check-ins', resultLabel: 'Check-ins' },
+  { kind: 'progress', label: 'Progression', resultLabel: 'Progression' },
+  { kind: 'baseline', label: 'Baseline/Testwerte', resultLabel: 'Baseline/Testwerte' },
+  { kind: 'sessionBlocks', label: 'Blockstatus', resultLabel: 'Blockstatus' },
+  { kind: 'exposures', label: 'Exposures', resultLabel: 'Exposures' },
+  { kind: 'exercises', label: 'Exercise Results', resultLabel: 'Exercise Results' },
+  { kind: 'metrics', label: 'Flexible Metrics', resultLabel: 'Flexible Metrics' },
+]
+
+const summaryMetrics: Array<{ key: keyof ExportSummary; label: string }> = [
+  { key: 'players', label: 'Spieler' },
+  { key: 'sessionLogs', label: 'Einheiten' },
+  { key: 'playerSessionEntries', label: 'Check-ins' },
+  { key: 'progressEntries', label: 'Progression' },
+  { key: 'baselineEntries', label: 'Baseline' },
+  { key: 'returnerEntries', label: 'Returner' },
+  { key: 'sessionBlockLogs', label: 'Blockstatus' },
+  { key: 'playerExposureSummaries', label: 'Exposures' },
+  { key: 'exerciseResults', label: 'Exercise Results' },
+  { key: 'metricResults', label: 'Flexible Metrics' },
+]
+
 function todayStamp() {
   return new Date().toISOString().slice(0, 10)
 }
@@ -75,6 +101,10 @@ function summaryFromBackup(backup: FieldHubBackupV1): ExportSummary {
 
 function downloadJson(filename: string, payload: unknown) {
   downloadTextFile(filename, JSON.stringify(payload, null, 2), 'application/json;charset=utf-8')
+}
+
+function csvLabelForKind(kind: CsvExportKind) {
+  return csvExportActions.find((action) => action.kind === kind)?.resultLabel ?? 'CSV'
 }
 
 export function ExportView({
@@ -110,8 +140,8 @@ export function ExportView({
       <div className="content-stack">
         <section className="placeholder" aria-labelledby="export-locked-heading">
           <FileDown className="placeholder-icon" aria-hidden />
-          <h2 id="export-locked-heading">Export</h2>
-          <p>Backups und CSV-Exporte sind nach Coach-Login in Einstellungen verfuegbar.</p>
+          <h2 id="export-locked-heading">Export & Backup</h2>
+          <p>Coach-Login noetig. Danach sind Backup, CSV-Tabellen und Import-Vorschau hier verfuegbar.</p>
         </section>
       </div>
     )
@@ -141,9 +171,7 @@ export function ExportView({
     }
   }
 
-  async function handleCsvExport(
-    kind: 'players' | 'checkIns' | 'progress' | 'baseline' | 'sessionBlocks' | 'exposures' | 'exercises' | 'metrics',
-  ) {
+  async function handleCsvExport(kind: CsvExportKind) {
     if (!userId) {
       return
     }
@@ -173,25 +201,7 @@ export function ExportView({
 
       downloadTextFile(filename, content, 'text/csv;charset=utf-8')
       await markExportComplete(userId)
-      setExportResult(
-        `CSV ${
-          kind === 'checkIns'
-            ? 'Check-ins'
-            : kind === 'players'
-              ? 'Spieler'
-              : kind === 'progress'
-                ? 'Progression'
-                : kind === 'baseline'
-                  ? 'Baseline/Testwerte'
-                  : kind === 'sessionBlocks'
-                    ? 'Blockstatus'
-                    : kind === 'exposures'
-                      ? 'Exposures'
-                      : kind === 'exercises'
-                        ? 'Exercise Results'
-                      : 'Metrics'
-        }: Download gestartet.`,
-      )
+      setExportResult(`CSV ${csvLabelForKind(kind)}: Download gestartet.`)
     } catch (caughtError) {
       setExportErrorMessage(caughtError instanceof Error ? caughtError.message : 'CSV konnte nicht exportiert werden.')
     }
@@ -229,7 +239,7 @@ export function ExportView({
 
     try {
       const result = await importFieldHubBackup(userId, importPayload, { confirmOverwrite: true })
-      setImportResult(`${result.importedRecords} Datensaetze lokal importiert und fuer Sync vorgemerkt.`)
+      setImportResult(`${result.importedRecords} Datensaetze lokal importiert. Aenderungen warten auf Sync.`)
       setImportPayload(null)
       setImportPreview(null)
       setSummary(summaryFromBackup(await createFieldHubBackup(userId)))
@@ -247,94 +257,55 @@ export function ExportView({
           <div>
             <h3 id="export-heading">Export und Backup</h3>
             <p>
-              JSON ist das vollstaendige Wiederherstellungsbackup. CSV-Dateien sind Tabellen fuer
-              Spieler, Check-ins, Progression, Baseline/Testwerte, Blockstatus, Exposures, Exercise Results
-              und Metrics und funktionieren auch mit leeren Daten.
-              Profilfotos bleiben im privaten Supabase-Storage und werden nicht als Bilddatei exportiert.
+              Utility-Bereich fuer sichere Ablage: JSON stellt OnField-Daten wieder her, CSV-Dateien
+              sind Tabellen fuer Analyse und Weitergabe. Profilfotos bleiben im privaten Supabase-Storage
+              und werden nicht als Bilddatei exportiert.
             </p>
           </div>
         </div>
 
         <div className="metric-grid">
-          <div className="metric">
-            <span>Spieler</span>
-            <strong>{summary.players}</strong>
-          </div>
-          <div className="metric">
-            <span>Einheiten</span>
-            <strong>{summary.sessionLogs}</strong>
-          </div>
-          <div className="metric">
-            <span>Check-ins</span>
-            <strong>{summary.playerSessionEntries}</strong>
-          </div>
-          <div className="metric">
-            <span>Progression</span>
-            <strong>{summary.progressEntries}</strong>
-          </div>
-          <div className="metric">
-            <span>Baseline</span>
-            <strong>{summary.baselineEntries}</strong>
-          </div>
-          <div className="metric">
-            <span>Returner</span>
-            <strong>{summary.returnerEntries}</strong>
-          </div>
-          <div className="metric">
-            <span>Blockstatus</span>
-            <strong>{summary.sessionBlockLogs}</strong>
-          </div>
-          <div className="metric">
-            <span>Exposures</span>
-            <strong>{summary.playerExposureSummaries}</strong>
-          </div>
-          <div className="metric">
-            <span>Exercises</span>
-            <strong>{summary.exerciseResults}</strong>
-          </div>
-          <div className="metric">
-            <span>Metrics</span>
-            <strong>{summary.metricResults}</strong>
-          </div>
+          {summaryMetrics.map((metric) => (
+            <div className="metric" key={metric.key}>
+              <span>{metric.label}</span>
+              <strong>{summary[metric.key]}</strong>
+            </div>
+          ))}
         </div>
 
-        <div className="export-actions">
-          <button className="primary-action" type="button" onClick={() => void handleJsonExport()}>
-            <FileJson className="nav-icon" aria-hidden />
-            <span>Komplettes JSON-Backup</span>
-          </button>
-          <button className="secondary-action" type="button" onClick={() => void handleCsvExport('players')}>
-            <Download className="nav-icon" aria-hidden />
-            <span>CSV Spieler</span>
-          </button>
-          <button className="secondary-action" type="button" onClick={() => void handleCsvExport('checkIns')}>
-            <Download className="nav-icon" aria-hidden />
-            <span>CSV Check-ins</span>
-          </button>
-          <button className="secondary-action" type="button" onClick={() => void handleCsvExport('progress')}>
-            <Download className="nav-icon" aria-hidden />
-            <span>CSV Progression</span>
-          </button>
-          <button className="secondary-action" type="button" onClick={() => void handleCsvExport('baseline')}>
-            <Download className="nav-icon" aria-hidden />
-            <span>CSV Baseline/Testwerte</span>
-          </button>
-          <button className="secondary-action" type="button" onClick={() => void handleCsvExport('sessionBlocks')}>
-            <Download className="nav-icon" aria-hidden />
-            <span>CSV Blockstatus</span>
-          </button>
-          <button className="secondary-action" type="button" onClick={() => void handleCsvExport('exposures')}>
-            <Download className="nav-icon" aria-hidden />
-            <span>CSV Exposures</span>
-          </button>
-          <button className="secondary-action" type="button" onClick={() => void handleCsvExport('exercises')}>
-            <Download className="nav-icon" aria-hidden />
-            <span>CSV Exercise Results</span>
-          </button>
-          <button className="secondary-action" type="button" onClick={() => void handleCsvExport('metrics')}>
-            <Download className="nav-icon" aria-hidden />
-            <span>CSV Metrics</span>
-          </button>
+        <div className="export-utility-grid">
+          <section className="export-utility-section" aria-labelledby="backup-export-heading">
+            <div>
+              <p className="eyebrow">Komplettes Backup</p>
+              <h4 id="backup-export-heading">JSON-Backup</h4>
+              <p className="sync-help">Vollstaendige Wiederherstellung fuer dieses Coach-Konto.</p>
+            </div>
+            <button className="primary-action" type="button" onClick={() => void handleJsonExport()}>
+              <FileJson className="nav-icon" aria-hidden />
+              <span>Komplettes Backup herunterladen</span>
+            </button>
+          </section>
+
+          <section className="export-utility-section" aria-labelledby="csv-export-heading">
+            <div>
+              <p className="eyebrow">CSV-Tabellen</p>
+              <h4 id="csv-export-heading">Arbeitsdaten exportieren</h4>
+              <p className="sync-help">Tabellen funktionieren auch mit leeren Daten und bleiben ohne Foto-Dateien.</p>
+            </div>
+            <div className="export-actions">
+              {csvExportActions.map((action) => (
+                <button
+                  className="secondary-action"
+                  key={action.kind}
+                  type="button"
+                  onClick={() => void handleCsvExport(action.kind)}
+                >
+                  <Download className="nav-icon" aria-hidden />
+                  <span>CSV {action.label}</span>
+                </button>
+              ))}
+            </div>
+          </section>
         </div>
 
         {exportResult ? <p className="form-success">{exportResult}</p> : null}
@@ -354,17 +325,17 @@ export function ExportView({
         <div className="status-line">
           <Upload className="nav-icon" aria-hidden />
           <div>
-            <h3 id="import-heading">JSON-Import</h3>
+            <p className="eyebrow">Import-Vorschau</p>
+            <h3 id="import-heading">Import pruefen</h3>
             <p>
-              Import fuehrt Daten zusammen: neue Eintraege werden ergaenzt, vorhandene Eintraege werden erst
-              nach Warnung uebernommen. Bei Unterschieden zwischen Geraeten zaehlt die zuletzt gespeicherte
-              Version. Es wird nichts automatisch geloescht.
+              Backup-Datei pruefen, Vorschau lesen, dann bewusst bestaetigen. Neue Eintraege werden ergaenzt,
+              vorhandene Eintraege werden nur nach Warnung uebernommen. Es wird nichts automatisch geloescht.
             </p>
           </div>
         </div>
 
         <label className="file-upload-control">
-          <span>Backup-Datei waehlen</span>
+          <span>Backup-Datei pruefen</span>
           <input
             accept="application/json,.json"
             ref={fileInputRef}
@@ -402,7 +373,7 @@ export function ExportView({
               type="button"
               onClick={() => void confirmImport()}
             >
-              Import mit Warnung bestaetigen
+              Import bestaetigen
             </button>
           </div>
         ) : null}

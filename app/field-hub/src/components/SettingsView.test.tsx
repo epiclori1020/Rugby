@@ -89,6 +89,8 @@ describe('SettingsView', () => {
     expect(markup).toContain('OnField als PWA nutzen')
     expect(markup).toContain('Zum Home-Bildschirm')
     expect(markup).toContain('Neue App-Version bereit')
+    expect(markup).toContain('Warten auf Sync')
+    expect(markup).not.toContain('pending write queue')
   })
 
   it('shows login in settings when signed out', () => {
@@ -105,6 +107,23 @@ describe('SettingsView', () => {
 
     expect(markup).toContain('class="form-warning"')
     expect(markup).toContain('Sync offen: 2 Aenderungen noch nicht synchronisiert.')
+  })
+
+  it('explains why manual sync is disabled', () => {
+    const signedOutMarkup = renderSettings(signedOutAuthState)
+    const offlineMarkup = renderSettings(signedInAuthState, {
+      syncOverview: { ...syncedOverview, isOnline: false, pendingCount: 2, status: 'pending' },
+    })
+    const syncingMarkup = renderSettings(signedInAuthState, {
+      isManualSyncing: true,
+    })
+
+    expect(signedOutMarkup).toContain('Coach-Login noetig.')
+    expect(signedOutMarkup).toContain('aria-describedby="manual-sync-disabled-reason"')
+    expect(offlineMarkup).toContain('Offline - Aenderungen bleiben lokal gespeichert.')
+    expect(offlineMarkup).toContain('2 Aenderungen offen warten auf Sync.')
+    expect(syncingMarkup).toContain('Sync laeuft gerade.')
+    expect(syncingMarkup).toContain('Sync laeuft gerade</span>')
   })
 
   it('uses the green storage indicator only after persistent storage is confirmed', () => {

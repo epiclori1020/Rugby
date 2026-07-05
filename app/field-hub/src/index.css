@@ -2890,6 +2890,24 @@ button {
   gap: 10px;
 }
 
+.export-utility-grid {
+  display: grid;
+  gap: 14px;
+}
+
+.export-utility-section {
+  border: 1px solid var(--line);
+  border-radius: var(--of-radius-sm);
+  background: var(--of-color-surface-default);
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.export-utility-section h4 {
+  margin: 0;
+}
+
 .file-upload-control {
   max-width: 100%;
   min-width: 0;
@@ -3387,10 +3405,16 @@ code {
 }
 
 .sync-help,
+.disabled-action-reason,
 .privacy-note,
 .success-note {
   margin: 0;
   color: var(--muted);
+}
+
+.disabled-action-reason {
+  font-size: 0.92rem;
+  line-height: 1.45;
 }
 
 .privacy-note {

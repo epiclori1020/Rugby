@@ -25,6 +25,22 @@ const sessionWithoutLibraryRefs: SessionDefinition = {
 }
 
 describe('LibraryView empty states', () => {
+  it('presents the library as a utility reference area with a today filter', () => {
+    const markup = renderToStaticMarkup(<LibraryView />)
+
+    expect(markup).toContain('Referenzbereich')
+    expect(markup).toContain('Ruhiger Nachschlagebereich')
+    expect(markup).toContain('Heute relevant')
+  })
+
+  it('keeps the today-relevant filter useful without a selected session', () => {
+    const markup = renderToStaticMarkup(<LibraryView initialCategory="Heute relevant" />)
+
+    expect(markup).toContain('Variantenkarte A+/A/B/C/D')
+    expect(markup).toContain('Exercise Pool Mapping')
+    expect(markup).not.toContain('Keine heutigen Unterlagen')
+  })
+
   it('does not render a stale detail item when search has no matches', () => {
     const markup = renderToStaticMarkup(<LibraryView initialQuery="kein-treffer-xyz" />)
 

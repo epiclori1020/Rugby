@@ -2049,7 +2049,7 @@ Nicht springen, ausser es gibt einen klaren Grund.
 15. Sprint 11: Nachbereitung. **Abgeschlossen.**
 16. Sprint 12: Spieler/Athleten. **Abgeschlossen.**
 17. Sprint 13: Analyse.
-18. Sprint 14: Mehr/Utility.
+18. Sprint 14: Mehr/Utility. **Abgeschlossen.**
 19. Sprint 15: Public/Kiosk.
 20. Sprint 16: Sport Config.
 21. Sprint 17: Sync/Backup.
