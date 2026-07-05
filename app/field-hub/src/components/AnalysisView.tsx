@@ -1,4 +1,4 @@
-import { BarChart3, CalendarDays, Database, SlidersHorizontal } from 'lucide-react'
+import { BarChart3, CalendarDays, Database, Eye, MessageSquareText, SlidersHorizontal, TrendingUp, Wrench } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
 import type { SessionDefinition } from '../content/types'
 import {
@@ -100,6 +100,26 @@ function BarValue({ value, max }: { value: number; max: number }) {
 
 function EmptyState({ children }: { children: string }) {
   return <p className="empty-state">{children}</p>
+}
+
+function clusterLabel(cluster: AnalysisClusterFilter) {
+  if (cluster === 'all') {
+    return 'Alle Cluster'
+  }
+
+  return clusterOptions.find((option) => option.value === cluster)?.label ?? cluster
+}
+
+function rangeLabel(rangeWeeks: AnalysisRangeWeeks) {
+  return rangeOptions.find((option) => option.value === rangeWeeks)?.label ?? `${rangeWeeks} Wochen`
+}
+
+function readinessTrendLabel(trend: number | null | undefined) {
+  if (trend === null || trend === undefined) {
+    return 'kein lokaler Trend'
+  }
+
+  return trend > 0 ? `+${trend}` : String(trend)
 }
 
 async function readAnalysisLocalData(userId: string, filters: AnalysisFilters): Promise<AnalysisLocalData> {
@@ -219,15 +239,88 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
     (summary?.trafficDistribution.yellow ?? 0) +
     (summary?.trafficDistribution.red ?? 0)
   const plannedVsActual = summary?.plannedVsActual
+  const latestWeek = summary?.weeklySummaries.at(-1) ?? null
+  const openPlannedBlocks = plannedVsActual?.open ?? 0
+  const changedPlannedBlocks =
+    (plannedVsActual?.changed ?? 0) + (plannedVsActual?.reduced ?? 0) + (plannedVsActual?.skipped ?? 0)
+  const completedExposureTotal =
+    summary?.weeklyExposureSummaries.reduce((total, week) => total + week.completed, 0) ?? 0
+  const reducedExposureTotal = summary?.weeklyExposureSummaries.reduce((total, week) => total + week.reduced, 0) ?? 0
+  const skippedExposureTotal = summary?.weeklyExposureSummaries.reduce((total, week) => total + week.skipped, 0) ?? 0
+  const activeFilterChips = [
+    `Zeitraum: ${rangeLabel(rangeWeeks)}`,
+    `Cluster: ${clusterLabel(cluster)}`,
+    `Position: ${position === 'all' ? 'Alle Positionen' : position}`,
+    `Exposure: ${exposureLabels[exposureType]}`,
+  ]
+  const analysisQuestions = [
+    {
+      icon: <Eye className="nav-icon" aria-hidden />,
+      label: 'Beobachten',
+      question: 'Was faellt im Verlauf auf?',
+      value: latestWeek ? `${formatNumber(latestWeek.attendanceRate, '%')} Attendance` : '-',
+      detail: latestWeek
+        ? `Letzte lokale Woche: Readiness ${formatNumber(latestWeek.readinessAverage)}, Trend ${readinessTrendLabel(latestWeek.readinessTrend)}.`
+        : 'Noch keine lokale Wochenhistorie im gewaehlten Zeitraum.',
+    },
+    {
+      icon: <Wrench className="nav-icon" aria-hidden />,
+      label: 'Modifizieren',
+      question: 'Was muss fuer die naechste Einheit angepasst werden?',
+      value: loadSpikeAdvisory ? `${loadSpikeAdvisory.ratio}x Load` : summary ? `${changedPlannedBlocks} Anpassungen` : '-',
+      detail:
+        !summary
+          ? 'Nach Login werden lokale Load- und Blockdaten fuer diese Frage genutzt.'
+          : (loadSpikeAdvisory?.message ??
+            (changedPlannedBlocks > 0
+              ? `${changedPlannedBlocks} reduzierte, geaenderte oder gestrichene Bloecke im Zeitraum pruefen.`
+              : 'Keine lokale Load-Spike- oder Blockanpassungsauffaelligkeit sichtbar.')),
+    },
+    {
+      icon: <TrendingUp className="nav-icon" aria-hidden />,
+      label: 'Steigern',
+      question: 'Wo ist Progression plausibel?',
+      value: summary ? `${completedExposureTotal} completed` : '-',
+      detail:
+        completedExposureTotal > 0
+          ? `${reducedExposureTotal} reduced und ${skippedExposureTotal} skipped Exposures als Dosierungscheck danebenlegen.`
+          : 'Progression erst bewerten, wenn genug lokale Exposure-Summaries vorhanden sind.',
+    },
+    {
+      icon: <MessageSquareText className="nav-icon" aria-hidden />,
+      label: 'Rueckmelden',
+      question: 'Welche Quelle oder offene Aufgabe muss geprueft werden?',
+      value: `${coachInsights.length} Insights`,
+      detail:
+        coachInsights.length > 0
+          ? 'Coach Insights unten als Quellenliste pruefen und bei Bedarf in den passenden Arbeitsbereich springen.'
+          : openPlannedBlocks > 0
+            ? `${openPlannedBlocks} geplante Bloecke sind lokal noch offen.`
+            : 'Keine offenen Coach Insights im Analyse-Kontext.',
+    },
+  ]
 
   return (
     <section className="analysis-layout" aria-labelledby="analysis-heading">
       <article className="panel analysis-intro-panel">
-        <div className="status-line">
-          <BarChart3 className="nav-icon" aria-hidden />
+        <div className="analysis-intro-copy">
+          <div className="status-line">
+            <BarChart3 className="nav-icon" aria-hidden />
+            <span>Auswertung zwischen Einheiten</span>
+          </div>
           <div>
-            <h3 id="analysis-heading">Team-Analyse</h3>
-            <p>Lokale Auswertung fuer Planung zwischen Einheiten. Beim Oeffnen wird kein Remote-Pull gestartet.</p>
+            <h3 id="analysis-heading">Analyse</h3>
+            <p>
+              Ruhiger Rueckblick fuer Planung, Dosierung und Quellenpruefung. Beim Oeffnen wird kein Remote-Pull
+              gestartet und es entstehen keine Check-in- oder Trainingseintraege.
+            </p>
+          </div>
+          <div className="analysis-filter-chips" aria-label="Aktive Analysefilter">
+            {activeFilterChips.map((chip) => (
+              <span className="analysis-filter-chip" key={chip}>
+                {chip}
+              </span>
+            ))}
           </div>
         </div>
       </article>
@@ -235,7 +328,7 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
       <article className="panel analysis-filter-panel">
         <div className="status-line">
           <SlidersHorizontal className="nav-icon" aria-hidden />
-          <h3>Filter</h3>
+          <h3>Filter einstellen</h3>
         </div>
         <div className="analysis-filter-grid">
           <label className="inline-field">
@@ -271,7 +364,7 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
             </select>
           </label>
           <label className="inline-field">
-            <span>Exposure Type</span>
+            <span>Exposure-Art</span>
             <select
               value={exposureType}
               onChange={(event) => setExposureType(event.target.value as AnalysisExposureFilter)}
@@ -287,9 +380,23 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
         </div>
         <p className="privacy-note">
           Zeitraum: {filters.startDate} bis {filters.endDate}. Attendance nutzt den aktuell aktiven gefilterten Kader;
-          historische Kaderstaende werden in Sprint 21 nicht rekonstruiert.
+          historische Kaderstaende werden in dieser Ansicht nicht rekonstruiert.
         </p>
       </article>
+
+      <section className="analysis-question-grid" aria-label="Coach-Fragen fuer die Auswertung">
+        {analysisQuestions.map((card) => (
+          <article className="panel analysis-question-card" key={card.label}>
+            <div className="analysis-question-label">
+              {card.icon}
+              <span>{card.label}</span>
+            </div>
+            <h3>{card.question}</h3>
+            <strong>{card.value}</strong>
+            <p>{card.detail}</p>
+          </article>
+        ))}
+      </section>
 
       <CoachInsightsPanel
         dismissKey={`analysis:${todayKey}`}
@@ -306,12 +413,28 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
       ) : null}
 
       {!userId ? (
-        <EmptyState>Nach Login werden lokale Analyse-Daten aus diesem Geraet angezeigt.</EmptyState>
+        <article className="panel analysis-kpi-panel">
+          <div className="status-line">
+            <BarChart3 className="nav-icon" aria-hidden />
+            <h3>Kernwerte mit Kontext</h3>
+          </div>
+          <EmptyState>Nach Login werden lokale Analyse-Daten aus diesem Geraet angezeigt.</EmptyState>
+        </article>
       ) : isLoading && !summary ? (
-        <EmptyState>Lokale Analyse wird geladen.</EmptyState>
+        <article className="panel analysis-kpi-panel">
+          <div className="status-line">
+            <BarChart3 className="nav-icon" aria-hidden />
+            <h3>Kernwerte mit Kontext</h3>
+          </div>
+          <EmptyState>Lokale Analyse wird geladen.</EmptyState>
+        </article>
       ) : summary ? (
         <>
-          <article className="panel">
+          <article className="panel analysis-kpi-panel">
+            <div className="status-line">
+              <BarChart3 className="nav-icon" aria-hidden />
+              <h3>Kernwerte mit Kontext</h3>
+            </div>
             <div className="metric-grid analysis-metrics">
               <div className="metric">
                 <small>Gefilterter Kader</small>
@@ -341,10 +464,10 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
             </div>
           </article>
 
-          <article className="panel">
+          <article className="panel analysis-detail-panel">
             <div className="status-line">
               <CalendarDays className="nav-icon" aria-hidden />
-              <h3>Attendance, Readiness & Load pro Woche</h3>
+              <h3>Wochenverlauf: Attendance, Readiness und Load</h3>
             </div>
             {summary.weeklySummaries.length === 0 ? (
               <EmptyState>Keine lokalen Sessions im gewaehlten Zeitraum. Erst nach Check-in oder Nachbereitung entstehen Analysewerte.</EmptyState>
@@ -388,8 +511,8 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
           </article>
 
           <section className="analysis-two-column">
-            <article className="panel">
-              <h3>Ampel-Verteilung</h3>
+            <article className="panel analysis-detail-panel">
+              <h3>Ampel-Verteilung als Beobachtung</h3>
               {totalTraffic === 0 ? (
                 <EmptyState>Noch keine Ampelwerte im gefilterten Zeitraum.</EmptyState>
               ) : (
@@ -405,8 +528,8 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
               )}
             </article>
 
-            <article className="panel">
-              <h3>Planned vs Actual Blocks</h3>
+            <article className="panel analysis-detail-panel">
+              <h3>Planned vs Actual als Modifikationshinweis</h3>
               <p className="privacy-note">
                 Session-Level: Cluster- und Positionsfilter betreffen Spielerwerte, nicht geplante Session-Bloecke.
               </p>
@@ -432,8 +555,8 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
             </article>
           </section>
 
-          <article className="panel">
-            <h3>Exposures pro Woche</h3>
+          <article className="panel analysis-detail-panel">
+            <h3>Exposures pro Woche als Progressionscheck</h3>
             {summary.weeklyExposureSummaries.length === 0 ? (
               <EmptyState>
                 Keine Exposure-Summaries im Zeitraum. Exposures entstehen in der Nachbereitung aus Blockstatus und Anwesenheit.
@@ -473,7 +596,7 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
             )}
           </article>
 
-          <article className="panel">
+          <article className="panel analysis-detail-panel">
             <div className="status-line">
               <Database className="nav-icon" aria-hidden />
               <h3>Datenabdeckung</h3>
@@ -501,7 +624,7 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
               </div>
             </div>
             <p className="privacy-note">
-              Metrics und Exercise Results werden hier nur als Team-Datenabdeckung gezaehlt. Spieler-spezifische Charts bleiben Sprint 22.
+              Metrics und Exercise Results werden hier nur als Team-Datenabdeckung gezaehlt. Spieler-spezifische Charts bleiben im Spielerprofil.
             </p>
           </article>
         </>

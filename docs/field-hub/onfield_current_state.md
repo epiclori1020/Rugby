@@ -36,6 +36,7 @@ Letztes Update: 2026-07-05
 | Training | Sprint 10 ist umgesetzt: Training ist live-block-first. Die aktuelle Phase ist sofort sichtbar; Start/Fortsetzen aktiviert erst Blockstatus, Capture und Live-Navigation. Die Athletenliste folgt direkt darunter, Quick Actions liegen im fokussierten Spieler-Sheet, Exposures/Timeline/Mapping/Varianten sind sekundaer erreichbar. |
 | Nachbereitung | Sprint 11 ist umgesetzt: Nachbereitung ist queue-first mit Dauer oben, priorisierten Pflichtaufgaben, aktivem Detail-Schritt, `session_status` als Abschlussaufgabe und sekundaeren Bereichen fuer Exposures, Coach Review, Metrics, Exercise, Mini-Baseline und Spielerdetails. |
 | Spieler | Sprint 12 ist umgesetzt: Spieler ist ein list-detail Athletenbereich. Die Liste bleibt zuerst, Profile starten mit aktuellem Status, letzter Teilnahme, aktuellen Limits, offenen Themen und kurzem Verlauf. Stammdaten, Consent, Foto-Status, Tests, Training, Load, Issues und Returner bleiben darunter bzw. in Detail-Tabs erreichbar. |
+| Analyse | Sprint 13 ist umgesetzt: Analyse ist ein separater, ruhiger Auswertungsraum mit kompaktem Kontext, aktiven Filter-Chips, vier Coach-Fragen, Kernwerten und sekundaeren Detailpanels. Live-Erfassung, Check-in- und Trainingsaktionen bleiben ausserhalb der Analyse. |
 | Sync/Offline | Pending/Sync-Logik existiert, muss global ruhiger und einheitlicher kommuniziert werden. |
 | Kiosk/Public | Separate Komponenten existieren und sollen als eigene reduzierte Experience weiterentwickelt werden. |
 | Brand-Surfaces | Sprint 7 hat eine wiederverwendbare `BrandSurface` fuer Auth, Welcome/Empty, Install, Public Check-in und Kiosk-Welcome eingefuehrt. Live-Coaching-Flows bleiben ohne Hero-Flaechen. |
@@ -100,17 +101,18 @@ Letztes Update: 2026-07-05
 - Sprint 10 ist abgeschlossen: Training wurde live-block-first umgebaut; die aktuelle Phase ist auch vor `Training starten` sichtbar, Spieleraktionen sind fokussiert statt permanente Button-Wand, und Exposures/Mapping/Timeline sind sekundaere Panels.
 - Sprint 11 ist abgeschlossen: Nachbereitung wurde als echte Aufgabenqueue umgesetzt; Dauer steht einmal oben, Pflichtwerte/Abschluss/sekundaere Aufgaben sind priorisiert, und iPhone/iPad behalten denselben fachlichen Funktionsumfang.
 - Sprint 12 ist abgeschlossen: `Spieler` ist roster-/list-first, Profil-Detail oeffnet auf iPhone als Sheet und auf iPad als Pane, und das Profil startet arbeitsrelevant mit Status, Teilnahme, Limits, offenen Themen und kurzem Verlauf. OnField Rugby bleibt als erster Preset sichtbar, ohne eine Config-Engine oder Supabase-Migration einzufuehren.
+- Sprint 13 ist abgeschlossen: `Analyse` ist ein eigener Auswertungsraum fuer Beobachten, Modifizieren, Progression und Rueckmeldung. Die Ansicht nutzt bestehende lokale Daten, verzichtet auf Live-Quick-Actions und behaelt iPhone/iPad-Funktionsparitaet.
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 13 angehen: Analyse als separater, ruhiger Auswertungsraum.
+1. Sprint 14 angehen: `Mehr` als klare Utility-Zone fuer Bibliothek, Export/Backup und Einstellungen.
 2. Danach Roadmap-Reihenfolge beibehalten und die Sprint-5-Komponenten schrittweise in Screen-Sprints nutzen.
 
 ## Offene Risiken
 
 | Risiko | Auswirkung | Naechster Schritt |
 |---|---|---|
-| Analyse ist noch nicht als eigener ruhiger Auswertungsraum umgebaut. | Nach den operativen Kernflows kann Analyse weiterhin zu dashboard-/chart-lastig wirken oder Live-Flow-Denken mit Rueckblick vermischen. | In Sprint 13 Analyse gezielt umbauen, ohne Live-Coaching-Features oder spaetere SaaS-Module vorzuziehen. |
+| `Mehr` ist noch nicht als Utility-Zone geschaerft. | Bibliothek, Export/Backup und Einstellungen koennen weiterhin administrativ oder technisch wirken statt als ruhiger Nebenbereich. | In Sprint 14 `Mehr` gezielt umbauen, ohne neue Plattform- oder SaaS-Funktionen vorzuziehen. |
 | Core Components sind noch nicht screen-weit ausgerollt. | Das Kit existiert, aber viele Screens nutzen weiterhin Legacy-Klassen und Inline-Muster. | In den naechsten Screen-Sprints gezielt migrieren, ohne Sprint-6-IA vorzuziehen. |
 | iPhone wird wieder als Nebenansicht behandelt. | Externe Nutzung und App-Store-Perspektive werden geschwaecht. | iPhone-Paritaet in jedem Sprint pruefen. |
 | Rugby bleibt im Code zu stark in generischer Architektur. | Multi-Sport-Faehigkeit wird spaeter teuer. | Sport-Konfiguration schrittweise extrahieren. |

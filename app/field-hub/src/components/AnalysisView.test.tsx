@@ -66,8 +66,8 @@ const insight: CoachInsight = {
   ],
 }
 
-describe('AnalysisView coach insights', () => {
-  it('renders the full coach insight list alongside analysis metadata', () => {
+describe('AnalysisView', () => {
+  it('renders the calm analysis workspace with coach questions, filters and source insights', () => {
     const markup = renderToStaticMarkup(
       <AnalysisView
         coachInsights={[insight]}
@@ -78,9 +78,36 @@ describe('AnalysisView coach insights', () => {
       />,
     )
 
-    expect(markup).toContain('Team-Analyse')
+    expect(markup).toContain('Analyse')
+    expect(markup).toContain('Auswertung zwischen Einheiten')
+    expect(markup).toContain('Beobachten')
+    expect(markup).toContain('Modifizieren')
+    expect(markup).toContain('Steigern')
+    expect(markup).toContain('Rueckmelden')
+    expect(markup).toContain('Was faellt im Verlauf auf?')
+    expect(markup).toContain('Zeitraum: Letzte 8 Wochen')
+    expect(markup).toContain('Cluster: Alle Cluster')
+    expect(markup).toContain('Position: Alle Positionen')
+    expect(markup).toContain('Exposure: Alle Exposures')
     expect(markup).toContain('Coach Insights')
     expect(markup).toContain('Post-Pain ohne naechsten Schritt')
     expect(markup).toContain('Max')
+  })
+
+  it('does not render check-in or training forms inside the analysis workspace', () => {
+    const markup = renderToStaticMarkup(
+      <AnalysisView
+        coachInsights={[]}
+        players={[player]}
+        sessions={[session]}
+        todayKey="2026-06-22"
+        userId={null}
+      />,
+    )
+
+    expect(markup).not.toContain('Training starten')
+    expect(markup).not.toContain('Da speichern')
+    expect(markup).not.toContain('Nicht-da speichern')
+    expect(markup).not.toContain('sRPE speichern')
   })
 })

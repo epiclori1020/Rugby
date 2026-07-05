@@ -733,7 +733,10 @@ button {
 
 .analysis-layout,
 .analysis-filter-panel,
-.analysis-distribution {
+.analysis-distribution,
+.analysis-intro-copy,
+.analysis-kpi-panel,
+.analysis-detail-panel {
   display: grid;
   gap: 14px;
 }
@@ -743,10 +746,76 @@ button {
   box-shadow: none;
 }
 
+.analysis-intro-copy h3 {
+  margin-bottom: 6px;
+}
+
+.analysis-intro-copy p,
+.analysis-question-card p {
+  color: var(--muted);
+  line-height: 1.45;
+  margin: 0;
+}
+
+.analysis-filter-chips {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.analysis-filter-chip,
+.analysis-question-label {
+  min-height: 32px;
+  border: 1px solid var(--line);
+  border-radius: var(--of-radius-pill);
+  background: var(--of-color-surface-default);
+  color: var(--muted);
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 0.82rem;
+  font-weight: 850;
+  line-height: 1.2;
+  padding: 6px 10px;
+}
+
 .analysis-filter-grid {
   display: grid;
   grid-template-columns: repeat(4, minmax(160px, 1fr));
   gap: 12px;
+}
+
+.analysis-filter-panel select {
+  min-height: 44px;
+}
+
+.analysis-question-grid {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 14px;
+}
+
+.analysis-question-card {
+  align-content: start;
+  box-shadow: none;
+  gap: 12px;
+}
+
+.analysis-question-card h3 {
+  font-size: 1rem;
+  line-height: 1.25;
+  margin: 0;
+}
+
+.analysis-question-card > strong {
+  color: var(--ink);
+  font-size: 1.55rem;
+  font-variant-numeric: tabular-nums;
+  line-height: 1.1;
+}
+
+.analysis-question-label {
+  justify-self: start;
 }
 
 .analysis-two-column {
@@ -3359,6 +3428,7 @@ code {
   .players-layout,
   .training-grid,
   .analysis-filter-grid,
+  .analysis-question-grid,
   .analysis-two-column,
   .checkin-header,
   .checkin-controls,
