@@ -1,10 +1,12 @@
 # OnField Component Inventory
 
-Stand: 2026-07-04
+Stand: 2026-07-05
 
 ## Zweck
 
 Dieses SSOT listet die geplanten OnField UI-Komponenten mit Zweck, Einsatz, Nicht-Einsatz und betroffenen Screens. Es ist ein Planungs- und Review-Artefakt, keine Implementierung.
+
+Sprint 5 hat die erste Code-Struktur fuer das Core Component Kit unter `app/field-hub/src/components/ui/` und `app/field-hub/src/components/onfield/` angelegt. Vollstaendige Screen-Migrationen folgen in spaeteren Sprints.
 
 ## Verbindliche Regeln
 
@@ -49,6 +51,31 @@ Dieses SSOT listet die geplanten OnField UI-Komponenten mit Zweck, Einsatz, Nich
 | Loading/Skeleton | wahrgenommener Fortschritt | Listen-/Panel-Skeletons | Vollbild-Spinner fuer Listen | alle |
 | Error State | Wiederanlauf | Fehlertext, Retry, Details | roher technischer Fehler | alle |
 | Confirmation Dialog | kritische Bestaetigung | Loeschen, Import, Ueberschreiben | harmlose Zustandswechsel | Mehr, Dialoge |
+
+## Sprint-5-Code-Mapping
+
+| Inventory-Komponente | Code-Komponente | Status Sprint 5 |
+|---|---|---|
+| Topbar | `OnFieldTopbar` | Angelegt als OnField-Komposition; noch keine App-Shell-Migration |
+| Session Header | `SessionHeader` | Angelegt als OnField-Komposition |
+| Primary Button | `PrimaryButton` | Angelegt und getestet |
+| Secondary Button | `SecondaryButton` | Angelegt und getestet; Danger-Tone enthalten |
+| Segmented Control | `SegmentedControl` | Angelegt und getestet |
+| Status Chip | `StatusChip` | Angelegt und getestet |
+| Traffic Light Chip | `TrafficLightChip` | Angelegt und getestet |
+| Safety Notice | `SafetyNotice` | Angelegt und getestet |
+| Sync Status | `SyncStatus` | Angelegt und in `SyncStatusBadge` angebunden |
+| Offline Banner | `OfflineBanner` | Angelegt und getestet |
+| Player/Athlete Row | `AthleteRow` | Generisch angelegt und getestet |
+| Task Queue Row | `TaskQueueRow` | Angelegt und getestet |
+| Number Scale | `NumberScale` | Angelegt und getestet |
+| Pain Scale | `PainScale` | Angelegt und getestet |
+| Sheet | `Sheet` | Angelegt und getestet |
+| Empty State | `EmptyState` | Angelegt und getestet |
+| Loading/Skeleton | `Skeleton` | Angelegt und getestet |
+| Error State | `ErrorState` | Angelegt und getestet |
+
+Sprint 5 bindet nur risikoarme bestehende Stellen an. Die alte 10-Tab-Navigation bleibt bis zum App-Shell-/Navigationssprint bestehen.
 
 ## IA-Auswirkungen aus Sprint 2
 
