@@ -1021,12 +1021,19 @@ button {
 }
 
 .player-list-item:hover,
-.player-list-item.active {
+.player-list-item.active,
+.player-list-item[aria-pressed='true'] {
   border-color: var(--brand);
 }
 
-.player-list-item.active {
+.player-list-item.active,
+.player-list-item[aria-pressed='true'] {
   background: var(--brand-soft);
+}
+
+.player-list-item:focus-visible {
+  outline: 3px solid var(--of-color-focus-ring-soft);
+  outline-offset: 2px;
 }
 
 .player-list-item span:not(.player-avatar) {
@@ -1124,6 +1131,12 @@ button {
 .closure-list {
   display: grid;
   gap: 12px;
+}
+
+.profile-fact-list p {
+  min-width: 0;
+  margin: 0;
+  overflow-wrap: anywhere;
 }
 
 .missing-value-row {

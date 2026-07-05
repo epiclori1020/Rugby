@@ -55,6 +55,24 @@ export const clusterOptions: Array<{ value: PlayerCluster; label: string }> = [
   { value: 'back_three', label: 'Back Three' },
 ]
 
+export type AthletePresetLabels = {
+  athleteGenericName: 'Athlete'
+  athleteDisplayName: string
+  positionLabel: string
+  positionGroupLabel: string
+  presetName: string
+  positionGroups: typeof clusterOptions
+}
+
+export const onFieldRugbyAthletePreset: AthletePresetLabels = {
+  athleteGenericName: 'Athlete',
+  athleteDisplayName: 'Spieler',
+  positionLabel: 'Position',
+  positionGroupLabel: 'Position Group',
+  presetName: 'OnField Rugby',
+  positionGroups: clusterOptions,
+}
+
 export const consentStatusOptions: Array<{ value: ConsentStatus; label: string }> = [
   { value: 'unklar', label: 'Unklar' },
   { value: 'offen', label: 'Offen' },
@@ -105,4 +123,3 @@ export function getPlayerInitials(name: string) {
     .map((part) => part[0]?.toUpperCase() ?? '')
     .join('')
 }
-

@@ -3,6 +3,7 @@ import type { FormEvent, ReactNode } from 'react'
 import {
   clusterOptions,
   consentStatusOptions,
+  onFieldRugbyAthletePreset,
   photoConsentOptions,
   returnerStatusOptions,
   type ConsentStatus,
@@ -45,7 +46,7 @@ export function PlayerEditorForm({
       </label>
 
       <label>
-        <span>Position</span>
+        <span>{onFieldRugbyAthletePreset.positionLabel}</span>
         <input
           value={values.position}
           placeholder="z. B. Prop, Lock, 9, Centre"
@@ -55,7 +56,7 @@ export function PlayerEditorForm({
 
       <div className="form-grid">
         <label>
-          <span>Cluster</span>
+          <span>{onFieldRugbyAthletePreset.positionGroupLabel}</span>
           <select value={values.cluster} onChange={(event) => onFieldChange('cluster', event.target.value as PlayerCluster)}>
             {clusterOptions.map((option) => (
               <option key={option.value} value={option.value}>
@@ -114,8 +115,13 @@ export function PlayerEditorForm({
       </label>
 
       <label>
-        <span>Coach-Notizen, keine Diagnosen</span>
-        <textarea value={values.notes} rows={4} onChange={(event) => onFieldChange('notes', event.target.value)} />
+        <span>Coach-Notizen</span>
+        <textarea
+          value={values.notes}
+          rows={4}
+          placeholder="Coachingrelevante Beobachtungen, Kontext oder naechste Ruecksprache."
+          onChange={(event) => onFieldChange('notes', event.target.value)}
+        />
       </label>
 
       <div className="form-actions">

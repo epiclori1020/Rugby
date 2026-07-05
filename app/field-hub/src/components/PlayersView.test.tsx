@@ -10,6 +10,7 @@ import type { PlayerSessionEntry, SessionLog } from '../domain/checkIn'
 import { emptyCheckInDraft } from '../domain/checkIn'
 import type { BaselineEntry } from '../domain/baseline'
 import type { MetricResult } from '../domain/metrics'
+import type { ReturnerEntry } from '../domain/returners'
 import type { PlayerSyncOverview } from '../domain/sync'
 import type { useMetrics } from '../hooks/useMetrics'
 import type { usePlayers } from '../hooks/usePlayers'
@@ -187,6 +188,31 @@ const baselineEntry: BaselineEntry = {
   syncError: null,
 }
 
+const returnerEntry: ReturnerEntry = {
+  id: 'returner-1',
+  userId: 'user-1',
+  playerId: player.id,
+  sessionLogId: sessionLog.id,
+  medicalContactNote: '',
+  currentStage: 'gelb',
+  speedCap: '3x20 m smooth',
+  codDecelCap: 'low',
+  conditioningCap: 'bike only',
+  contactCap: 'none',
+  allowedToday: 'non-contact',
+  plannedCaps: '',
+  completed: '',
+  symptomsDuring: '',
+  nextMorning: '',
+  decision: 'bleiben',
+  createdAt: '2026-06-18T18:00:00.000Z',
+  updatedAt: '2026-06-18T20:00:00.000Z',
+  deletedAt: null,
+  clientUpdatedAt: '2026-06-18T20:00:00.000Z',
+  syncStatus: 'synced',
+  syncError: null,
+}
+
 function buildPlayerActions() {
   return {
     players: [player],
@@ -292,6 +318,102 @@ describe('PlayersView default layout', () => {
     root.unmount()
   })
 
+  it('renders athlete rows as accessible profile openers with selected state', async () => {
+    await localDb.delete()
+    await localDb.open()
+    await localDb.sessionLogs.put(sessionLog)
+    await localDb.playerSessionEntries.put({ ...playerSessionEntry, limits: ['kein_sprint'] })
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(<PlayersView authState={authState} playerActions={buildPlayerActions()} />)
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    const playerButton = Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find((button) =>
+      button.textContent?.includes('Sabine'),
+    )
+    expect(playerButton?.getAttribute('aria-label')).toContain('Profil öffnen: Sabine')
+    expect(playerButton?.getAttribute('aria-label')).toContain('Prop')
+    expect(playerButton?.getAttribute('aria-pressed')).toBe('false')
+
+    await act(async () => {
+      playerButton?.click()
+    })
+
+    expect(playerButton?.getAttribute('aria-pressed')).toBe('true')
+
+    root.unmount()
+  })
+
+  it('starts the profile overview with operational athlete context before admin data', async () => {
+    await localDb.delete()
+    await localDb.open()
+    await localDb.sessionLogs.put(sessionLog)
+    await localDb.playerSessionEntries.put({ ...playerSessionEntry, limits: ['kein_sprint'] })
+    await localDb.returnerEntries.put(returnerEntry)
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(<PlayersView authState={authState} playerActions={buildPlayerActions()} />)
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Sabine'))?.click()
+    })
+
+    const text = container.textContent ?? ''
+    expect(text).toContain('Aktueller Status')
+    expect(text).toContain('Letzte Teilnahme')
+    expect(text).toContain('Aktuelle Limits')
+    expect(text).toContain('Offene Themen')
+    expect(text).toContain('Kurzer Verlauf')
+    expect(text).toContain('Stammdaten & Consent')
+    expect(text.indexOf('Aktueller Status')).toBeLessThan(text.indexOf('Stammdaten & Consent'))
+    expect(text).toContain('Kein Sprint')
+    expect(text).toContain('Speed')
+
+    root.unmount()
+  })
+
+  it('uses a list plus detail pane instead of a modal when the player area has iPad width', async () => {
+    const originalMatchMedia = window.matchMedia
+    window.matchMedia = vi.fn().mockImplementation((query: string) => ({
+      addEventListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+      matches: query.includes('max-width: 760px') ? false : false,
+      media: query,
+      onchange: null,
+      removeEventListener: vi.fn(),
+    }))
+    await localDb.delete()
+    await localDb.open()
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    try {
+      await act(async () => {
+        root.render(<PlayersView authState={authState} playerActions={buildPlayerActions()} />)
+      })
+      await act(async () => {
+        Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Sabine'))?.click()
+      })
+
+      expect(container.textContent).toContain('Spielerprofil')
+      expect(container.querySelector('.player-list')).toBeTruthy()
+      expect(container.querySelector('[role="dialog"][aria-modal="true"]')).toBeFalsy()
+    } finally {
+      root.unmount()
+      window.matchMedia = originalMatchMedia
+    }
+  })
+
   it('opens player editing from the profile settings icon', async () => {
     await localDb.delete()
     await localDb.open()
@@ -379,7 +501,7 @@ describe('PlayersView default layout', () => {
       playerButton?.click()
     })
 
-    expect(container.textContent).toContain('Letzte Einheit')
+    expect(container.textContent).toContain('Letzte Teilnahme')
     expect(container.textContent).not.toContain('Rolling Load')
 
     const loadTab = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Load')

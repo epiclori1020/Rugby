@@ -10,6 +10,7 @@ import {
   consentStatusOptions,
   emptyPlayerFormValues,
   getPlayerInitials,
+  onFieldRugbyAthletePreset,
   photoConsentOptions,
   playerToFormValues,
   returnerStatusOptions,
@@ -74,6 +75,17 @@ const sourceLabels = {
   mixed: 'Mixed',
 } as const
 
+const currentLimitSourceLabels = {
+  returner_caps: 'Returner-Caps',
+  session_limits: 'Session',
+} as const
+
+const trafficLabels = {
+  green: 'Gruen',
+  yellow: 'Gelb',
+  red: 'Rot',
+} as const
+
 function optionLabel<T extends string>(options: Array<{ value: T; label: string }>, value: T) {
   return options.find((option) => option.value === value)?.label ?? value
 }
@@ -110,6 +122,25 @@ function exerciseResultText(result: ExerciseResult) {
 
 function profileTrafficClass(profile: PlayerProfileSummary | undefined) {
   return profile?.latestSession?.trafficLight ? `traffic-${profile.latestSession.trafficLight}` : 'traffic-open'
+}
+
+function playerRowAriaLabel(player: Player, profile: PlayerProfileSummary | undefined) {
+  const labels = [
+    `Profil öffnen: ${player.name}`,
+    player.position,
+    optionLabel(clusterOptions, player.cluster),
+    player.active ? 'aktiv' : 'inaktiv',
+  ]
+
+  if (profile?.latestSession?.trafficLight) {
+    labels.push(`Ampel ${trafficLabels[profile.latestSession.trafficLight]}`)
+  }
+
+  if (profile?.openIssues.items.length) {
+    labels.push(`${profile.openIssues.items.length} offene Themen`)
+  }
+
+  return labels.join(', ')
 }
 
 function PlayerAvatar({
@@ -394,31 +425,87 @@ function PlayerDetailView({
 
       {activeTab === 'overview' ? (
         <div className="player-profile-content">
-          <div className="metric-grid mini">
-            <MetricCard label="Position" value={player.position} />
-            <MetricCard label="Cluster" value={optionLabel(clusterOptions, player.cluster)} />
-            <MetricCard label="Consent" value={optionLabel(consentStatusOptions, player.consentStatus)} />
-            <MetricCard label="Foto" value={optionLabel(photoConsentOptions, player.photoConsentStatus)} />
-            <MetricCard label="Returner" value={optionLabel(returnerStatusOptions, player.returnerStatus)} />
-            <MetricCard label="Status" value={player.active ? 'aktiv' : 'inaktiv'} />
-          </div>
-          <ProfileSection title="Letzte Einheit" emptyText="Noch keine Einheit erfasst.">
-            {profile?.latestSession ? (
+          <ProfileSection title="Aktueller Status">
+            <div className="metric-grid mini">
+              <MetricCard label="Roster" value={player.active ? 'aktiv' : 'inaktiv'} />
+              <MetricCard
+                label="Ampel"
+                value={profile?.latestSession?.trafficLight ? trafficLabels[profile.latestSession.trafficLight] : '-'}
+              />
+              <MetricCard label="Offene Themen" value={profile?.openIssues.items.length ?? 0} />
+              <MetricCard label="Returner" value={optionLabel(returnerStatusOptions, player.returnerStatus)} />
+            </div>
+          </ProfileSection>
+          <ProfileSection title="Letzte Teilnahme" emptyText="Noch keine Teilnahme erfasst.">
+            {profile?.lastParticipation ? (
               <div className="metric-grid mini">
-                <MetricCard label="Datum" value={profile.latestSession.sessionDate} />
-                <MetricCard label="Anwesenheit" value={attendanceLabels[profile.latestSession.attendanceStatus]} />
-                <MetricCard label="Readiness" value={displayValue(profile.latestSession.readiness)} />
-                <MetricCard label="Pain" value={profile.latestSession.painScore !== null ? `${profile.latestSession.painScore}/10` : '-'} />
-                <MetricCard label="Ampel" value={displayValue(profile.latestSession.trafficLight)} />
+                <MetricCard label="Datum" value={profile.lastParticipation.sessionDate} />
+                <MetricCard label="Anwesenheit" value={attendanceLabels[profile.lastParticipation.attendanceStatus]} />
+                <MetricCard label="Readiness" value={displayValue(profile.lastParticipation.readiness)} />
+                <MetricCard
+                  label="Schmerz"
+                  value={profile.lastParticipation.painScore !== null ? `${profile.lastParticipation.painScore}/10` : '-'}
+                />
+                <MetricCard
+                  label="Ampel"
+                  value={profile.lastParticipation.trafficLight ? trafficLabels[profile.lastParticipation.trafficLight] : '-'}
+                />
                 <MetricCard
                   label="Quelle"
-                  value={profile.latestSession.source ? sourceLabels[profile.latestSession.source] : '-'}
+                  value={profile.lastParticipation.source ? sourceLabels[profile.lastParticipation.source] : '-'}
                 />
               </div>
             ) : null}
           </ProfileSection>
+          <ProfileSection title="Aktuelle Limits" emptyText="Keine aktuellen Limits aus lokalen Daten.">
+            {profile?.currentLimits.length ? (
+              <div className="profile-fact-list">
+                {profile.currentLimits.map((limit, index) => (
+                  <p key={`${limit.source}-${limit.label}-${limit.sessionDate}-${index}`}>
+                    <strong>{limit.label}</strong> · {limit.detail} · {limit.sessionDate} ·{' '}
+                    {currentLimitSourceLabels[limit.source]}
+                  </p>
+                ))}
+              </div>
+            ) : null}
+          </ProfileSection>
+          <ProfileSection title="Offene Themen" emptyText="Keine offenen Themen aus lokalen Daten.">
+            {profile?.openIssues.items.length ? (
+              <ul className="compact-list warning-list">
+                {profile.openIssues.items.map((issue) => (
+                  <li key={issue}>{issue}</li>
+                ))}
+              </ul>
+            ) : null}
+          </ProfileSection>
+          <ProfileSection title="Kurzer Verlauf" emptyText="Noch kein Verlauf erfasst.">
+            {profile?.recentSessions.length ? (
+              <div className="profile-fact-list">
+                {profile.recentSessions.map((session, index) => (
+                  <p key={`${session.sessionDate}-${session.source ?? 'source'}-${index}`}>
+                    <strong>{session.sessionDate}</strong> · {attendanceLabels[session.attendanceStatus]} · Readiness{' '}
+                    {displayValue(session.readiness)} · Schmerz {session.painScore !== null ? `${session.painScore}/10` : '-'} ·{' '}
+                    {session.trafficLight ? `Ampel ${trafficLabels[session.trafficLight]}` : 'Ampel -'}
+                  </p>
+                ))}
+              </div>
+            ) : null}
+          </ProfileSection>
+          <ProfileSection title="Stammdaten & Consent">
+            <div className="metric-grid mini">
+              <MetricCard label={onFieldRugbyAthletePreset.positionLabel} value={player.position} />
+              <MetricCard
+                label={onFieldRugbyAthletePreset.positionGroupLabel}
+                value={optionLabel(clusterOptions, player.cluster)}
+              />
+              <MetricCard label="Consent" value={optionLabel(consentStatusOptions, player.consentStatus)} />
+              <MetricCard label="Foto" value={optionLabel(photoConsentOptions, player.photoConsentStatus)} />
+              <MetricCard label="Preset" value={onFieldRugbyAthletePreset.presetName} />
+              <MetricCard label="Status" value={player.active ? 'aktiv' : 'inaktiv'} />
+            </div>
+          </ProfileSection>
           {player.notes ? (
-            <ProfileSection title="Coach-Notiz">
+            <ProfileSection title="Langnotiz">
               <p>{player.notes}</p>
             </ProfileSection>
           ) : null}
@@ -1142,6 +1229,8 @@ export function PlayersView({
                 className={selectedPlayer?.id === player.id ? 'player-list-item active' : 'player-list-item'}
                 key={player.id}
                 type="button"
+                aria-label={playerRowAriaLabel(player, profile)}
+                aria-pressed={selectedPlayer?.id === player.id}
                 onClick={() => openPlayerDetail(player)}
               >
                 <PlayerAvatar player={player} previewUrl={photoPreviewUrls[player.id]} />
@@ -1212,7 +1301,10 @@ export function PlayersView({
               <div>
                 <p className="eyebrow">Neu anlegen</p>
                 <h3 id="player-editor-heading">Spieler-Stammdaten</h3>
-                <p>Position, Cluster, Consent, Returner-Status und Foto-Erlaubnis.</p>
+                <p>
+                  {onFieldRugbyAthletePreset.positionLabel}, {onFieldRugbyAthletePreset.positionGroupLabel}, Consent,
+                  Returner-Status und Foto-Erlaubnis.
+                </p>
               </div>
               <button
                 className="icon-button"

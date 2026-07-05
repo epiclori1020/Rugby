@@ -1,6 +1,6 @@
 import type { BaselineEntry } from './baseline'
 import { hasBaselineContent } from './baseline'
-import type { PlayerSessionEntry, SessionLog, TrafficLight } from './checkIn'
+import type { CheckInLimit, PlayerSessionEntry, SessionLog, TrafficLight } from './checkIn'
 import { deriveAttendanceStatus, type AttendanceStatus } from './checkIn'
 import type { ExerciseResult } from './exercises'
 import type { PlayerExposureSummary } from './exposures'
@@ -33,6 +33,14 @@ export type PlayerProfileLoad = SessionDated & {
   sessionLoad: number | null
 }
 
+export type PlayerProfileCurrentLimit = SessionDated & {
+  label: string
+  detail: string
+  source: 'session_limits' | 'returner_caps'
+}
+
+export type PlayerProfileRecentSession = PlayerProfileLatestSession
+
 export type PlayerProfileBaseline = BaselineEntry & SessionDated
 export type PlayerProfileProgression = ProgressEntry & SessionDated
 export type PlayerProfileReturner = ReturnerEntry & SessionDated
@@ -44,8 +52,11 @@ export type PlayerProfileSummary = {
   playerId: string
   player: Player
   latestSession: PlayerProfileLatestSession | null
+  lastParticipation: PlayerProfileLatestSession | null
+  currentLimits: PlayerProfileCurrentLimit[]
   openIssues: PlayerProfileOpenIssues
   latestLoad: PlayerProfileLoad | null
+  recentSessions: PlayerProfileRecentSession[]
   latestBaseline: PlayerProfileBaseline | null
   latestProgression: PlayerProfileProgression | null
   latestReturner: PlayerProfileReturner | null
@@ -89,6 +100,70 @@ function newestFirst<T extends { sessionLogId: string | null; createdAt: string;
     }
 
     return b.clientUpdatedAt.localeCompare(a.clientUpdatedAt)
+  })
+}
+
+const checkInLimitLabels: Record<CheckInLimit, string> = {
+  kein_sprint: 'Kein Sprint',
+  kein_cond: 'Kein Conditioning',
+  kein_schweres_heben: 'Kein schweres Heben',
+  physio: 'Staff-Ruecksprache',
+  klaeren: 'Klaeren',
+}
+
+function sessionHeadline(
+  entry: PlayerSessionEntry,
+  sessionDates: Map<string, string>,
+): PlayerProfileLatestSession {
+  return {
+    sessionDate: sessionDateFor(sessionDates, entry.sessionLogId, entry.createdAt),
+    attendanceStatus: deriveAttendanceStatus(entry),
+    readiness: entry.readiness,
+    painScore: entry.painScore,
+    trafficLight: entry.trafficLight ?? entry.trafficLightSuggestion,
+    source: entry.checkInSource,
+  }
+}
+
+function sessionLimits(entry: PlayerSessionEntry | null, sessionDates: Map<string, string>): PlayerProfileCurrentLimit[] {
+  if (!entry || entry.limits.length === 0) {
+    return []
+  }
+
+  return [
+    {
+      detail: entry.limits.map((limit) => checkInLimitLabels[limit]).join(', '),
+      label: 'Session-Limits',
+      sessionDate: sessionDateFor(sessionDates, entry.sessionLogId, entry.createdAt),
+      source: 'session_limits',
+    },
+  ]
+}
+
+function returnerLimits(entry: ReturnerEntry | null, sessionDates: Map<string, string>): PlayerProfileCurrentLimit[] {
+  if (!entry) {
+    return []
+  }
+
+  return [
+    { label: 'Speed', detail: entry.speedCap },
+    { label: 'COD/Decel', detail: entry.codDecelCap },
+    { label: 'Conditioning', detail: entry.conditioningCap },
+    { label: 'Kontakt', detail: entry.contactCap },
+  ].flatMap((limit) => {
+    const detail = limit.detail.trim()
+    if (!detail) {
+      return []
+    }
+
+    return [
+      {
+        detail,
+        label: limit.label,
+        sessionDate: sessionDateFor(sessionDates, entry.sessionLogId, entry.createdAt),
+        source: 'returner_caps' as const,
+      },
+    ]
   })
 }
 
@@ -193,6 +268,9 @@ export function buildPlayerProfileSummary({
     sessionDates,
   )
   const latestEntry = playerEntries[0] ?? null
+  const lastParticipationEntry =
+    playerEntries.find((entry) => deriveAttendanceStatus(entry) === 'present') ?? null
+  const latestLimitEntry = playerEntries.find((entry) => entry.limits.length > 0) ?? null
   const latestLoadEntry =
     playerEntries.find(
       (entry) => entry.sessionRpe !== null || entry.durationMinutes !== null || entry.sessionLoad !== null,
@@ -228,16 +306,12 @@ export function buildPlayerProfileSummary({
   return {
     playerId: player.id,
     player,
-    latestSession: latestEntry
-      ? {
-          sessionDate: sessionDateFor(sessionDates, latestEntry.sessionLogId, latestEntry.createdAt),
-          attendanceStatus: deriveAttendanceStatus(latestEntry),
-          readiness: latestEntry.readiness,
-          painScore: latestEntry.painScore,
-          trafficLight: latestEntry.trafficLight ?? latestEntry.trafficLightSuggestion,
-          source: latestEntry.checkInSource,
-        }
-      : null,
+    latestSession: latestEntry ? sessionHeadline(latestEntry, sessionDates) : null,
+    lastParticipation: lastParticipationEntry ? sessionHeadline(lastParticipationEntry, sessionDates) : null,
+    currentLimits: [
+      ...sessionLimits(latestLimitEntry, sessionDates),
+      ...returnerLimits(latestReturnerSource, sessionDates),
+    ],
     openIssues: deriveOpenIssues(latestEntry),
     latestLoad: latestLoadEntry
       ? {
@@ -247,6 +321,7 @@ export function buildPlayerProfileSummary({
           sessionLoad: latestLoadEntry.sessionLoad,
         }
       : null,
+    recentSessions: playerEntries.slice(0, 5).map((entry) => sessionHeadline(entry, sessionDates)),
     latestBaseline: latestBaselineSource
       ? {
           ...latestBaselineSource,

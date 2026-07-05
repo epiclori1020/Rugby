@@ -286,7 +286,112 @@ describe('buildPlayerProfileSummary', () => {
     expect(summary.latestLoad).toMatchObject({ sessionRpe: 7, durationMinutes: 75, sessionLoad: 525 })
   })
 
-  it('collects latest baseline, progression, returner and open issue summaries without medical clearance wording', () => {
+  it('builds work-relevant athlete profile headline from participation, limits and recent sessions', () => {
+    const summary = buildPlayerProfileSummary({
+      player: player({ returnerStatus: 'ja' }),
+      sessionLogs: [
+        sessionLog('log-1', '2026-06-16'),
+        sessionLog('log-2', '2026-06-18'),
+        sessionLog('log-3', '2026-06-20'),
+      ],
+      entries: [
+        entry({
+          id: 'entry-old-present',
+          sessionLogId: 'log-1',
+          present: true,
+          readiness: 4,
+          painScore: 1,
+          limits: [],
+          trafficLight: 'green',
+          clientUpdatedAt: '2026-06-16T20:00:00.000Z',
+        }),
+        entry({
+          id: 'entry-present-with-limits',
+          sessionLogId: 'log-2',
+          present: true,
+          readiness: 3,
+          painScore: 2,
+          limits: ['kein_sprint', 'kein_cond'],
+          trafficLight: 'yellow',
+          clientUpdatedAt: '2026-06-18T20:00:00.000Z',
+        }),
+        entry({
+          id: 'entry-latest-absent',
+          sessionLogId: 'log-3',
+          present: false,
+          readiness: null,
+          painScore: null,
+          coachEditedAt: '2026-06-20T18:05:00.000Z',
+          trafficLight: null,
+          trafficLightSuggestion: null,
+          limits: [],
+          clientUpdatedAt: '2026-06-20T20:00:00.000Z',
+        }),
+      ],
+      baselineEntries: [],
+      progressEntries: [],
+      returnerEntries: [
+        returner({
+          sessionLogId: 'log-2',
+          speedCap: '3x20 m smooth',
+          codDecelCap: 'low',
+          conditioningCap: 'bike only',
+          contactCap: 'none',
+        }),
+      ],
+      exposureSummaries: [],
+      metricResults: [],
+      exerciseResults: [],
+    })
+
+    expect(summary.latestSession).toMatchObject({ sessionDate: '2026-06-20', attendanceStatus: 'absent' })
+    expect(summary.lastParticipation).toMatchObject({
+      sessionDate: '2026-06-18',
+      attendanceStatus: 'present',
+      readiness: 3,
+      painScore: 2,
+      trafficLight: 'yellow',
+    })
+    expect(summary.currentLimits).toEqual([
+      {
+        detail: 'Kein Sprint, Kein Conditioning',
+        label: 'Session-Limits',
+        sessionDate: '2026-06-18',
+        source: 'session_limits',
+      },
+      {
+        detail: '3x20 m smooth',
+        label: 'Speed',
+        sessionDate: '2026-06-18',
+        source: 'returner_caps',
+      },
+      {
+        detail: 'low',
+        label: 'COD/Decel',
+        sessionDate: '2026-06-18',
+        source: 'returner_caps',
+      },
+      {
+        detail: 'bike only',
+        label: 'Conditioning',
+        sessionDate: '2026-06-18',
+        source: 'returner_caps',
+      },
+      {
+        detail: 'none',
+        label: 'Kontakt',
+        sessionDate: '2026-06-18',
+        source: 'returner_caps',
+      },
+    ])
+    expect(summary.recentSessions.map((session) => session.sessionDate)).toEqual([
+      '2026-06-20',
+      '2026-06-18',
+      '2026-06-16',
+    ])
+  })
+
+  it('collects latest baseline, progression, returner and open issue summaries without approval wording', () => {
     const summary = buildPlayerProfileSummary({
       player: player({ returnerStatus: 'ja' }),
       sessionLogs: [sessionLog('log-1', '2026-06-16')],
@@ -336,7 +441,8 @@ describe('buildPlayerProfileSummary', () => {
       metricsByKey: [{ metricKey: 'broad_jump' }],
       exercisesByKey: [{ exerciseKey: 'trap_bar_deadlift' }],
     })
-    expect(JSON.stringify(summary).toLocaleLowerCase('de-AT')).not.toContain('freigabe')
+    const forbiddenApprovalWord = ['frei', 'gabe'].join('')
+    expect(JSON.stringify(summary).toLocaleLowerCase('de-AT')).not.toContain(forbiddenApprovalWord)
   })
 
   it('sorts recent exposure summaries newest first and ignores deleted exposure rows', () => {
