@@ -1694,6 +1694,8 @@ Nicht alles sofort generisch machen. Zu viel Abstraktion waere riskant. Ziel ist
 - UI-Labels und Positionen zuerst.
 - Fachlogik nur dort abstrahieren, wo es klar ist.
 - Rugby-Content bleibt erhalten.
+- Sprint 12 hat mit `onFieldRugbyAthletePreset` bewusst nur einen minimalen Rugby-Preset-Anker eingefuehrt.
+- Dieses Sprint-12-Preset ist keine finale Preset-Engine und soll in Sprint 16 geprueft, sauber eingeordnet oder ersetzt werden.
 
 ### Deliverables
 
@@ -1815,6 +1817,8 @@ Vorher in Sprints entstandene UI muss jetzt systematisch getestet werden:
 - iPad Landscape.
 - Offline.
 - Installiert/Standalone.
+- Signed-in Browser-QA braucht einen sicheren Test-Auth-/Seed-Zustand. Keine echten Produktiv-Secrets in Scripts, Logs oder Repo-Dateien schreiben.
+- Sprint 12 konnte echte Profildaten nur ueber Komponenten-/DOM-Tests und signed-out Browser-QA absichern; Sprint 18 soll die reproduzierbare signed-in QA-Infrastruktur vorbereiten.
 
 ### Deliverables
 
@@ -1857,6 +1861,7 @@ Pruefen:
 - iPad Landscape.
 - leere Daten.
 - volle Daten.
+- signed-in Testzustand mit sicheren Seed-/Demo-Daten.
 - offline.
 - pending sync.
 - error state.
@@ -1874,6 +1879,8 @@ Du willst den Design-Rollout bewusst global, Screen fuer Screen. Dieser Sprint v
 ### Kontext fuer Agenten
 
 Nicht neue Features bauen. Nur visuelle/UX-Konsistenz, Bugs, fehlende States und Regressionen beheben.
+
+Sprint 19 muss den Spieler-/Athletenbereich aus Sprint 12 signed-in mit Profildaten pruefen. Falls Sprint 18 noch keinen sicheren Test-Auth-/Seed-Zustand liefert, ist das ein Release-QA-Blocker und kein Grund, echte Zugangsdaten in Automationsartefakten zu speichern.
 
 ### Deliverables
 
