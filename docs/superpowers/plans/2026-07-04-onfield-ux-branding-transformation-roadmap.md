@@ -1424,6 +1424,8 @@ Sprint 8 zeigt Nachbereitungsstatus im Einheit-Container noch als groben Kontext
 
 ## Sprint 12 - Spieler/Athletenbereich und sportartenuebergreifende Profile
 
+Status: **abgeschlossen**
+
 ### Was genau machen wir?
 
 Wir bauen `Spieler` als sportartenuebergreifenden Athlete-Bereich mit Rugby-Preset.
@@ -2036,7 +2038,7 @@ Nicht springen, ausser es gibt einen klaren Grund.
 13. Sprint 9: Check-in.
 14. Sprint 10: Training.
 15. Sprint 11: Nachbereitung. **Abgeschlossen.**
-16. Sprint 12: Spieler/Athleten.
+16. Sprint 12: Spieler/Athleten. **Abgeschlossen.**
 17. Sprint 13: Analyse.
 18. Sprint 14: Mehr/Utility.
 19. Sprint 15: Public/Kiosk.
