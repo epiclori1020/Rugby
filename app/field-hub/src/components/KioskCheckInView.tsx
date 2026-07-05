@@ -1,5 +1,6 @@
 import { ClipboardCheck, LogOut } from 'lucide-react'
 import type { SessionDefinition } from '../content/types'
+import { BrandSurface } from './onfield'
 import { SelfCheckInFlow, type SelfCheckInPlayerOption, type SelfCheckInSubmissionInput } from './SelfCheckInFlow'
 
 type KioskCheckInViewProps = {
@@ -39,15 +40,17 @@ export function KioskCheckInView({
 
   return (
     <main className="kiosk-checkin-page">
-      <section className="kiosk-checkin-panel" aria-labelledby="kiosk-checkin-heading">
+      <BrandSurface
+        body={`${formatSessionDate(selectedSession.date)} · ${sessionDetail(selectedSession.title)}`}
+        className="kiosk-checkin-panel"
+        claim="Know squad status before the whistle."
+        meta={<span>OnField Rugby Kiosk</span>}
+        title="Training Check-in"
+        variant="kiosk"
+      >
         <div className="status-line">
           <ClipboardCheck className="placeholder-icon" aria-hidden />
-          <div>
-            <h1 id="kiosk-checkin-heading">Training Check-in</h1>
-            <p>
-              {formatSessionDate(selectedSession.date)} · {sessionDetail(selectedSession.title)}
-            </p>
-          </div>
+          <p>Wähle deinen Namen, fülle den kurzen Check-in aus und gib das Gerät weiter.</p>
         </div>
         <SelfCheckInFlow
           helperText="Wähle deinen Namen, fülle den kurzen Check-in aus und gib das Gerät weiter."
@@ -57,7 +60,7 @@ export function KioskCheckInView({
           submittingLabel="Speichert..."
         />
         {errorMessage ? <p className="form-error">{errorMessage}</p> : null}
-      </section>
+      </BrandSurface>
       <button
         className="kiosk-exit-button"
         type="button"

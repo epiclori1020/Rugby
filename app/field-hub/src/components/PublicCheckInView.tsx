@@ -6,6 +6,7 @@ import {
   type PublicCheckInFormData,
 } from '../lib/publicCheckInRepository'
 import { publicSubmissionErrorMessage } from '../lib/publicCheckInErrors'
+import { BrandSurface } from './onfield'
 import { SelfCheckInFlow, type SelfCheckInSubmissionInput } from './SelfCheckInFlow'
 
 type PublicCheckInViewProps = {
@@ -64,18 +65,21 @@ export function PublicCheckInView({ token }: PublicCheckInViewProps) {
 
   return (
     <main className="public-checkin-page">
-      <section className="public-checkin-panel" aria-labelledby="public-checkin-heading">
+      <BrandSurface
+        body={
+          formData
+            ? `${formData.link.sessionTitle} · ${formData.link.sessionDate}`
+            : 'Link wird geprueft.'
+        }
+        className="public-checkin-panel"
+        claim="Know squad status before the whistle."
+        meta={<span>OnField Rugby Public Check-in</span>}
+        title="Training Check-in"
+        variant="public"
+      >
         <div className="status-line">
           <ClipboardCheck className="placeholder-icon" aria-hidden />
-          <div>
-            <p className="eyebrow">Rugby Donau S&amp;C</p>
-            <h1 id="public-checkin-heading">Training Check-in</h1>
-            <p>
-              {formData
-                ? `${formData.link.sessionTitle} · ${formData.link.sessionDate}`
-                : 'Link wird geprueft.'}
-            </p>
-          </div>
+          <p>Kurzer Status vor der Einheit. Das Formular bleibt direkt erreichbar.</p>
         </div>
 
         {status === 'loading' ? <p>Check-in wird geladen...</p> : null}
@@ -93,7 +97,7 @@ export function PublicCheckInView({ token }: PublicCheckInViewProps) {
             {message && status === 'ready' ? <p className="form-error">{message}</p> : null}
           </>
         ) : null}
-      </section>
+      </BrandSurface>
     </main>
   )
 }

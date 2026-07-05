@@ -497,9 +497,15 @@ describe('TodayDashboard', () => {
   it('shows player empty states based on auth status', () => {
     const signedOutMarkup = renderDashboardMarkup({ isSignedIn: false, players: [] })
     const signedInMarkup = renderDashboardMarkup({ isSignedIn: true, players: [] })
+    const activeMarkup = renderDashboardMarkup({ isSignedIn: true, players: [player] })
 
+    expect(signedOutMarkup).toContain('Trainingstag vorbereiten')
+    expect(signedOutMarkup).toContain('Field-ready coach operations for the training day.')
     expect(signedOutMarkup).toContain('Nach Login werden Spieler, Warnungen und Anwesenheit geladen.')
+    expect(signedInMarkup).toContain('Squad für OnField anlegen')
     expect(signedInMarkup).toContain('Noch keine aktiven Spieler angelegt.')
+    expect(activeMarkup).not.toContain('Trainingstag vorbereiten')
+    expect(activeMarkup).not.toContain('Squad für OnField anlegen')
   })
 
   it('uses upcoming sessions from the app-level date calculation', () => {

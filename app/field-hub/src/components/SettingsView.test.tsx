@@ -86,6 +86,8 @@ describe('SettingsView', () => {
     expect(markup).toContain('Backup empfohlen')
     expect(markup).toContain('Export &amp; Backup oeffnen')
     expect(markup).toContain('Speicherstatus')
+    expect(markup).toContain('OnField als PWA nutzen')
+    expect(markup).toContain('Zum Home-Bildschirm')
     expect(markup).toContain('Neue App-Version bereit')
   })
 

@@ -250,11 +250,16 @@ button {
 
 .dashboard-grid {
   grid-template-areas:
+    "welcome welcome"
     "command status"
     "quick status"
     "timeline status";
   grid-template-columns: minmax(0, 1.35fr) minmax(280px, 0.65fr);
   align-items: start;
+}
+
+.today-welcome-surface {
+  grid-area: welcome;
 }
 
 .today-command-card {
@@ -302,6 +307,142 @@ button {
   background: var(--surface);
   box-shadow: var(--shadow);
   padding: 18px;
+}
+
+.brand-surface {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--of-radius-lg);
+  background:
+    linear-gradient(
+      135deg,
+      var(--of-color-brand-secondary-soft) 0%,
+      var(--of-color-brand-primary-soft-strong) 46%,
+      transparent 74%
+    ),
+    var(--surface);
+  box-shadow: var(--shadow);
+  display: grid;
+  grid-template-columns: minmax(0, 1.1fr) minmax(220px, 0.55fr);
+  align-items: stretch;
+  gap: var(--of-space-xl);
+  overflow: hidden;
+  padding: var(--of-space-xl);
+}
+
+.brand-surface-compact {
+  grid-template-columns: 1fr;
+  background: var(--surface);
+}
+
+.brand-surface-public,
+.brand-surface-kiosk {
+  grid-template-columns: 1fr;
+  background:
+    linear-gradient(145deg, var(--of-color-brand-primary-soft-strong), var(--of-color-brand-secondary-soft)),
+    var(--surface);
+}
+
+.brand-surface-copy,
+.brand-surface-content,
+.brand-surface-meta {
+  min-width: 0;
+  display: grid;
+  gap: var(--of-space-md);
+}
+
+.brand-surface-copy {
+  align-content: start;
+}
+
+.brand-accent {
+  width: 56px;
+  height: 5px;
+  border-radius: var(--of-radius-pill);
+  background: var(--of-color-brand-secondary);
+}
+
+.brand-surface-kicker,
+.brand-surface-claim,
+.brand-surface-body,
+.brand-surface-meta {
+  margin: 0;
+}
+
+.brand-surface-kicker {
+  color: var(--of-color-brand-secondary);
+  font-size: 0.82rem;
+  font-weight: 900;
+  text-transform: uppercase;
+}
+
+.brand-surface h2 {
+  margin: 0;
+  color: var(--ink);
+  font-size: clamp(1.45rem, 2.8vw, 2.15rem);
+  line-height: 1.08;
+  letter-spacing: 0;
+}
+
+.brand-surface-claim {
+  color: var(--ink);
+  font-size: 1.02rem;
+  font-weight: 850;
+  line-height: 1.35;
+}
+
+.brand-surface-body,
+.brand-surface-meta {
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.brand-surface-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--of-space-sm);
+}
+
+.brand-product-frame {
+  min-height: 100%;
+  border: 1px solid var(--of-color-brand-border-subtle);
+  border-radius: var(--of-radius-md);
+  background:
+    linear-gradient(180deg, var(--of-color-surface-default), var(--of-color-brand-primary-soft-strong));
+  display: grid;
+  align-items: center;
+  padding: var(--of-space-lg);
+}
+
+.brand-product-mini {
+  min-height: 172px;
+  border: 1px solid var(--line);
+  border-radius: var(--of-radius-sm);
+  background: var(--surface);
+  display: grid;
+  align-content: center;
+  gap: var(--of-space-sm);
+  padding: var(--of-space-lg);
+}
+
+.brand-product-mini span,
+.brand-product-mini strong {
+  min-height: 36px;
+  border-radius: var(--of-radius-sm);
+  display: flex;
+  align-items: center;
+  padding: 0 var(--of-space-md);
+}
+
+.brand-product-mini span {
+  background: var(--of-color-surface-muted);
+  color: var(--muted);
+  font-weight: 800;
+}
+
+.brand-product-mini strong {
+  background: var(--brand);
+  color: var(--of-color-text-inverse);
 }
 
 .panel.soft {
@@ -2590,7 +2731,9 @@ code {
 }
 
 .public-checkin-panel h1,
-.kiosk-checkin-panel h1 {
+.kiosk-checkin-panel h1,
+.public-checkin-panel h2,
+.kiosk-checkin-panel h2 {
   margin: 0;
   font-size: 1.85rem;
   letter-spacing: 0;
@@ -2735,6 +2878,7 @@ code {
 
   .dashboard-grid {
     grid-template-areas:
+      "welcome"
       "command"
       "quick"
       "status"
@@ -2764,6 +2908,10 @@ code {
 
   .sync-status {
     min-width: 0;
+  }
+
+  .brand-surface {
+    grid-template-columns: 1fr;
   }
 }
 
@@ -2936,7 +3084,8 @@ code {
   .content-stack,
   .dashboard-grid,
   .panel,
-  .placeholder {
+  .placeholder,
+  .brand-surface {
     width: 100%;
     max-width: calc(100vw - 28px);
   }
@@ -2953,9 +3102,14 @@ code {
   }
 
   .panel,
-  .placeholder {
+  .placeholder,
+  .brand-surface {
     max-width: 100%;
     overflow: hidden;
+  }
+
+  .brand-surface {
+    padding: var(--of-space-lg);
   }
 
   .quick-action,

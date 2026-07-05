@@ -2,6 +2,7 @@ import { LogIn, LogOut, ShieldCheck } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import type { AuthSessionState } from '../lib/auth'
 import { signInWithEmailPassword, signOutCoach } from '../lib/auth'
+import { BrandSurface } from './onfield'
 
 type AuthPanelProps = {
   authState: AuthSessionState
@@ -43,43 +44,51 @@ export function AuthPanel({ authState }: AuthPanelProps) {
 
   if (authState.status === 'missing-config') {
     return (
-      <section className="panel auth-panel" aria-label="Supabase Setup">
+      <BrandSurface
+        body="Setze lokal nur die browser-sicheren Supabase-Werte. Danach kann der Coach-Login genutzt werden."
+        className="auth-panel"
+        meta={
+          <p>
+            <code>VITE_SUPABASE_URL</code> und <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> in{' '}
+            <code>app/field-hub/.env</code>.
+          </p>
+        }
+        title="OnField Coach vorbereiten"
+        variant="auth"
+      >
         <div className="status-line">
           <ShieldCheck className="nav-icon" aria-hidden />
-          <h3>Supabase Setup</h3>
+          <p>Keine Service-Role-Keys, DB-Passwoerter oder echten Spieler-/Gesundheitsdaten eintragen.</p>
         </div>
-        <p>
-          Lege zuerst ein Supabase-Projekt an und setze lokal in <code>app/field-hub/.env</code> nur
-          <code> VITE_SUPABASE_URL</code> und <code> VITE_SUPABASE_PUBLISHABLE_KEY</code>.
-        </p>
-        <p>Keine Service-Role-Keys, DB-Passwoerter oder echten Spieler-/Gesundheitsdaten eintragen.</p>
-      </section>
+      </BrandSurface>
     )
   }
 
   if (authState.status === 'signed-in') {
     return (
-      <section className="panel auth-panel" aria-label="Coach Login">
-        <div className="status-line">
-          <ShieldCheck className="nav-icon" aria-hidden />
-          <h3>Coach-Session</h3>
-        </div>
+      <BrandSurface
+        body="Deine Coach-Session ist aktiv. Check-in, Einheit und Nachbereitung bleiben lokal nutzbar und synchronisieren über den eingerichteten Client."
+        className="auth-panel"
+        title="Coach-Session"
+        variant="compact"
+      >
         <p>Eingeloggt als {authState.user.email ?? authState.user.id}.</p>
         <button className="secondary-action" type="button" onClick={handleLogout} disabled={isSubmitting}>
           <LogOut className="nav-icon" aria-hidden />
           <span>Logout</span>
         </button>
         {error ? <p className="form-error">{error}</p> : null}
-      </section>
+      </BrandSurface>
     )
   }
 
   return (
-    <section className="panel auth-panel" aria-label="Coach Login">
-      <div className="status-line">
-        <LogIn className="nav-icon" aria-hidden />
-        <h3>Coach-Login</h3>
-      </div>
+    <BrandSurface
+      body="Melde dich an, damit OnField Spieler, Check-ins und offene Aufgaben zwischen iPhone und iPad synchron halten kann."
+      className="auth-panel"
+      title="Coach-Login"
+      variant="auth"
+    >
       <form className="field-form" onSubmit={handleSubmit}>
         <label>
           <span>Email</span>
@@ -107,7 +116,6 @@ export function AuthPanel({ authState }: AuthPanelProps) {
         </button>
         {authState.error || error ? <p className="form-error">{error ?? authState.error}</p> : null}
       </form>
-    </section>
+    </BrandSurface>
   )
 }
-

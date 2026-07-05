@@ -7,6 +7,7 @@ import type { AuthSessionState } from '../lib/auth'
 import type { ManualSyncFeedback } from '../lib/syncRepository'
 import { pendingCountLabel, syncStatusLabel } from '../lib/syncLabels'
 import { AuthPanel } from './AuthPanel'
+import { BrandSurface } from './onfield'
 
 type SettingsViewProps = {
   authState: AuthSessionState
@@ -159,6 +160,21 @@ export function SettingsView({
           <span>{storageStatusLabel(storagePersistence.status)}</span>
         </div>
       </section>
+
+      <BrandSurface
+        body="Installiere OnField Coach auf iPhone oder iPad ueber den Home-Bildschirm. So startet die PWA mit App-Name, Icon und mehr Platz fuer den Trainingstag."
+        className="settings-panel install-surface"
+        claim="Know squad status before the whistle."
+        meta={
+          <ul className="compact-list">
+            <li>iOS: Teilen oeffnen und "Zum Home-Bildschirm" waehlen.</li>
+            <li>iPadOS: dieselbe PWA, derselbe Funktionsumfang, nur mehr Flaeche.</li>
+            <li>Offline-Hinweise bleiben in der App sichtbar; kein Browser-Offline-Fallback.</li>
+          </ul>
+        }
+        title="OnField als PWA nutzen"
+        variant="install"
+      />
 
       <section className="panel settings-panel" aria-labelledby="settings-app-heading">
         <div className="status-line">

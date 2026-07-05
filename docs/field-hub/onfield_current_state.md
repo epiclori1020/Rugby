@@ -29,7 +29,7 @@ Letztes Update: 2026-07-05
 |---|---|
 | Navigation | Sprint 6 hat die App-Shell im Code auf `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` umgestellt. `Einheit` fuehrt `Check-in`, `Training`, `Nachbereitung`; `Mehr` fuehrt `Bibliothek`, `Export & Backup`, `Einstellungen`, `Returner`. |
 | Designsystem | Sprint 5 hat das erste Core Component Kit in Code, Repo-Dokumentation und Figma-Sheet angelegt. Screen-weite Migrationen folgen spaeter. |
-| PWA-Metadaten | Sprint 3 hat Manifest, HTML-Titel und iOS-App-Titel auf OnField Coach vorbereitet. Sprint 6 hat sichtbare App-Shell-Brandingtexte auf OnField Coach umgestellt. |
+| PWA-Metadaten | Sprint 7 hat Manifest-/Install-Metadaten, Brand-Surfaces und das eigene OnField Coach SVG/PNG-Icon-Set fuer PWA/iOS aktualisiert. |
 | iPhone | Hat in Sprint 6 die neue 5er-Bottom-Tab-Bar mit Safe-Area-Abstand erhalten; Unterbereiche bleiben erreichbar. |
 | iPad | Hat in Sprint 6 die neue 5er-Sidebar plus Content-Struktur erhalten; Unterbereiche bleiben erreichbar. |
 | Check-in | Hat bereits Ansaetze fuer Finder/Rows/Sheet, muss aber roster-first und sekundaer strukturierter werden. |
@@ -37,6 +37,7 @@ Letztes Update: 2026-07-05
 | Nachbereitung | `MissingValuesPanel` ist ein guter Anfang fuer Queue-first, aber noch nicht Hauptworkflow. |
 | Sync/Offline | Pending/Sync-Logik existiert, muss global ruhiger und einheitlicher kommuniziert werden. |
 | Kiosk/Public | Separate Komponenten existieren und sollen als eigene reduzierte Experience weiterentwickelt werden. |
+| Brand-Surfaces | Sprint 7 hat eine wiederverwendbare `BrandSurface` fuer Auth, Welcome/Empty, Install, Public Check-in und Kiosk-Welcome eingefuehrt. Live-Coaching-Flows bleiben ohne Hero-Flaechen. |
 | Sport-Konfiguration | Sprint 0B hat das SSOT fuer generische Kernobjekte und OnField Rugby als ersten Preset erstellt. Code ist noch nicht extrahiert. |
 
 ## Aktuelle massgebliche Dokumente
@@ -92,10 +93,11 @@ Letztes Update: 2026-07-05
 - Sprint 4 ist abgeschlossen: `app/field-hub/src/design/tokens.css` ist die technische Token-Quelle fuer Field Graphite, `docs/field-hub/onfield_token_sheet.md` dokumentiert die Token-Map und das bestehende Figma Brand Board hat eine Sprint-4-Token-Sheet-Seite.
 - Sprint 5 ist abgeschlossen: Das Core Component Kit liegt unter `app/field-hub/src/components/ui/` und `app/field-hub/src/components/onfield/`, ist durch fokussierte Komponententests abgedeckt, im Component Inventory gemappt und im Figma Brand Board als `Sprint 5 Core Component Kit` gespiegelt.
 - Sprint 6 ist abgeschlossen: App Shell und Navigation nutzen im Code die neue 5er-Hauptnavigation; bestehende Screens bleiben ueber kompatibles `HubTab`-Mapping erreichbar.
+- Sprint 7 ist abgeschlossen: Auth, Today-Empty/Welcome, Settings-Install, Public Check-in und Kiosk-Welcome nutzen OnField Brand-Surfaces; PWA/iOS-Icons sind als eigenes OnField Coach SVG/PNG-Set aktualisiert.
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 7 angehen: OnField Hero-, Welcome-, Install- und Branding-Surfaces.
+1. Sprint 8 angehen: Einheit-Container als Kernworkflow.
 2. Danach Roadmap-Reihenfolge beibehalten und die Sprint-5-Komponenten schrittweise in Screen-Sprints nutzen.
 
 ## Offene Risiken

@@ -59,6 +59,8 @@ describe('KioskCheckInView', () => {
 
     expect(container.textContent).not.toContain('Kiosk-Modus')
     expect(container.textContent).toContain('Training Check-in')
+    expect(container.textContent).toContain('OnField Rugby Kiosk')
+    expect(container.textContent).toContain('Know squad status before the whistle.')
     expect(container.textContent).toContain('Donnerstag, 18. Juni 2026')
     expect(container.textContent).toContain('Training + Mini-Baseline optional')
   })

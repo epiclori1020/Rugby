@@ -1132,6 +1132,8 @@ Wichtig:
 
 ## Sprint 7 - OnField Hero-, Welcome-, Install- und Branding-Surfaces
 
+Status: Abgeschlossen am 2026-07-05.
+
 ### Was genau machen wir?
 
 Wir integrieren die Marke sichtbar dort, wo sie sinnvoll ist.

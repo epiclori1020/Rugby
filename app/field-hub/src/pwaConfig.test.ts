@@ -34,6 +34,7 @@ describe('Sprint 10 PWA configuration', () => {
   it('uses PNG install icons for iOS and PWA manifests', () => {
     const viteConfig = readFileSync(join(projectRoot, 'vite.config.ts'), 'utf8')
     const indexHtml = readFileSync(join(projectRoot, 'index.html'), 'utf8')
+    const iconSvg = readFileSync(join(projectRoot, 'public/pwa-512x512.svg'), 'utf8')
 
     expect(viteConfig).toContain("src: '/pwa-192x192.png'")
     expect(viteConfig).toContain("src: '/pwa-512x512.png'")
@@ -46,6 +47,11 @@ describe('Sprint 10 PWA configuration', () => {
     expect(readPngDimensions('pwa-192x192.png')).toEqual({ width: 192, height: 192 })
     expect(readPngDimensions('pwa-512x512.png')).toEqual({ width: 512, height: 512 })
     expect(readPngDimensions('apple-touch-icon.png')).toEqual({ width: 180, height: 180 })
+    expect(iconSvg).toContain('aria-label="OnField Coach icon"')
+    expect(iconSvg).toContain('#1F6B5C')
+    expect(iconSvg).toContain('#7A1F2B')
+    expect(iconSvg).not.toContain('Field Hub icon')
+    expect(iconSvg).not.toContain('#b75a2a')
   })
 
   it('pre-caches active PDF library fallbacks for offline field use', () => {

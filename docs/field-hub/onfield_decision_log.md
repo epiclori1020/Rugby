@@ -46,6 +46,7 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | 2026-07-05 | Sprint-3-Research wird kuratiert in einer Synthese dokumentiert, nicht roh in Memory kopiert. | Memory bleibt Router und Entscheidungsgedaechtnis; lange Researches bleiben Quellenmaterial. | Aktiv |
 | 2026-07-05 | OnField Code-Tokens nutzen den Prefix `--of-*`; `app/field-hub/src/design/tokens.css` ist die technische Token-Quelle. | Code, SSOT und Figma bleiben abgleichbar, ohne Figma zur Runtime-Quelle zu machen. Legacy-Aliase duerfen waehrend der Migration auf `--of-*` zeigen. | Aktiv |
 | 2026-07-05 | Sprint 6 nutzt ein kompatibles Navigationsmodell: 5 Hauptbereiche als `AppSection`, bestehende Screens weiter als `HubTab`-Ziele. | So wird die neue IA umgesetzt, ohne bestehende Check-in-, Training-, Nachbereitung-, Bibliothek-, Export-, Einstellungen- und Returner-Screens in einem Shell-Sprint umzubauen. | Aktiv |
+| 2026-07-05 | OnField Coach App-Icons werden als eigenes deterministisches SVG/PNG-Set gepflegt, nicht als Library-Icon oder Bild-KI-Produktionsasset. | Install-Icons muessen reproduzierbar, skalierbar und in kleinen Groessen klar sein; Bild-KI kann spaeter Inspiration liefern, ist aber keine Produktionsquelle fuer PWA-/iOS-Icons. | Aktiv |
 
 ## Markenarchitektur
 
@@ -71,6 +72,7 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 - Agenten sollen zuerst gezielt Kontext routen und nur relevante SSOTs/Researches laden.
 - Nach Sprint 0B sind die neuen OnField-SSOTs primaere Arbeitsgrundlage fuer Produkt, Brand, Copy, Designsystem, Komponenten, Sport-Konfiguration und PWA/A11y QA.
 - Nach Sprint 4 ist `app/field-hub/src/design/tokens.css` die technische Wahrheit fuer OnField Theme Tokens; Figma Token Sheets sind visuelle Referenz und Uebergabeartefakt.
+- Nach Sprint 7 ist das OnField Coach App-Icon ein eigenes deterministisches SVG/PNG-Asset-Set; keine Library- oder Bild-KI-Quelle ist die Produktionsbasis.
 - Nach Sprint 0A braucht jede OnField-Aufgabe am Ende eine Memory-Closeout-Pruefung: Current State, Decision Log oder Gotchas aktualisieren, falls die Aufgabe kuenftige Sessions betrifft.
 
 ## Zurueckgestellte Entscheidungen

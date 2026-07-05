@@ -10,6 +10,7 @@ import type { StoragePersistenceState } from '../hooks/useStoragePersistence'
 import { hasPlayerId } from '../lib/playerId'
 import { pendingCountLabel } from '../lib/syncLabels'
 import { CoachInsightsPanel } from './CoachInsightsPanel'
+import { BrandSurface } from './onfield'
 import { SessionPicker } from './SessionPicker'
 
 type TodayDashboardProps = {
@@ -138,6 +139,11 @@ export function TodayDashboard({
   const postSessionMissingCount = postSessionWork
     ? postSessionWork.completion.blockers.reduce((sum, blocker) => sum + Math.max(1, blocker.count), 0)
     : 0
+  const showWelcomeSurface = !isSignedIn || activePlayers.length === 0
+  const welcomeTitle = !isSignedIn ? 'Trainingstag vorbereiten' : 'Squad für OnField anlegen'
+  const welcomeBody = !isSignedIn
+    ? 'Nach dem Login werden Spielerstatus, Anwesenheit und offene Aufgaben auf iPhone und iPad verfügbar.'
+    : 'Lege aktive Spieler an, damit Check-in, Session Flow und Wrap-up mit demselben Funktionsumfang starten.'
 
   const navigateWithFeedback = useCallback(
     (tab: HubTab, message: string) => {
@@ -182,6 +188,39 @@ export function TodayDashboard({
 
   return (
     <section className="dashboard-grid" aria-labelledby="today-heading">
+        {showWelcomeSurface ? (
+          <BrandSurface
+            body={welcomeBody}
+            className="today-welcome-surface"
+            meta={<span>Field-ready coach operations for the training day.</span>}
+            primaryAction={
+              <button
+                className="primary-action"
+                data-testid="today-welcome-action"
+                type="button"
+                onClick={() =>
+                  !isSignedIn
+                    ? navigateWithFeedback('einstellungen', 'Einstellungen geöffnet.')
+                    : navigateWithFeedback('spieler', 'Spieler geöffnet.')
+                }
+              >
+                <span>{!isSignedIn ? 'Login öffnen' : 'Spieler anlegen'}</span>
+                <ArrowRight className="nav-icon" aria-hidden />
+              </button>
+            }
+            productFrame={
+              <div className="brand-product-mini" aria-label="OnField Trainingstag Vorschau">
+                <span>Heute</span>
+                <strong>Check-in</strong>
+                <span>Einheit führen</span>
+                <span>Wrap-up</span>
+              </div>
+            }
+            title={welcomeTitle}
+            variant="welcome"
+          />
+        ) : null}
+
         <article className="panel today-command-card">
           <p className="eyebrow">Heute zählt</p>
           <h3 id="today-heading">{selectedSession.title}</h3>
