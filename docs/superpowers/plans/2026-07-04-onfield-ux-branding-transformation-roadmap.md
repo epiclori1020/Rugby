@@ -1366,6 +1366,8 @@ Live-Screen-Regeln:
 
 ## Sprint 11 - Nachbereitung als echte Aufgabenqueue
 
+Status: Abgeschlossen am 2026-07-05.
+
 ### Was genau machen wir?
 
 Wir bauen die Nachbereitung zu einem gefuehrten Abschlussworkflow um.
@@ -2033,7 +2035,7 @@ Nicht springen, ausser es gibt einen klaren Grund.
 12. Sprint 8: Einheit Container.
 13. Sprint 9: Check-in.
 14. Sprint 10: Training.
-15. Sprint 11: Nachbereitung.
+15. Sprint 11: Nachbereitung. **Abgeschlossen.**
 16. Sprint 12: Spieler/Athleten.
 17. Sprint 13: Analyse.
 18. Sprint 14: Mehr/Utility.

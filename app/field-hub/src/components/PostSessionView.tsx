@@ -25,7 +25,7 @@ import {
 } from '../domain/exercises'
 import { formatMetricValue, getMetricDefinition, parseOptionalMetricValue, type MetricResult, type MetricResultPatch } from '../domain/metrics'
 import type { PlayerSessionEntry, PlayerWarning } from '../domain/checkIn'
-import { derivePostSessionCompletion, type PostSessionCompletion } from '../domain/postSessionCompletion'
+import { derivePostSessionCompletion } from '../domain/postSessionCompletion'
 import { deriveMissingPostSessionValues, type MissingPostSessionValue } from '../domain/postSessionMissingValues'
 import type { Player } from '../domain/players'
 import type { ReturnerCapSummary } from '../domain/returners'
@@ -38,8 +38,10 @@ import type { usePostSession } from '../hooks/usePostSession'
 import type { AuthSessionState } from '../lib/auth'
 import { hasPlayerId } from '../lib/playerId'
 import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
+import { TaskQueueRow } from './onfield'
 import { ExposureReviewPanel } from './ExposureReviewPanel'
 import { SessionPicker } from './SessionPicker'
+import { PainScale, PrimaryButton, SecondaryButton } from './ui'
 
 type PostSessionActions = ReturnType<typeof usePostSession>
 type BaselineActions = ReturnType<typeof useBaselines>
@@ -160,54 +162,6 @@ function WarningSummary({ warning }: { warning: PlayerWarning | undefined }) {
   )
 }
 
-function ClosureChecklist({ completion }: { completion: PostSessionCompletion }) {
-  const statusLabel =
-    completion.status === 'abgeschlossen'
-      ? 'abgeschlossen'
-      : completion.status === 'teilweise_abgeschlossen'
-        ? 'teilweise abgeschlossen'
-        : 'offen'
-  const statusClass = completion.status === 'abgeschlossen' ? 'online' : ''
-
-  return (
-    <section className="panel closure-panel" aria-labelledby="closure-heading">
-      <div className="library-heading">
-        <p className="eyebrow">Closure Checklist</p>
-        <h3 id="closure-heading">Nachbereitungsstatus: {statusLabel}</h3>
-        <p>Pflichtdaten blockieren den Abschlussstatus; Progression, Baseline und Export bleiben klare Hinweise.</p>
-      </div>
-      <div className="sync-mini">
-        <span className={`status-dot ${statusClass}`} aria-hidden />
-        <strong>{completion.blockers.length === 0 ? 'Pflichtdaten geklaert' : `${completion.blockers.length} Pflichtpunkt(e) offen`}</strong>
-        {completion.advisories.length > 0 ? <span>{completion.advisories.length} Hinweis(e)</span> : null}
-      </div>
-      {completion.blockers.length > 0 ? (
-        <div className="closure-list">
-          {completion.blockers.map((blocker) => (
-            <div className="warning-note" key={blocker.kind}>
-              <AlertTriangle className="nav-icon" aria-hidden />
-              <span>
-                <strong>{blocker.label}</strong>
-                {blocker.playerNames.length > 0 ? ` ${blocker.playerNames.slice(0, 6).join(', ')}${blocker.playerNames.length > 6 ? ' ...' : ''}` : ''}
-              </span>
-            </div>
-          ))}
-        </div>
-      ) : null}
-      {completion.advisories.length > 0 ? (
-        <div className="closure-list">
-          {completion.advisories.map((advisory) => (
-            <div className="sync-mini" key={advisory.kind}>
-              <strong>{advisory.label}</strong>
-              {advisory.playerNames.length > 0 ? <span>{advisory.playerNames.slice(0, 6).join(', ')}</span> : null}
-            </div>
-          ))}
-        </div>
-      ) : null}
-    </section>
-  )
-}
-
 function MissingValuesPanel({
   isMetricSavingDisabled,
   isPostSavingDisabled,
@@ -231,9 +185,8 @@ function MissingValuesPanel({
   onSessionSave: PostSessionActions['saveSessionPatch']
   playersById: Map<string, Player>
 }) {
-  if (items.length === 0) {
-    return null
-  }
+  const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
+  const activeTask = items.find((item) => item.id === activeTaskId) ?? items[0] ?? null
 
   function saveMetric(player: Player, item: MissingPostSessionValue, rawValue: string) {
     if (!item.metricKey) {
@@ -261,34 +214,84 @@ function MissingValuesPanel({
     })
   }
 
+  function focusDurationInput() {
+    if (typeof document === 'undefined') {
+      return
+    }
+
+    document.getElementById('post-session-duration-input')?.focus()
+  }
+
+  function severityLabel(item: MissingPostSessionValue) {
+    if (item.severity === 'required') {
+      return 'Pflicht'
+    }
+
+    if (item.severity === 'expected') {
+      return 'Erwartet'
+    }
+
+    return 'Optional'
+  }
+
+  function targetLabel(item: MissingPostSessionValue) {
+    if (item.kind === 'session_status') {
+      return 'Abschluss'
+    }
+
+    if (item.target === 'session') {
+      return 'Einheit'
+    }
+
+    if (item.target === 'post_session') {
+      return 'Spielerwert'
+    }
+
+    if (item.target === 'progression') {
+      return 'Progression'
+    }
+
+    if (item.target === 'metric') {
+      return 'Metric'
+    }
+
+    return 'Backup'
+  }
+
+  function taskTone(item: MissingPostSessionValue) {
+    if (item.severity === 'required') {
+      return 'danger' as const
+    }
+
+    if (item.severity === 'expected') {
+      return 'warning' as const
+    }
+
+    return 'neutral' as const
+  }
+
   function renderAction(item: MissingPostSessionValue) {
     if (item.kind === 'missing_duration') {
       return (
-        <label className="inline-field compact-missing-input">
-          <span>Minuten</span>
-          <input
-            disabled={isPostSavingDisabled}
-            inputMode="numeric"
-            placeholder="z. B. 75"
-            onBlur={(event) => {
-              const rawValue = event.currentTarget.value.trim()
-              const parsedValue = rawValue ? Number(rawValue) : null
-              if (parsedValue !== null && (!Number.isFinite(parsedValue) || parsedValue < 0)) {
-                return
-              }
+        <SecondaryButton compact disabled={isPostSavingDisabled} onClick={focusDurationInput}>
+          Dauerfeld fokussieren
+        </SecondaryButton>
+      )
+    }
 
-              void onSessionSave({ durationMinutes: parsedValue })
-            }}
-          />
-        </label>
+    if (item.kind === 'session_status') {
+      return (
+        <PrimaryButton compact disabled={isPostSavingDisabled} onClick={() => void onSessionSave({ status: 'completed' })}>
+          Einheit abschliessen
+        </PrimaryButton>
       )
     }
 
     if (item.kind === 'backup_export') {
       return (
-        <button className="secondary-action compact-action" type="button" onClick={() => onNavigate('export')}>
+        <SecondaryButton compact onClick={() => onNavigate('export')}>
           Export
-        </button>
+        </SecondaryButton>
       )
     }
 
@@ -299,22 +302,18 @@ function MissingValuesPanel({
 
     if (item.kind === 'missing_srpe' || item.kind === 'missing_post_pain') {
       return (
-        <div className="button-row compact pain-scale missing-value-scale">
-          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
-            <button
-              className="number-chip"
-              disabled={isPostSavingDisabled}
-              key={value}
-              type="button"
-              onClick={() => {
-                const patch = item.kind === 'missing_srpe' ? { sessionRpe: value } : { postPainScore: value }
-                void onPostSave(player, patch)
-              }}
-            >
-              {value}
-            </button>
-          ))}
-        </div>
+        <PainScale
+          label={`${item.label} ${player.name}`}
+          value={null}
+          onChange={(value) => {
+            if (isPostSavingDisabled) {
+              return
+            }
+
+            const patch = item.kind === 'missing_srpe' ? { sessionRpe: value } : { postPainScore: value }
+            void onPostSave(player, patch)
+          }}
+        />
       )
     }
 
@@ -322,15 +321,14 @@ function MissingValuesPanel({
       return (
         <div className="button-row compact">
           {e2Options.map((option) => (
-            <button
-              className="segmented"
+            <SecondaryButton
+              compact
               disabled={isPostSavingDisabled}
               key={option.value}
-              type="button"
               onClick={() => void onPostSave(player, { e2Decision: option.value })}
             >
               {option.label}
-            </button>
+            </SecondaryButton>
           ))}
         </div>
       )
@@ -340,15 +338,14 @@ function MissingValuesPanel({
       return (
         <div className="button-row compact">
           {nextStepOptions.map((option) => (
-            <button
-              className="segmented"
+            <SecondaryButton
+              compact
               disabled={isPostSavingDisabled}
               key={option.value}
-              type="button"
               onClick={() => void onProgressSave(player, { nextStep: option.value })}
             >
               {option.label}
-            </button>
+            </SecondaryButton>
           ))}
         </div>
       )
@@ -393,25 +390,69 @@ function MissingValuesPanel({
   return (
     <section className="panel missing-values-panel" aria-labelledby="missing-values-heading">
       <div className="library-heading">
-        <p className="eyebrow">Nachzutragen</p>
-        <h3 id="missing-values-heading">Offene Werte und Aufgaben</h3>
-        <p>Fehlende Pflichtwerte zuerst erfassen; optionale Testwerte bleiben bewusst kein Abschlussblocker.</p>
+        <p className="eyebrow">Nachbereitung</p>
+        <h3 id="missing-values-heading">Nachbereitungsqueue</h3>
+        <p>Pflichtaufgaben zuerst; erwartete und optionale Werte blockieren den Abschluss nicht.</p>
       </div>
 
-      <div className="missing-values-list">
-        {items.map((item) => (
-          <article className={`missing-value-row missing-value-${item.severity}`} key={item.id}>
-            <div className="missing-value-copy">
-              <span className="tag compact">
-                {item.severity === 'required' ? 'Pflicht' : item.severity === 'expected' ? 'Erwartet' : 'Optional'}
-              </span>
-              <strong>{item.playerName ? `${item.playerName}: ${item.label}` : item.label}</strong>
-              <p>{item.helperText}</p>
+      {items.length === 0 ? (
+        <TaskQueueRow
+          title="Keine offenen Pflichtaufgaben"
+          detail="Die Nachbereitung ist fachlich abgeschlossen; optionale Details kannst du unten nachtragen."
+          meta={['Fertig']}
+          tone="success"
+        />
+      ) : (
+        <div className="post-session-queue-workflow">
+          <div className="post-session-queue-list" aria-label="Nachbereitungsqueue">
+            {items.map((item) => {
+              const isActive = activeTask?.id === item.id
+              return (
+                <TaskQueueRow
+                  action={
+                    <SecondaryButton compact onClick={() => setActiveTaskId(item.id)}>
+                      {isActive ? 'Aktiv' : 'Oeffnen'}
+                    </SecondaryButton>
+                  }
+                  ariaCurrent={isActive ? 'step' : undefined}
+                  className={isActive ? 'post-session-queue-row-active' : undefined}
+                  detail={item.helperText}
+                  key={item.id}
+                  meta={[
+                    severityLabel(item),
+                    targetLabel(item),
+                    item.playerName ?? 'Einheit',
+                    ...(isActive ? ['Aktiv'] : []),
+                  ]}
+                  title={item.playerName ? `${item.playerName}: ${item.label}` : item.label}
+                  tone={taskTone(item)}
+                />
+              )
+            })}
+          </div>
+
+          {activeTask ? (
+            <div className="post-session-active-task" aria-labelledby="active-post-session-task-heading">
+              <p className="eyebrow">Aktiver Schritt</p>
+              <h3 id="active-post-session-task-heading">
+                {activeTask.playerName ? `${activeTask.playerName}: ${activeTask.label}` : activeTask.label}
+              </h3>
+              <p>{activeTask.helperText}</p>
+              <div className="post-session-task-meta">
+                <span>{severityLabel(activeTask)}</span>
+                <span>{targetLabel(activeTask)}</span>
+                {activeTask.playerName ? <span>{activeTask.playerName}</span> : null}
+              </div>
+              <div className="post-session-task-actions">{renderAction(activeTask)}</div>
             </div>
-            <div className="missing-value-action">{renderAction(item)}</div>
-          </article>
-        ))}
-      </div>
+          ) : null}
+        </div>
+      )}
+
+      <details className="post-session-secondary-section">
+        <summary>Optional nachtragen</summary>
+        <p>Flexible Metrics, Exercise-Result, Mini-Baseline und alle Spielerdetails liegen unten als sekundäre Bereiche.</p>
+      </details>
     </section>
   )
 }
@@ -645,7 +686,7 @@ function PostSessionPlayerRow({
       {isStop ? (
         <div className="warning-note danger">
           <ShieldAlert className="nav-icon" aria-hidden />
-          <span>Follow-up bedeutet Klaerung/Anpassung, keine medizinische Freigabe durch die App.</span>
+          <span>Follow-up bedeutet coachseitige Klaerung oder Anpassung; medizinische Entscheidungen bleiben extern.</span>
         </div>
       ) : null}
     </article>
@@ -1336,6 +1377,35 @@ export function PostSessionView({
         </div>
       </div>
 
+      <section className="panel post-session-duration-strip" aria-label="Session-Dauer">
+        <div className="library-heading">
+          <p className="eyebrow">Einheit</p>
+          <h3>Dauer Minuten</h3>
+          <p>Einmal oben erfassen; daraus bleiben Session Load und Abschlussstatus ableitbar.</p>
+        </div>
+        <label className="inline-field">
+          <span>Dauer Minuten</span>
+          <input
+            defaultValue={sessionLog?.durationMinutes ?? ''}
+            disabled={isLoading}
+            id="post-session-duration-input"
+            key={`${selectedSessionId}-${sessionLog?.id ?? 'new'}-duration`}
+            inputMode="numeric"
+            placeholder="z. B. 75"
+            onBlur={handleSessionNumberBlur('durationMinutes')}
+          />
+        </label>
+        <div className="sync-mini">
+          <span className={`status-dot ${completion.blockers.length === 0 ? 'online' : ''}`} aria-hidden />
+          <strong>
+            {completion.blockers.length === 0
+              ? 'Pflichtwerte geklaert'
+              : `${completion.blockers.length} Pflichtaufgabe(n) offen`}
+          </strong>
+          {completion.advisories.length > 0 ? <span>{completion.advisories.length} optionale Hinweise</span> : null}
+        </div>
+      </section>
+
       <MissingValuesPanel
         isMetricSavingDisabled={metricActions.isLoading}
         isPostSavingDisabled={isLoading}
@@ -1348,8 +1418,6 @@ export function PostSessionView({
         onSessionSave={saveSessionPatch}
         playersById={playersById}
       />
-
-      <ClosureChecklist completion={completion} />
 
       {errorMessage ? (
         <div className="panel error-panel" role="alert">
@@ -1389,38 +1457,31 @@ export function PostSessionView({
         </div>
       ) : null}
 
-      <ExposureReviewPanel
-        entries={entries}
-        isSavingDisabled={isLoading || exposureActions.isLoading}
-        onGenerate={() => {
-          void exposureActions.generateExposureSummaries({
-            sessionLog,
-            blockLogs: exposureBlockLogs,
-            entries,
-            returnerCaps,
-          })
-        }}
-        onManualOverride={(summary, type, override) => {
-          void exposureActions.saveManualOverride(summary, type, override)
-        }}
-        players={activePlayers}
-        sessionLog={sessionLog}
-        summaries={exposureActions.summaries}
-      />
+      <details className="panel post-session-secondary-section">
+        <summary>Exposures</summary>
+        <ExposureReviewPanel
+          entries={entries}
+          isSavingDisabled={isLoading || exposureActions.isLoading}
+          onGenerate={() => {
+            void exposureActions.generateExposureSummaries({
+              sessionLog,
+              blockLogs: exposureBlockLogs,
+              entries,
+              returnerCaps,
+            })
+          }}
+          onManualOverride={(summary, type, override) => {
+            void exposureActions.saveManualOverride(summary, type, override)
+          }}
+          players={activePlayers}
+          sessionLog={sessionLog}
+          summaries={exposureActions.summaries}
+        />
+      </details>
 
-      <section className="panel post-session-coach-panel" aria-label="Coach Review">
+      <details className="panel post-session-secondary-section post-session-coach-panel">
+        <summary>Coach Review</summary>
         <div className="training-coach-fields">
-          <label className="inline-field">
-            <span>Dauer Minuten</span>
-            <input
-              defaultValue={sessionLog?.durationMinutes ?? ''}
-              disabled={isLoading}
-              key={`${selectedSessionId}-${sessionLog?.id ?? 'new'}-duration`}
-              inputMode="numeric"
-              placeholder="z. B. 75"
-              onBlur={handleSessionNumberBlur('durationMinutes')}
-            />
-          </label>
           <label className="inline-field">
             <span>Gruppengroesse</span>
             <input
@@ -1443,18 +1504,11 @@ export function PostSessionView({
               onBlur={(event) => void saveSessionPatch({ coachReview: event.currentTarget.value.trim() })}
             />
           </label>
-          <button
-            className="primary-action"
-            disabled={isLoading}
-            type="button"
-            onClick={() => void saveSessionPatch({ status: 'completed' })}
-          >
-            Einheit abschliessen
-          </button>
         </div>
-      </section>
+      </details>
 
-      <section className="panel baseline-panel" aria-labelledby="metrics-heading">
+      <details className="panel baseline-panel post-session-secondary-section" aria-labelledby="metrics-heading">
+        <summary>Flexible Metrics</summary>
         <div className="library-heading">
           <p className="eyebrow">Flexible Metrics</p>
           <h3 id="metrics-heading">Metric-Rechecks</h3>
@@ -1500,9 +1554,10 @@ export function PostSessionView({
             />
           ))}
         </div>
-      </section>
+      </details>
 
-      <section className="panel baseline-panel" aria-labelledby="exercise-results-heading">
+      <details className="panel baseline-panel post-session-secondary-section" aria-labelledby="exercise-results-heading">
+        <summary>Structured Exercise Result</summary>
         <div className="library-heading">
           <p className="eyebrow">Structured Exercise Result</p>
           <h3 id="exercise-results-heading">Exercise-Progression</h3>
@@ -1617,9 +1672,10 @@ export function PostSessionView({
             )
           })}
         </div>
-      </section>
+      </details>
 
-      <section className="panel baseline-panel" aria-labelledby="baseline-heading">
+      <details className="panel baseline-panel post-session-secondary-section" aria-labelledby="baseline-heading">
+        <summary>Mini-Baseline / Re-Check</summary>
         <div className="library-heading">
           <p className="eyebrow">Optionaler Re-Check</p>
           <h3 id="baseline-heading">Mini-Baseline / Re-Check</h3>
@@ -1665,23 +1721,26 @@ export function PostSessionView({
             />
           ))}
         </div>
-      </section>
+      </details>
 
-      <div className="checkin-list">
-        {orderedPlayers.map((player) => (
-          <PostSessionPlayerRow
-            entry={getEntryForPlayer(player)}
-            isSavingDisabled={isLoading}
-            key={player.id}
-            onPostSave={savePlayerPostSession}
-            onProgressSave={savePlayerProgress}
-            player={player}
-            progressEntry={getProgressForPlayer(player)}
-            sessionDuration={sessionLog?.durationMinutes ?? null}
-            warning={warningByPlayerId.get(player.id)}
-          />
-        ))}
-      </div>
+      <details className="panel post-session-secondary-section">
+        <summary>Alle Spielerdetails</summary>
+        <div className="checkin-list">
+          {orderedPlayers.map((player) => (
+            <PostSessionPlayerRow
+              entry={getEntryForPlayer(player)}
+              isSavingDisabled={isLoading}
+              key={player.id}
+              onPostSave={savePlayerPostSession}
+              onProgressSave={savePlayerProgress}
+              player={player}
+              progressEntry={getProgressForPlayer(player)}
+              sessionDuration={sessionLog?.durationMinutes ?? null}
+              warning={warningByPlayerId.get(player.id)}
+            />
+          ))}
+        </div>
+      </details>
 
       {activePlayers.length === 0 ? (
         <section className="placeholder">

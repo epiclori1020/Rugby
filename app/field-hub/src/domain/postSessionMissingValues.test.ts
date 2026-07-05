@@ -216,4 +216,30 @@ describe('deriveMissingPostSessionValues', () => {
     expect(metricKeys).not.toContain('mabu')
     expect(result.filter((item) => item.kind === 'missing_metric').every((item) => item.severity === 'optional')).toBe(true)
   })
+
+  it('adds the session completion task after required player values and before secondary work', () => {
+    const max = player('player-1', 'Max')
+    const result = deriveMissingPostSessionValues({
+      activePlayers: [max],
+      sessionLog: sessionLog({ status: 'planned' }),
+      sessionType: 'training',
+      entries: [entry(max.id, { e2Decision: 'kein_sprint', nextStep: 'halten' })],
+      progressEntries: [],
+      metricResults: [],
+      lastExportAt: null,
+    })
+
+    expect(result.map((item) => item.kind)).toEqual(['session_status', 'missing_progression'])
+    expect(result[0]).toMatchObject({
+      kind: 'session_status',
+      severity: 'required',
+      target: 'session',
+    })
+    expect(result[1]).toMatchObject({
+      kind: 'missing_progression',
+      severity: 'expected',
+      playerId: max.id,
+    })
+    expect(result.map((item) => item.helperText).join(' ').toLowerCase()).not.toContain('freigabe')
+  })
 })

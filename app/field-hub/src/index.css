@@ -1171,6 +1171,175 @@ button {
   max-width: 420px;
 }
 
+.post-session-duration-strip {
+  align-items: end;
+  display: grid;
+  gap: 12px;
+  grid-template-columns: minmax(0, 1fr) minmax(180px, 240px) minmax(220px, auto);
+}
+
+.post-session-queue-workflow {
+  align-items: start;
+  display: grid;
+  gap: 14px;
+  grid-template-columns: minmax(260px, 0.95fr) minmax(320px, 1.05fr);
+}
+
+.post-session-queue-list,
+.post-session-task-actions,
+.post-session-task-meta {
+  display: flex;
+  gap: 10px;
+}
+
+.post-session-queue-list {
+  flex-direction: column;
+}
+
+.post-session-active-task {
+  background: var(--of-color-surface-default);
+  border: 1px solid var(--of-color-brand-border-muted);
+  border-radius: var(--of-radius-sm);
+  display: grid;
+  gap: 12px;
+  padding: 14px;
+}
+
+.post-session-active-task h3,
+.post-session-active-task p {
+  margin: 0;
+}
+
+.post-session-task-actions,
+.post-session-task-meta {
+  flex-wrap: wrap;
+}
+
+.post-session-task-meta span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.78rem;
+  font-weight: 800;
+  padding: 3px 8px;
+}
+
+.post-session-queue-row-active {
+  outline: 2px solid var(--of-color-brand-border-muted);
+  outline-offset: 2px;
+}
+
+.post-session-secondary-section {
+  display: grid;
+  gap: 12px;
+}
+
+.post-session-secondary-section > summary {
+  align-items: center;
+  cursor: pointer;
+  display: flex;
+  font-size: 0.9rem;
+  font-weight: 850;
+  justify-content: space-between;
+  min-height: 44px;
+}
+
+.post-session-secondary-section > summary::after {
+  color: var(--muted);
+  content: '+';
+  font-size: 1.1rem;
+  font-weight: 900;
+}
+
+.post-session-secondary-section[open] > summary::after {
+  content: '-';
+}
+
+.of-task-queue-row {
+  background: var(--of-color-surface-default);
+  border: 1px solid var(--line);
+  border-radius: var(--of-radius-sm);
+  display: grid;
+  gap: 10px;
+  grid-template-columns: minmax(0, 1fr) auto;
+  padding: 12px;
+}
+
+.of-task-queue-row-main {
+  display: grid;
+  gap: 7px;
+  min-width: 0;
+}
+
+.of-task-queue-row h3,
+.of-task-queue-row p {
+  margin: 0;
+}
+
+.of-task-queue-row p {
+  color: var(--muted);
+}
+
+.of-task-queue-row-meta {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.of-task-queue-row-meta span {
+  border: 1px solid var(--line);
+  border-radius: 999px;
+  color: var(--muted);
+  font-size: 0.72rem;
+  font-weight: 850;
+  padding: 3px 7px;
+}
+
+.of-task-queue-row-action {
+  align-self: center;
+}
+
+.of-task-queue-row-danger {
+  background: var(--of-color-status-danger-bg-soft);
+  border-color: var(--of-color-danger-border-subtle);
+}
+
+.of-task-queue-row-warning {
+  background: var(--of-color-surface-warm);
+  border-color: var(--of-color-warning-border-subtle);
+}
+
+.of-task-queue-row-success {
+  border-color: var(--of-color-status-success-border);
+}
+
+.of-number-scale {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+}
+
+.of-number-scale-option {
+  align-items: center;
+  background: var(--surface-strong);
+  border: 1px solid var(--line);
+  border-radius: var(--of-radius-xs);
+  color: var(--text);
+  cursor: pointer;
+  display: inline-flex;
+  font-weight: 800;
+  justify-content: center;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 0 10px;
+}
+
+.of-number-scale-option[aria-pressed='true'],
+.of-number-scale-option:hover {
+  background: var(--of-color-status-info-bg-soft);
+  border-color: var(--of-color-brand-border-muted);
+}
+
 .player-profile-section {
   border: 1px solid var(--line);
   border-radius: var(--of-radius-sm);
@@ -3181,6 +3350,8 @@ code {
   .checkin-header,
   .checkin-controls,
   .baseline-fields,
+  .post-session-duration-strip,
+  .post-session-queue-workflow,
   .post-session-coach-panel .training-coach-fields {
     display: grid;
     grid-template-columns: 1fr;
@@ -3383,6 +3554,21 @@ code {
   .today-actions {
     display: grid;
     grid-template-columns: 1fr;
+  }
+
+  .of-task-queue-row {
+    grid-template-columns: 1fr;
+  }
+
+  .of-task-queue-row-action {
+    justify-self: stretch;
+  }
+
+  .of-task-queue-row-action > span,
+  .of-task-queue-row-action button,
+  .post-session-task-actions > span,
+  .post-session-task-actions button {
+    width: 100%;
   }
 
   .panel,

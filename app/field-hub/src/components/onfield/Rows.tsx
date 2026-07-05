@@ -42,11 +42,24 @@ type TaskQueueRowProps = {
   meta?: string[]
   tone?: 'neutral' | 'warning' | 'danger' | 'success'
   action?: ReactNode
+  className?: string
+  ariaCurrent?: 'page' | 'step' | 'location' | 'date' | 'time' | true | false
 }
 
-export function TaskQueueRow({ action, detail, meta = [], title, tone = 'neutral' }: TaskQueueRowProps) {
+export function TaskQueueRow({
+  action,
+  ariaCurrent,
+  className,
+  detail,
+  meta = [],
+  title,
+  tone = 'neutral',
+}: TaskQueueRowProps) {
   return (
-    <article className={`of-task-queue-row of-task-queue-row-${tone}`}>
+    <article
+      aria-current={ariaCurrent}
+      className={['of-task-queue-row', `of-task-queue-row-${tone}`, className].filter(Boolean).join(' ')}
+    >
       <div className="of-task-queue-row-main">
         <h3>{title}</h3>
         {detail ? <p>{detail}</p> : null}

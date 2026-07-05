@@ -16,6 +16,7 @@ export type MissingValueTarget =
 
 export type MissingValueKind =
   | 'missing_duration'
+  | 'session_status'
   | 'missing_srpe'
   | 'missing_post_pain'
   | 'missing_e2'
@@ -231,7 +232,7 @@ export function deriveMissingPostSessionValues({
           kind: 'missing_e2',
           target: 'post_session',
           label: 'E2 festlegen',
-          helperText: 'Naechste Einheit anpassen oder normal freigeben; keine medizinische Freigabe.',
+          helperText: 'Naechste Einheit normal planen oder coachseitig anpassen; medizinische Entscheidungen bleiben extern.',
           playerId: player.id,
           playerName: player.name,
           sessionLogId: entry.sessionLogId,
@@ -298,6 +299,21 @@ export function deriveMissingPostSessionValues({
         }
       }
     }
+  }
+
+  if (required.length === 0 && sessionLog.status !== 'completed') {
+    required.push({
+      id: 'session_status:session',
+      severity: 'required',
+      kind: 'session_status',
+      target: 'session',
+      label: 'Einheit abschliessen',
+      helperText: 'Pflichtwerte sind geklaert; markiere die Einheit als abgeschlossen, wenn der Trainingstag dokumentiert ist.',
+      playerId: null,
+      playerName: null,
+      sessionLogId: sessionLog.id,
+      fieldKey: 'status',
+    })
   }
 
   if (backupIsNeeded(sessionLog, lastExportAt)) {

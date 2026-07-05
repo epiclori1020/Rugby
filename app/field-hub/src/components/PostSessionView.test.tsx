@@ -251,19 +251,18 @@ function renderPostSessionView() {
   )
 }
 
-describe('PostSessionView closure checklist', () => {
-  it('shows missing required post-session data without hiding existing inputs', () => {
+describe('PostSessionView post-session queue', () => {
+  it('shows a queue-first workflow while keeping secondary post-session tools available', () => {
     const markup = renderPostSessionView()
 
-    expect(markup).toContain('Nachzutragen')
+    expect(markup).toContain('Nachbereitungsqueue')
+    expect(markup).toContain('Aktiver Schritt')
     expect(markup).toContain('sRPE nachtragen')
     expect(markup).toContain('Subjektive Belastung 0-10')
-    expect(markup).toContain('Closure Checklist')
-    expect(markup).toContain('Nachbereitungsstatus: teilweise abgeschlossen')
-    expect(markup).toContain('sRPE fehlt bei anwesenden Spielern.')
-    expect(markup).toContain('Post-Pain fehlt bei auffaelligen Spielern.')
-    expect(markup).toContain('E2 oder Next Step fehlt bei Auffaelligen.')
-    expect(markup).toContain('Einheit abschliessen')
+    expect(markup).toContain('Dauer Minuten')
+    expect(markup).toContain('Pflicht')
+    expect(markup).toContain('Optional nachtragen')
+    expect(markup).toContain('Alle Spielerdetails')
     expect(markup).toContain('Flexible Metrics')
     expect(markup).toContain('Structured Exercise Result')
     expect(markup).toContain('Session-Default')
@@ -272,5 +271,6 @@ describe('PostSessionView closure checklist', () => {
     expect(markup).toContain('10 m Sprint')
     expect(markup).toContain('Mini-Baseline / Re-Check')
     expect(markup).toContain('Max')
+    expect(markup.toLowerCase()).not.toContain('freigabe')
   })
 })
