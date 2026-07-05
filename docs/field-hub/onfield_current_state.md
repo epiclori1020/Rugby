@@ -1,6 +1,6 @@
 # OnField Current State
 
-Letztes Update: 2026-07-04
+Letztes Update: 2026-07-05
 
 ## Aktueller Produktname
 
@@ -27,7 +27,7 @@ Letztes Update: 2026-07-04
 
 | Bereich | Stand |
 |---|---|
-| Navigation | App hat aktuell noch die alte breite Tab-Struktur mit vielen Hauptbereichen. Ziel ist `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr`. |
+| Navigation | Sprint 2 hat die IA-Spezifikation fuer `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` im Product Brief ergaenzt. App-Code hat aktuell noch die alte breite 10-Tab-Struktur. |
 | Designsystem | Sprint 0B hat Brand-, Token- und Komponenten-SSOTs erstellt. Code und Figma/Designartefakte sind noch nicht angepasst. |
 | iPhone | Muss kuenftig vollen Funktionsumfang haben; Ziel ist Bottom Tab Bar plus Sheets/Stacks. |
 | iPad | Soll Sidebar + Content + optional Detailpane nutzen. |
@@ -83,17 +83,18 @@ Letztes Update: 2026-07-04
   - `PostToolUse` prueft Schreibaktionen weiter auf klare Secret-Leaks und warnt bei Safety-/Memory-Risiken.
   - Runtime Memory ist lokal/ignored und darf keine SSOTs, keinen Decision Log, keinen Current State und keine Roadmap automatisch ersetzen.
 - Sprint 1 ist abgeschlossen: Agenten-Setup, Roadmap-Sprinttext, Skill-/Runtime-Hinweise, Agent Playbook und Memory-Gotchas sind auf Sprint 0C/0D synchronisiert.
+- Sprint 2 ist abgeschlossen: Product Brief und Component Inventory spezifizieren die neue IA, alte/neue Tab-Mappings, iPhone/iPad-Zugriff, Back/Close-Verhalten und spaetere Code-Migrationspunkte. App-Code wurde in Sprint 2 nicht umgebaut.
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 2 angehen: IA-Spezifikation fuer `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` ausarbeiten.
-2. Danach App Shell planen/implementieren, bevor einzelne Screens gross umgebaut werden.
+1. Sprint 3 angehen: OnField Brand Foundation und Marketing-/Hero-System.
+2. Danach Roadmap-Reihenfolge beibehalten: Tone of Voice, Komponenten-Foundation, dann App Shell und Navigation implementieren.
 
 ## Offene Risiken
 
 | Risiko | Auswirkung | Naechster Schritt |
 |---|---|---|
-| Alte Navigation bleibt zu lange bestehen. | Neue Marke wirkt weiterhin wie altes Dashboard. | IA-Sprint priorisieren. |
+| Alte Navigation bleibt zu lange bestehen. | Neue Marke wirkt weiterhin wie altes Dashboard. | App-Shell-Sprint nach Brand-/Komponenten-Foundation umsetzen. |
 | Designsystem bleibt nur dokumentiert. | Code, Figma/Designartefakt und SSOT koennen auseinanderlaufen. | Figma oder gleichwertiges Designsystem-Artefakt ab Sprint 3-5 erstellen und Tokens im Code mappen. |
 | iPhone wird wieder als Nebenansicht behandelt. | Externe Nutzung und App-Store-Perspektive werden geschwaecht. | iPhone-Paritaet in jedem Sprint pruefen. |
 | Rugby bleibt im Code zu stark in generischer Architektur. | Multi-Sport-Faehigkeit wird spaeter teuer. | Sport-Konfiguration schrittweise extrahieren. |

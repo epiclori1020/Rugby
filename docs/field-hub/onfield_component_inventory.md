@@ -40,7 +40,7 @@ Dieses SSOT listet die geplanten OnField UI-Komponenten mit Zweck, Einsatz, Nich
 | Offline Banner | globaler Offline-Zustand | persistenter Hinweis, lokale Speicherung | kleiner Dot allein | global |
 | Number Scale | numerische Eingabe | Readiness, sRPE, Sessionwerte | Dropdown | Check-in, Nachbereitung |
 | Pain Scale | sensible Schmerzangabe | 0-10 plus Kontext | Ampelersatz oder medizinische Einordnung | Check-in, Nachbereitung, Spieler |
-| Returner Cap Card | erlaubte vs. absolvierte Caps | Speed, COD, Conditioning, Contact | Freigabe-Status | Training, Spieler |
+| Returner Cap Card | erlaubte vs. absolvierte Caps | Speed, COD, Conditioning, Contact | medizinische Entscheidung | Training, Spieler |
 | Metric Card | fokussierte Kennzahl | Team-Readiness, offene Returner | Default fuer Listen | Heute, Analyse |
 | Analysis Card | Frage + Insight + Drilldown | Trends und Rueckblick | Live-Screens | Analyse, Spieler |
 | Form Field | Datenaufnahme | Coach-Notiz, Schmerzort, Settings | Placeholder-only | Einheit, Spieler, Mehr |
@@ -50,11 +50,25 @@ Dieses SSOT listet die geplanten OnField UI-Komponenten mit Zweck, Einsatz, Nich
 | Error State | Wiederanlauf | Fehlertext, Retry, Details | roher technischer Fehler | alle |
 | Confirmation Dialog | kritische Bestaetigung | Loeschen, Import, Ueberschreiben | harmlose Zustandswechsel | Mehr, Dialoge |
 
+## IA-Auswirkungen aus Sprint 2
+
+Sprint 2 spezifiziert nur die Informationsarchitektur. Die folgenden Punkte markieren spaetere Umsetzungspunkte fuer App-Shell- und Screen-Sprints; sie bauen in diesem Sprint keine Komponenten.
+
+| Bereich | Betroffene Komponenten | Spaetere Aenderung |
+|---|---|---|
+| Hauptnavigation | App Shell, iPad Sidebar, iPhone Bottom Tab Bar, Main Navigation | Von 10 gleichrangigen Tabs auf `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` reduzieren |
+| `Einheit` | App Shell, Topbar, Session Header, Segmented Control | `Check-in`, `Training` und `Nachbereitung` als Unterbereiche statt globale Tabs fuehren |
+| `Mehr` | App Shell, Topbar, Sheet, Empty State | `Bibliothek`, `Export & Backup`, `Einstellungen` und optional `Returner/Reconditioning Board` als Utility-Unterbereiche gruppieren |
+| Returner/Reconditioning | Filter Chip, Player/Athlete Row, Player Detail Sheet, Returner Cap Card, Safety Notice | Kontext in `Einheit`, `Spieler` und optional `Mehr`; kein globaler Hauptnavigationsbutton |
+| Quellen und Rueckspruenge | Sheet, Player Detail Sheet, Analysis Card, Task Queue Row | Analyse- und Spielerquellen muessen spaeter auf neue Bereiche und Unterbereiche zeigen |
+| Public/Kiosk | App Shell, Number Scale, Empty State, Error State | Eigene reduzierte Experience ausserhalb der Coach-Hauptnavigation behalten |
+
 ## Nicht-Regeln
 
 - Dieses Inventory ist keine Vorgabe, alle Komponenten sofort zu bauen.
 - Bestehende Komponenten muessen nicht in Sprint 0B umbenannt werden.
 - Sport-Presets duerfen Texte und Inhalte liefern, aber Komponenten bleiben generisch.
+- Sprint 2 baut keine App Shell, Bottom Tab Bar, Sidebar oder neuen Unterbereichs-Container.
 
 ## Offene Fragen
 

@@ -48,6 +48,86 @@ Sekundaere Nutzer koennen spaeter weitere Coaches, Staff, Physio/Medical-Kontakt
 | Analyse | Rueckblick und Trends getrennt vom Live-Flow auswerten | `Analyse` |
 | Utility | Bibliothek, Backup/Export, Einstellungen, Install-Hilfe | `Mehr` |
 
+## Informationsarchitektur v1
+
+Diese Spezifikation ist das Zielbild fuer den spaeteren App-Shell-Umbau. Sie beschreibt, wo jede bestehende Funktion lebt. Sie baut in Sprint 2 noch keine Navigation im Code.
+
+### Hauptbereiche
+
+| Bereich | Zweck | Primaeraktion | Rolle |
+|---|---|---|---|
+| `Heute` | Tageslage, naechste Einheit, offene Aufgaben und schnelle Einstiege zusammenfassen | Naechste relevante Coach-Handlung oeffnen | Primaerflow |
+| `Einheit` | Vor, waehrend und nach einer konkreten Session arbeiten | Aktuellen Session-Schritt fortsetzen | Primaerflow |
+| `Spieler` | Athletenprofile, Status, Verlauf und relevante Historie pruefen | Spielerprofil oeffnen oder bearbeiten | Primaerflow |
+| `Analyse` | Rueckblick, Trends und Planungsfragen getrennt vom Live-Flow auswerten | Analysefrage oder Quelle oeffnen | Sekundaerer Arbeitsraum |
+| `Mehr` | Verwaltung, Unterlagen, Backup, Einstellungen und Install-Hilfe buendeln | Utility oeffnen | Utility |
+
+### Alt-zu-neu Mapping
+
+| Aktueller `HubTab` | Neuer Ort | Erreichbarkeit | Rolle |
+|---|---|---|---|
+| `heute` | `Heute` | Top-Level auf iPhone und iPad | Primaerflow |
+| `spieler` | `Spieler` | Top-Level auf iPhone und iPad | Primaerflow |
+| `check-in` | `Einheit / Check-in` | Unterbereich von `Einheit` | Primaerflow |
+| `training` | `Einheit / Training` | Unterbereich von `Einheit` | Primaerflow |
+| `nachbereitung` | `Einheit / Nachbereitung` | Unterbereich von `Einheit` | Primaerflow |
+| `returner` | Kontext in `Einheit`, `Spieler` und optional `Mehr / Returner/Reconditioning Board` | Kein globaler Haupttab | Kontext/Utility |
+| `analysis` | `Analyse` | Top-Level auf iPhone und iPad | Sekundaerer Arbeitsraum |
+| `bibliothek` | `Mehr / Bibliothek` | Unterbereich von `Mehr`; kontextuell aus `Heute` und `Einheit / Training` erreichbar | Utility |
+| `export` | `Mehr / Export & Backup` | Unterbereich von `Mehr`; bei Backup-Hinweisen kontextuell erreichbar | Utility |
+| `einstellungen` | `Mehr / Einstellungen` | Unterbereich von `Mehr` | Utility |
+
+### Geraetemodell
+
+| Bereich | iPhone-Zugriff | iPad-Zugriff |
+|---|---|---|
+| `Heute` | Bottom Tab Bar, erster Tab, Startscreen | Sidebar, erster Bereich, Startscreen |
+| `Einheit` | Bottom Tab Bar; Unterbereiche ueber Segmented Control, Stack oder Sheet | Sidebar; Unterbereiche im Content, optional mit Detailpane |
+| `Spieler` | Bottom Tab Bar; Profile als Stack oder Sheet | Sidebar; Liste plus Profil-Detailpane |
+| `Analyse` | Bottom Tab Bar; Drilldowns als Stack oder Sheet | Sidebar; Analysefragen im Content, Quellen optional im Detailpane |
+| `Mehr` | Bottom Tab Bar; Utilities als Liste und Unterseiten | Sidebar; Utility-Liste plus Detailbereich |
+
+iPhone und iPad muessen fachlich denselben Funktionsumfang behalten. Unterschiede betreffen nur Layout, Navigation, Dichte und Sheet-/Pane-Verhalten.
+
+### Unterbereiche und Back/Close-Verhalten
+
+| Bereich | Route-/State-Zielbild | Back/Close-Verhalten |
+|---|---|---|
+| `Einheit / Check-in` | Session-Kontext plus Substate `check-in`; ersetzt den globalen Tab `check-in` | Zurueck bleibt innerhalb `Einheit`; Schliessen von Sheets kehrt zur Check-in-Liste zurueck |
+| `Einheit / Training` | Session-Kontext plus Substate `training`; ersetzt den globalen Tab `training` | Zurueck bleibt innerhalb `Einheit`; Bibliothek-Links kehren zu `Einheit / Training` zurueck |
+| `Einheit / Nachbereitung` | Session-Kontext plus Substate `nachbereitung`; ersetzt den globalen Tab `nachbereitung` | Zurueck bleibt innerhalb `Einheit`; Pflichtwerte-Queues bleiben sichtbar |
+| `Spieler / Detail` | Spieler-Liste plus ausgewaehlter Athlete; Detail als Sheet auf iPhone und Pane auf iPad | Close entfernt die Detailauswahl und bleibt in `Spieler` |
+| `Analyse / Quelle` | Analyse-Quelle fuehrt zum passenden Bereich und Session-Kontext | Quelle oeffnen setzt Session und Ziel-Unterbereich; Back/Close kehrt zur Analysefrage zurueck, wenn technisch verfuegbar |
+| `Mehr / Bibliothek` | Utility-Unterseite; darf kontextuelle Initialkategorie oder Item-ID erhalten | Ruecksprung zu `Heute` oder `Einheit / Training`, wenn aus Kontext geoeffnet; sonst zur `Mehr`-Liste |
+| `Mehr / Export & Backup` | Utility-Unterseite fuer JSON, CSV, Import-Vorschau und Backup-Hinweise | Zurueck zur `Mehr`-Liste |
+| `Mehr / Einstellungen` | Utility-Unterseite fuer Account, Sync, Geraet und App-Version | Zurueck zur `Mehr`-Liste |
+| `Mehr / Returner/Reconditioning Board` | Optionale Utility-Unterseite fuer uebergreifende Returner-Uebersicht | Zurueck zur `Mehr`-Liste; kein Ersatz fuer kontextuelle Limits in `Einheit` und `Spieler` |
+
+### Eigene reduzierte Experiences
+
+| Experience | Zielbild | Navigation |
+|---|---|---|
+| Public Check-in | Reduzierte Self-Check-in-Route ohne Coach-Admininhalte | Eigene Route ausserhalb der Coach-Hauptnavigation |
+| Kiosk Check-in | Reduzierte Vollbild-Experience fuer eine ausgewaehlte Session | Kein Zugriff auf Coach-Analyse, Historie, Export oder Einstellungen |
+
+### Spaetere Code-Migrationspunkte
+
+| Codeflaeche | Spaetere Aenderung | Sprint |
+|---|---|---|
+| `HubTab` in `app/field-hub/src/App.tsx` | Alte flache Tab-Union durch Top-Level-Bereich plus Unterbereich-State ersetzen oder kompatibel mappen | Sprint 6 |
+| `activeTab` und `handleTabChange` in `App.tsx` | Navigationsstate muss Top-Level, Einheit-Subbereich und Utility-Subbereich unterscheiden | Sprint 6 |
+| `handleOpenPlayerSourceSession` und `handleOpenCoachInsightSource` | `correctionTarget` wie `check-in`, `training`, `nachbereitung`, `returner` auf neue Ziele unter `Einheit` oder `Spieler` mappen | Sprint 6 oder Analyse-/Spieler-Sprints |
+| Bibliothek-Ruecksprung in `App.tsx` | `libraryReturnTab` von altem Tab auf neuen Quellbereich umstellen | Sprint 6 |
+| `AppShell.tsx` | Header-Metadaten fuer 5 Hauptbereiche und Unterbereiche modellieren; OnField-Naming statt alter Field-Hub-Brand im Shell-Chrome | Sprint 6 |
+| `MainNavigation.tsx` | Von 10 Buttons auf 5 Top-Level-Ziele reduzieren; iPhone Bottom Tab Bar und iPad Sidebar spaeter aus derselben IA speisen | Sprint 6 |
+| `TodayDashboard.tsx` Quick Actions | Schnellaktionen auf `Einheit / Check-in`, `Einheit / Training`, `Einheit / Nachbereitung` und `Mehr / Bibliothek` zielen lassen | Sprint 6 |
+
+### Offene UX-Fragen
+
+- Ob `Mehr / Returner/Reconditioning Board` in v1 sichtbar wird oder erst nach validiertem Bedarf aktiviert wird.
+- Ob Analyse- und Spieler-Quellen einen expliziten Ruecksprung zur Ursprungsauswertung brauchen oder ob Session-Kontext plus Zielbereich reicht.
+- Welche Unterbereichs-Darstellung fuer `Einheit` auf iPhone zuerst umgesetzt wird: Segmented Control, Stack oder Sheet.
+
 ## MVP-Grenzen
 
 - Kein Multi-Tenant-SaaS, Billing oder Organisationsmodell im Coach-MVP.
