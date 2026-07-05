@@ -37,18 +37,16 @@ import { useStoragePersistence } from './hooks/useStoragePersistence'
 import { getLastExportAt, getLatestCompletedSession } from './lib/backupRepository'
 import { flushBackgroundSyncs } from './lib/backgroundSync'
 import { buildManualSyncFeedback, combineSyncOverviews, syncAllUserData, type ManualSyncFeedback } from './lib/syncRepository'
-
-export type HubTab =
-  | 'heute'
-  | 'spieler'
-  | 'check-in'
-  | 'training'
-  | 'nachbereitung'
-  | 'returner'
-  | 'analysis'
-  | 'bibliothek'
-  | 'export'
-  | 'einstellungen'
+import {
+  defaultTabForSection,
+  isMoreSubTab,
+  isUnitSubTab,
+  sectionForTab,
+  type AppSection,
+  type HubTab,
+  type MoreSubTab,
+  type UnitSubTab,
+} from './navigation'
 
 const selectedSessionStorageKey = 'fieldHub:selectedSessionId'
 const kioskSessionStorageKey = 'fieldHub:kioskSessionId'
@@ -110,6 +108,8 @@ function getInitialSessionState(fallbackSessionId: string, todayKey = toLocalDat
 
 function CoachApp() {
   const [activeTab, setActiveTab] = useState<HubTab>('heute')
+  const [activeUnitSubTab, setActiveUnitSubTab] = useState<UnitSubTab>('check-in')
+  const [activeMoreSubTab, setActiveMoreSubTab] = useState<MoreSubTab>('bibliothek')
   const [isManualSyncing, setIsManualSyncing] = useState(false)
   const [manualSyncFeedback, setManualSyncFeedback] = useState<ManualSyncFeedback | null>(null)
   const [libraryInitialPdfHref, setLibraryInitialPdfHref] = useState<string | undefined>(undefined)
@@ -289,20 +289,50 @@ function CoachApp() {
     setTransientNotice(message)
   }, [])
   const currentCheckInSessionLogId = checkInActions.sessionLog?.id ?? null
+  const activeSection = sectionForTab(activeTab)
+
+  const rememberNavigationTarget = useCallback((tab: HubTab) => {
+    if (isUnitSubTab(tab)) {
+      setActiveUnitSubTab(tab)
+    }
+
+    if (isMoreSubTab(tab)) {
+      setActiveMoreSubTab(tab)
+    }
+  }, [])
 
   const handleTabChange = useCallback((tab: HubTab) => {
     setLibraryInitialPdfHref(undefined)
     setLibraryInitialCategory(undefined)
     setLibraryInitialItemId(undefined)
     setLibraryReturnTab(null)
+    rememberNavigationTarget(tab)
     setActiveTab(tab)
-  }, [])
+  }, [rememberNavigationTarget])
+
+  const handleSectionChange = useCallback(
+    (section: AppSection) => {
+      setLibraryInitialPdfHref(undefined)
+      setLibraryInitialCategory(undefined)
+      setLibraryInitialItemId(undefined)
+      setLibraryReturnTab(null)
+
+      const targetTab = defaultTabForSection(section, {
+        moreSubTab: activeMoreSubTab,
+        unitSubTab: activeUnitSubTab,
+      })
+      rememberNavigationTarget(targetTab)
+      setActiveTab(targetTab)
+    },
+    [activeMoreSubTab, activeUnitSubTab, rememberNavigationTarget],
+  )
 
   const handleOpenPdf = useCallback((pdf: PdfRef) => {
     setLibraryInitialPdfHref(pdf.href)
     setLibraryInitialCategory(undefined)
     setLibraryInitialItemId(undefined)
     setLibraryReturnTab('heute')
+    setActiveMoreSubTab('bibliothek')
     setActiveTab('bibliothek')
   }, [])
 
@@ -312,6 +342,7 @@ function CoachApp() {
     setLibraryInitialCategory('Heute relevant')
     setLibraryInitialItemId(undefined)
     setLibraryReturnTab('heute')
+    setActiveMoreSubTab('bibliothek')
     setActiveTab('bibliothek')
   }, [])
 
@@ -320,6 +351,7 @@ function CoachApp() {
     setLibraryInitialCategory(undefined)
     setLibraryInitialItemId(itemId)
     setLibraryReturnTab('training')
+    setActiveMoreSubTab('bibliothek')
     setActiveTab('bibliothek')
   }, [])
 
@@ -327,9 +359,11 @@ function CoachApp() {
     setLibraryInitialPdfHref(undefined)
     setLibraryInitialCategory(undefined)
     setLibraryInitialItemId(undefined)
-    setActiveTab(libraryReturnTab ?? 'heute')
+    const targetTab = libraryReturnTab ?? 'heute'
+    rememberNavigationTarget(targetTab)
+    setActiveTab(targetTab)
     setLibraryReturnTab(null)
-  }, [libraryReturnTab])
+  }, [libraryReturnTab, rememberNavigationTarget])
 
   const handleLibraryPdfClose = useCallback(() => {
     setLibraryInitialPdfHref(undefined)
@@ -345,8 +379,9 @@ function CoachApp() {
     }
 
     setSelectedSessionId(source.sessionDefinitionId)
+    rememberNavigationTarget(source.correctionTarget)
     setActiveTab(source.correctionTarget)
-  }, [])
+  }, [rememberNavigationTarget])
   const canOpenPlayerSourceSession = useCallback((source: PlayerAnalysisSource) => {
     return Boolean(source.sessionDefinitionId && findSessionById(source.sessionDefinitionId))
   }, [])
@@ -357,10 +392,11 @@ function CoachApp() {
       }
 
       setSelectedSessionId(source.sessionDefinitionId)
+      rememberNavigationTarget(source.correctionTarget)
       setActiveTab(source.correctionTarget)
       showTransientNotice('Quelle geöffnet.')
     },
-    [showTransientNotice],
+    [rememberNavigationTarget, showTransientNotice],
   )
 
   const handleStartKiosk = useCallback(() => {
@@ -531,7 +567,9 @@ function CoachApp() {
 
   return (
     <AppShell
+      activeSection={activeSection}
       activeTab={activeTab}
+      onSectionChange={handleSectionChange}
       onTabChange={handleTabChange}
       authState={authState}
       playerSync={syncOverview}

@@ -1,6 +1,6 @@
 import { AlertTriangle, HeartPulse, History, RefreshCw, ShieldAlert, UserCheck } from 'lucide-react'
 import { useRef, useState } from 'react'
-import type { HubTab } from '../App'
+import type { HubTab } from '../navigation'
 import type { SessionDefinition } from '../content/types'
 import {
   canConsiderReturnerProgression,

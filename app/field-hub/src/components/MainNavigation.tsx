@@ -1,53 +1,43 @@
 import {
-  Activity,
-  Archive,
   CalendarDays,
   ClipboardCheck,
-  Dumbbell,
-  FileDown,
-  HeartPulse,
   LineChart,
-  Settings,
+  MoreHorizontal,
   Users,
 } from 'lucide-react'
 import type { ComponentType } from 'react'
-import type { HubTab } from '../App'
+import type { AppSection } from '../navigation'
 
 type NavigationItem = {
-  id: HubTab
+  id: AppSection
   label: string
   Icon: ComponentType<{ className?: string; 'aria-hidden'?: boolean }>
 }
 
 const navigationItems: NavigationItem[] = [
   { id: 'heute', label: 'Heute', Icon: CalendarDays },
+  { id: 'einheit', label: 'Einheit', Icon: ClipboardCheck },
   { id: 'spieler', label: 'Spieler', Icon: Users },
-  { id: 'check-in', label: 'Check-in', Icon: ClipboardCheck },
-  { id: 'training', label: 'Training', Icon: Dumbbell },
-  { id: 'nachbereitung', label: 'Nachbereitung', Icon: Activity },
-  { id: 'returner', label: 'Returner', Icon: HeartPulse },
   { id: 'analysis', label: 'Analyse', Icon: LineChart },
-  { id: 'bibliothek', label: 'Bibliothek', Icon: Archive },
-  { id: 'export', label: 'Export', Icon: FileDown },
-  { id: 'einstellungen', label: 'Einstellungen', Icon: Settings },
+  { id: 'mehr', label: 'Mehr', Icon: MoreHorizontal },
 ]
 
 type MainNavigationProps = {
-  activeTab: HubTab
-  onTabChange: (tab: HubTab) => void
+  activeSection: AppSection
+  onSectionChange: (section: AppSection) => void
 }
 
-export function MainNavigation({ activeTab, onTabChange }: MainNavigationProps) {
+export function MainNavigation({ activeSection, onSectionChange }: MainNavigationProps) {
   return (
-    <nav className="main-nav" aria-label="Bereiche">
+    <nav className="main-nav bottom-tab-bar" aria-label="Hauptbereiche">
       {navigationItems.map(({ id, label, Icon }) => (
         <button
-          className={activeTab === id ? 'nav-button active' : 'nav-button'}
+          className={activeSection === id ? 'nav-button active' : 'nav-button'}
           key={id}
           type="button"
           aria-label={label}
-          aria-current={activeTab === id ? 'page' : undefined}
-          onClick={() => onTabChange(id)}
+          aria-current={activeSection === id ? 'page' : undefined}
+          onClick={() => onSectionChange(id)}
         >
           <Icon className="nav-icon" aria-hidden />
           <span>{label}</span>

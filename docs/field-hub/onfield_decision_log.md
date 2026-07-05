@@ -45,6 +45,7 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | 2026-07-05 | Field-Operations-DNA lebt in Layout, IA und Session Flow, nicht als dekoratives Wallpaper. | Field-as-layout ist differenzierender und verhindert generische Sport-B2B-Tapete hinter KPI-Karten. | Aktiv |
 | 2026-07-05 | Sprint-3-Research wird kuratiert in einer Synthese dokumentiert, nicht roh in Memory kopiert. | Memory bleibt Router und Entscheidungsgedaechtnis; lange Researches bleiben Quellenmaterial. | Aktiv |
 | 2026-07-05 | OnField Code-Tokens nutzen den Prefix `--of-*`; `app/field-hub/src/design/tokens.css` ist die technische Token-Quelle. | Code, SSOT und Figma bleiben abgleichbar, ohne Figma zur Runtime-Quelle zu machen. Legacy-Aliase duerfen waehrend der Migration auf `--of-*` zeigen. | Aktiv |
+| 2026-07-05 | Sprint 6 nutzt ein kompatibles Navigationsmodell: 5 Hauptbereiche als `AppSection`, bestehende Screens weiter als `HubTab`-Ziele. | So wird die neue IA umgesetzt, ohne bestehende Check-in-, Training-, Nachbereitung-, Bibliothek-, Export-, Einstellungen- und Returner-Screens in einem Shell-Sprint umzubauen. | Aktiv |
 
 ## Markenarchitektur
 

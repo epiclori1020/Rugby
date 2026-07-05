@@ -1,6 +1,6 @@
 import { AlertTriangle, ClipboardCheck, RefreshCw, ShieldAlert, UserCheck } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import type { HubTab } from '../App'
+import type { HubTab } from '../navigation'
 import type { SessionDefinition } from '../content/types'
 import { metricDefinitions } from '../content/metricDefinitions'
 import { exerciseDefinitions } from '../content/exerciseDefinitions'

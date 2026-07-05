@@ -1,5 +1,5 @@
 import { Cloud, CloudOff, Download, RefreshCw, ShieldCheck, Smartphone } from 'lucide-react'
-import type { HubTab } from '../App'
+import type { HubTab } from '../navigation'
 import type { SessionLog } from '../domain/checkIn'
 import type { PlayerSyncOverview } from '../domain/sync'
 import type { StoragePersistenceState } from '../hooks/useStoragePersistence'

@@ -1,14 +1,24 @@
-import { Menu, X } from 'lucide-react'
-import { useCallback, useEffect, useState, type ReactNode } from 'react'
-import type { HubTab } from '../App'
+import { Activity, Archive, ClipboardCheck, Dumbbell, FileDown, HeartPulse, Settings } from 'lucide-react'
+import type { ReactNode } from 'react'
 import type { PlayerSyncOverview } from '../domain/sync'
 import type { AuthSessionState } from '../lib/auth'
+import {
+  isMoreSubTab,
+  isUnitSubTab,
+  type AppSection,
+  type HubTab,
+  type MoreSubTab,
+  type UnitSubTab,
+} from '../navigation'
 import { MainNavigation } from './MainNavigation'
 import { SyncStatusBadge } from './SyncStatusBadge'
+import { SegmentedControl, type SegmentedControlOption } from './ui'
 
 type AppShellProps = {
+  activeSection: AppSection
   activeTab: HubTab
   children: ReactNode
+  onSectionChange: (section: AppSection) => void
   onTabChange: (tab: HubTab) => void
   authState: AuthSessionState
   playerSync: PlayerSyncOverview
@@ -18,130 +28,97 @@ type AppShellProps = {
 const tabMeta: Record<HubTab, { eyebrow: string; title: string; description: string }> = {
   heute: {
     eyebrow: 'Heute',
-    title: 'Trainingssteuerung',
-    description: 'Heute zählt, Aufpassen, Material und schnelle Wege in die Arbeitsbereiche.',
+    title: 'Heute',
+    description: 'Tageslage, offene Aufgaben und schnelle Einstiege.',
   },
   spieler: {
-    eyebrow: 'Kader & Verfuegbarkeit',
+    eyebrow: 'Spieler',
     title: 'Spieler',
     description: 'Stammdaten, Status, Consent und lokale Testwerte im Blick.',
   },
   'check-in': {
-    eyebrow: 'Vor dem Training',
-    title: 'Check-in',
+    eyebrow: 'Einheit / Check-in',
+    title: 'Einheit',
     description: 'Anwesenheit, Belastbarkeit, Schmerz, Returner und Ampel schnell erfassen.',
   },
   training: {
-    eyebrow: 'Am Feld',
-    title: 'Training',
+    eyebrow: 'Einheit / Training',
+    title: 'Einheit',
     description: 'Timeline, Varianten, Quick Actions und Coach-Beobachtungen.',
   },
   nachbereitung: {
-    eyebrow: 'Nach dem Training',
-    title: 'Nachbereitung',
+    eyebrow: 'Einheit / Nachbereitung',
+    title: 'Einheit',
     description: 'sRPE, Pain, E2, Progression und Follow-ups sichern.',
   },
   returner: {
-    eyebrow: 'Returner-Steuerung',
-    title: 'Returner',
+    eyebrow: 'Mehr / Returner',
+    title: 'Mehr',
     description: 'Caps fuer Speed, COD/Decel, Conditioning und Kontakt getrennt fuehren.',
   },
   analysis: {
-    eyebrow: 'Team Review',
+    eyebrow: 'Analyse',
     title: 'Analyse',
-    description: 'Lokale Team-Trends fuer Planung, Load, Exposures und Planned-vs-Actual.',
+    description: 'Rueckblick, Trends und Quellen getrennt vom Live-Flow auswerten.',
   },
   bibliothek: {
-    eyebrow: 'Unterlagen',
-    title: 'Bibliothek',
+    eyebrow: 'Mehr / Bibliothek',
+    title: 'Mehr',
     description: 'Coach-Skripte, Varianten, Briefings und PDF-Fallbacks schnell finden.',
   },
   export: {
-    eyebrow: 'Backup',
-    title: 'Export & Backup',
+    eyebrow: 'Mehr / Export & Backup',
+    title: 'Mehr',
     description: 'JSON-Backup, CSV-Dateien und Import-Vorschau fuer sichere Ablage.',
   },
   einstellungen: {
-    eyebrow: 'App & Account',
-    title: 'Einstellungen',
+    eyebrow: 'Mehr / Einstellungen',
+    title: 'Mehr',
     description: 'Account, Sync, Backup, Geraet und App-Version an einem Ort.',
   },
 }
 
+const unitOptions: SegmentedControlOption<UnitSubTab>[] = [
+  { value: 'check-in', label: 'Check-in', icon: <ClipboardCheck aria-hidden /> },
+  { value: 'training', label: 'Training', icon: <Dumbbell aria-hidden /> },
+  { value: 'nachbereitung', label: 'Nachbereitung', icon: <Activity aria-hidden /> },
+]
+
+const moreOptions: SegmentedControlOption<MoreSubTab>[] = [
+  { value: 'bibliothek', label: 'Bibliothek', icon: <Archive aria-hidden /> },
+  { value: 'export', label: 'Export & Backup', icon: <FileDown aria-hidden /> },
+  { value: 'einstellungen', label: 'Einstellungen', icon: <Settings aria-hidden /> },
+  { value: 'returner', label: 'Returner', icon: <HeartPulse aria-hidden /> },
+]
+
 export function AppShell({
+  activeSection,
   activeTab,
   children,
+  onSectionChange,
   onTabChange,
   authState,
   playerSync,
   transientNotice = null,
 }: AppShellProps) {
   const meta = tabMeta[activeTab]
-  const [isNavigationOpen, setIsNavigationOpen] = useState(false)
-
-  const closeNavigation = useCallback(() => {
-    setIsNavigationOpen(false)
-  }, [])
-
-  const handleTabChange = useCallback(
-    (tab: HubTab) => {
-      onTabChange(tab)
-      closeNavigation()
-    },
-    [closeNavigation, onTabChange],
-  )
-
-  useEffect(() => {
-    if (!isNavigationOpen) {
-      return undefined
-    }
-
-    function handleKeyDown(event: KeyboardEvent) {
-      if (event.key === 'Escape') {
-        closeNavigation()
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [closeNavigation, isNavigationOpen])
+  const activeUnitSubTab = isUnitSubTab(activeTab) ? activeTab : 'check-in'
+  const activeMoreSubTab = isMoreSubTab(activeTab) ? activeTab : 'bibliothek'
 
   return (
     <div className="app-shell">
-      <aside
-        className={isNavigationOpen ? 'sidebar sidebar-open' : 'sidebar'}
-        id="app-sidebar"
-        aria-label="Hauptnavigation"
-      >
+      <aside className="sidebar" id="app-sidebar" aria-label="Hauptnavigation">
         <div className="brand-block">
-          <p className="eyebrow">Rugby Donau S&C</p>
-          <h1>Field Hub</h1>
-          <p>Coach-Dashboard fuer Trainingstage, Sync und Feldorganisation.</p>
+          <p className="eyebrow">OnField</p>
+          <h1>OnField Coach</h1>
+          <p>Coach-Operations fuer Trainingstage, Sync und Feldorganisation.</p>
         </div>
-        <MainNavigation activeTab={activeTab} onTabChange={handleTabChange} />
+        <MainNavigation activeSection={activeSection} onSectionChange={onSectionChange} />
       </aside>
-      {isNavigationOpen ? (
-        <button
-          className="sidebar-backdrop"
-          type="button"
-          aria-label="Navigation schliessen"
-          onClick={closeNavigation}
-        />
-      ) : null}
 
       <main className="shell-main">
         <div className="topbar">
           <div className="page-title">
-            <button
-              className="mobile-menu-button"
-              type="button"
-              aria-controls="app-sidebar"
-              aria-expanded={isNavigationOpen}
-              aria-label={isNavigationOpen ? 'Navigation schliessen' : 'Navigation oeffnen'}
-              onClick={() => setIsNavigationOpen((currentValue) => !currentValue)}
-            >
-              {isNavigationOpen ? <X className="nav-icon" aria-hidden /> : <Menu className="nav-icon" aria-hidden />}
-            </button>
             <p className="eyebrow">{meta.eyebrow}</p>
             <h2>{meta.title}</h2>
             <p>{meta.description}</p>
@@ -155,6 +132,26 @@ export function AppShell({
           <p className="app-transient-notice" role="status" aria-live="polite">
             {transientNotice}
           </p>
+        ) : null}
+        {activeSection === 'einheit' ? (
+          <div className="section-subnav">
+            <SegmentedControl
+              label="Einheit Unterbereiche"
+              onChange={onTabChange}
+              options={unitOptions}
+              value={activeUnitSubTab}
+            />
+          </div>
+        ) : null}
+        {activeSection === 'mehr' ? (
+          <div className="section-subnav">
+            <SegmentedControl
+              label="Mehr Unterbereiche"
+              onChange={onTabChange}
+              options={moreOptions}
+              value={activeMoreSubTab}
+            />
+          </div>
         ) : null}
 
         <div className="content-stack">

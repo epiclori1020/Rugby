@@ -27,11 +27,11 @@ Letztes Update: 2026-07-05
 
 | Bereich | Stand |
 |---|---|
-| Navigation | Sprint 2 hat die IA-Spezifikation fuer `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` im Product Brief ergaenzt. App-Code hat aktuell noch die alte breite 10-Tab-Struktur. |
+| Navigation | Sprint 6 hat die App-Shell im Code auf `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` umgestellt. `Einheit` fuehrt `Check-in`, `Training`, `Nachbereitung`; `Mehr` fuehrt `Bibliothek`, `Export & Backup`, `Einstellungen`, `Returner`. |
 | Designsystem | Sprint 5 hat das erste Core Component Kit in Code, Repo-Dokumentation und Figma-Sheet angelegt. Screen-weite Migrationen folgen spaeter. |
-| PWA-Metadaten | Sprint 3 hat Manifest, HTML-Titel und iOS-App-Titel auf OnField Coach vorbereitet. Sichtbare App-Shell-Texte sind noch nicht umgebaut. |
-| iPhone | Muss kuenftig vollen Funktionsumfang haben; Ziel ist Bottom Tab Bar plus Sheets/Stacks. |
-| iPad | Soll Sidebar + Content + optional Detailpane nutzen. |
+| PWA-Metadaten | Sprint 3 hat Manifest, HTML-Titel und iOS-App-Titel auf OnField Coach vorbereitet. Sprint 6 hat sichtbare App-Shell-Brandingtexte auf OnField Coach umgestellt. |
+| iPhone | Hat in Sprint 6 die neue 5er-Bottom-Tab-Bar mit Safe-Area-Abstand erhalten; Unterbereiche bleiben erreichbar. |
+| iPad | Hat in Sprint 6 die neue 5er-Sidebar plus Content-Struktur erhalten; Unterbereiche bleiben erreichbar. |
 | Check-in | Hat bereits Ansaetze fuer Finder/Rows/Sheet, muss aber roster-first und sekundaer strukturierter werden. |
 | Training | Hat Live-Session- und Exposure-Logik, muss aber staerker live-block-first werden. |
 | Nachbereitung | `MissingValuesPanel` ist ein guter Anfang fuer Queue-first, aber noch nicht Hauptworkflow. |
@@ -91,17 +91,18 @@ Letztes Update: 2026-07-05
 - Sprint 3 ist abgeschlossen: OnField Brand Foundation, Marketing-/Hero-System, Research-Synthese, Figma Brand Board und PWA-Metadaten wurden umgesetzt. Sichtbare Live-Coaching-UI blieb bewusst unveraendert.
 - Sprint 4 ist abgeschlossen: `app/field-hub/src/design/tokens.css` ist die technische Token-Quelle fuer Field Graphite, `docs/field-hub/onfield_token_sheet.md` dokumentiert die Token-Map und das bestehende Figma Brand Board hat eine Sprint-4-Token-Sheet-Seite.
 - Sprint 5 ist abgeschlossen: Das Core Component Kit liegt unter `app/field-hub/src/components/ui/` und `app/field-hub/src/components/onfield/`, ist durch fokussierte Komponententests abgedeckt, im Component Inventory gemappt und im Figma Brand Board als `Sprint 5 Core Component Kit` gespiegelt.
+- Sprint 6 ist abgeschlossen: App Shell und Navigation nutzen im Code die neue 5er-Hauptnavigation; bestehende Screens bleiben ueber kompatibles `HubTab`-Mapping erreichbar.
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 6 angehen: App Shell und Navigation implementieren.
+1. Sprint 7 angehen: OnField Hero-, Welcome-, Install- und Branding-Surfaces.
 2. Danach Roadmap-Reihenfolge beibehalten und die Sprint-5-Komponenten schrittweise in Screen-Sprints nutzen.
 
 ## Offene Risiken
 
 | Risiko | Auswirkung | Naechster Schritt |
 |---|---|---|
-| Alte Navigation bleibt zu lange bestehen. | Neue Marke wirkt weiterhin wie altes Dashboard. | App-Shell-Sprint nach Brand-/Komponenten-Foundation umsetzen. |
+| Neue Navigation ist erst Shell-Level umgesetzt. | Einzelne Screens nutzen intern noch Legacy-Klassen und koennen in Dichte/Flow uneinheitlich wirken. | In den naechsten Screen-Sprints gezielt migrieren, ohne spaetere Features vorzuziehen. |
 | Core Components sind noch nicht screen-weit ausgerollt. | Das Kit existiert, aber viele Screens nutzen weiterhin Legacy-Klassen und Inline-Muster. | In den naechsten Screen-Sprints gezielt migrieren, ohne Sprint-6-IA vorzuziehen. |
 | iPhone wird wieder als Nebenansicht behandelt. | Externe Nutzung und App-Store-Perspektive werden geschwaecht. | iPhone-Paritaet in jedem Sprint pruefen. |
 | Rugby bleibt im Code zu stark in generischer Architektur. | Multi-Sport-Faehigkeit wird spaeter teuer. | Sport-Konfiguration schrittweise extrahieren. |

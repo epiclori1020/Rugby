@@ -1,6 +1,6 @@
 import { ClipboardCheck, FileText, Link2, Plus, RefreshCw, Settings, ShieldAlert, UserCheck, X } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import type { HubTab } from '../App'
+import type { HubTab } from '../navigation'
 import type { SessionDefinition } from '../content/types'
 import type {
   CheckInEntryPatch,

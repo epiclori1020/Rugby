@@ -10,7 +10,7 @@ import {
   UserCheck,
 } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import type { HubTab } from '../App'
+import type { HubTab } from '../navigation'
 import { libraryItems } from '../content/library'
 import { exerciseMappings, variantCards } from '../content/trainingReference'
 import type { SessionBlock, SessionBlockExercise, SessionDefinition } from '../content/types'

@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { ArrowRight, CalendarDays, ClipboardCheck, Dumbbell, FileText, ShieldAlert, Users } from 'lucide-react'
-import type { HubTab } from '../App'
+import type { HubTab } from '../navigation'
 import type { PdfRef, SessionDefinition, SessionType } from '../content/types'
 import type { CoachInsight, CoachInsightSource } from '../domain/coachInsights'
 import type { Player } from '../domain/players'
