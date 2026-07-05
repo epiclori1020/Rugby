@@ -1242,6 +1242,8 @@ In diesem Sprint geht es um Container und Kontext, nicht um finalen Check-in/Tra
 
 ## Sprint 9 - Check-in Roster-first Redesign
 
+Status: Abgeschlossen am 2026-07-05.
+
 ### Was genau machen wir?
 
 Wir bauen Check-in als schnelle Roster-Arbeitsflaeche.

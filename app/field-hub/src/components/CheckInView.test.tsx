@@ -291,10 +291,10 @@ async function changeInput(element: HTMLInputElement | HTMLTextAreaElement, valu
 }
 
 async function openPlayerSheet(container: HTMLElement) {
-  const playerCard = container.querySelector<HTMLButtonElement>('.checkin-player-card')
+  const playerCard = container.querySelector<HTMLButtonElement>('.checkin-roster-row-main')
 
   if (!playerCard) {
-    throw new Error('Player card not found')
+    throw new Error('Player roster row not found')
   }
 
   await act(async () => {
@@ -761,12 +761,20 @@ describe('CheckInView active player metrics', () => {
     }
   })
 
-  it('renders a compact player finder instead of full open forms by default', () => {
-    const secondPlayer: Player = { ...activePlayer, id: 'player-second', name: 'Anton' }
+  it('renders a roster-first check-in list instead of a player card wall', () => {
+    const secondPlayer: Player = { ...activePlayer, id: 'player-second', name: 'Anton', position: 'Hooker' }
+    const yellowEntry = {
+      ...autoGreenEntry,
+      id: 'entry-player-second',
+      playerId: secondPlayer.id,
+      painScore: 3,
+      trafficLight: 'yellow' as const,
+      trafficLightSuggestion: 'yellow' as const,
+    }
     const checkInActions = {
       activePlayers: [activePlayer, secondPlayer],
-      sessionEntries: [autoGreenEntry],
-      entries: [autoGreenEntry],
+      sessionEntries: [autoGreenEntry, yellowEntry],
+      entries: [autoGreenEntry, yellowEntry],
       errorMessage: null,
       expectedPlayerIds: [],
       warnings: [],
@@ -777,7 +785,8 @@ describe('CheckInView active player metrics', () => {
       runSync: async () => syncOverview,
       saveEntry: async () => ({ ok: true as const, entry: autoGreenEntry }),
       saveSessionPatch: async () => undefined,
-      getEntryForPlayer: (player: Player) => ({ ...autoGreenEntry, id: `entry-${player.id}`, playerId: player.id }),
+      getEntryForPlayer: (player: Player) =>
+        player.id === secondPlayer.id ? yellowEntry : { ...autoGreenEntry, id: `entry-${player.id}`, playerId: player.id },
       sessionLog: null,
       ...publicCheckInActions,
       clearError: () => undefined,
@@ -811,10 +820,55 @@ describe('CheckInView active player metrics', () => {
     )
 
     expect(markup).toContain('Name suchen')
+    expect(markup).toContain('Check-in Roster')
     expect(markup).toContain('Max')
+    expect(markup).toContain('Back Row')
     expect(markup).toContain('Anton')
+    expect(markup).toContain('Hooker')
+    expect(markup).toContain('Keine Warnsignale dokumentiert')
+    expect(markup).toContain('Belastung anpassen')
+    expect(markup).toContain('data-testid="checkin-roster-present-player-active"')
+    expect(markup).toContain('data-testid="checkin-roster-absent-player-active"')
+    expect(markup).not.toContain('checkin-player-grid')
+    expect(markup).not.toContain('checkin-player-card')
     expect(markup).not.toContain('aria-label="Readiness Max"')
     expect(markup).not.toContain('aria-label="Schmerz Max"')
+
+    expect(markup.indexOf('aria-label="Check-in Roster"')).toBeLessThan(
+      markup.indexOf('aria-label="Sekundäre Check-in Werkzeuge"'),
+    )
+  })
+
+  it('saves quick attendance from a roster row without opening the detail sheet', async () => {
+    const openEntry = {
+      ...autoGreenEntry,
+      present: false,
+      readiness: null,
+      painScore: null,
+      returnerFlag: 'offen' as const,
+      trafficLight: null,
+      trafficLightSuggestion: null,
+    }
+    const saveEntry = vi.fn(async (_player: Player, patch: Partial<PlayerSessionEntry>) => ({
+      ok: true as const,
+      entry: { ...openEntry, ...patch },
+    }))
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({
+        entries: [openEntry],
+        getEntryForPlayer: () => openEntry,
+        saveEntry,
+      }),
+    })
+    root = rendered.root
+
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('[data-testid="checkin-roster-present-player-active"]')?.click()
+      await Promise.resolve()
+    })
+
+    expect(saveEntry).toHaveBeenCalledWith(activePlayer, expect.objectContaining({ present: true, previousWarning: false }), undefined)
+    expect(rendered.container.querySelector('[role="dialog"]')).toBeNull()
   })
 
   it('opens a quick player editor from the selected player sheet settings icon', async () => {

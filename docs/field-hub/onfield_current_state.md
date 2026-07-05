@@ -32,7 +32,7 @@ Letztes Update: 2026-07-05
 | PWA-Metadaten | Sprint 7 hat Manifest-/Install-Metadaten, Brand-Surfaces und das eigene OnField Coach SVG/PNG-Icon-Set fuer PWA/iOS aktualisiert. |
 | iPhone | Hat in Sprint 6 die neue 5er-Bottom-Tab-Bar mit Safe-Area-Abstand erhalten; Unterbereiche bleiben erreichbar. |
 | iPad | Hat in Sprint 6 die neue 5er-Sidebar plus Content-Struktur erhalten; Unterbereiche bleiben erreichbar. |
-| Check-in | Hat bereits Ansaetze fuer Finder/Rows/Sheet, muss aber roster-first und sekundaer strukturierter werden. |
+| Check-in | Sprint 9 ist umgesetzt: Check-in ist roster-first mit Listenzeilen, Ampel plus Textgrund, direkten Da/Nicht-da-Schnellaktionen und Detail-Sheet pro Spieler. Public/Kiosk, Reset, Legende, Mitnahmen und Notizen sind sekundaer erreichbar. |
 | Training | Hat Live-Session- und Exposure-Logik, muss aber staerker live-block-first werden. |
 | Nachbereitung | `MissingValuesPanel` ist ein guter Anfang fuer Queue-first, aber noch nicht Hauptworkflow. |
 | Sync/Offline | Pending/Sync-Logik existiert, muss global ruhiger und einheitlicher kommuniziert werden. |
@@ -95,17 +95,18 @@ Letztes Update: 2026-07-05
 - Sprint 6 ist abgeschlossen: App Shell und Navigation nutzen im Code die neue 5er-Hauptnavigation; bestehende Screens bleiben ueber kompatibles `HubTab`-Mapping erreichbar.
 - Sprint 7 ist abgeschlossen: Auth, Today-Empty/Welcome, Settings-Install, Public Check-in und Kiosk-Welcome nutzen OnField Brand-Surfaces; PWA/iOS-Icons sind als eigenes OnField Coach SVG/PNG-Set aktualisiert.
 - Sprint 8 ist abgeschlossen: `Einheit` besitzt jetzt den gemeinsamen Session-Workspace fuer Check-in, Training und Nachbereitung. Die Child-Screens sind nur eingebettet und noch nicht final roster-/live-/queue-first umgebaut.
+- Sprint 9 ist abgeschlossen: Check-in wurde roster-first umgebaut; die alte Kartenwand ist durch scannbare Roster-Zeilen mit Statusgrund und 1-2 Quick Actions ersetzt.
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 9 angehen: Check-in Roster-first Redesign.
+1. Sprint 10 angehen: Training Live Mode Redesign.
 2. Danach Roadmap-Reihenfolge beibehalten und die Sprint-5-Komponenten schrittweise in Screen-Sprints nutzen.
 
 ## Offene Risiken
 
 | Risiko | Auswirkung | Naechster Schritt |
 |---|---|---|
-| Einheit ist jetzt Container, aber Child-Screens sind noch Legacy-Flow. | Check-in, Training und Nachbereitung sind erreichbar, wirken intern aber noch nicht roster-/live-/queue-first. | In Sprint 9 ff. die Child-Screens gezielt migrieren, ohne spaetere Features vorzuziehen. |
+| Einheit ist jetzt Container, aber Training und Nachbereitung sind noch Legacy-Flow. | Check-in ist migriert, Training und Nachbereitung wirken intern aber noch nicht live-/queue-first. | In Sprint 10 ff. die naechsten Child-Screens gezielt migrieren, ohne spaetere Features vorzuziehen. |
 | Core Components sind noch nicht screen-weit ausgerollt. | Das Kit existiert, aber viele Screens nutzen weiterhin Legacy-Klassen und Inline-Muster. | In den naechsten Screen-Sprints gezielt migrieren, ohne Sprint-6-IA vorzuziehen. |
 | iPhone wird wieder als Nebenansicht behandelt. | Externe Nutzung und App-Store-Perspektive werden geschwaecht. | iPhone-Paritaet in jedem Sprint pruefen. |
 | Rugby bleibt im Code zu stark in generischer Architektur. | Multi-Sport-Faehigkeit wird spaeter teuer. | Sport-Konfiguration schrittweise extrahieren. |

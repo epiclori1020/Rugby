@@ -20,6 +20,7 @@ Dieses Dokument speichert wiederkehrende Fehler, Fallen und konkrete Vermeidungs
 | active | Runtime-Redaction ist kein Datenschutzmodell. | E-Mails, Telefonnummern, Geburtsdaten, Secrets und Clearance-Wording werden redigiert/markiert, aber Agenten duerfen keine sensiblen Spieler- oder Gesundheitsdaten bewusst in Memory-Kontext einspeisen. |
 | active | Lokale ignored Claude-Konfiguration kann existieren. | Eine vorhandene `.claude/settings.local.json` nicht als OnField-Runtime werten und nicht bearbeiten oder committen. Tracked Codex-Hooks und `.onfield-memory`-Scripts/Config aus Sprint 0C/0D sind erlaubt; generierte Runtime-Outputs bleiben ignored. |
 | active | PDFs und kopierte Researches koennen Whitespace-Warnungen erzeugen. | PDFs nicht mechanisch formatieren, weil PDF-Strukturen beschaedigt werden koennen. Research-Markdown nur gezielt bereinigen, wenn es keine Quellenstruktur zerstoert. |
+| active | Signed-in UI-QA braucht expliziten Testzustand. | Ohne sichere Test-Auth oder Seed-State zeigt die echte App nur Locked-/Welcome-Zustaende. Fuer Screen-QA mit Daten einen lokalen Komponenten-Harness oder eine bewusst konfigurierte Test-Session nutzen und den Workaround im Abschlussbericht offen nennen. |
 
 ## Wann Neue Gotchas Hinzukommen
 

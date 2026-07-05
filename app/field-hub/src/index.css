@@ -1436,6 +1436,199 @@ button {
   gap: 6px;
 }
 
+.checkin-roster-panel {
+  display: grid;
+  gap: var(--of-space-lg);
+}
+
+.checkin-roster-head {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(280px, 0.9fr);
+  gap: var(--of-space-lg);
+  align-items: start;
+}
+
+.checkin-roster-counts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: var(--of-space-sm);
+}
+
+.checkin-roster-counts .metric {
+  min-height: 74px;
+  padding: var(--of-space-sm);
+}
+
+.checkin-roster-counts .metric strong {
+  font-size: 1.25rem;
+}
+
+.checkin-roster-groups,
+.checkin-roster-group,
+.checkin-roster-list {
+  display: grid;
+  gap: var(--of-space-sm);
+}
+
+.checkin-roster-group h4 {
+  color: var(--muted);
+  font-size: 0.88rem;
+  letter-spacing: 0;
+  margin: 0;
+}
+
+.checkin-roster-row {
+  border: 1px solid var(--line);
+  border-left: 6px solid var(--line);
+  border-radius: var(--of-radius-sm);
+  background: var(--of-color-surface-default);
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(176px, max-content);
+  gap: var(--of-space-sm);
+  padding: var(--of-space-sm);
+}
+
+.checkin-roster-row.traffic-green {
+  border-left-color: var(--ok);
+}
+
+.checkin-roster-row.traffic-yellow {
+  border-left-color: var(--warning);
+}
+
+.checkin-roster-row.traffic-red {
+  border-left-color: var(--of-color-status-danger);
+}
+
+.checkin-roster-row-main {
+  min-height: 56px;
+  border: 0;
+  background: transparent;
+  color: var(--ink);
+  cursor: pointer;
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr) minmax(190px, 0.72fr);
+  gap: var(--of-space-sm);
+  align-items: center;
+  padding: 0;
+  text-align: left;
+}
+
+.checkin-roster-copy,
+.checkin-roster-status {
+  min-width: 0;
+  display: grid;
+  gap: 3px;
+}
+
+.checkin-roster-copy small,
+.roster-traffic-reason {
+  color: var(--muted);
+}
+
+.checkin-roster-tags {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+}
+
+.roster-traffic-chip {
+  width: max-content;
+  min-height: 28px;
+  border: 1px solid var(--line);
+  border-radius: var(--of-radius-pill);
+  background: var(--of-color-surface-muted);
+  color: var(--ink);
+  display: inline-flex;
+  align-items: center;
+  padding: 3px 10px;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.roster-traffic-chip.traffic-green {
+  border-color: var(--ok);
+  color: var(--ok);
+}
+
+.roster-traffic-chip.traffic-yellow {
+  border-color: var(--warning);
+  background: var(--warning-bg);
+  color: var(--of-color-status-warning-text);
+}
+
+.roster-traffic-chip.traffic-red {
+  border-color: var(--of-color-status-danger);
+  color: var(--of-color-status-danger);
+}
+
+.checkin-roster-actions {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(78px, 1fr));
+  gap: 6px;
+  align-content: center;
+}
+
+.checkin-row-action {
+  min-height: 48px;
+  border: 1px solid var(--line);
+  border-radius: var(--of-radius-sm);
+  background: var(--of-color-surface-default);
+  color: var(--brand);
+  cursor: pointer;
+  font: inherit;
+  font-weight: 850;
+  padding: 8px 10px;
+}
+
+.checkin-row-action.active,
+.checkin-row-action:hover {
+  border-color: var(--brand);
+  background: var(--brand);
+  color: var(--of-color-text-inverse);
+}
+
+.checkin-row-action:disabled {
+  cursor: wait;
+  opacity: 0.72;
+}
+
+.checkin-secondary-tools {
+  display: grid;
+  gap: var(--of-space-sm);
+}
+
+.checkin-secondary-panel {
+  padding: 0;
+}
+
+.checkin-secondary-panel > summary {
+  min-height: 56px;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: var(--of-space-sm);
+  padding: var(--of-space-md);
+}
+
+.checkin-secondary-panel > summary span {
+  min-width: 0;
+}
+
+.checkin-secondary-panel > summary small {
+  color: var(--muted);
+  display: block;
+  margin-top: 2px;
+}
+
+.checkin-secondary-body {
+  border-top: 1px solid var(--line);
+  display: grid;
+  gap: var(--of-space-md);
+  padding: var(--of-space-md);
+}
+
 .checkin-sheet-backdrop {
   position: fixed;
   inset: 0;
@@ -3179,10 +3372,21 @@ code {
   .pdf-link-grid,
   .form-grid,
   .checkin-metrics,
+  .checkin-roster-head,
+  .checkin-roster-row,
+  .checkin-roster-row-main,
   .checkin-reset-panel,
   .reset-confirm-grid,
   .export-actions {
     grid-template-columns: 1fr;
+  }
+
+  .checkin-roster-counts {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .checkin-roster-actions {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
   .live-step-heading,

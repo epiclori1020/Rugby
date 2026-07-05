@@ -208,6 +208,47 @@ function statusTags(entry: PlayerSessionEntry, warning: PlayerWarning | undefine
   return tags
 }
 
+type RosterTrafficTone = TrafficLight | 'open'
+
+function rosterTrafficTone(entry: PlayerSessionEntry): RosterTrafficTone {
+  return entry.trafficLight ?? entry.trafficLightSuggestion ?? 'open'
+}
+
+function rosterTrafficReason(
+  entry: PlayerSessionEntry,
+  warning: PlayerWarning | undefined,
+  returnerCap: ReturnerCapSummary | undefined,
+) {
+  const trafficLight = rosterTrafficTone(entry)
+  const signals = getTrafficLightSignals(entry)
+
+  if (trafficLight === 'red') {
+    return 'Heute prüfen'
+  }
+
+  if (trafficLight === 'yellow') {
+    return 'Belastung anpassen'
+  }
+
+  if (signals.needsReturnerClarification) {
+    return 'Returner klären'
+  }
+
+  if (returnerCap) {
+    return 'Returner-Cap prüfen'
+  }
+
+  if (warning) {
+    return 'Vorwarnung prüfen'
+  }
+
+  if (trafficLight === 'green') {
+    return 'Keine Warnsignale dokumentiert'
+  }
+
+  return 'Noch nicht erfasst'
+}
+
 function GuidanceCard({ item }: { item: CheckInGuidanceItem }) {
   return (
     <article className={`guidance-card guidance-${item.level}`}>
@@ -314,7 +355,7 @@ function GuidanceList({
 
 function CheckInGuidanceLegend() {
   return (
-    <details className="panel guidance-legend">
+    <details className="guidance-legend">
       <summary>Legende</summary>
       <div className="guidance-legend-grid">
         <p><strong>Ampel:</strong> Grün, Gelb und Rot sind Coach-Hinweise zur heutigen Belastung.</p>
@@ -886,35 +927,74 @@ function CheckInPlayerRow({
   )
 }
 
-function CompactCheckInPlayerRow({
+function CheckInRosterRow({
   entry,
   isExpected,
+  isQuickSaving,
+  onQuickAttendance,
   onSelect,
   player,
+  returnerCap,
   warning,
 }: {
   entry: PlayerSessionEntry
   isExpected: boolean
+  isQuickSaving: boolean
+  onQuickAttendance: (present: boolean) => void
   onSelect: () => void
   player: Player
+  returnerCap: ReturnerCapSummary | undefined
   warning: PlayerWarning | undefined
 }) {
   const tags = statusTags(entry, warning)
-  const trafficLight = entry.trafficLight ?? entry.trafficLightSuggestion ?? 'open'
+  const trafficLight = rosterTrafficTone(entry)
+  const attendance = deriveAttendanceStatus(entry)
+  const trafficReason = rosterTrafficReason(entry, warning, returnerCap)
 
   return (
-    <button className={`checkin-player-card traffic-${trafficLight}`} type="button" onClick={onSelect}>
-      <span className="player-avatar placeholder-avatar">{playerInitial(player.name)}</span>
-      <span className="checkin-player-card-main">
-        <strong>{player.name}</strong>
-        <small>{player.position} · {player.cluster}{isExpected ? ' · zuletzt dabei' : ''}</small>
-      </span>
-      <span className="checkin-player-card-tags">
-        {tags.map((tag) => (
-          <span className="tag compact" key={tag}>{tag}</span>
-        ))}
-      </span>
-    </button>
+    <article className={`checkin-roster-row traffic-${trafficLight}`}>
+      <button className="checkin-roster-row-main" type="button" onClick={onSelect}>
+        <span className="player-avatar placeholder-avatar">{playerInitial(player.name)}</span>
+        <span className="checkin-roster-copy">
+          <strong>{player.name}</strong>
+          <small>{player.position} · {player.cluster}{isExpected ? ' · zuletzt dabei' : ''}</small>
+        </span>
+        <span className="checkin-roster-status" aria-label={`${player.name} Status`}>
+          <span className={`roster-traffic-chip traffic-${trafficLight}`}>
+            {formatTrafficLight(trafficLight === 'open' ? null : trafficLight)}
+          </span>
+          <span className="roster-traffic-reason">{trafficReason}</span>
+          <span className="checkin-roster-tags">
+            {tags.map((tag) => (
+              <span className="tag compact" key={tag}>{tag}</span>
+            ))}
+            {returnerCap ? <span className="tag compact">Cap</span> : null}
+          </span>
+        </span>
+      </button>
+      <div className="checkin-roster-actions" aria-label={`${player.name} Schnellaktionen`}>
+        <button
+          className={attendance === 'present' ? 'checkin-row-action active' : 'checkin-row-action'}
+          data-testid={`checkin-roster-present-${player.id}`}
+          type="button"
+          aria-pressed={attendance === 'present'}
+          onClick={() => onQuickAttendance(true)}
+          disabled={isQuickSaving}
+        >
+          Da
+        </button>
+        <button
+          className={attendance === 'absent' ? 'checkin-row-action active' : 'checkin-row-action'}
+          data-testid={`checkin-roster-absent-${player.id}`}
+          type="button"
+          aria-pressed={attendance === 'absent'}
+          onClick={() => onQuickAttendance(false)}
+          disabled={isQuickSaving}
+        >
+          Nicht da
+        </button>
+      </div>
+    </article>
   )
 }
 
@@ -964,6 +1044,8 @@ export function CheckInView({
   const [isPlayerEditorSubmitting, setIsPlayerEditorSubmitting] = useState(false)
   const [resetFeedback, setResetFeedback] = useState<string | null>(null)
   const [isResetConfirmOpen, setIsResetConfirmOpen] = useState(false)
+  const [quickSavingKey, setQuickSavingKey] = useState<string | null>(null)
+  const [quickSaveFeedback, setQuickSaveFeedback] = useState<string | null>(null)
   const selectedSheetRef = useRef<HTMLDivElement | null>(null)
   const resetConfirmDialogRef = useRef<HTMLDivElement | null>(null)
   const resetButtonRef = useRef<HTMLButtonElement | null>(null)
@@ -1277,6 +1359,32 @@ export function CheckInView({
     }
   }
 
+  async function handleQuickAttendance(player: Player, present: boolean, warning: PlayerWarning | undefined) {
+    const actionKey = `${player.id}:${present ? 'present' : 'absent'}`
+    setQuickSavingKey(actionKey)
+    setQuickSaveFeedback(null)
+    triggerHapticFeedback('selection')
+
+    try {
+      const result = await saveEntry(player, { present, previousWarning: Boolean(warning) }, undefined)
+
+      if (result.ok) {
+        setQuickSaveFeedback(`${player.name}: ${present ? 'Da' : 'Nicht da'} gespeichert.`)
+        triggerHapticFeedback('success')
+      } else {
+        setQuickSaveFeedback(result.error)
+        triggerHapticFeedback('warning')
+      }
+    } catch (caughtError) {
+      setQuickSaveFeedback(
+        caughtError instanceof Error ? caughtError.message : 'Check-in konnte nicht gespeichert werden.',
+      )
+      triggerHapticFeedback('warning')
+    } finally {
+      setQuickSavingKey(null)
+    }
+  }
+
   if (authState.status !== 'signed-in') {
     return (
       <div className="content-stack">
@@ -1325,25 +1433,6 @@ export function CheckInView({
         </div>
       </div>
 
-      <div className="metric-grid checkin-metrics">
-        <div className="metric">
-          <span>Aktive Spieler</span>
-          <strong>{activePlayers.length}</strong>
-        </div>
-        <div className="metric">
-          <span>Da / offen</span>
-          <strong>{checkedInCount} / {openCount}</strong>
-        </div>
-        <div className="metric">
-          <span>Gelb / Rot</span>
-          <strong>{yellowCount} / {redCount}</strong>
-        </div>
-        <div className="metric">
-          <span>Returner / Klärung</span>
-          <strong>{returnerCount} / {returnerClarificationCount}</strong>
-        </div>
-      </div>
-
       {errorMessage ? (
         <div className="panel error-panel" role="alert">
           <strong>Check-in nicht vollstaendig synchronisiert</strong>
@@ -1363,140 +1452,35 @@ export function CheckInView({
         </div>
       ) : null}
 
-      <section className="panel checkin-reset-panel" aria-label="Check-in zurücksetzen">
-        <div>
-          <h3>Reset</h3>
-          <p className="sync-help">
-            Setzt alle Check-ins dieser Einheit zurück, inklusive Coach, WhatsApp/QR und Kiosk. Nachbereitungsdaten
-            bleiben erhalten.
-          </p>
-        </div>
-        <button
-          ref={resetButtonRef}
-          className="secondary-action"
-          type="button"
-          onClick={() => setIsResetConfirmOpen(true)}
-          disabled={!canResetSessionCheckIns}
-        >
-          Alle Check-ins zurücksetzen
-        </button>
-        {resetFeedback ? <p className="action-feedback visible">{resetFeedback}</p> : null}
-      </section>
-
-      <section className="panel public-checkin-coach-panel" aria-label="Check-in-Link teilen">
-        <div className="status-line">
-          <Link2 className="nav-icon" aria-hidden />
-          <div>
-            <h3>Check-in-Link teilen</h3>
-            <p>
-              Erstellt einen privaten Link fuer diese Einheit. Spieler sehen Namensauswahl und eigenes Formular.
-            </p>
+      <section className="panel checkin-roster-panel" aria-label="Check-in Roster">
+        <div className="checkin-roster-head">
+          <div className="library-heading compact-heading">
+            <p className="eyebrow">Roster zuerst</p>
+            <h3>Check-in Roster</h3>
+            <p>Spieler scannen, Status prüfen und bei Bedarf die Detailansicht öffnen.</p>
+          </div>
+          <div className="checkin-roster-counts" aria-label="Roster-Zusammenfassung">
+            <div className="metric">
+              <span>Aktive Spieler</span>
+              <strong>{activePlayers.length}</strong>
+            </div>
+            <div className="metric">
+              <span>Da / offen</span>
+              <strong>{checkedInCount} / {openCount}</strong>
+            </div>
+            <div className="metric">
+              <span>Gelb / Rot</span>
+              <strong>{yellowCount} / {redCount}</strong>
+            </div>
+            <div className="metric">
+              <span>Returner / Klärung</span>
+              <strong>{returnerCount} / {returnerClarificationCount}</strong>
+            </div>
           </div>
         </div>
-        <div className="button-row">
-          <button
-            className="primary-action"
-            data-testid="public-checkin-create-link"
-            type="button"
-            onClick={() => void handleCreatePublicLink()}
-            disabled={isLoading}
-          >
-            <Plus className="nav-icon" aria-hidden />
-            <span>{activePublicLink ? 'Neuen Link erstellen' : 'Link erstellen'}</span>
-          </button>
-          {activePublicLink ? (
-            <button
-              className="secondary-action"
-              data-testid="public-checkin-close-link"
-              type="button"
-              onClick={() => void handleClosePublicLink()}
-            >
-              <X className="nav-icon" aria-hidden />
-              <span>Link schliessen</span>
-            </button>
-          ) : null}
-        </div>
-        {selectedSessionSharePayload ? (
-          <PublicCheckInSharePanel
-            canNativeShare={canNativeShare}
-            copyStatus={copyStatus}
-            nativeShareStatus={nativeShareStatus}
-            onClose={clearTransientShareState}
-            onCopy={() => void handleCopyShareLink()}
-            onNativeShare={() => void handleNativeShare()}
-            payload={selectedSessionSharePayload}
-            qrCodeDataUrl={selectedSessionQrCodeDataUrl}
-            qrCodeStatus={selectedSessionQrCodeStatus}
-          />
-        ) : null}
-        <p className="sync-help">
-          {activePublicLink
-            ? `Link aktiv bis ${new Date(activePublicLink.expiresAt).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })}. Aus Sicherheitsgründen kann ein bestehender Link nachträglich nicht erneut angezeigt werden.`
-            : 'Noch kein aktiver Link fuer diese Einheit lokal sichtbar.'}
-          {checkInActions.publicCheckInSubmissions.length > 0
-            ? ` Eingaenge: ${publicSubmissionCounts.pending} offen, ${publicSubmissionCounts.imported} uebernommen, ${publicSubmissionCounts.conflict} Konflikte, ${publicSubmissionCounts.reset} zurueckgesetzt.`
-            : ''}
-          {checkInActions.publicCheckInNotice ? ` ${checkInActions.publicCheckInNotice}` : ''}
-          {selectedSessionSharePayload ? ' Link erstellt. Teile ihn oben oder lasse den QR-Code scannen.' : ''}
-        </p>
-      </section>
 
-      <CheckInGuidanceLegend />
-
-      {activeWarnings.length > 0 ? (
-        <aside className="panel warning-panel" aria-label="Mitnehmen aus letzter Einheit">
-          <div className="status-line">
-            <ShieldAlert className="nav-icon" aria-hidden />
-            <h3>Mitnehmen aus letzter Einheit</h3>
-          </div>
-          <div className="warning-list">
-            {activeWarnings.map((warning) => {
-              const player = playerActions.players.find((item) => item.id === warning.playerId)
-              const playerEntry = player ? getEntryForPlayer(player) : null
-              const carryoverGuidance = playerEntry
-                ? buildCheckInGuidance({ entry: playerEntry, warning }).filter((item) => item.source === 'carryover')
-                : []
-              return (
-                <article className="carryover-player-guidance" key={`${warning.playerId}-${warning.sessionDate}`}>
-                  <strong>{player?.name ?? 'Spieler'}</strong>
-                  <div className="guidance-list compact-guidance-list">
-                    {carryoverGuidance.map((item) => (
-                      <GuidanceCard item={item} key={item.id} />
-                    ))}
-                  </div>
-                  {warning.observation ? <p className="sync-help">Notiz: {warning.observation}</p> : null}
-                </article>
-              )
-            })}
-          </div>
-        </aside>
-      ) : null}
-
-      {activeObservations.length > 0 ? (
-        <aside className="panel" aria-label="Notizen aus letzter Einheit">
-          <div className="status-line">
-            <FileText className="nav-icon" aria-hidden />
-            <h3>Notizen aus letzter Einheit</h3>
-          </div>
-          <div className="warning-list">
-            {activeObservations.map((observation) => {
-              const player = playerActions.players.find((item) => item.id === observation.playerId)
-              return (
-                <div className="warning-note" key={`${observation.playerId}-${observation.sessionDate}`}>
-                  <FileText className="nav-icon" aria-hidden />
-                  <span>
-                    <strong>{player?.name ?? 'Spieler'}</strong>: {observation.observation}
-                  </span>
-                </div>
-              )
-            })}
-          </div>
-        </aside>
-      ) : null}
-
-      {activePlayers.length > 0 ? (
-        <section className="panel checkin-finder" aria-label="Spieler finden">
-          <div className="checkin-finder-head">
+        {activePlayers.length > 0 ? (
+          <>
             <label className="inline-field wide">
               <span>Name suchen</span>
               <input
@@ -1525,17 +1509,22 @@ export function CheckInView({
                 </button>
               ))}
             </div>
-          </div>
-          <div className="checkin-player-groups">
-            {groupedPlayerRows.map(([initial, rows]) => (
-              <div className="checkin-player-group" key={initial}>
+          </>
+        ) : null}
+
+        <div className="checkin-roster-groups">
+          {activePlayers.length > 0 ? (
+            groupedPlayerRows.map(([initial, rows]) => (
+              <div className="checkin-roster-group" key={initial}>
                 <h4>{initial}</h4>
-                <div className="checkin-player-grid">
+                <div className="checkin-roster-list">
                   {rows.map(({ entry, player, warning }) => (
-                    <CompactCheckInPlayerRow
+                    <CheckInRosterRow
                       entry={entry}
                       isExpected={expectedPlayerSet.has(player.id)}
+                      isQuickSaving={quickSavingKey === `${player.id}:present` || quickSavingKey === `${player.id}:absent`}
                       key={player.id}
+                      onQuickAttendance={(present) => void handleQuickAttendance(player, present, warning)}
                       onSelect={() => {
                         setSelectedPlayerId(player.id)
                         setIsPlayerEditorOpen(false)
@@ -1544,16 +1533,182 @@ export function CheckInView({
                         setPlayerEditorNotice(null)
                       }}
                       player={player}
+                      returnerCap={returnerCapByPlayerId.get(player.id)}
                       warning={warning}
                     />
                   ))}
                 </div>
               </div>
-            ))}
+            ))
+          ) : (
+            <p className="sync-help">Noch keine aktiven Spieler im Roster.</p>
+          )}
+        </div>
+        {filteredPlayerRows.length === 0 && activePlayers.length > 0 ? (
+          <p className="sync-help">Keine Spieler für diesen Filter.</p>
+        ) : null}
+        {quickSaveFeedback ? <p className="action-feedback visible" aria-live="polite">{quickSaveFeedback}</p> : null}
+      </section>
+
+      <section className="checkin-secondary-tools" aria-label="Sekundäre Check-in Werkzeuge">
+        <details className="panel checkin-secondary-panel public-checkin-coach-panel" open={Boolean(selectedSessionSharePayload)}>
+          <summary>
+            <span className="status-line">
+              <Link2 className="nav-icon" aria-hidden />
+              <span>
+                <strong>Public/Kiosk</strong>
+                <small>Link, QR und Kiosk bleiben separat.</small>
+              </span>
+            </span>
+          </summary>
+          <div className="checkin-secondary-body" aria-label="Check-in-Link teilen">
+            <div className="button-row">
+              <button
+                className="primary-action"
+                data-testid="public-checkin-create-link"
+                type="button"
+                onClick={() => void handleCreatePublicLink()}
+                disabled={isLoading}
+              >
+                <Plus className="nav-icon" aria-hidden />
+                <span>{activePublicLink ? 'Neuen Link erstellen' : 'Link erstellen'}</span>
+              </button>
+              {activePublicLink ? (
+                <button
+                  className="secondary-action"
+                  data-testid="public-checkin-close-link"
+                  type="button"
+                  onClick={() => void handleClosePublicLink()}
+                >
+                  <X className="nav-icon" aria-hidden />
+                  <span>Link schliessen</span>
+                </button>
+              ) : null}
+            </div>
+            {selectedSessionSharePayload ? (
+              <PublicCheckInSharePanel
+                canNativeShare={canNativeShare}
+                copyStatus={copyStatus}
+                nativeShareStatus={nativeShareStatus}
+                onClose={clearTransientShareState}
+                onCopy={() => void handleCopyShareLink()}
+                onNativeShare={() => void handleNativeShare()}
+                payload={selectedSessionSharePayload}
+                qrCodeDataUrl={selectedSessionQrCodeDataUrl}
+                qrCodeStatus={selectedSessionQrCodeStatus}
+              />
+            ) : null}
+            <p className="sync-help">
+              {activePublicLink
+                ? `Link aktiv bis ${new Date(activePublicLink.expiresAt).toLocaleTimeString('de-AT', { hour: '2-digit', minute: '2-digit' })}. Aus Sicherheitsgründen kann ein bestehender Link nachträglich nicht erneut angezeigt werden.`
+                : 'Noch kein aktiver Link fuer diese Einheit lokal sichtbar.'}
+              {checkInActions.publicCheckInSubmissions.length > 0
+                ? ` Eingaenge: ${publicSubmissionCounts.pending} offen, ${publicSubmissionCounts.imported} uebernommen, ${publicSubmissionCounts.conflict} Konflikte, ${publicSubmissionCounts.reset} zurueckgesetzt.`
+                : ''}
+              {checkInActions.publicCheckInNotice ? ` ${checkInActions.publicCheckInNotice}` : ''}
+              {selectedSessionSharePayload ? ' Link erstellt. Teile ihn oben oder lasse den QR-Code scannen.' : ''}
+            </p>
           </div>
-          {filteredPlayerRows.length === 0 ? <p className="sync-help">Keine Spieler für diesen Filter.</p> : null}
-        </section>
-      ) : null}
+        </details>
+
+        <details className="panel checkin-secondary-panel">
+          <summary>
+            <span>
+              <strong>Reset</strong>
+              <small>Zurücksetzen bleibt geschützt und sekundär.</small>
+            </span>
+          </summary>
+          <div className="checkin-secondary-body" aria-label="Check-in zurücksetzen">
+            <p className="sync-help">
+              Setzt alle Check-ins dieser Einheit zurück, inklusive Coach, WhatsApp/QR und Kiosk. Nachbereitungsdaten
+              bleiben erhalten.
+            </p>
+            <button
+              ref={resetButtonRef}
+              className="secondary-action"
+              type="button"
+              onClick={() => setIsResetConfirmOpen(true)}
+              disabled={!canResetSessionCheckIns}
+            >
+              Alle Check-ins zurücksetzen
+            </button>
+            {resetFeedback ? <p className="action-feedback visible">{resetFeedback}</p> : null}
+          </div>
+        </details>
+
+        <details className="panel checkin-secondary-panel">
+          <summary>
+            <span>
+              <strong>Legende & Hinweise</strong>
+              <small>Ampel- und Beratungstexte.</small>
+            </span>
+          </summary>
+          <div className="checkin-secondary-body">
+            <CheckInGuidanceLegend />
+          </div>
+        </details>
+
+        {activeWarnings.length > 0 ? (
+          <details className="panel checkin-secondary-panel warning-panel">
+            <summary>
+              <span className="status-line">
+                <ShieldAlert className="nav-icon" aria-hidden />
+                <span>
+                  <strong>Mitnehmen aus letzter Einheit</strong>
+                  <small>{activeWarnings.length} Spieler</small>
+                </span>
+              </span>
+            </summary>
+            <div className="checkin-secondary-body warning-list" aria-label="Mitnehmen aus letzter Einheit">
+              {activeWarnings.map((warning) => {
+                const player = playerActions.players.find((item) => item.id === warning.playerId)
+                const playerEntry = player ? getEntryForPlayer(player) : null
+                const carryoverGuidance = playerEntry
+                  ? buildCheckInGuidance({ entry: playerEntry, warning }).filter((item) => item.source === 'carryover')
+                  : []
+                return (
+                  <article className="carryover-player-guidance" key={`${warning.playerId}-${warning.sessionDate}`}>
+                    <strong>{player?.name ?? 'Spieler'}</strong>
+                    <div className="guidance-list compact-guidance-list">
+                      {carryoverGuidance.map((item) => (
+                        <GuidanceCard item={item} key={item.id} />
+                      ))}
+                    </div>
+                    {warning.observation ? <p className="sync-help">Notiz: {warning.observation}</p> : null}
+                  </article>
+                )
+              })}
+            </div>
+          </details>
+        ) : null}
+
+        {activeObservations.length > 0 ? (
+          <details className="panel checkin-secondary-panel">
+            <summary>
+              <span className="status-line">
+                <FileText className="nav-icon" aria-hidden />
+                <span>
+                  <strong>Notizen aus letzter Einheit</strong>
+                  <small>{activeObservations.length} Spieler</small>
+                </span>
+              </span>
+            </summary>
+            <div className="checkin-secondary-body warning-list" aria-label="Notizen aus letzter Einheit">
+              {activeObservations.map((observation) => {
+                const player = playerActions.players.find((item) => item.id === observation.playerId)
+                return (
+                  <div className="warning-note" key={`${observation.playerId}-${observation.sessionDate}`}>
+                    <FileText className="nav-icon" aria-hidden />
+                    <span>
+                      <strong>{player?.name ?? 'Spieler'}</strong>: {observation.observation}
+                    </span>
+                  </div>
+                )
+              })}
+            </div>
+          </details>
+        ) : null}
+      </section>
 
       {selectedPlayer ? (
         <section className="checkin-sheet-backdrop" aria-label={`Check-in ${selectedPlayer.name}`}>
