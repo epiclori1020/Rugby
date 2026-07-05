@@ -1486,6 +1486,8 @@ Keine echten sensiblen Spielerdaten committen. Keine Diagnosen. Consent bleibt S
 
 ## Sprint 13 - Analyse als separater, ruhiger Auswertungsraum
 
+Status: **abgeschlossen**
+
 ### Was genau machen wir?
 
 Wir bauen Analyse bewusst als zweiten Modus, getrennt vom Live-Flow.
