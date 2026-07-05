@@ -242,23 +242,27 @@ async function main() {
     await page.waitForSelector('input[placeholder="2-3 Buchstaben tippen"]', { timeout: 20_000 })
     await page.type('input[placeholder="2-3 Buchstaben tippen"]', playerName)
     await clickButtonByText(page, playerName)
+    await clickButtonByText(page, 'Weiter')
     await clickButtonByText(page, '4')
+    await clickButtonByText(page, 'Weiter')
     await clickButtonByText(page, 'Stress')
     await clickButtonByText(page, 'Muskelkater')
+    await clickButtonByText(page, 'Weiter')
     await clickButtonByText(page, '0')
+    await clickButtonByText(page, 'Weiter')
 
     const submitDisabledBeforeReaction = await page.evaluate(() => {
-      const submit = [...document.querySelectorAll('button')].find(
-        (button) => button.textContent?.trim() === 'Speichern und weitergeben',
-      )
-      return submit?.disabled ?? null
+      const next = [...document.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Weiter')
+      return next?.disabled ?? null
     })
-    if (submitDisabledBeforeReaction !== false) {
-      throw new Error('Submit war ohne explizite Session-Reaktion nicht aktiviert.')
+    if (submitDisabledBeforeReaction !== true) {
+      throw new Error('Weiter war ohne explizite Session-Reaktion aktiviert.')
     }
 
+    await clickButtonByText(page, 'Nein')
+    await clickButtonByText(page, 'Weiter')
     await clickButtonByText(page, 'Speichern und weitergeben')
-    await waitForText(page, 'Check-in gespeichert.')
+    await waitForText(page, 'Gespeichert')
 
     const entry = await queryEntryForPlayer(supabase, playerId)
     if (

@@ -1,5 +1,5 @@
-import { Send } from 'lucide-react'
-import { useMemo, useState, type FormEvent } from 'react'
+import { CheckCircle2, Send } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useState, type FormEvent } from 'react'
 import {
   joinCheckInTextList,
   splitCheckInTextList,
@@ -22,11 +22,20 @@ export type SelfCheckInSubmissionInput = {
   playerNote: string
 }
 
+type SelfCheckInMode = 'kiosk' | 'public'
+
+type SelfCheckInStep = 'player' | 'readiness' | 'life' | 'pain' | 'reaction' | 'review' | 'complete'
+
 type SelfCheckInFlowProps = {
+  autoResetAfterSubmitMs?: number | null
+  completionBody?: string
+  completionTitle?: string
   disabled?: boolean
   helperText?: string
+  mode?: SelfCheckInMode
   onSubmit: (input: SelfCheckInSubmissionInput) => Promise<void>
   players: SelfCheckInPlayerOption[]
+  resetActionLabel?: string
   submitLabel?: string
   submittingLabel?: string
 }
@@ -57,18 +66,50 @@ const painLocationOptions = [
   'Sonstiges',
 ]
 
+const orderedSteps: SelfCheckInStep[] = ['player', 'readiness', 'life', 'pain', 'reaction', 'review']
+
+const stepLabels: Record<SelfCheckInStep, string> = {
+  player: 'Name',
+  readiness: 'Readiness',
+  life: 'Alltag',
+  pain: 'Schmerz',
+  reaction: 'Veränderung',
+  review: 'Review',
+  complete: 'Abschluss',
+}
+
 function normalizeLifeFlag(value: string) {
   return value === 'Unauffällig' ? '' : value
 }
 
+function reactionLabel(value: SessionReaction | null) {
+  return sessionReactionOptions.find((option) => option.value === value)?.label ?? 'Noch offen'
+}
+
+function selectedLifeLabel(values: string[], note: string) {
+  const normalizedNote = note.trim()
+
+  if (values.length === 0 && !normalizedNote) {
+    return 'Unauffällig'
+  }
+
+  return joinCheckInTextList([...values, ...splitCheckInTextList(normalizedNote)])
+}
+
 export function SelfCheckInFlow({
+  autoResetAfterSubmitMs = null,
+  completionBody = 'Deine Angaben sind angekommen.',
+  completionTitle = 'Check-in gespeichert',
   disabled = false,
   helperText,
+  mode = 'public',
   onSubmit,
   players,
+  resetActionLabel = 'Weiteren Check-in erfassen',
   submitLabel = 'Check-in absenden',
   submittingLabel = 'Sendet...',
 }: SelfCheckInFlowProps) {
+  const [step, setStep] = useState<SelfCheckInStep>('player')
   const [selectedPlayerId, setSelectedPlayerId] = useState('')
   const [searchTerm, setSearchTerm] = useState('')
   const [readiness, setReadiness] = useState<number | null>(null)
@@ -79,6 +120,7 @@ export function SelfCheckInFlow({
   const [painLocationNote, setPainLocationNote] = useState('')
   const [sessionReaction, setSessionReaction] = useState<SessionReaction | null>(null)
   const [playerNote, setPlayerNote] = useState('')
+  const [completedPlayerName, setCompletedPlayerName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
   const filteredPlayers = useMemo(() => {
@@ -96,6 +138,8 @@ export function SelfCheckInFlow({
   const painLocationValues = splitCheckInTextList(painLocation)
   const submittedLifeFlag = joinCheckInTextList([...lifeFlagValues, ...splitCheckInTextList(lifeFlagNote)])
   const submittedPainLocation = joinCheckInTextList([...painLocationValues, ...splitCheckInTextList(painLocationNote)])
+  const currentStepIndex = Math.max(0, orderedSteps.indexOf(step))
+  const progressValue = step === 'complete' ? 100 : ((currentStepIndex + 1) / orderedSteps.length) * 100
   const canSubmit =
     !disabled &&
     !isSubmitting &&
@@ -105,7 +149,7 @@ export function SelfCheckInFlow({
     sessionReaction !== null &&
     (!needsPainLocation || submittedPainLocation.length > 0)
 
-  function resetForm() {
+  const resetEntryFields = useCallback(() => {
     setSelectedPlayerId('')
     setSearchTerm('')
     setReadiness(null)
@@ -116,6 +160,43 @@ export function SelfCheckInFlow({
     setPainLocationNote('')
     setSessionReaction(null)
     setPlayerNote('')
+  }, [])
+
+  const resetForm = useCallback(() => {
+    resetEntryFields()
+    setCompletedPlayerName('')
+    setMessage(null)
+    setStep('player')
+  }, [resetEntryFields])
+
+  useEffect(() => {
+    if (step !== 'complete' || !autoResetAfterSubmitMs || autoResetAfterSubmitMs <= 0) {
+      return undefined
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      resetForm()
+    }, autoResetAfterSubmitMs)
+
+    return () => window.clearTimeout(timeoutId)
+  }, [autoResetAfterSubmitMs, resetForm, step])
+
+  function goToNextStep() {
+    const nextStep = orderedSteps[currentStepIndex + 1]
+
+    if (nextStep) {
+      setMessage(null)
+      setStep(nextStep)
+    }
+  }
+
+  function goToPreviousStep() {
+    const previousStep = orderedSteps[currentStepIndex - 1]
+
+    if (previousStep) {
+      setMessage(null)
+      setStep(previousStep)
+    }
   }
 
   function handleSearchChange(value: string) {
@@ -171,8 +252,9 @@ export function SelfCheckInFlow({
         sessionReaction,
         playerNote,
       })
-      setMessage('Check-in gespeichert.')
-      resetForm()
+      setCompletedPlayerName(selectedPlayer.displayName)
+      resetEntryFields()
+      setStep('complete')
     } catch (caughtError) {
       setMessage(caughtError instanceof Error ? caughtError.message : 'Check-in konnte nicht gespeichert werden.')
     } finally {
@@ -180,201 +262,344 @@ export function SelfCheckInFlow({
     }
   }
 
+  const lifeStepIsValid = true
+  const painStepIsValid = painScore !== null && (!needsPainLocation || submittedPainLocation.length > 0)
+  const reactionStepIsValid = sessionReaction !== null
+
   return (
-    <form className="self-checkin-flow public-checkin-form" onSubmit={handleSubmit}>
-      {helperText ? <p className="privacy-note">{helperText}</p> : null}
+    <form
+      className={`self-checkin-flow public-checkin-form self-checkin-flow-${mode}`}
+      data-mode={mode}
+      onSubmit={handleSubmit}
+    >
+      {step !== 'complete' ? (
+        <div className="self-checkin-progress" aria-label={`Schritt ${currentStepIndex + 1} von ${orderedSteps.length}`}>
+          <div className="self-checkin-progress-copy">
+            <span>Schritt {currentStepIndex + 1} von {orderedSteps.length}</span>
+            <strong>{stepLabels[step]}</strong>
+          </div>
+          <div className="self-checkin-progress-track" aria-hidden>
+            <span style={{ width: `${progressValue}%` }} />
+          </div>
+        </div>
+      ) : null}
 
-      <label className="inline-field wide">
-        <span>Name suchen</span>
-        <input
-          value={searchTerm}
-          placeholder="2-3 Buchstaben tippen"
-          disabled={disabled || isSubmitting}
-          onChange={(event) => handleSearchChange(event.currentTarget.value)}
-        />
-      </label>
+      {helperText && step !== 'complete' ? <p className="privacy-note">{helperText}</p> : null}
 
-      {!selectedPlayer ? (
-        <div className="control-group" role="group" aria-labelledby="self-checkin-player-options">
-          <span id="self-checkin-player-options">Dein Name</span>
-          <div className="button-row">
-            {filteredPlayers.map((player) => (
+      {step === 'player' ? (
+        <section className="self-checkin-step" aria-labelledby="self-checkin-player-title">
+          <div className="self-checkin-step-header">
+            <h3 id="self-checkin-player-title">Dein Name</h3>
+            <p className="privacy-note">Suche dich in der Liste und bestätige danach den Check-in.</p>
+          </div>
+
+          <label className="inline-field wide">
+            <span>Name suchen</span>
+            <input
+              value={searchTerm}
+              placeholder="2-3 Buchstaben tippen"
+              disabled={disabled || isSubmitting}
+              autoComplete="off"
+              onChange={(event) => handleSearchChange(event.currentTarget.value)}
+            />
+          </label>
+
+          {!selectedPlayer ? (
+            <div className="control-group" role="group" aria-labelledby="self-checkin-player-options">
+              <span id="self-checkin-player-options">Name auswählen</span>
+              <div className="button-row">
+                {filteredPlayers.map((player) => (
+                  <button
+                    className="segmented"
+                    key={player.id}
+                    type="button"
+                    disabled={disabled || isSubmitting}
+                    onClick={() => selectPlayer(player)}
+                  >
+                    {player.displayName}
+                  </button>
+                ))}
+              </div>
+              {searchTerm.trim() && filteredPlayers.length === 0 ? <p className="privacy-note">Kein Treffer</p> : null}
+            </div>
+          ) : (
+            <div className="control-group" role="status" aria-live="polite">
+              <span>Ausgewählt: {selectedPlayer.displayName}</span>
+              <div className="button-row">
+                <button
+                  className="segmented"
+                  type="button"
+                  disabled={disabled || isSubmitting}
+                  onClick={() => {
+                    setSelectedPlayerId('')
+                    setSearchTerm('')
+                  }}
+                >
+                  ändern
+                </button>
+              </div>
+            </div>
+          )}
+
+          <div className="self-checkin-step-actions">
+            <button className="primary-action self-checkin-next" type="button" disabled={!selectedPlayer || disabled} onClick={goToNextStep}>
+              Weiter
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {step === 'readiness' ? (
+        <section className="self-checkin-step" aria-labelledby="self-checkin-readiness-title">
+          <div className="self-checkin-step-header">
+            <h3 id="self-checkin-readiness-title">Wie belastbar fühlst du dich heute?</h3>
+            <p className="privacy-note">1 gar nicht bereit · 2 schlecht · 3 mittel · 4 gut · 5 voll bereit</p>
+          </div>
+          <div className="button-row compact">
+            {[1, 2, 3, 4, 5].map((value) => (
               <button
-                className="segmented"
-                key={player.id}
+                aria-pressed={readiness === value}
+                className={readiness === value ? 'number-chip active' : 'number-chip'}
+                key={value}
                 type="button"
                 disabled={disabled || isSubmitting}
-                onClick={() => selectPlayer(player)}
+                onClick={() => toggleReadiness(value)}
               >
-                {player.displayName}
+                {value}
               </button>
             ))}
           </div>
-          {searchTerm.trim() && filteredPlayers.length === 0 ? <p className="privacy-note">Kein Treffer</p> : null}
-        </div>
-      ) : (
-        <div className="control-group" role="status" aria-live="polite">
-          <span>Ausgewählt: {selectedPlayer.displayName}</span>
-          <div className="button-row">
-            <button
-              className="segmented"
-              type="button"
-              disabled={disabled || isSubmitting}
-              onClick={() => {
-                setSelectedPlayerId('')
-                setSearchTerm('')
-              }}
-            >
-              ändern
+          <div className="self-checkin-step-actions">
+            <button className="secondary-action" type="button" disabled={disabled || isSubmitting} onClick={goToPreviousStep}>
+              Zurück
+            </button>
+            <button className="primary-action self-checkin-next" type="button" disabled={readiness === null || disabled} onClick={goToNextStep}>
+              Weiter
             </button>
           </div>
-        </div>
-      )}
+        </section>
+      ) : null}
 
-      <div className="control-group">
-        <span>Wie belastbar fühlst du dich heute?</span>
-        <p className="privacy-note">1 gar nicht bereit · 2 schlecht · 3 mittel · 4 gut · 5 voll bereit</p>
-        <div className="button-row compact">
-          {[1, 2, 3, 4, 5].map((value) => (
-            <button
-              className={readiness === value ? 'number-chip active' : 'number-chip'}
-              key={value}
-              type="button"
-              disabled={disabled || isSubmitting}
-              onClick={() => toggleReadiness(value)}
-            >
-              {value}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      <div className="control-group">
-        <span>Was beeinflusst dich heute?</span>
-        <div className="button-row">
-          {lifeFlagOptions.map((option) => (
-            <button
-              className={
+      {step === 'life' ? (
+        <section className="self-checkin-step" aria-labelledby="self-checkin-life-title">
+          <div className="self-checkin-step-header">
+            <h3 id="self-checkin-life-title">Was beeinflusst dich heute?</h3>
+            <p className="privacy-note">Wähle alles, was für den Coach vor der Einheit wichtig ist.</p>
+          </div>
+          <div className="button-row">
+            {lifeFlagOptions.map((option) => {
+              const optionValue = normalizeLifeFlag(option)
+              const isActive =
                 option === 'Unauffällig'
-                  ? lifeFlagValues.length === 0
-                    && !lifeFlagNote.trim()
-                    ? 'segmented active'
-                    : 'segmented'
-                  : lifeFlagValues.includes(normalizeLifeFlag(option))
-                    ? 'segmented active'
-                    : 'segmented'
-              }
-              key={option}
-              type="button"
-              disabled={disabled || isSubmitting}
-              onClick={() => {
-                const optionValue = normalizeLifeFlag(option)
-                if (!optionValue) {
-                  setLifeFlag('')
-                  setLifeFlagNote('')
-                  return
-                }
-                setLifeFlag((currentValue) => toggleCheckInTextListValue(currentValue, optionValue))
-              }}
-            >
-              {option}
-            </button>
-          ))}
-        </div>
-      </div>
+                  ? lifeFlagValues.length === 0 && !lifeFlagNote.trim()
+                  : lifeFlagValues.includes(optionValue)
 
-      <label className="inline-field wide">
-        <span>Andere Alltagsnotiz</span>
-        <input
-          value={lifeFlagNote}
-          disabled={disabled || isSubmitting}
-          placeholder="leer lassen, wenn unauffällig"
-          onChange={(event) => setLifeFlagNote(event.currentTarget.value)}
-        />
-      </label>
-
-      <div className="control-group">
-        <span>Schmerz/Beschwerden heute</span>
-        <p className="privacy-note">0 kein Schmerz · 1-2 leicht · 3-4 merkbar · 5+ bitte Coach sagen</p>
-        <div className="button-row compact pain-scale">
-          {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
-            <button
-              className={painScore === value ? 'number-chip active' : 'number-chip'}
-              key={value}
-              type="button"
-              disabled={disabled || isSubmitting}
-              onClick={() => togglePainScore(value)}
-            >
-              {value}
-            </button>
-          ))}
-        </div>
-      </div>
-
-      {needsPainLocation ? (
-        <>
-          <div className="control-group">
-            <span>Schmerzort / Körperregion</span>
-            <div className="button-row">
-              {painLocationOptions.map((option) => (
+              return (
                 <button
-                  className={painLocationValues.includes(option) ? 'segmented active' : 'segmented'}
+                  aria-pressed={isActive}
+                  className={isActive ? 'segmented active' : 'segmented'}
                   key={option}
                   type="button"
                   disabled={disabled || isSubmitting}
-                  onClick={() => setPainLocation((currentValue) => toggleCheckInTextListValue(currentValue, option))}
+                  onClick={() => {
+                    if (!optionValue) {
+                      setLifeFlag('')
+                      setLifeFlagNote('')
+                      return
+                    }
+                    setLifeFlag((currentValue) => toggleCheckInTextListValue(currentValue, optionValue))
+                  }}
                 >
                   {option}
                 </button>
-              ))}
-            </div>
+              )
+            })}
           </div>
           <label className="inline-field wide">
-            <span>Anderer Schmerzort</span>
+            <span>Andere Alltagsnotiz</span>
             <input
-              value={painLocationNote}
+              value={lifeFlagNote}
               disabled={disabled || isSubmitting}
-              placeholder="z. B. Wade rechts"
-              onChange={(event) => setPainLocationNote(event.currentTarget.value)}
+              placeholder="leer lassen, wenn unauffällig"
+              onChange={(event) => setLifeFlagNote(event.currentTarget.value)}
             />
           </label>
-        </>
+          <div className="self-checkin-step-actions">
+            <button className="secondary-action" type="button" disabled={disabled || isSubmitting} onClick={goToPreviousStep}>
+              Zurück
+            </button>
+            <button className="primary-action self-checkin-next" type="button" disabled={!lifeStepIsValid || disabled} onClick={goToNextStep}>
+              Weiter
+            </button>
+          </div>
+        </section>
       ) : null}
 
-      <div className="control-group">
-        <span>Seit dem letzten Training: etwas neu oder schlechter?</span>
-        <div className="button-row">
-          {sessionReactionOptions.map((option) => (
-            <button
-              className={sessionReaction === option.value ? 'segmented active' : 'segmented'}
-              key={option.value}
-              type="button"
-              disabled={disabled || isSubmitting}
-              onClick={() => setSessionReaction((currentValue) => (currentValue === option.value ? null : option.value))}
-            >
-              {option.label}
+      {step === 'pain' ? (
+        <section className="self-checkin-step" aria-labelledby="self-checkin-pain-title">
+          <div className="self-checkin-step-header">
+            <h3 id="self-checkin-pain-title">Schmerz/Beschwerden heute</h3>
+            <p className="privacy-note">0 kein Schmerz · 1-2 leicht · 3-4 merkbar · 5+ bitte Coach sagen</p>
+          </div>
+          <div className="button-row compact pain-scale">
+            {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
+              <button
+                aria-pressed={painScore === value}
+                className={painScore === value ? 'number-chip active' : 'number-chip'}
+                key={value}
+                type="button"
+                disabled={disabled || isSubmitting}
+                onClick={() => togglePainScore(value)}
+              >
+                {value}
+              </button>
+            ))}
+          </div>
+
+          {needsPainLocation ? (
+            <>
+              <div className="control-group">
+                <span>Schmerzort / Körperregion</span>
+                <div className="button-row">
+                  {painLocationOptions.map((option) => (
+                    <button
+                      aria-pressed={painLocationValues.includes(option)}
+                      className={painLocationValues.includes(option) ? 'segmented active' : 'segmented'}
+                      key={option}
+                      type="button"
+                      disabled={disabled || isSubmitting}
+                      onClick={() => setPainLocation((currentValue) => toggleCheckInTextListValue(currentValue, option))}
+                    >
+                      {option}
+                    </button>
+                  ))}
+                </div>
+              </div>
+              <label className="inline-field wide">
+                <span>Anderer Schmerzort</span>
+                <input
+                  value={painLocationNote}
+                  disabled={disabled || isSubmitting}
+                  placeholder="z. B. Wade rechts"
+                  onChange={(event) => setPainLocationNote(event.currentTarget.value)}
+                />
+              </label>
+            </>
+          ) : null}
+
+          <div className="self-checkin-step-actions">
+            <button className="secondary-action" type="button" disabled={disabled || isSubmitting} onClick={goToPreviousStep}>
+              Zurück
             </button>
-          ))}
-        </div>
-      </div>
+            <button className="primary-action self-checkin-next" type="button" disabled={!painStepIsValid || disabled} onClick={goToNextStep}>
+              Weiter
+            </button>
+          </div>
+        </section>
+      ) : null}
 
-      <label className="inline-field wide">
-        <span>Bemerkung optional</span>
-        <textarea
-          value={playerNote}
-          rows={2}
-          disabled={disabled || isSubmitting}
-          placeholder="z. B. komme später, müde Beine"
-          onChange={(event) => setPlayerNote(event.currentTarget.value)}
-        />
-      </label>
+      {step === 'reaction' ? (
+        <section className="self-checkin-step" aria-labelledby="self-checkin-reaction-title">
+          <div className="self-checkin-step-header">
+            <h3 id="self-checkin-reaction-title">Seit dem letzten Training: etwas neu oder schlechter?</h3>
+            <p className="privacy-note">Diese Angabe hilft dem Coach, die Einheit passend zu steuern.</p>
+          </div>
+          <div className="button-row">
+            {sessionReactionOptions.map((option) => (
+              <button
+                aria-pressed={sessionReaction === option.value}
+                className={sessionReaction === option.value ? 'segmented active' : 'segmented'}
+                key={option.value}
+                type="button"
+                disabled={disabled || isSubmitting}
+                onClick={() => setSessionReaction((currentValue) => (currentValue === option.value ? null : option.value))}
+              >
+                {option.label}
+              </button>
+            ))}
+          </div>
+          <label className="inline-field wide">
+            <span>Bemerkung optional</span>
+            <textarea
+              value={playerNote}
+              rows={2}
+              disabled={disabled || isSubmitting}
+              placeholder="z. B. komme später, müde Beine"
+              onChange={(event) => setPlayerNote(event.currentTarget.value)}
+            />
+          </label>
+          <div className="self-checkin-step-actions">
+            <button className="secondary-action" type="button" disabled={disabled || isSubmitting} onClick={goToPreviousStep}>
+              Zurück
+            </button>
+            <button className="primary-action self-checkin-next" type="button" disabled={!reactionStepIsValid || disabled} onClick={goToNextStep}>
+              Weiter
+            </button>
+          </div>
+        </section>
+      ) : null}
 
-      {message ? <p className={message === 'Check-in gespeichert.' ? 'success-note' : 'form-error'}>{message}</p> : null}
+      {step === 'review' ? (
+        <section className="self-checkin-step" aria-labelledby="self-checkin-review-title">
+          <div className="self-checkin-step-header">
+            <h3 id="self-checkin-review-title">Kurz prüfen und absenden</h3>
+            <p className="privacy-note">Wenn etwas nicht stimmt, gehe zurück und ändere es vor dem Absenden.</p>
+          </div>
+          <dl className="self-checkin-review">
+            <div className="self-checkin-review-row">
+              <dt>Name</dt>
+              <dd>{selectedPlayer?.displayName ?? 'Noch offen'}</dd>
+            </div>
+            <div className="self-checkin-review-row">
+              <dt>Readiness</dt>
+              <dd>{readiness ?? 'Noch offen'}</dd>
+            </div>
+            <div className="self-checkin-review-row">
+              <dt>Alltag</dt>
+              <dd>{selectedLifeLabel(lifeFlagValues, lifeFlagNote)}</dd>
+            </div>
+            <div className="self-checkin-review-row">
+              <dt>Schmerz</dt>
+              <dd>{painScore === null ? 'Noch offen' : `${painScore}${needsPainLocation ? ` · ${submittedPainLocation}` : ''}`}</dd>
+            </div>
+            <div className="self-checkin-review-row">
+              <dt>Veränderung</dt>
+              <dd>{reactionLabel(sessionReaction)}</dd>
+            </div>
+            {playerNote.trim() ? (
+              <div className="self-checkin-review-row">
+                <dt>Bemerkung</dt>
+                <dd>{playerNote.trim()}</dd>
+              </div>
+            ) : null}
+          </dl>
 
-      <button className="primary-action" type="submit" disabled={!canSubmit}>
-        <Send className="nav-icon" aria-hidden />
-        <span>{isSubmitting ? submittingLabel : submitLabel}</span>
-      </button>
+          {message ? <p className="form-error" role="alert">{message}</p> : null}
+
+          <div className="self-checkin-step-actions">
+            <button className="secondary-action" type="button" disabled={disabled || isSubmitting} onClick={goToPreviousStep}>
+              Zurück
+            </button>
+            <button className="primary-action self-checkin-submit" type="submit" disabled={!canSubmit} aria-busy={isSubmitting}>
+              <Send className="nav-icon" aria-hidden />
+              <span>{isSubmitting ? submittingLabel : submitLabel}</span>
+            </button>
+          </div>
+        </section>
+      ) : null}
+
+      {step === 'complete' ? (
+        <section className="self-checkin-complete" role="status" aria-live="polite" aria-labelledby="self-checkin-complete-title">
+          <CheckCircle2 className="self-checkin-complete-icon" aria-hidden />
+          <h3 id="self-checkin-complete-title">{completionTitle}</h3>
+          <p>
+            {completedPlayerName ? `${completedPlayerName}: ${completionBody}` : completionBody}
+          </p>
+          <button className="secondary-action self-checkin-reset-action" type="button" onClick={resetForm}>
+            {resetActionLabel}
+          </button>
+        </section>
+      ) : null}
     </form>
   )
 }

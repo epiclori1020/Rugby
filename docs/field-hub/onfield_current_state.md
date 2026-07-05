@@ -39,7 +39,7 @@ Letztes Update: 2026-07-05
 | Analyse | Sprint 13 ist umgesetzt: Analyse ist ein separater, ruhiger Auswertungsraum mit kompaktem Kontext, aktiven Filter-Chips, vier Coach-Fragen, Kernwerten und sekundaeren Detailpanels. Live-Erfassung, Check-in- und Trainingsaktionen bleiben ausserhalb der Analyse. |
 | Mehr | Sprint 14 ist umgesetzt: Bibliothek ist Referenzbereich mit sichtbarem `Heute relevant`-Filter, Export & Backup trennt JSON-Backup, CSV-Tabellen und Import-Vorschau, und Einstellungen zeigen Sync-/Offline-/Backup-Zustaende mit coachnaher Sprache und sichtbaren Disabled-Gruenden. |
 | Sync/Offline | Pending/Sync-Logik existiert, muss global ruhiger und einheitlicher kommuniziert werden. |
-| Kiosk/Public | Separate Komponenten existieren und sollen als eigene reduzierte Experience weiterentwickelt werden. |
+| Kiosk/Public | Sprint 15 ist umgesetzt: Public/Kiosk nutzen einen eigenen reduzierten Self-Check-in mit linearer Schrittfolge, Review vor Absenden, Abschlusszustand, Kiosk-Auto-Reset und ohne Coach-Notizen/Historie/Analyse. Public speichert keine lokale `submitted`-Marke mehr. |
 | Brand-Surfaces | Sprint 7 hat eine wiederverwendbare `BrandSurface` fuer Auth, Welcome/Empty, Install, Public Check-in und Kiosk-Welcome eingefuehrt. Live-Coaching-Flows bleiben ohne Hero-Flaechen. |
 | Sport-Konfiguration | Sprint 0B hat das SSOT fuer generische Kernobjekte und OnField Rugby als ersten Preset erstellt. Code ist noch nicht extrahiert. |
 
@@ -104,17 +104,17 @@ Letztes Update: 2026-07-05
 - Sprint 12 ist abgeschlossen: `Spieler` ist roster-/list-first, Profil-Detail oeffnet auf iPhone als Sheet und auf iPad als Pane, und das Profil startet arbeitsrelevant mit Status, Teilnahme, Limits, offenen Themen und kurzem Verlauf. OnField Rugby bleibt als erster Preset sichtbar, ohne eine Config-Engine oder Supabase-Migration einzufuehren.
 - Sprint 13 ist abgeschlossen: `Analyse` ist ein eigener Auswertungsraum fuer Beobachten, Modifizieren, Progression und Rueckmeldung. Die Ansicht nutzt bestehende lokale Daten, verzichtet auf Live-Quick-Actions und behaelt iPhone/iPad-Funktionsparitaet.
 - Sprint 14 ist abgeschlossen: `Mehr` ist als Utility-Zone geschaerft. Bibliothek/Export/Einstellungen bleiben Unterbereiche, Backup/Sync-Sprache ist coachnah, Import laeuft ueber Vorschau und explizite Bestaetigung, und das Figma Brand Board enthaelt den Frame `Sprint 14 Mehr Utility Zone`.
+- Sprint 15 ist abgeschlossen: Public/Kiosk Check-in ist eine reduzierte eigene Experience. `SelfCheckInFlow` fuehrt linear durch Name, Readiness, Alltag, Schmerz, Veraenderung, Review und Abschluss; Kiosk setzt nach Abschluss automatisch zurueck, Public bleibt manuell wiederverwendbar.
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 15 angehen: Public/Kiosk Check-in als eigene reduzierte Experience.
+1. Sprint 16 angehen: Sportarten-Konfiguration und OnField Rugby Preset.
 2. Danach Roadmap-Reihenfolge beibehalten und die Sprint-5-Komponenten schrittweise in Screen-Sprints nutzen.
 
 ## Offene Risiken
 
 | Risiko | Auswirkung | Naechster Schritt |
 |---|---|---|
-| Public/Kiosk ist noch keine eigene reduzierte Experience. | Self-Check-in kann zu nah an Coach-Adminflaechen bleiben. | In Sprint 15 Public/Kiosk als getrennten, reduzierten Flow schaerfen. |
 | Core Components sind noch nicht screen-weit ausgerollt. | Das Kit existiert, aber viele Screens nutzen weiterhin Legacy-Klassen und Inline-Muster. | In den naechsten Screen-Sprints gezielt migrieren, ohne Sprint-6-IA vorzuziehen. |
 | iPhone wird wieder als Nebenansicht behandelt. | Externe Nutzung und App-Store-Perspektive werden geschwaecht. | iPhone-Paritaet in jedem Sprint pruefen. |
 | Rugby bleibt im Code zu stark in generischer Architektur. | Multi-Sport-Faehigkeit wird spaeter teuer. | Sport-Konfiguration schrittweise extrahieren. |

@@ -1592,6 +1592,10 @@ Technische Begriffe fuer Coach-UI uebersetzen:
 
 ## Sprint 15 - Public/Kiosk Check-in als eigene Experience
 
+Status: Abgeschlossen am 2026-07-05.
+
+Hinweis: Unit-/Component-Tests, Typecheck, Lint, Build und Browser-Harness-QA liefen erfolgreich. Der echte Kiosk-E2E-Smoke ist verdrahtet, benoetigt aber `FIELD_HUB_E2E_EMAIL` und `FIELD_HUB_E2E_PASSWORD` fuer die Testumgebung.
+
 ### Was genau machen wir?
 
 Wir bauen Public/Kiosk als eigene reduzierte UI, nicht als normale Coach-Ansicht mit versteckten Elementen.

@@ -52,15 +52,23 @@ export function KioskCheckInView({
           <ClipboardCheck className="placeholder-icon" aria-hidden />
           <p>Wähle deinen Namen, fülle den kurzen Check-in aus und gib das Gerät weiter.</p>
         </div>
+      </BrandSurface>
+
+      <section className="self-checkin-panel kiosk-flow-panel" aria-label="Kiosk Check-in">
         <SelfCheckInFlow
+          autoResetAfterSubmitMs={3000}
+          completionBody="Check-in ist gespeichert. Gib das Gerät jetzt weiter."
+          completionTitle="Gespeichert"
           helperText="Wähle deinen Namen, fülle den kurzen Check-in aus und gib das Gerät weiter."
+          mode="kiosk"
           onSubmit={onSubmitKioskEntry}
           players={players}
+          resetActionLabel="Nächsten Check-in starten"
           submitLabel="Speichern und weitergeben"
           submittingLabel="Speichert..."
         />
-        {errorMessage ? <p className="form-error">{errorMessage}</p> : null}
-      </BrandSurface>
+        {errorMessage ? <p className="form-error" role="alert">{errorMessage}</p> : null}
+      </section>
       <button
         className="kiosk-exit-button"
         type="button"

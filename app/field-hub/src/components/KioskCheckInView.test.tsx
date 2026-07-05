@@ -63,6 +63,10 @@ describe('KioskCheckInView', () => {
     expect(container.textContent).toContain('Know squad status before the whistle.')
     expect(container.textContent).toContain('Donnerstag, 18. Juni 2026')
     expect(container.textContent).toContain('Training + Mini-Baseline optional')
+    expect(container.textContent).toContain('Schritt 1 von 6')
+    expect(container.textContent).not.toContain('Coach-Notiz')
+    expect(container.textContent).not.toContain('Team-Analyse')
+    expect(container.textContent).not.toContain('Historie')
   })
 
   it('exits kiosk mode after a confirmed single click without a hold timer', async () => {

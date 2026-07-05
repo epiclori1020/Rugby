@@ -15,7 +15,7 @@ type PublicCheckInViewProps = {
 
 export function PublicCheckInView({ token }: PublicCheckInViewProps) {
   const [formData, setFormData] = useState<PublicCheckInFormData | null>(null)
-  const [status, setStatus] = useState<'loading' | 'ready' | 'submitting' | 'submitted' | 'error'>('loading')
+  const [status, setStatus] = useState<'loading' | 'ready' | 'submitting' | 'error'>('loading')
   const [message, setMessage] = useState<string | null>(null)
 
   useEffect(() => {
@@ -52,9 +52,7 @@ export function PublicCheckInView({ token }: PublicCheckInViewProps) {
         sessionReaction: input.sessionReaction,
         playerNote: input.playerNote,
       })
-      window.localStorage.setItem(`fieldHub:publicCheckInSubmitted:${formData.link.id}`, input.playerId)
-      setStatus('submitted')
-      setMessage('Check-in abgeschickt. Wenn du versehentlich den falschen Namen gewaehlt hast, sag Arwin bitte direkt Bescheid.')
+      setStatus('ready')
     } catch (caughtError) {
       setStatus('ready')
       const friendlyMessage = publicSubmissionErrorMessage(caughtError)
@@ -84,20 +82,23 @@ export function PublicCheckInView({ token }: PublicCheckInViewProps) {
 
         {status === 'loading' ? <p>Check-in wird geladen...</p> : null}
         {status === 'error' ? <p className="form-error">{message}</p> : null}
-        {status === 'submitted' ? <p className="success-note">{message}</p> : null}
-
-        {isFormVisible ? (
-          <>
-            <SelfCheckInFlow
-              disabled={isSubmitting}
-              helperText="Deine Angaben gehen nur an Rugby Donau S&C fuer diese Trainingseinheit. Wenn du den falschen Namen waehlst oder etwas Sensibles hast, sag Arwin bitte direkt Bescheid."
-              onSubmit={handleSubmit}
-              players={formData?.linkPlayers.map((player) => ({ id: player.id, displayName: player.displayName })) ?? []}
-            />
-            {message && status === 'ready' ? <p className="form-error">{message}</p> : null}
-          </>
-        ) : null}
       </BrandSurface>
+
+      {isFormVisible ? (
+        <section className="self-checkin-panel public-flow-panel" aria-label="Public Check-in">
+          <SelfCheckInFlow
+            completionBody="Deine Angaben sind angekommen. Wenn du versehentlich den falschen Namen gewählt hast, sag dem Coach direkt Bescheid."
+            completionTitle="Check-in gespeichert"
+            disabled={isSubmitting}
+            helperText="Deine Angaben gehen nur an Rugby Donau S&C für diese Trainingseinheit. Wenn du den falschen Namen wählst oder etwas Sensibles hast, sag dem Coach direkt Bescheid."
+            mode="public"
+            onSubmit={handleSubmit}
+            players={formData?.linkPlayers.map((player) => ({ id: player.id, displayName: player.displayName })) ?? []}
+            resetActionLabel="Weiteren Check-in erfassen"
+          />
+          {message && status === 'ready' ? <p className="form-error">{message}</p> : null}
+        </section>
+      ) : null}
     </main>
   )
 }
