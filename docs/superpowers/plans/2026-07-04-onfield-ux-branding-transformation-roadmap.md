@@ -691,6 +691,8 @@ Arwin ist einziger Developer und soll wenig Wartungsarbeit haben. Das System sol
 
 ## Sprint 1 - Agenten-Setup Review & Finalisierung
 
+Status: **abgeschlossen**
+
 ### Was genau machen wir?
 
 Wir pruefen und finalisieren die bereits angelegte KI-Arbeitsumgebung nach Sprint 0A/0B/0C/0D. Dieser Sprint baut nicht alles neu, sondern beseitigt Luecken, Widersprueche und veraltete Agentenregeln.
@@ -741,6 +743,8 @@ Codex/OpenAI-Recherche beachten:
 - Falls Hooks oder Runtime Memory existieren, sind sie aus Sprint 0C/0D begruendet, minimal und dokumentiert.
 
 ## Sprint 2 - Produktarchitektur und Informationsarchitektur spezifizieren
+
+Status: **abgeschlossen**
 
 ### Was genau machen wir?
 
@@ -823,6 +827,8 @@ Ziel ist nicht, Funktionen zu loeschen. Ziel ist, sie anders zu gruppieren.
 
 ## Sprint 3 - OnField Brand Foundation und Marketing-/Hero-System
 
+Status: **abgeschlossen**
+
 ### Was genau machen wir?
 
 Wir definieren die Marke OnField als nutzbares Brand Kit.
@@ -903,6 +909,8 @@ Marketing/Hero-Optik ist nicht sinnvoll auf:
 
 ## Sprint 4 - Design Tokens und Theme Foundation
 
+Status: **abgeschlossen**
+
 ### Was genau machen wir?
 
 Wir bauen die visuelle Grundlage in Code.
@@ -977,6 +985,8 @@ Regel:
 - Typecheck/build laufen.
 
 ## Sprint 5 - Core Component Kit
+
+Status: **abgeschlossen**
 
 ### Was genau machen wir?
 
@@ -1058,6 +1068,8 @@ Aber:
 - Tests/typecheck/build laufen.
 
 ## Sprint 6 - App Shell und Navigation implementieren
+
+Status: **abgeschlossen**
 
 ### Was genau machen wir?
 
@@ -1187,6 +1199,8 @@ OnField ist Hauptmarke. Aktuelle App kann in UI als "OnField Coach" erscheinen. 
 - Build laeuft.
 
 ## Sprint 8 - Einheit-Container als Kernworkflow
+
+Status: **abgeschlossen**
 
 ### Was genau machen wir?
 
@@ -1539,6 +1553,8 @@ Kein Chart-Wachstum ohne klare Frage. Keine schweren Dashboard-Waende.
 - Tests/typecheck/build laufen.
 
 ## Sprint 14 - Mehr: Bibliothek, Export/Backup, Einstellungen
+
+Status: **abgeschlossen**
 
 ### Was genau machen wir?
 
@@ -2051,23 +2067,23 @@ Nicht springen, ausser es gibt einen klaren Grund.
 3. Sprint 0C: Hook Review & Automation Guardrails. **Abgeschlossen.**
 4. Sprint 0D: Local Runtime Memory. **Abgeschlossen.**
 5. Sprint 1: Agenten-Setup Review & Finalisierung. **Abgeschlossen.**
-6. Sprint 2: IA-Spezifikation.
-7. Sprint 3: Brand Foundation.
-8. Sprint 4: Tokens.
-9. Sprint 5: Core Components.
-10. Sprint 6: App Shell/Navigation.
-11. Sprint 7: Hero/Brand Surfaces.
-12. Sprint 8: Einheit Container.
-13. Sprint 9: Check-in.
-14. Sprint 10: Training.
+6. Sprint 2: IA-Spezifikation. **Abgeschlossen.**
+7. Sprint 3: Brand Foundation. **Abgeschlossen.**
+8. Sprint 4: Tokens. **Abgeschlossen.**
+9. Sprint 5: Core Components. **Abgeschlossen.**
+10. Sprint 6: App Shell/Navigation. **Abgeschlossen.**
+11. Sprint 7: Hero/Brand Surfaces. **Abgeschlossen.**
+12. Sprint 8: Einheit Container. **Abgeschlossen.**
+13. Sprint 9: Check-in. **Abgeschlossen.**
+14. Sprint 10: Training. **Abgeschlossen.**
 15. Sprint 11: Nachbereitung. **Abgeschlossen.**
 16. Sprint 12: Spieler/Athleten. **Abgeschlossen.**
-17. Sprint 13: Analyse.
+17. Sprint 13: Analyse. **Abgeschlossen.**
 18. Sprint 14: Mehr/Utility. **Abgeschlossen.**
-19. Sprint 15: Public/Kiosk.
+19. Sprint 15: Public/Kiosk. **Abgeschlossen.**
 20. Sprint 16: Sport Config. **Abgeschlossen.**
-21. Sprint 17: Sync/Backup.
-22. Sprint 18: PWA/A11y.
+21. Sprint 17: Sync/Backup. **Abgeschlossen.**
+22. Sprint 18: PWA/A11y. **Abgeschlossen.**
 23. Sprint 19: Full Rollout QA. **Abgeschlossen.**
 24. Sprint 20: External Beta. **Abgeschlossen.**
 
