@@ -14,6 +14,7 @@ Sprint 21 ergaenzt zwei QA-Gates:
 
 - `npm run qa:local` ist der normale Arbeitscheck ohne Beta-Credentials.
 - `npm run qa:beta` ist das harte technische Freigabe-Gate fuer externe Beta.
+- `npm run supabase:audit` ist ab Sprint 23 das statische Supabase/Auth/RLS-Gate und laeuft in beiden QA-Gates mit.
 
 `qa:beta` darf nicht gruen werden, wenn Signed-in-, Public/Kiosk- oder Remote-Testpfade fehlen oder geskippt wurden. Zugangsdaten fuer optische QA werden nur temporaer zur Laufzeit genutzt und nicht in Dateien, Doku, Screenshots, Shell-Beispielen oder Memory gespeichert.
 
@@ -24,6 +25,7 @@ npm run dev
 npm run typecheck
 npm run lint
 npm test
+npm run supabase:audit
 npm run qa:local
 npm run qa:beta
 npm run test:e2e:kiosk

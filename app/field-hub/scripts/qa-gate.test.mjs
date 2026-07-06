@@ -26,6 +26,7 @@ describe('qa-gate', () => {
     })
 
     expect(localPlan.map((step) => step.name)).toEqual([
+      'supabase-audit',
       'typecheck',
       'lint',
       'test',
@@ -35,6 +36,7 @@ describe('qa-gate', () => {
     ])
     expect(localPlan.at(-1)?.env ?? {}).not.toHaveProperty('FIELD_HUB_SPRINT19_REQUIRE_AUTH')
 
+    expect(betaPlan.at(0)?.name).toBe('supabase-audit')
     expect(betaPlan.at(-2)?.env).toMatchObject({ FIELD_HUB_SPRINT19_REQUIRE_AUTH: '1' })
     expect(betaPlan.at(-1)?.name).toBe('kiosk-e2e')
     expect(betaPlan.at(-1)?.env).toMatchObject({ FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION: '1' })

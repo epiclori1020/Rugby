@@ -29,7 +29,7 @@ Letztes Update: 2026-07-06
 |---|---|
 | Navigation | Sprint 6 hat die App-Shell im Code auf `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` umgestellt. Sprint 8 hat `Einheit` als echten Arbeitscontainer mit Session Header, Session-Auswahl, Check-in/Training/Nachbereitung-Subnavigation und gemeinsamen Kontextstatus umgesetzt. Sprint 14 hat `Mehr` als ruhige Utility-Zone fuer `Bibliothek`, `Export & Backup`, `Einstellungen` und `Returner` geschaerft. |
 | Designsystem | Sprint 5 hat das erste Core Component Kit in Code, Repo-Dokumentation und Figma-Sheet angelegt. Screen-weite Migrationen folgen spaeter. |
-| PWA/Install | Sprint 7 hat Manifest-/Install-Metadaten, Brand-Surfaces und das eigene OnField Coach SVG/PNG-Icon-Set fuer PWA/iOS aktualisiert. Sprint 18 hat Offline-Navigation per App-Shell-Fallback, Settings-Display-Mode-Hinweise, sichtbare Disabled-Gruende und automatisierten PWA-Smoke fuer iPhone/iPad-Viewports ergaenzt. Sprint 19 hat eine Screen-by-Screen-QA-Matrix plus automatisierten Sprint-19-Visual-QA-Smoke fuer iPhone/iPad-Viewports ergaenzt. Sprint 20 hat die kontrollierte externe Beta-Readiness, PWA-Install-/QA-Kriterien und Native/SaaS-Entscheidungskriterien dokumentiert. Sprint 21 hat `qa:local` und `qa:beta` als harte QA-Gates ergaenzt. |
+| PWA/Install | Sprint 7 hat Manifest-/Install-Metadaten, Brand-Surfaces und das eigene OnField Coach SVG/PNG-Icon-Set fuer PWA/iOS aktualisiert. Sprint 18 hat Offline-Navigation per App-Shell-Fallback, Settings-Display-Mode-Hinweise, sichtbare Disabled-Gruende und automatisierten PWA-Smoke fuer iPhone/iPad-Viewports ergaenzt. Sprint 19 hat eine Screen-by-Screen-QA-Matrix plus automatisierten Sprint-19-Visual-QA-Smoke fuer iPhone/iPad-Viewports ergaenzt. Sprint 20 hat die kontrollierte externe Beta-Readiness, PWA-Install-/QA-Kriterien und Native/SaaS-Entscheidungskriterien dokumentiert. Sprint 21 hat `qa:local` und `qa:beta` als harte QA-Gates ergaenzt. Sprint 23 hat `npm run supabase:audit` als Supabase/Auth/RLS-Gate in beide QA-Gates eingebunden. |
 | iPhone | Hat in Sprint 6 die neue 5er-Bottom-Tab-Bar mit Safe-Area-Abstand erhalten; Unterbereiche bleiben erreichbar. |
 | iPad | Hat in Sprint 6 die neue 5er-Sidebar plus Content-Struktur erhalten; Unterbereiche bleiben erreichbar. |
 | Check-in | Sprint 9 ist umgesetzt: Check-in ist roster-first mit Listenzeilen, Ampel plus Textgrund, direkten Da/Nicht-da-Schnellaktionen und Detail-Sheet pro Spieler. Public/Kiosk, Reset, Legende, Mitnahmen und Notizen sind sekundaer erreichbar. |
@@ -117,10 +117,11 @@ Letztes Update: 2026-07-06
 - Sprint 20 ist abgeschlossen: `onfield_beta_readiness.md` definiert den kontrollierten externen Beta-Rahmen fuer bis zu 10 Coach-Tester aus bis zu 3 Club-Kontexten, inklusive Install-, signed-in-, Public/Kiosk-, Offline-/Sync-, Datenschutz-/Safety- und Feedback-Triage-Kriterien. `onfield_native_saas_decision_criteria.md` legt fest, dass Native/Flutter/React Native und OnField Performance/SaaS erst nach Beta-Evidence bewertet werden. `onfield_luvi_reuse_audit.md` dokumentiert, welche LUVI-Patterns als Audit-/QA-/Privacy-Muster uebernommen oder bewusst nicht uebernommen werden.
 - Sprint 21 ist abgeschlossen: `app/field-hub` hat `qa:local` als Entwicklungscheck und `qa:beta` als hartes Beta-Gate. `qa:beta` blockiert ohne `FIELD_HUB_E2E_EMAIL`, `FIELD_HUB_E2E_PASSWORD` und `FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1`; Sprint-19-Signed-in und Kiosk-Remote-Mutation koennen nicht mehr still als gruen geskippt werden. Die Sprint-19-QA- und Beta-Readiness-Doku enthalten die LUVI-QA-Audit-Uebernahme fuer Gate-, Evidence-, Cleanup- und Secret-Hygiene-Muster.
 - Sprint 22 ist abgeschlossen: Runtime-Memory-Redaction ist fuer Env-Werte, Supabase-/API-Keys, Bearer/Auth-Tokens, URL-Keys, UUID/IP/prefixed Tokens, lange Token-Strings und sensible Payload-Werte gehaertet. Runtime-Lint meldet nur Pfad, Pattern-Typ, Anzahl und Schweregrad; keine Roh-Secrets in Lint-Output oder Reports. Runtime-Lint ist gruen.
+- Sprint 23 ist abgeschlossen: Supabase-Beta-Defaults sind kontrolliert gesetzt (`enable_signup = false`, Email-Signup aus, Passwort-Mindestlaenge 12), `AuthPanel` bleibt per Regressionstest login-only, `npm run supabase:audit` prueft Auth-Defaults, bekannte RLS-/Policy-Abdeckung, erlaubte Public/Kiosk-`anon`-Ausnahmen und `service_role`-Drift, und der Audit laeuft in `qa:local` und `qa:beta`.
 - Die Anschluss-Roadmap `docs/superpowers/plans/2026-07-06-onfield-post-roadmap-hardening.md` ist aktiv. Phase A ist beta-blockierend:
   - Sprint 21: Harte Beta-QA-Gates ist abgeschlossen.
   - Sprint 22: Runtime-Memory Privacy & Lint Fix ist abgeschlossen.
-  - Sprint 23: Supabase/Auth/RLS Beta Guardrails.
+  - Sprint 23: Supabase/Auth/RLS Beta Guardrails ist abgeschlossen.
   Phase B ist Qualitaets- und Struktur-Hardening:
   - Sprint 24: Coach-Routing & Navigation Refactor.
   - Sprint 25: Designsystem, A11y & Responsive Hardening.
@@ -128,16 +129,16 @@ Letztes Update: 2026-07-06
 
 ## Naechste empfohlene Schritte
 
-1. Anschluss-Roadmap Phase A weiter umsetzen: Sprint 23.
-2. Erst nach Phase A eine kontrollierte externe Beta nach `docs/field-hub/onfield_beta_readiness.md` vorbereiten und durchfuehren.
-3. Phase B umsetzen, bevor groessere Beta, App-Store-Ueberlegung oder OnField-Performance-/SaaS-Vorbereitung startet.
+1. Kontrollierte externe Beta nach `docs/field-hub/onfield_beta_readiness.md` vorbereiten, aber erst nach echtem `qa:beta` mit sicheren Laufzeit-Credentials als Freigabesignal werten.
+2. Phase B umsetzen, bevor groessere Beta, App-Store-Ueberlegung oder OnField-Performance-/SaaS-Vorbereitung startet.
+3. Sprint 24 als naechsten Hardening-Sprint nur im vereinbarten Scope starten.
 4. Native/SaaS-Fragen erst anhand der Sprint-20-Entscheidungskriterien und echter Beta-Evidence neu bewerten.
 
 ## Offene Risiken
 
 | Risiko | Auswirkung | Naechster Schritt |
 |---|---|---|
-| Supabase-Beta-Defaults passen noch nicht voll zur kontrollierten Beta. | Offene Signup-/Auth-Defaults koennen der Beta-Strategie widersprechen. | Sprint 23 umsetzen; Config, Setup Guide und statischen Supabase-Audit angleichen. |
+| Remote-Supabase-Auth-Settings koennen von lokalen Beta-Defaults abweichen. | Lokaler Audit ist gruen, aber das gehostete Dashboard muss vor externer Beta dieselbe kontrollierte Account-Strategie abbilden. | Vor externer Beta Remote-Dashboard manuell pruefen und `qa:beta` mit Laufzeit-Credentials ausfuehren. |
 | Coach-Navigation nutzt intern noch teilweise Legacy-Tab-Modell. | Deep Links, Back/Forward und spaetere App-Store-/SaaS-Reife bleiben schwach. | Sprint 24 umsetzen; echtes OnField-Routingmodell einfuehren. |
 | Core Components sind noch nicht screen-weit ausgerollt. | Das Kit existiert, aber viele Screens nutzen weiterhin Legacy-Klassen und Inline-Muster. | In den naechsten Screen-Sprints gezielt migrieren, ohne Sprint-6-IA vorzuziehen. |
 | iPhone wird wieder als Nebenansicht behandelt. | Externe Nutzung und App-Store-Perspektive werden geschwaecht. | iPhone-Paritaet in jedem Sprint pruefen. |

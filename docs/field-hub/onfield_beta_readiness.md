@@ -29,6 +29,7 @@ Ein groesserer Rollout, oeffentliche Registrierung, Organisationen, Rollen, Bill
 
 | Check | Go-Kriterium |
 |---|---|
+| Supabase/Auth/RLS Audit | `npm run supabase:audit` laeuft gruen und blockiert unsichere Auth-Defaults, unerwartete `anon`-Oberflaechen, fehlende RLS-Policies und `service_role`-Drift. |
 | Lokaler Arbeitscheck | `npm run qa:local` laeuft ohne Beta-Credentials. |
 | Beta-Freigabecheck | `npm run qa:beta` laeuft mit temporaeren Laufzeit-Credentials und `FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1`. |
 | Keine stillen Skips | `qa:beta` blockiert, wenn Signed-in-, Public/Kiosk- oder Remote-Testpfade nicht wirklich geprueft wurden. |
@@ -180,6 +181,18 @@ LUVI wird fuer Beta-Readiness als QA-/Audit-Vorbild genutzt, nicht als Flutter-C
 | Persistence-Audit mit Cleanup | uebernehmen | Kiosk-Remote-E2E muss temporaere Testdaten wieder entfernen. |
 | Privacy-/Sanitize-Checks | uebernehmen | QA-Output darf keine Secrets oder personenbezogenen Werte preisgeben. |
 | Flutter Widgets, Buttons, Routing, Native Storage | nicht uebernehmen | OnField bleibt React/Vite/PWA-first; Sprint 21 ist kein UI- oder Native-Sprint. |
+
+## Sprint-23 Supabase-Guardrails
+
+Sprint 23 uebernimmt LUVI nur als Audit-Denkmodell, nicht als Flutter- oder Native-Codequelle.
+
+| Guardrail | OnField-Entscheidung | Begruendung |
+|---|---|---|
+| Auth-/Consent-Evidence-Matrix | anpassen | `npm run supabase:audit` gibt eine konkrete Checkliste mit Failures aus. |
+| Supabase-Auth-Settings-Doku-Guard | uebernehmen | `supabase/config.toml`, Setup-Guide und Remote-Dashboard muessen dieselbe kontrollierte Beta-Absicht haben. |
+| Negative RLS-/anon-Pruefung | uebernehmen | Unerwarteter `anon`-Zugriff blockiert das Beta-Gate; Public/Kiosk bleibt die einzige Ausnahme. |
+| Redacted Secret-Scan-Prinzip | uebernehmen | `service_role`-Drift und Service-Role-Key-Referenzen duerfen nicht in Client-/Script-Code oder `.env.example` landen. |
+| Signup/OAuth/Consent Edge Functions | nicht uebernehmen | Kontrollierte Coach-Accounts reichen fuer Sprint 23; keine neue Auth- oder Supabase-Komplexitaet. |
 
 ## Bekannte Beta-Risiken
 

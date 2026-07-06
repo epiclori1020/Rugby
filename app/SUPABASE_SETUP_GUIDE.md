@@ -1,8 +1,8 @@
-# Supabase Setup Guide: Rugby S&C Field Hub
+# Supabase Setup Guide: OnField Coach
 
-Stand: 13. Juni 2026
+Stand: 6. Juli 2026
 
-Zweck: Diese Datei ist die praktische Schritt-fuer-Schritt-Anleitung fuer die neue Codex-Session, damit Arwin Supabase mit moeglichst wenig eigener Denkarbeit einrichten kann. Sie ergaenzt `app/ROADMAP.md` und ist Pflichtlekture, bevor Sprint 3 umgesetzt wird.
+Zweck: Diese Datei ist die praktische Schritt-fuer-Schritt-Anleitung fuer Supabase/Auth/RLS in OnField Coach. Sie ergaenzt die OnField-Memory- und Roadmap-Dokumente und beschreibt die kontrollierte Beta-Konfiguration.
 
 ## 1. Warum Supabase hier gebraucht wird
 
@@ -20,21 +20,22 @@ Mit Supabase:
 - IndexedDB bleibt als lokaler Offline-Cache und Offline-Queue.
 - Am Feld kann offline gearbeitet werden; Sync passiert spaeter.
 
-Supabase wird primaer fuer Sync/Auth/RLS genutzt. Supabase Storage ist im MVP nur fuer private Spielerprofilfotos erlaubt, wenn Foto-Erlaubnis dokumentiert ist. Kein eigener Server, keine Edge Functions, kein Realtime und keine Spieler-Accounts im MVP.
+Supabase wird primaer fuer Sync/Auth/RLS genutzt. Supabase Storage ist im MVP nur fuer private Spielerprofilfotos erlaubt, wenn Foto-Erlaubnis dokumentiert ist. Kein eigener Server, keine Edge Functions und keine Spieler-Accounts im MVP.
 
 ## 2. Was Supabase im MVP leisten muss
 
 Pflicht:
 
-- Auth fuer genau Arwins Coach-Zugang.
+- Auth fuer kontrolliert angelegte Coach-Accounts.
 - Postgres-Tabellen fuer dynamische Trainingsdaten.
 - Row Level Security auf allen dynamischen Tabellen.
-- Policies: Arwin darf nur seine eigenen Zeilen lesen/schreiben.
+- Policies: Coaches duerfen nur eigene Zeilen lesen/schreiben.
 - Browser-sichere Client-Konfiguration mit URL + publishable/anon key.
 - Kein `service_role` Key im Frontend.
 - Migrationen versioniert im Projekt.
 - Sync-Status in der App: online/offline/synced/pending/error.
 - Optionaler privater Storage-Bucket fuer Spielerprofilfotos.
+- Statischer Supabase-Audit als QA-Gate: `npm run supabase:audit`.
 
 Nicht im MVP:
 
@@ -46,6 +47,7 @@ Nicht im MVP:
 - Edge Functions.
 - digitale Einwilligungsunterschriften.
 - medizinische Dokumente.
+- Self-Signup, oeffentliche Registrierung oder Player Portal.
 
 ## 3. Externe Seiten, die die neue Session oeffnen soll
 
@@ -82,7 +84,7 @@ Die neue Session soll Arwin Schritt fuer Schritt durch Folgendes fuehren:
 1. Oeffne https://supabase.com/dashboard.
 2. Erstelle ein neues Projekt oder waehle ein bestehendes Projekt.
 3. Empfohlener Projektname:
-   - `rugby-snc-field-hub`
+   - `onfield-coach` oder das bestehende Projekt `rugby-snc-field-hub`, solange es klar als OnField Coach Beta-Projekt verwaltet wird.
 4. Region:
    - bevorzugt Europa, wenn verfuegbar.
 5. Database Password:
@@ -95,6 +97,7 @@ Wichtig:
 
 - Keine echten Spieler-/Gesundheitsdaten in Testphasen eingeben.
 - Keine Service-Role-Keys in Chat oder Dateien kopieren.
+- Beta-Accounts kontrolliert im Supabase Dashboard anlegen; keine Self-Signup-Freigabe fuer externe Tester.
 
 ## 5. Keys und lokale `.env`
 
@@ -119,13 +122,16 @@ Nicht eintragen:
 
 Die echte `.env` bleibt lokal und wird durch `.gitignore` nicht committed.
 
-## 6. Auth-Entscheidung fuer den MVP
+## 6. Auth-Entscheidung fuer kontrollierte Beta
 
-Empfehlung:
+Entscheidung:
 
-- Ein Coach-Login fuer Arwin.
+- Coach-Accounts werden kontrolliert bereitgestellt.
 - Keine Spieler-Accounts.
 - Email + Passwort ist fuer eine private PWA am einfachsten.
+- Self-Signup bleibt deaktiviert.
+- Email-Signup bleibt deaktiviert.
+- Passwort-Mindestlaenge ist mindestens 12 Zeichen.
 
 Warum nicht Magic Link als Default:
 
@@ -136,7 +142,30 @@ Die neue Session soll:
 
 1. Auth UI minimal bauen: Login, Logout, Session anzeigen.
 2. sicherstellen, dass ohne Login keine dynamischen Daten geladen werden.
-3. keine Rollenlogik fuer Spieler bauen.
+3. keine Signup-/Register-UI bauen.
+4. keine Rollenlogik fuer Spieler bauen.
+
+### Auth-Settings Drift-Guard
+
+`supabase/config.toml` muss fuer kontrollierte Beta diese Defaults behalten:
+
+```toml
+[auth]
+enable_signup = false
+minimum_password_length = 12
+
+[auth.email]
+enable_signup = false
+```
+
+Im gehosteten Supabase Dashboard muessen die Auth-Einstellungen dieselbe Absicht abbilden:
+
+- keine oeffentliche Registrierung.
+- keine frei zugaengliche Email-Signup-Strecke.
+- Coach-Accounts nur kontrolliert anlegen.
+- keine `service_role`, DB-Passwoerter, JWT-Secrets oder privaten Keys in App, Chat, Doku, Tests, Screenshots oder Memory.
+
+Lokale und Remote-Einstellungen koennen technisch unterschiedlich konfiguriert werden. Vor externer Beta muss deshalb `npm run supabase:audit` lokal gruen sein und das Remote-Dashboard manuell gegen diese Liste geprueft werden.
 
 Optional spaeter:
 
@@ -260,7 +289,27 @@ Hinweis:
 - Trotzdem darf eine Delete-Policy existieren, falls spaeter echtes Loeschen gebraucht wird.
 - UPDATE braucht auch eine SELECT/USING-Policy; nicht nur `with check`.
 
-## 10. Lokale Entwicklung und Migrationen
+## 10. Sprint-23 Supabase-Audit
+
+OnField Coach nutzt ab Sprint 23 einen statischen Audit:
+
+```bash
+cd app/field-hub
+npm run supabase:audit
+```
+
+Der Audit prueft:
+
+- Auth-Beta-Defaults in `supabase/config.toml`.
+- bekannte dynamische Tabellen auf RLS und erwartete Policies.
+- Public/Kiosk-`anon`-Ausnahmen nur fuer `public_checkin_*`.
+- keine `service_role`-Referenzen in Migrationen.
+- keine riskanten `security definer`-Funktionen im `public` Schema.
+- keine Service-Role-Key-Referenzen in Client-/Script-Code oder `.env.example`.
+
+`npm run qa:local` und `npm run qa:beta` fuehren diesen Audit als Gate aus. `qa:beta` darf ohne Laufzeit-Credentials und `FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1` nicht gruen werden.
+
+## 11. Lokale Entwicklung und Migrationen
 
 Bevor Schema wirklich gebaut wird, soll die neue Session:
 
@@ -284,7 +333,7 @@ Wichtig fuer die neue Session:
 - Kein `apply_migration` fuer Remote-Experimente verwenden, solange noch iteriert wird.
 - Erst saubere Migration erzeugen, dann anwenden.
 
-## 11. App-Sync-Konzept
+## 12. App-Sync-Konzept
 
 Die App arbeitet mit zwei Schichten:
 
@@ -320,7 +369,7 @@ Konfliktregel fuer MVP:
 - spaeterer Stand gewinnt.
 - wenn derselbe Datensatz auf zwei Geraeten offline geaendert wurde, zeigt die App eine Warnung.
 
-## 12. Was die neue Session fuer Arwin vorbereiten soll
+## 13. Was die neue Session fuer Arwin vorbereiten soll
 
 Die neue Session soll nicht nur sagen, was Arwin tun muss, sondern konkrete Artefakte vorbereiten:
 
@@ -339,7 +388,7 @@ Die neue Session soll nicht nur sagen, was Arwin tun muss, sondern konkrete Arte
   - Wohin in `.env` einfuegen.
   - Was nicht kopieren.
 
-## 13. Supabase-Akzeptanztest
+## 14. Supabase-Akzeptanztest
 
 Supabase-Teil gilt erst als fertig, wenn:
 

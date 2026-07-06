@@ -27,6 +27,7 @@ export function buildQaPlan(mode, env = process.env) {
   }
 
   const baseSteps = [
+    { name: 'supabase-audit', command: 'npm', args: ['run', 'supabase:audit'] },
     { name: 'typecheck', command: 'npm', args: ['run', 'typecheck'] },
     { name: 'lint', command: 'npm', args: ['run', 'lint'] },
     { name: 'test', command: 'npm', args: ['run', 'test'] },

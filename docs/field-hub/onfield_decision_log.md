@@ -53,6 +53,7 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | 2026-07-06 | Phase A der Anschluss-Roadmap ist beta-blockierend. | Harte QA-Gates, Runtime-Memory-Privacy und Supabase/Auth-Guardrails muessen stimmen, bevor externe Coaches OnField Coach testen. | Aktiv |
 | 2026-07-06 | `qa:beta` wird das harte technische Freigabe-Gate fuer externe Beta. | Beta-QA darf keine stillen Skips bei Signed-in-, Public/Kiosk- oder Remote-Testpfaden als gruen ausgeben. | Aktiv |
 | 2026-07-06 | Runtime-Memory-Lint muss gruen sein, bevor generated Runtime Memory als hilfreicher Kontext gilt. | Runtime Memory ist nur lokales Roh-/Hilfsmaterial; Leak-Findings oder Lint-Fehler duerfen nicht als vertrauenswuerdiger Kontext behandelt werden. | Aktiv |
+| 2026-07-06 | `npm run supabase:audit` ist Teil von `qa:local` und `qa:beta`. | Supabase/Auth/RLS-Drift, unerwartete `anon`-Oberflaechen und `service_role`-Risiken sollen Beta-Gates blockieren, bevor externe Coaches testen. | Aktiv |
 
 ## Markenarchitektur
 
@@ -82,6 +83,7 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 - Nach Sprint 0A braucht jede OnField-Aufgabe am Ende eine Memory-Closeout-Pruefung: Current State, Decision Log oder Gotchas aktualisieren, falls die Aufgabe kuenftige Sessions betrifft.
 - Externe Beta startet erst nach Abschluss der beta-blockierenden Phase A der Anschluss-Roadmap.
 - `qa:beta` darf nur dann als gruen gelten, wenn die dafuer vorgesehenen Auth-, Signed-in- und Kiosk-/Public-Pfade wirklich geprueft wurden.
+- Supabase/Auth/RLS-Drift wird ueber `npm run supabase:audit` lokal und in den QA-Gates blockiert; Remote-Dashboard-Settings muessen vor externer Beta manuell dieselbe kontrollierte Account-Strategie abbilden.
 
 ## Zurueckgestellte Entscheidungen
 

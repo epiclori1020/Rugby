@@ -35,4 +35,14 @@ describe('AuthPanel', () => {
     expect(markup).toContain('VITE_SUPABASE_PUBLISHABLE_KEY')
     expect(markup).toContain('Keine Service-Role-Keys')
   })
+
+  it('keeps controlled beta auth login-only', () => {
+    const markup = renderToStaticMarkup(<AuthPanel authState={signedOutAuthState} />)
+
+    expect(markup).toContain('Coach-Login')
+    expect(markup).toContain('Einloggen')
+    expect(markup).toContain('current-password')
+    expect(markup).not.toMatch(/signup|sign up|registrieren|konto erstellen|account erstellen|create account/i)
+    expect(markup).not.toContain('new-password')
+  })
 })

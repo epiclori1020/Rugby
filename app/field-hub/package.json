@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "qa:beta": "node scripts/qa-gate.mjs beta",
     "qa:local": "node scripts/qa-gate.mjs local",
+    "supabase:audit": "node scripts/supabase-audit.mjs",
     "test": "vitest run",
     "test:e2e:kiosk": "node scripts/e2e-kiosk-smoke.mjs",
     "test:e2e:pwa": "npm run build && node scripts/e2e-pwa-smoke.mjs",
