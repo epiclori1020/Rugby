@@ -53,7 +53,16 @@ Automatisiertes Script:
 - prueft Screen-Erreichbarkeit, erwartete Screen-Texte, horizontales Overflow, Bottom-Nav-Touch-Targets, sichtbaren Tastaturfokus und verbotene alte Copy
 - prueft Public-Check-in-Error-State mit invalidem Token
 - prueft Lazy-Screen-Error-State durch script-only Abbruch eines Lazy-Chunks, sofern der Chunk nicht bereits geladen oder vorgeladen ist; der Error-State selbst ist zusaetzlich per `App.lazyScreenBoundary.test.tsx` deterministisch abgedeckt
-- prueft Signed-in nur, wenn `FIELD_HUB_E2E_EMAIL` und `FIELD_HUB_E2E_PASSWORD` zur Laufzeit gesetzt sind; der signed-in Sprint-19-Smoke wurde nachgeholt und meldete `status: checked`
+- prueft Signed-in nur, wenn `FIELD_HUB_E2E_EMAIL` und `FIELD_HUB_E2E_PASSWORD` zur Laufzeit gesetzt sind; im Beta-Gate ist Signed-in verpflichtend und fehlende Laufzeit-Credentials ergeben `status: blocked`
+
+## Sprint-21 QA-Gates
+
+Sprint 21 trennt lokale Arbeitschecks und Beta-Freigabe:
+
+- `npm run qa:local` laeuft ohne Beta-Credentials und erlaubt den Signed-in-Teil des Sprint-19-Smokes als `skipped`.
+- `npm run qa:beta` ist das technische Freigabe-Gate fuer externe Beta. Es blockiert vor dem E2E-Lauf, wenn `FIELD_HUB_E2E_EMAIL`, `FIELD_HUB_E2E_PASSWORD` oder `FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1` fehlen.
+- Im Beta-Gate sind stille Skips fuer Signed-in-, Public/Kiosk- oder Remote-Testpfade nicht akzeptabel.
+- Der Lazy-Chunk-Fault-Injection-Teil bleibt sichtbar reportet, aber nicht beta-kritisch, weil die Lazy-Error-UI deterministisch ueber `App.lazyScreenBoundary.test.tsx` abgedeckt ist.
 
 ## Auth- und Datenstrategie
 
@@ -62,20 +71,26 @@ Der bereitgestellte Testaccount wird nicht in Code, Dokumentation, Screenshot-Da
 - `FIELD_HUB_E2E_EMAIL`
 - `FIELD_HUB_E2E_PASSWORD`
 
-Wenn diese Variablen fehlen, markiert `npm run test:e2e:sprint19` Signed-in-QA als `skipped`, ausser `FIELD_HUB_SPRINT19_REQUIRE_AUTH=1` ist gesetzt.
+Wenn diese Variablen fehlen, markiert `npm run test:e2e:sprint19` Signed-in-QA als `skipped`, ausser `FIELD_HUB_SPRINT19_REQUIRE_AUTH=1` ist gesetzt. Mit `FIELD_HUB_SPRINT19_REQUIRE_AUTH=1` bricht das Script als `blocked` ab.
 
-Remote-Mutationen werden fuer Sprint 19 nicht als Default in das neue Screen-QA-Script eingebaut. Der bestehende Kiosk-Smoke deckt Remote-Submit mit temporaerem Seed und Cleanup ab und wurde nachgeholt:
+Remote-Mutationen werden fuer Sprint 19 nicht als Default in das neue Screen-QA-Script eingebaut. Der bestehende Kiosk-Smoke deckt Remote-Submit mit temporaerem Seed und Cleanup ab, laeuft seit Sprint 21 aber nur noch mit explizitem Opt-in:
 
 - `npm run test:e2e:kiosk`
+- `FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1` muss zur Laufzeit gesetzt sein
 
 Pending Sync wird strukturell ueber bestehende Sync-Komponenten, lokale Pending-Texte und den PWA-/Offline-Smoke geprueft. Ein echter offline erzeugter Remote-Pending-Datensatz wird nur in einem bewusst konfigurierten Auth-/Kiosk-Lauf erzeugt, nicht als Default-Side-Effect der visuellen QA.
 
 ## LUVI-Audit Integration
 
-Aus dem LUVI-Projekt wurden folgende Patterns als passend fuer OnField bewertet:
+Aus dem LUVI-Projekt wurden in Sprint 19 und Sprint 21 folgende Patterns als passend fuer OnField bewertet:
 
 | LUVI-Pattern | Uebernahme fuer OnField | Begruendung |
 |---|---|---|
+| Definition of Done mit mehreren Gate-Schichten | ja, fuer `qa:local` und `qa:beta` | Ein einzelner gruen wirkender E2E-Lauf reicht nicht fuer Beta-Freigabe. |
+| Auth-/Consent-Audit-Matrix | ja, als Evidence-Prinzip | OnField muss unterscheiden, ob ein Pfad nur sichtbar ist oder wirklich signed-in/remote geprueft wurde. |
+| Persistence-Audit mit Remote-Evidence und Cleanup | ja, fuer Kiosk-E2E | Remote-Mutation darf nur bewusst passieren und muss temporaere Testdaten wieder bereinigen. |
+| UI-Guard-Audit mit erklaerten Ausnahmen | ja, fuer Skip-Policy | Beta-kritische Skips blockieren; der bekannte Lazy-Fault-Injection-Skip bleibt dokumentierter best-effort. |
+| Privacy-/Sanitize-Pruefung | ja, fuer QA-Output | E-Mails, Passwoerter, Tokens und Secret-Werte duerfen nicht in Logs, Doku, Screenshots oder Memory landen. |
 | Bottom-Nav-Clearance mit SafeArea | ja, als QA-Kriterium fuer `.bottom-tab-bar` und mobilen Content-Abstand | OnField muss iPhone Home Indicator und Bottom Tabs sicher freihalten. |
 | Zentrale Sheet-Regeln mit Clamp und SafeArea | ja, als Audit-Kriterium | OnField nutzt eigene Tokens/Radien, braucht aber dieselbe Robustheit fuer Sheets und Detail-Panes. |
 | InteractiveSurface mit Semantics, Keyboard und 44dp Minimum | ja, als Prinzip | Passt direkt zu OnField PWA/A11y und Feldnutzung. |
@@ -85,6 +100,8 @@ Aus dem LUVI-Projekt wurden folgende Patterns als passend fuer OnField bewertet:
 | Flutter Widgets direkt | nein | OnField ist Vite/React/PWA; direkte Wiederverwendung waere Architekturdrift. |
 | LUVI-Farben, Fonts, grosse Radien, Glass-/Hero-Stil | nein | OnField bleibt Field Graphite, ruhig und operations-first. |
 | Zyklus-, Paywall-, Social- und Consumer-Health-Flows | nein | Nicht OnField Coach Sprint-19-Domain. |
+| Riverpod/GoRouter/Flutter-Architektur | nein | Sprint 21 ist QA-Gate-Hardening in React/Vite/PWA, kein Native- oder Architektur-Sprint. |
+| Consent Edge Functions, HMAC, SQLCipher, Secure Storage | nein | Zu schwer fuer Sprint 21 und nicht Teil des OnField Coach MVP-Scopes. |
 | Native-only Haptics | nein | OnField bleibt PWA-first. |
 
 ## Geloeste Inkonsistenzen
@@ -109,6 +126,8 @@ Aus dem LUVI-Projekt wurden folgende Patterns als passend fuer OnField bewertet:
 
 ## Abschlusskriterien
 
+- `npm run qa:local`
+- `npm run qa:beta` blockiert ohne Beta-Credentials/Remote-Opt-in verstaendlich
 - `npm run typecheck`
 - `npm run lint`
 - `npm run test`

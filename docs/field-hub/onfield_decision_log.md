@@ -49,6 +49,10 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | 2026-07-05 | OnField Coach App-Icons werden als eigenes deterministisches SVG/PNG-Set gepflegt, nicht als Library-Icon oder Bild-KI-Produktionsasset. | Install-Icons muessen reproduzierbar, skalierbar und in kleinen Groessen klar sein; Bild-KI kann spaeter Inspiration liefern, ist aber keine Produktionsquelle fuer PWA-/iOS-Icons. | Aktiv |
 | 2026-07-06 | Sprint 16 nutzt eine statische aktive `SportConfig` mit OnField Rugby als einzigem Runtime-Preset. | Das schafft eine kleine SSOT-Schicht im Code, ohne Runtime-Selector, zweite Sportart, Config-Engine, Datenmigration oder Supabase-Komplexitaet in den Coach-MVP zu ziehen. | Aktiv |
 | 2026-07-06 | Native/Flutter/React Native und OnField Performance/SaaS werden erst nach kontrollierter Beta-Evidence neu bewertet. | Sprint 20 definiert Beta-Readiness und Entscheidungskriterien, damit Plattformentscheidungen nicht aus Bauchgefuehl oder LUVI-Wiederverwendungswuenschen entstehen. | Aktiv |
+| 2026-07-06 | Die Sprints 0A-20 bleiben als abgeschlossene Haupt-Roadmap stehen; Audit-Restpunkte werden in einer separaten Anschluss-Roadmap geplant. | Eine separate Post-Roadmap verhindert, dass kuenftige Agenten die abgeschlossene UX-/Branding-Roadmap wieder als offen interpretieren. | Aktiv |
+| 2026-07-06 | Phase A der Anschluss-Roadmap ist beta-blockierend. | Harte QA-Gates, Runtime-Memory-Privacy und Supabase/Auth-Guardrails muessen stimmen, bevor externe Coaches OnField Coach testen. | Aktiv |
+| 2026-07-06 | `qa:beta` wird das harte technische Freigabe-Gate fuer externe Beta. | Beta-QA darf keine stillen Skips bei Signed-in-, Public/Kiosk- oder Remote-Testpfaden als gruen ausgeben. | Aktiv |
+| 2026-07-06 | Runtime-Memory-Lint muss gruen sein, bevor generated Runtime Memory als hilfreicher Kontext gilt. | Runtime Memory ist nur lokales Roh-/Hilfsmaterial; Leak-Findings oder Lint-Fehler duerfen nicht als vertrauenswuerdiger Kontext behandelt werden. | Aktiv |
 
 ## Markenarchitektur
 
@@ -76,6 +80,8 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 - Nach Sprint 4 ist `app/field-hub/src/design/tokens.css` die technische Wahrheit fuer OnField Theme Tokens; Figma Token Sheets sind visuelle Referenz und Uebergabeartefakt.
 - Nach Sprint 7 ist das OnField Coach App-Icon ein eigenes deterministisches SVG/PNG-Asset-Set; keine Library- oder Bild-KI-Quelle ist die Produktionsbasis.
 - Nach Sprint 0A braucht jede OnField-Aufgabe am Ende eine Memory-Closeout-Pruefung: Current State, Decision Log oder Gotchas aktualisieren, falls die Aufgabe kuenftige Sessions betrifft.
+- Externe Beta startet erst nach Abschluss der beta-blockierenden Phase A der Anschluss-Roadmap.
+- `qa:beta` darf nur dann als gruen gelten, wenn die dafuer vorgesehenen Auth-, Signed-in- und Kiosk-/Public-Pfade wirklich geprueft wurden.
 
 ## Zurueckgestellte Entscheidungen
 

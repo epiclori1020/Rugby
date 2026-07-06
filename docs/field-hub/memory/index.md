@@ -1,6 +1,6 @@
 # OnField Memory Index
 
-Stand: 2026-07-04
+Stand: 2026-07-06
 
 ## Zweck
 
@@ -21,7 +21,7 @@ Danach nur die fuer die Aufgabe relevanten Dateien laden.
 
 | Aufgabe | Zusaetzlich lesen | Nur bei Bedarf |
 |---|---|---|
-| Sprint/Roadmap planen oder umsetzen | `.agents/skills/onfield-roadmap-execution/SKILL.md`, relevante Sprint-Abschnitte in `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md` | Researches, wenn ein Sprint Research-Synthese verlangt |
+| Sprint/Roadmap planen oder umsetzen | `.agents/skills/onfield-roadmap-execution/SKILL.md`, relevante Sprint-Abschnitte in `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md` oder `docs/superpowers/plans/2026-07-06-onfield-post-roadmap-hardening.md` | Researches, wenn ein Sprint Research-Synthese verlangt |
 | Memory-Arbeit | `docs/field-hub/onfield_memory_governance.md`, `docs/field-hub/memory/gotchas.md` | lokale Runtime Knowledge in `.onfield-memory/knowledge/index.md` nur on-demand; LUVI-Referenzdateien auf SSD nur lesend und nur fuer Musterabgleich |
 | Runtime-Memory-Arbeit | `.agents/skills/onfield-runtime-memory/SKILL.md`, `docs/field-hub/onfield_runtime_memory_faq.md`, `.onfield-memory/README.md` | relevante `.onfield-memory/scripts/` und `.onfield-memory/tests/` nur fuer den betroffenen Subbereich |
 | Produkt/IA | `docs/field-hub/onfield_product_brief.md`, `docs/field-hub/onfield_sports_configuration_model.md`, relevante Roadmap-Abschnitte | `docs/field-hub/2026-07-04_ux_design_roadmap_principles.md`, UX Research bei unklaren Guardrails |
@@ -69,6 +69,12 @@ Sprint 0D ergaenzt ein lokales, ignored Runtime-Memory unter `.onfield-memory/`.
 ## Roadmap-Regel
 
 Die komplette Roadmap wird nur gelesen, wenn Sprint-/Roadmap-Arbeit stattfindet. Fuer normale Code- oder UI-Arbeit reicht der relevante Sprint-Abschnitt plus die passenden SSOTs.
+
+Roadmap-Status:
+
+- `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md` ist die abgeschlossene Haupt-Roadmap fuer Sprint 0A bis Sprint 20.
+- `docs/superpowers/plans/2026-07-06-onfield-post-roadmap-hardening.md` ist die aktive Anschluss-Roadmap fuer Sprint 21 bis Sprint 26.
+- Phase A der Anschluss-Roadmap ist beta-blockierend. Externe Beta erst nach Sprint 21 bis Sprint 23 vorbereiten.
 
 ## Closeout-Regel
 

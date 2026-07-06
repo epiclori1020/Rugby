@@ -25,6 +25,17 @@ Ein groesserer Rollout, oeffentliche Registrierung, Organisationen, Rollen, Bill
 
 ## Go/No-Go Checkliste
 
+### Technisches QA-Gate
+
+| Check | Go-Kriterium |
+|---|---|
+| Lokaler Arbeitscheck | `npm run qa:local` laeuft ohne Beta-Credentials. |
+| Beta-Freigabecheck | `npm run qa:beta` laeuft mit temporaeren Laufzeit-Credentials und `FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1`. |
+| Keine stillen Skips | `qa:beta` blockiert, wenn Signed-in-, Public/Kiosk- oder Remote-Testpfade nicht wirklich geprueft wurden. |
+| Remote-Mutation | Kiosk-E2E erzeugt nur temporaere Testdaten und raeumt sie wieder auf. |
+| Prozess-Cleanup | Nach E2E bleiben keine haengenden Vite-/Preview-/Browser-Prozesse. |
+| Secret-Hygiene | Keine Passwoerter, Tokens, `service_role` Keys oder privaten Keys in Code, Markdown, `.env`, Logs, Screenshots oder Memory. |
+
 ### Produkt und Scope
 
 | Check | Go-Kriterium |
@@ -154,8 +165,21 @@ Nicht erlaubt:
 - Passwort in Markdown, Code, `.env`, Tests, Screenshots, Issues oder Memory speichern.
 - Passwort in automatisierte Artefakte oder Repo-Doku uebernehmen.
 - `service_role` oder DB-Passwoerter anfordern.
+- Shell-Kommandos mit Klartext-Passwort in Doku oder dauerhafte Logs uebernehmen.
 
 Nach Login-QA sollte das Passwort rotiert oder per Reset neu gesetzt werden, wenn es in einem Chat geteilt wurde.
+
+## Sprint-21 LUVI-Audit-Uebernahme
+
+LUVI wird fuer Beta-Readiness als QA-/Audit-Vorbild genutzt, nicht als Flutter-Codequelle.
+
+| LUVI-Muster | OnField-Entscheidung | Begruendung |
+|---|---|---|
+| Definition of Done mit mehreren Gate-Schichten | uebernehmen | `qa:local` und `qa:beta` trennen Arbeitscheck und Freigabecheck. |
+| Auth-/Consent-Audit-Matrix | anpassen | OnField prueft, ob signed-in und remote wirklich getestet wurden, ohne neue Auth-Features zu bauen. |
+| Persistence-Audit mit Cleanup | uebernehmen | Kiosk-Remote-E2E muss temporaere Testdaten wieder entfernen. |
+| Privacy-/Sanitize-Checks | uebernehmen | QA-Output darf keine Secrets oder personenbezogenen Werte preisgeben. |
+| Flutter Widgets, Buttons, Routing, Native Storage | nicht uebernehmen | OnField bleibt React/Vite/PWA-first; Sprint 21 ist kein UI- oder Native-Sprint. |
 
 ## Bekannte Beta-Risiken
 

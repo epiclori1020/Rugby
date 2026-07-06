@@ -11,6 +11,14 @@ const defaultPort = process.env.FIELD_HUB_E2E_PORT ?? '5180'
 const baseUrl = process.env.FIELD_HUB_E2E_BASE_URL ?? `http://127.0.0.1:${defaultPort}/`
 const email = process.env.FIELD_HUB_E2E_EMAIL
 const password = process.env.FIELD_HUB_E2E_PASSWORD
+const allowRemoteMutation = process.env.FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION === '1'
+
+class QaBlockedError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = 'QaBlockedError'
+  }
+}
 
 function readDotEnv() {
   const envPath = resolve(rootDir, '.env')
@@ -80,8 +88,10 @@ function startDevServerIfNeeded() {
   delete childEnv.FIELD_HUB_E2E_EMAIL
   delete childEnv.FIELD_HUB_E2E_PASSWORD
 
+  const useProcessGroup = process.platform !== 'win32'
   const child = spawn('npm', ['run', 'dev', '--', '--host', '127.0.0.1', '--port', defaultPort], {
     cwd: rootDir,
+    detached: useProcessGroup,
     env: childEnv,
     stdio: ['ignore', 'pipe', 'pipe'],
   })
@@ -101,14 +111,38 @@ function startDevServerIfNeeded() {
 }
 
 async function stopDevServer(child) {
-  if (!child || child.killed) {
+  if (!child) {
     return
   }
 
-  child.kill('SIGTERM')
+  let exited = false
+  child.once('exit', () => {
+    exited = true
+  })
+
+  const killTarget = child.spawnargs.length > 0 && process.platform !== 'win32' ? -child.pid : child.pid
+  try {
+    process.kill(killTarget, 'SIGTERM')
+  } catch {
+    // Process may already be gone.
+  }
+
   await new Promise((resolveTimer) => {
-    child.once('exit', resolveTimer)
-    setTimeout(resolveTimer, 1_000)
+    const timeout = setTimeout(() => {
+      if (!exited) {
+        try {
+          process.kill(killTarget, 'SIGKILL')
+        } catch {
+          // Process may already be gone.
+        }
+      }
+      resolveTimer()
+    }, 1_000)
+
+    child.once('exit', () => {
+      clearTimeout(timeout)
+      resolveTimer()
+    })
   })
 }
 
@@ -185,6 +219,10 @@ async function cleanupSeed(supabase, playerId) {
 }
 
 async function main() {
+  if (!allowRemoteMutation) {
+    throw new QaBlockedError('FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1 fehlt fuer den Kiosk-Remote-Test.')
+  }
+
   const localEnv = readDotEnv()
   const supabaseUrl = requireValue(process.env.VITE_SUPABASE_URL ?? localEnv.VITE_SUPABASE_URL, 'VITE_SUPABASE_URL')
   const supabaseKey = requireValue(
@@ -197,42 +235,46 @@ async function main() {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
-  const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
-    email: e2eEmail,
-    password: e2ePassword,
-  })
-  if (authError || !authData.user) {
-    throw authError ?? new Error('Supabase-Login fehlgeschlagen.')
-  }
-
-  const now = new Date().toISOString()
-  const playerId = randomUUID()
-  const playerName = `E2E Kiosk ${Date.now()}`
-  const { error: seedError } = await supabase.from('players').insert({
-    id: playerId,
-    user_id: authData.user.id,
-    name: playerName,
-    position: 'E2E',
-    cluster: 'offen',
-    active: true,
-    consent_status: 'unklar',
-    photo_consent_status: 'not_asked',
-    photo_path: null,
-    photo_updated_at: null,
-    returner_status: 'nein',
-    notes: 'Temporary kiosk E2E seed. Safe to delete.',
-    created_at: now,
-    updated_at: now,
-    client_updated_at: now,
-    deleted_at: null,
-  })
-  if (seedError) {
-    throw seedError
-  }
-
   const devServer = startDevServerIfNeeded()
   let browser
+  let playerId = null
+  let playerName = null
+  let signedIn = false
   try {
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: e2eEmail,
+      password: e2ePassword,
+    })
+    if (authError || !authData.user) {
+      throw authError ?? new Error('Supabase-Login fehlgeschlagen.')
+    }
+    signedIn = true
+
+    const now = new Date().toISOString()
+    playerId = randomUUID()
+    playerName = `E2E Kiosk ${Date.now()}`
+    const { error: seedError } = await supabase.from('players').insert({
+      id: playerId,
+      user_id: authData.user.id,
+      name: playerName,
+      position: 'E2E',
+      cluster: 'offen',
+      active: true,
+      consent_status: 'unklar',
+      photo_consent_status: 'not_asked',
+      photo_path: null,
+      photo_updated_at: null,
+      returner_status: 'nein',
+      notes: 'Temporary kiosk E2E seed. Safe to delete.',
+      created_at: now,
+      updated_at: now,
+      client_updated_at: now,
+      deleted_at: null,
+    })
+    if (seedError) {
+      throw seedError
+    }
+
     await waitForServer(baseUrl)
     browser = await puppeteer.launch({
       executablePath: chromeExecutablePath(),
@@ -329,13 +371,31 @@ async function main() {
     if (browser) {
       await browser.close()
     }
-    await cleanupSeed(supabase, playerId)
-    await supabase.auth.signOut()
+    if (playerId) {
+      await cleanupSeed(supabase, playerId)
+    }
+    if (signedIn) {
+      await supabase.auth.signOut()
+    }
     await stopDevServer(devServer)
   }
 }
 
 main().catch((error) => {
+  if (error instanceof QaBlockedError) {
+    console.error(
+      JSON.stringify(
+        {
+          ok: false,
+          status: 'blocked',
+          reason: error.message,
+        },
+        null,
+        2,
+      ),
+    )
+    process.exit(1)
+  }
   console.error(error instanceof Error ? error.message : error)
   process.exit(1)
 })

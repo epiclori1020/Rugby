@@ -7,6 +7,8 @@ Ziel: Aus dem aktuellen Rugby S&C Field Hub eine ruhige, native, feldtaugliche, 
 
 > Fuer kuenftige KI-Agenten: Dieses Dokument ist die zentrale Sprint-Roadmap. Vor Umsetzung eines Sprints zuerst den Memory-/Context-Router nutzen, dann nur die fuer den Sprint relevanten SSOTs laden und den jeweiligen Sprint-Scope strikt einhalten. Nicht versuchen, mehrere spaetere Sprints nebenbei mitzuerledigen.
 
+> Stand nach Abschluss-Audit 2026-07-06: Die Sprints 0A bis 20 sind abgeschlossen. Offene Beta-Blocker und Hardening-Restpunkte werden nicht mehr in diesem Dokument fortgeschrieben, sondern in der Anschluss-Roadmap `docs/superpowers/plans/2026-07-06-onfield-post-roadmap-hardening.md` geplant.
+
 ## Kurzfassung der Zielentscheidung
 
 Wir bauen die App nicht nur "schoener". Wir ordnen das Produkt neu.
@@ -1982,6 +1984,25 @@ Native App spaeter ist offen, aber kein Sprint-Ziel. SaaS spaeter ist offen, abe
 - Klarer Plan, wann Native/Flutter/React Native sinnvoll wird.
 - Keine spaeteren Optionen wurden verbaut.
 
+## Anschluss-Roadmap Nach Abschluss-Audit
+
+Status: Ausgelagert in `docs/superpowers/plans/2026-07-06-onfield-post-roadmap-hardening.md`.
+
+### Warum ausgelagert?
+
+Diese Roadmap 0A-20 ist abgeschlossen. Der Abschluss-Audit hat keine komplette Neuausrichtung ergeben, aber konkrete Beta-Blocker und Hardening-Restpunkte gefunden. Diese duerfen die abgeschlossene Roadmap nicht wieder unscharf machen.
+
+Die Anschluss-Roadmap behandelt:
+
+- Sprint 21: Harte Beta-QA-Gates.
+- Sprint 22: Runtime-Memory Privacy & Lint Fix.
+- Sprint 23: Supabase/Auth/RLS Beta Guardrails.
+- Sprint 24: Coach-Routing & Navigation Refactor.
+- Sprint 25: Designsystem, A11y & Responsive Hardening.
+- Sprint 26: Final Cleanup, Evidence & Memory Closeout.
+
+Phase A der Anschluss-Roadmap ist beta-blockierend. Eine externe Beta soll erst nach Abschluss von Sprint 21 bis Sprint 23 starten.
+
 ## Was wir bewusst weglassen, bis die Basis sitzt
 
 ### Dark Mode
@@ -2086,6 +2107,7 @@ Nicht springen, ausser es gibt einen klaren Grund.
 22. Sprint 18: PWA/A11y. **Abgeschlossen.**
 23. Sprint 19: Full Rollout QA. **Abgeschlossen.**
 24. Sprint 20: External Beta. **Abgeschlossen.**
+25. Anschluss-Roadmap Sprint 21-26: siehe `docs/superpowers/plans/2026-07-06-onfield-post-roadmap-hardening.md`.
 
 ## Definition of Done fuer die gesamte Roadmap
 

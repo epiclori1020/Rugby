@@ -29,7 +29,7 @@ Letztes Update: 2026-07-06
 |---|---|
 | Navigation | Sprint 6 hat die App-Shell im Code auf `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` umgestellt. Sprint 8 hat `Einheit` als echten Arbeitscontainer mit Session Header, Session-Auswahl, Check-in/Training/Nachbereitung-Subnavigation und gemeinsamen Kontextstatus umgesetzt. Sprint 14 hat `Mehr` als ruhige Utility-Zone fuer `Bibliothek`, `Export & Backup`, `Einstellungen` und `Returner` geschaerft. |
 | Designsystem | Sprint 5 hat das erste Core Component Kit in Code, Repo-Dokumentation und Figma-Sheet angelegt. Screen-weite Migrationen folgen spaeter. |
-| PWA/Install | Sprint 7 hat Manifest-/Install-Metadaten, Brand-Surfaces und das eigene OnField Coach SVG/PNG-Icon-Set fuer PWA/iOS aktualisiert. Sprint 18 hat Offline-Navigation per App-Shell-Fallback, Settings-Display-Mode-Hinweise, sichtbare Disabled-Gruende und automatisierten PWA-Smoke fuer iPhone/iPad-Viewports ergaenzt. Sprint 19 hat eine Screen-by-Screen-QA-Matrix plus automatisierten Sprint-19-Visual-QA-Smoke fuer iPhone/iPad-Viewports ergaenzt. Sprint 20 hat die kontrollierte externe Beta-Readiness, PWA-Install-/QA-Kriterien und Native/SaaS-Entscheidungskriterien dokumentiert. |
+| PWA/Install | Sprint 7 hat Manifest-/Install-Metadaten, Brand-Surfaces und das eigene OnField Coach SVG/PNG-Icon-Set fuer PWA/iOS aktualisiert. Sprint 18 hat Offline-Navigation per App-Shell-Fallback, Settings-Display-Mode-Hinweise, sichtbare Disabled-Gruende und automatisierten PWA-Smoke fuer iPhone/iPad-Viewports ergaenzt. Sprint 19 hat eine Screen-by-Screen-QA-Matrix plus automatisierten Sprint-19-Visual-QA-Smoke fuer iPhone/iPad-Viewports ergaenzt. Sprint 20 hat die kontrollierte externe Beta-Readiness, PWA-Install-/QA-Kriterien und Native/SaaS-Entscheidungskriterien dokumentiert. Sprint 21 hat `qa:local` und `qa:beta` als harte QA-Gates ergaenzt. |
 | iPhone | Hat in Sprint 6 die neue 5er-Bottom-Tab-Bar mit Safe-Area-Abstand erhalten; Unterbereiche bleiben erreichbar. |
 | iPad | Hat in Sprint 6 die neue 5er-Sidebar plus Content-Struktur erhalten; Unterbereiche bleiben erreichbar. |
 | Check-in | Sprint 9 ist umgesetzt: Check-in ist roster-first mit Listenzeilen, Ampel plus Textgrund, direkten Da/Nicht-da-Schnellaktionen und Detail-Sheet pro Spieler. Public/Kiosk, Reset, Legende, Mitnahmen und Notizen sind sekundaer erreichbar. |
@@ -45,7 +45,8 @@ Letztes Update: 2026-07-06
 
 ## Aktuelle massgebliche Dokumente
 
-- Roadmap: `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md`
+- Abgeschlossene Haupt-Roadmap 0A-20: `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md`
+- Anschluss-Roadmap nach Abschluss-Audit: `docs/superpowers/plans/2026-07-06-onfield-post-roadmap-hardening.md`
 - Product Brief: `docs/field-hub/onfield_product_brief.md`
 - Brand Kit: `docs/field-hub/onfield_brand_kit.md`
 - Tone of Voice: `docs/field-hub/onfield_tone_of_voice.md`
@@ -114,16 +115,30 @@ Letztes Update: 2026-07-06
 - Sprint 18 ist abgeschlossen: PWA/Install und Accessibility Polish sind umgesetzt. Workbox nutzt einen Offline-App-Shell-Fallback, Settings zeigen Browser-/Home-Screen-Modus, Self-Check-in-Disabled-Actions haben sichtbare `aria-describedby`-Gruende, Legacy-Actions/PDF/Kiosk-Buttons teilen den sichtbaren Focus Ring, und `npm run test:e2e:pwa` prueft die iPhone-/iPad-Viewport-Matrix plus Offline-Fallback gegen den gebauten Preview.
 - Sprint 19 ist abgeschlossen: Die Screen-by-Screen Full-Rollout-QA ist dokumentiert, `npm run test:e2e:sprint19` prueft die Sprint-19-Hauptscreens ueber iPhone-/iPad-Viewports, der signed-in Spielerbereich wurde mit Test-Credentials als Laufzeit-Env verifiziert, `npm run test:e2e:kiosk` verifiziert Remote-Kiosk-Submit mit temporaerem Seed und Cleanup, LUVI-Pattern wurden als QA-Referenz bewertet, alte englische Nachbereitungslabels wurden bereinigt, und medizinisch riskante Entscheidungs-/Freigabe-Sprache wurde aus sichtbarem App-Content ersetzt. Lazy-Error-UI ist zusaetzlich ueber einen deterministischen Boundary-Komponententest abgedeckt.
 - Sprint 20 ist abgeschlossen: `onfield_beta_readiness.md` definiert den kontrollierten externen Beta-Rahmen fuer bis zu 10 Coach-Tester aus bis zu 3 Club-Kontexten, inklusive Install-, signed-in-, Public/Kiosk-, Offline-/Sync-, Datenschutz-/Safety- und Feedback-Triage-Kriterien. `onfield_native_saas_decision_criteria.md` legt fest, dass Native/Flutter/React Native und OnField Performance/SaaS erst nach Beta-Evidence bewertet werden. `onfield_luvi_reuse_audit.md` dokumentiert, welche LUVI-Patterns als Audit-/QA-/Privacy-Muster uebernommen oder bewusst nicht uebernommen werden.
+- Sprint 21 ist abgeschlossen: `app/field-hub` hat `qa:local` als Entwicklungscheck und `qa:beta` als hartes Beta-Gate. `qa:beta` blockiert ohne `FIELD_HUB_E2E_EMAIL`, `FIELD_HUB_E2E_PASSWORD` und `FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1`; Sprint-19-Signed-in und Kiosk-Remote-Mutation koennen nicht mehr still als gruen geskippt werden. Die Sprint-19-QA- und Beta-Readiness-Doku enthalten die LUVI-QA-Audit-Uebernahme fuer Gate-, Evidence-, Cleanup- und Secret-Hygiene-Muster.
+- Die Anschluss-Roadmap `docs/superpowers/plans/2026-07-06-onfield-post-roadmap-hardening.md` ist aktiv. Phase A ist beta-blockierend:
+  - Sprint 21: Harte Beta-QA-Gates ist abgeschlossen.
+  - Sprint 22: Runtime-Memory Privacy & Lint Fix.
+  - Sprint 23: Supabase/Auth/RLS Beta Guardrails.
+  Phase B ist Qualitaets- und Struktur-Hardening:
+  - Sprint 24: Coach-Routing & Navigation Refactor.
+  - Sprint 25: Designsystem, A11y & Responsive Hardening.
+  - Sprint 26: Final Cleanup, Evidence & Memory Closeout.
 
 ## Naechste empfohlene Schritte
 
-1. Kontrollierte externe Beta nach `docs/field-hub/onfield_beta_readiness.md` vorbereiten und durchfuehren.
-2. Native/SaaS-Fragen erst anhand der Sprint-20-Entscheidungskriterien und echter Beta-Evidence neu bewerten.
+1. Anschluss-Roadmap Phase A weiter umsetzen: Sprint 22 und Sprint 23.
+2. Erst nach Phase A eine kontrollierte externe Beta nach `docs/field-hub/onfield_beta_readiness.md` vorbereiten und durchfuehren.
+3. Phase B umsetzen, bevor groessere Beta, App-Store-Ueberlegung oder OnField-Performance-/SaaS-Vorbereitung startet.
+4. Native/SaaS-Fragen erst anhand der Sprint-20-Entscheidungskriterien und echter Beta-Evidence neu bewerten.
 
 ## Offene Risiken
 
 | Risiko | Auswirkung | Naechster Schritt |
 |---|---|---|
+| Runtime-Memory-Lint/Privacy ist noch nicht abschliessend gehaertet. | Generated Runtime Memory kann falsches Vertrauen erzeugen, wenn lokale Captures/Reports Leak-Findings enthalten. | Sprint 22 umsetzen; Lint muss gruen sein, bevor generated Runtime Memory als hilfreicher Kontext gilt. |
+| Supabase-Beta-Defaults passen noch nicht voll zur kontrollierten Beta. | Offene Signup-/Auth-Defaults koennen der Beta-Strategie widersprechen. | Sprint 23 umsetzen; Config, Setup Guide und statischen Supabase-Audit angleichen. |
+| Coach-Navigation nutzt intern noch teilweise Legacy-Tab-Modell. | Deep Links, Back/Forward und spaetere App-Store-/SaaS-Reife bleiben schwach. | Sprint 24 umsetzen; echtes OnField-Routingmodell einfuehren. |
 | Core Components sind noch nicht screen-weit ausgerollt. | Das Kit existiert, aber viele Screens nutzen weiterhin Legacy-Klassen und Inline-Muster. | In den naechsten Screen-Sprints gezielt migrieren, ohne Sprint-6-IA vorzuziehen. |
 | iPhone wird wieder als Nebenansicht behandelt. | Externe Nutzung und App-Store-Perspektive werden geschwaecht. | iPhone-Paritaet in jedem Sprint pruefen. |
 | Rugby bleibt teilweise noch in bestehenden Screens und Content hart verdrahtet. | Spaetere Sport-Presets brauchen weitere Extraktion und fachliche Validierung. | Nach Sprint 16 nur gezielt in geplanten Refactor-Sprints weiter extrahieren; keine zweite Sportart nebenbei einfuehren. |

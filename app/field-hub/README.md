@@ -2,7 +2,7 @@
 
 PWA-first Coach-Operations-App fuer den Trainingstag. OnField Rugby ist der erste Sport-Preset; die generische OnField-Architektur bleibt sportartenuebergreifend gedacht.
 
-## Sprint-20 Beta Readiness
+## Beta Readiness und QA-Gates
 
 Die externe Beta-Readiness und die spaetere Plattform-Entscheidungsvorbereitung liegen in:
 
@@ -10,7 +10,12 @@ Die externe Beta-Readiness und die spaetere Plattform-Entscheidungsvorbereitung 
 - `../../docs/field-hub/onfield_native_saas_decision_criteria.md`
 - `../../docs/field-hub/onfield_luvi_reuse_audit.md`
 
-Sprint 20 baut keine Native App, keine SaaS-/Rollen-/Billing-Architektur, keine zweite Sportart und keine neuen Supabase-Migrationen. Zugangsdaten fuer optische QA werden nur temporaer zur Laufzeit genutzt und nicht in Dateien gespeichert.
+Sprint 21 ergaenzt zwei QA-Gates:
+
+- `npm run qa:local` ist der normale Arbeitscheck ohne Beta-Credentials.
+- `npm run qa:beta` ist das harte technische Freigabe-Gate fuer externe Beta.
+
+`qa:beta` darf nicht gruen werden, wenn Signed-in-, Public/Kiosk- oder Remote-Testpfade fehlen oder geskippt wurden. Zugangsdaten fuer optische QA werden nur temporaer zur Laufzeit genutzt und nicht in Dateien, Doku, Screenshots, Shell-Beispielen oder Memory gespeichert.
 
 ## Lokale Kommandos
 
@@ -19,6 +24,8 @@ npm run dev
 npm run typecheck
 npm run lint
 npm test
+npm run qa:local
+npm run qa:beta
 npm run test:e2e:kiosk
 npm run build
 npm run preview
@@ -28,11 +35,13 @@ Der Dev-Server nutzt Vite. Lokal ist die URL typischerweise `http://127.0.0.1:51
 oder `http://localhost:5173/`.
 
 Der Kiosk-E2E-Test nutzt echte Supabase Auth/RLS mit einem temporaeren Testspieler und raeumt
-diesen danach wieder auf. Zugangsdaten nicht in Dateien speichern, sondern nur zur Laufzeit setzen:
+diesen danach wieder auf. Remote-Mutation ist nur mit explizitem Opt-in erlaubt:
 
 ```bash
-FIELD_HUB_E2E_EMAIL="..." FIELD_HUB_E2E_PASSWORD="..." npm run test:e2e:kiosk
+FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1 npm run test:e2e:kiosk
 ```
+
+Dabei muessen `FIELD_HUB_E2E_EMAIL` und `FIELD_HUB_E2E_PASSWORD` sicher zur Laufzeit gesetzt sein. Keine echten Werte in Commits, Markdown, Screenshots, Shell-History oder Memory uebernehmen; ein im Chat geteiltes Passwort nach dem QA-Lauf rotieren.
 
 ## Sprint-1-Scope
 

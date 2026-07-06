@@ -14,6 +14,13 @@ const screenshotsDir = resolve(rootDir, 'ux-audit-screenshots')
 const authEmail = process.env.FIELD_HUB_E2E_EMAIL
 const authPassword = process.env.FIELD_HUB_E2E_PASSWORD
 
+class QaBlockedError extends Error {
+  constructor(message) {
+    super(message)
+    this.name = 'QaBlockedError'
+  }
+}
+
 const viewports = [
   { name: 'iphone-small', label: 'iPhone small', width: 375, height: 667, isMobile: true },
   { name: 'iphone-large', label: 'iPhone large', width: 393, height: 852, isMobile: true },
@@ -418,7 +425,7 @@ async function assertLazyLoadErrorState(browser) {
 async function runSignedInSmoke(page) {
   if (!authEmail || !authPassword) {
     if (requireAuth) {
-      throw new Error('FIELD_HUB_E2E_EMAIL und FIELD_HUB_E2E_PASSWORD fehlen.')
+      return { status: 'blocked', reason: 'FIELD_HUB_E2E_EMAIL und FIELD_HUB_E2E_PASSWORD fehlen.' }
     }
     return { status: 'skipped', reason: 'FIELD_HUB_E2E_EMAIL/FIELD_HUB_E2E_PASSWORD nicht gesetzt.' }
   }
@@ -443,6 +450,9 @@ async function runSignedInSmoke(page) {
 async function main() {
   if (!existsSync(resolve(rootDir, 'dist/index.html'))) {
     throw new Error('dist/index.html fehlt. Fuehre vor dem Sprint-19-Smoke npm run build aus.')
+  }
+  if (requireAuth && (!authEmail || !authPassword)) {
+    throw new QaBlockedError('FIELD_HUB_E2E_EMAIL und FIELD_HUB_E2E_PASSWORD fehlen.')
   }
 
   const previewServer = startPreviewIfNeeded()
@@ -472,6 +482,9 @@ async function main() {
     }
     await assertPublicCheckInErrorState(page)
     const signedIn = await runSignedInSmoke(page)
+    if (signedIn.status === 'blocked') {
+      throw new QaBlockedError(signedIn.reason)
+    }
 
     const browserErrors = consoleMessages.filter(
       (message) =>
@@ -508,6 +521,21 @@ async function main() {
 }
 
 main().catch((error) => {
+  if (error instanceof QaBlockedError) {
+    console.error(
+      JSON.stringify(
+        {
+          ok: false,
+          status: 'blocked',
+          reason: error.message,
+        },
+        null,
+        2,
+      ),
+    )
+    process.exitCode = 1
+    return
+  }
   console.error(error instanceof Error ? error.message : error)
   process.exitCode = 1
 })
