@@ -48,6 +48,7 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | 2026-07-05 | Sprint 6 nutzt ein kompatibles Navigationsmodell: 5 Hauptbereiche als `AppSection`, bestehende Screens weiter als `HubTab`-Ziele. | So wird die neue IA umgesetzt, ohne bestehende Check-in-, Training-, Nachbereitung-, Bibliothek-, Export-, Einstellungen- und Returner-Screens in einem Shell-Sprint umzubauen. | Aktiv |
 | 2026-07-05 | OnField Coach App-Icons werden als eigenes deterministisches SVG/PNG-Set gepflegt, nicht als Library-Icon oder Bild-KI-Produktionsasset. | Install-Icons muessen reproduzierbar, skalierbar und in kleinen Groessen klar sein; Bild-KI kann spaeter Inspiration liefern, ist aber keine Produktionsquelle fuer PWA-/iOS-Icons. | Aktiv |
 | 2026-07-06 | Sprint 16 nutzt eine statische aktive `SportConfig` mit OnField Rugby als einzigem Runtime-Preset. | Das schafft eine kleine SSOT-Schicht im Code, ohne Runtime-Selector, zweite Sportart, Config-Engine, Datenmigration oder Supabase-Komplexitaet in den Coach-MVP zu ziehen. | Aktiv |
+| 2026-07-06 | Native/Flutter/React Native und OnField Performance/SaaS werden erst nach kontrollierter Beta-Evidence neu bewertet. | Sprint 20 definiert Beta-Readiness und Entscheidungskriterien, damit Plattformentscheidungen nicht aus Bauchgefuehl oder LUVI-Wiederverwendungswuenschen entstehen. | Aktiv |
 
 ## Markenarchitektur
 

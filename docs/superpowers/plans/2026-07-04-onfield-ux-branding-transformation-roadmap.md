@@ -1913,6 +1913,8 @@ Sprint 19 muss den Spieler-/Athletenbereich aus Sprint 12 signed-in mit Profilda
 
 ## Sprint 20 - Externe Beta Readiness und Plattform-Entscheidungsvorbereitung
 
+Status: Abgeschlossen am 2026-07-06.
+
 ### Was genau machen wir?
 
 Wir bereiten einen kontrollierten externen Test vor.
@@ -2067,7 +2069,7 @@ Nicht springen, ausser es gibt einen klaren Grund.
 21. Sprint 17: Sync/Backup.
 22. Sprint 18: PWA/A11y.
 23. Sprint 19: Full Rollout QA. **Abgeschlossen.**
-24. Sprint 20: External Beta.
+24. Sprint 20: External Beta. **Abgeschlossen.**
 
 ## Definition of Done fuer die gesamte Roadmap
 

@@ -1,6 +1,16 @@
-# Rugby S&C Field Hub
+# OnField Coach
 
-Sprint-10-Stand fuer Arwins persoenliches Rugby Donau S&C Coach-Dashboard.
+PWA-first Coach-Operations-App fuer den Trainingstag. OnField Rugby ist der erste Sport-Preset; die generische OnField-Architektur bleibt sportartenuebergreifend gedacht.
+
+## Sprint-20 Beta Readiness
+
+Die externe Beta-Readiness und die spaetere Plattform-Entscheidungsvorbereitung liegen in:
+
+- `../../docs/field-hub/onfield_beta_readiness.md`
+- `../../docs/field-hub/onfield_native_saas_decision_criteria.md`
+- `../../docs/field-hub/onfield_luvi_reuse_audit.md`
+
+Sprint 20 baut keine Native App, keine SaaS-/Rollen-/Billing-Architektur, keine zweite Sportart und keine neuen Supabase-Migrationen. Zugangsdaten fuer optische QA werden nur temporaer zur Laufzeit genutzt und nicht in Dateien gespeichert.
 
 ## Lokale Kommandos
 
