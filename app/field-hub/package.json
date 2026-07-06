@@ -11,6 +11,7 @@
     "test": "vitest run",
     "test:e2e:kiosk": "node scripts/e2e-kiosk-smoke.mjs",
     "test:e2e:pwa": "npm run build && node scripts/e2e-pwa-smoke.mjs",
+    "test:e2e:sprint19": "npm run build && node scripts/e2e-sprint19-visual-qa.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
