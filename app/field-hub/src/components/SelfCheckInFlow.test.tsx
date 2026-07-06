@@ -7,6 +7,7 @@ import { SelfCheckInFlow, type SelfCheckInSubmissionInput } from './SelfCheckInF
 type RenderFlowProps = Partial<{
   autoResetAfterSubmitMs: number | null
   completionTitle: string
+  disabled: boolean
   mode: 'kiosk' | 'public'
   resetActionLabel: string
 }>
@@ -165,6 +166,59 @@ describe('SelfCheckInFlow', () => {
     expect(onSubmit).toHaveBeenCalledWith(
       expect.objectContaining({ painScore: 0, painLocation: '', sessionReaction: 'none' }),
     )
+  })
+
+  it('connects disabled next actions to visible field-ready reasons', async () => {
+    const container = await renderFlow()
+
+    let nextButton = getButton(container, 'Weiter')
+    expect(nextButton.disabled).toBe(true)
+    expect(nextButton.getAttribute('aria-describedby')).toBe('self-checkin-player-disabled-reason')
+    expect(container.textContent).toContain('Name auswählen, dann weiter.')
+
+    await changeInput(container.querySelector('input') as HTMLInputElement, 'max')
+    await clickButton(container, 'Max Muster')
+    await clickButton(container, 'Weiter')
+
+    nextButton = getButton(container, 'Weiter')
+    expect(nextButton.disabled).toBe(true)
+    expect(nextButton.getAttribute('aria-describedby')).toBe('self-checkin-readiness-disabled-reason')
+    expect(container.textContent).toContain('Readiness auswählen, dann weiter.')
+
+    await clickButton(container, '4')
+    await clickButton(container, 'Weiter')
+    await clickButton(container, 'Weiter')
+
+    nextButton = getButton(container, 'Weiter')
+    expect(nextButton.disabled).toBe(true)
+    expect(nextButton.getAttribute('aria-describedby')).toBe('self-checkin-pain-disabled-reason')
+    expect(container.textContent).toContain('Schmerz-Skala auswählen, dann weiter.')
+
+    await clickButton(container, '3')
+    nextButton = getButton(container, 'Weiter')
+    expect(nextButton.disabled).toBe(true)
+    expect(nextButton.getAttribute('aria-describedby')).toBe('self-checkin-pain-disabled-reason')
+    expect(container.textContent).toContain('Körperregion auswählen oder kurz notieren.')
+
+    await clickButton(container, 'Knie')
+    await clickButton(container, 'Weiter')
+
+    nextButton = getButton(container, 'Weiter')
+    expect(nextButton.disabled).toBe(true)
+    expect(nextButton.getAttribute('aria-describedby')).toBe('self-checkin-reaction-disabled-reason')
+    expect(container.textContent).toContain('Auswahl treffen, dann weiter.')
+  })
+
+  it('explains disabled flow availability at the current step', async () => {
+    const container = await renderFlow(undefined, { disabled: true })
+
+    const submitButton = container.querySelector<HTMLButtonElement>('.self-checkin-submit')
+    expect(submitButton).toBeNull()
+
+    const nextButton = getButton(container, 'Weiter')
+    expect(nextButton.disabled).toBe(true)
+    expect(nextButton.getAttribute('aria-describedby')).toBe('self-checkin-player-disabled-reason')
+    expect(container.textContent).toContain('Check-in ist gerade nicht verfügbar.')
   })
 
   it('resets automatically after kiosk completion when configured', async () => {

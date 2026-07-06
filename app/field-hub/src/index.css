@@ -379,6 +379,36 @@ button {
   gap: 14px;
 }
 
+.screen-load-state {
+  min-width: 0;
+  border: 1px solid var(--line);
+  border-radius: var(--of-radius-sm);
+  background: var(--surface);
+  color: var(--muted);
+  display: grid;
+  gap: var(--of-space-sm);
+  padding: var(--of-space-lg);
+}
+
+.screen-load-state h3,
+.screen-load-state p {
+  margin: 0;
+}
+
+.screen-load-state h3 {
+  color: var(--ink);
+}
+
+.screen-load-state .secondary-action {
+  justify-self: start;
+}
+
+.screen-load-state-error {
+  border-color: var(--of-color-danger-border-subtle);
+  background: var(--of-color-status-danger-bg-soft);
+  color: var(--of-color-status-danger-text);
+}
+
 .dashboard-grid {
   grid-template-areas:
     "welcome welcome"
@@ -2869,6 +2899,10 @@ button {
   resize: vertical;
 }
 
+.primary-action:focus-visible,
+.secondary-action:focus-visible,
+.pdf-link:focus-visible,
+.kiosk-exit-button:focus-visible,
 .field-form input:focus,
 .field-form select:focus,
 .field-form textarea:focus,

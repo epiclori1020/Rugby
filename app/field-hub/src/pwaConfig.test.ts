@@ -65,3 +65,24 @@ describe('Sprint 10 PWA configuration', () => {
     }
   })
 })
+
+describe('Sprint 18 PWA install and offline polish', () => {
+  it('keeps the installed app in standalone mode with a same-origin start scope', () => {
+    const viteConfig = readFileSync(join(projectRoot, 'vite.config.ts'), 'utf8')
+    const indexHtml = readFileSync(join(projectRoot, 'index.html'), 'utf8')
+
+    expect(indexHtml).toContain('viewport-fit=cover')
+    expect(indexHtml).toContain('<meta name="apple-mobile-web-app-capable" content="yes" />')
+    expect(viteConfig).toContain("start_url: '/'")
+    expect(viteConfig).toContain("scope: '/'")
+    expect(viteConfig).toContain("display: 'standalone'")
+    expect(viteConfig).toContain("orientation: 'any'")
+  })
+
+  it('falls back to the app shell for offline navigation instead of a browser error page', () => {
+    const viteConfig = readFileSync(join(projectRoot, 'vite.config.ts'), 'utf8')
+
+    expect(viteConfig).toContain("navigateFallback: '/index.html'")
+    expect(viteConfig).toContain("cleanupOutdatedCaches: true")
+  })
+})

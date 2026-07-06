@@ -1,10 +1,19 @@
 # OnField PWA Accessibility QA
 
-Stand: 2026-07-04
+Stand: 2026-07-06
 
 ## Zweck
 
 Dieses SSOT definiert die QA-Regeln fuer OnField als PWA auf iPhone und iPad. Es ist eine Checkliste fuer spaetere UI- und PWA-Sprints; Sprint 0B fuehrt keine Browser- oder UI-Verifikation aus.
+
+## Sprint 18 Smoke
+
+Sprint 18 fuegt eine automatisierte PWA-Smoke-Pruefung fuer den gebauten Preview-Stand hinzu:
+
+- Script: `npm run test:e2e:pwa` in `app/field-hub`.
+- Viewports: 375 x 667, 393 x 852, 834 x 1194, 1194 x 834.
+- Pruefungen: App-Shell rendert, kein horizontales Overflow, Bottom Navigation bleibt im Viewport, Tastaturfokus ist sichtbar, lazy geladene Screens `Analyse`, `Bibliothek`, `Export & Backup`, `Einstellungen` und `Returner` laden auf iPhone klein und iPad Landscape, Offline-Navigation faellt auf die App-Shell zurueck.
+- Voraussetzung: lokaler Chromium/Chrome oder `PUPPETEER_EXECUTABLE_PATH`.
 
 ## Verbindliche Regeln
 

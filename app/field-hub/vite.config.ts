@@ -58,7 +58,9 @@ export default defineConfig({
         ],
       },
       workbox: {
+        cleanupOutdatedCaches: true,
         globPatterns: ['**/*.{js,css,html,svg,ico,png,webp,pdf}'],
+        navigateFallback: '/index.html',
       },
       devOptions: {
         enabled: false,

@@ -265,6 +265,28 @@ export function SelfCheckInFlow({
   const lifeStepIsValid = true
   const painStepIsValid = painScore !== null && (!needsPainLocation || submittedPainLocation.length > 0)
   const reactionStepIsValid = sessionReaction !== null
+  const unavailableReason = disabled
+    ? 'Check-in ist gerade nicht verfügbar.'
+    : isSubmitting
+      ? 'Check-in wird gerade gesendet.'
+      : null
+  const playerNextDisabledReason =
+    unavailableReason ?? (!selectedPlayer ? 'Name auswählen, dann weiter.' : null)
+  const readinessNextDisabledReason =
+    unavailableReason ?? (readiness === null ? 'Readiness auswählen, dann weiter.' : null)
+  const lifeNextDisabledReason = unavailableReason ?? (!lifeStepIsValid ? 'Angabe prüfen, dann weiter.' : null)
+  const painNextDisabledReason =
+    unavailableReason ??
+    (!painStepIsValid
+      ? painScore === null
+        ? 'Schmerz-Skala auswählen, dann weiter.'
+        : 'Körperregion auswählen oder kurz notieren.'
+      : null)
+  const reactionNextDisabledReason =
+    unavailableReason ?? (!reactionStepIsValid ? 'Auswahl treffen, dann weiter.' : null)
+  const submitDisabledReason =
+    unavailableReason ??
+    (!canSubmit ? 'Offene Angaben prüfen, dann absenden.' : null)
 
   return (
     <form
@@ -342,10 +364,21 @@ export function SelfCheckInFlow({
           )}
 
           <div className="self-checkin-step-actions">
-            <button className="primary-action self-checkin-next" type="button" disabled={!selectedPlayer || disabled} onClick={goToNextStep}>
+            <button
+              aria-describedby={playerNextDisabledReason ? 'self-checkin-player-disabled-reason' : undefined}
+              className="primary-action self-checkin-next"
+              type="button"
+              disabled={Boolean(playerNextDisabledReason)}
+              onClick={goToNextStep}
+            >
               Weiter
             </button>
           </div>
+          {playerNextDisabledReason ? (
+            <p className="disabled-action-reason" id="self-checkin-player-disabled-reason">
+              {playerNextDisabledReason}
+            </p>
+          ) : null}
         </section>
       ) : null}
 
@@ -373,10 +406,21 @@ export function SelfCheckInFlow({
             <button className="secondary-action" type="button" disabled={disabled || isSubmitting} onClick={goToPreviousStep}>
               Zurück
             </button>
-            <button className="primary-action self-checkin-next" type="button" disabled={readiness === null || disabled} onClick={goToNextStep}>
+            <button
+              aria-describedby={readinessNextDisabledReason ? 'self-checkin-readiness-disabled-reason' : undefined}
+              className="primary-action self-checkin-next"
+              type="button"
+              disabled={Boolean(readinessNextDisabledReason)}
+              onClick={goToNextStep}
+            >
               Weiter
             </button>
           </div>
+          {readinessNextDisabledReason ? (
+            <p className="disabled-action-reason" id="self-checkin-readiness-disabled-reason">
+              {readinessNextDisabledReason}
+            </p>
+          ) : null}
         </section>
       ) : null}
 
@@ -428,10 +472,21 @@ export function SelfCheckInFlow({
             <button className="secondary-action" type="button" disabled={disabled || isSubmitting} onClick={goToPreviousStep}>
               Zurück
             </button>
-            <button className="primary-action self-checkin-next" type="button" disabled={!lifeStepIsValid || disabled} onClick={goToNextStep}>
+            <button
+              aria-describedby={lifeNextDisabledReason ? 'self-checkin-life-disabled-reason' : undefined}
+              className="primary-action self-checkin-next"
+              type="button"
+              disabled={Boolean(lifeNextDisabledReason)}
+              onClick={goToNextStep}
+            >
               Weiter
             </button>
           </div>
+          {lifeNextDisabledReason ? (
+            <p className="disabled-action-reason" id="self-checkin-life-disabled-reason">
+              {lifeNextDisabledReason}
+            </p>
+          ) : null}
         </section>
       ) : null}
 
@@ -491,10 +546,21 @@ export function SelfCheckInFlow({
             <button className="secondary-action" type="button" disabled={disabled || isSubmitting} onClick={goToPreviousStep}>
               Zurück
             </button>
-            <button className="primary-action self-checkin-next" type="button" disabled={!painStepIsValid || disabled} onClick={goToNextStep}>
+            <button
+              aria-describedby={painNextDisabledReason ? 'self-checkin-pain-disabled-reason' : undefined}
+              className="primary-action self-checkin-next"
+              type="button"
+              disabled={Boolean(painNextDisabledReason)}
+              onClick={goToNextStep}
+            >
               Weiter
             </button>
           </div>
+          {painNextDisabledReason ? (
+            <p className="disabled-action-reason" id="self-checkin-pain-disabled-reason">
+              {painNextDisabledReason}
+            </p>
+          ) : null}
         </section>
       ) : null}
 
@@ -532,10 +598,21 @@ export function SelfCheckInFlow({
             <button className="secondary-action" type="button" disabled={disabled || isSubmitting} onClick={goToPreviousStep}>
               Zurück
             </button>
-            <button className="primary-action self-checkin-next" type="button" disabled={!reactionStepIsValid || disabled} onClick={goToNextStep}>
+            <button
+              aria-describedby={reactionNextDisabledReason ? 'self-checkin-reaction-disabled-reason' : undefined}
+              className="primary-action self-checkin-next"
+              type="button"
+              disabled={Boolean(reactionNextDisabledReason)}
+              onClick={goToNextStep}
+            >
               Weiter
             </button>
           </div>
+          {reactionNextDisabledReason ? (
+            <p className="disabled-action-reason" id="self-checkin-reaction-disabled-reason">
+              {reactionNextDisabledReason}
+            </p>
+          ) : null}
         </section>
       ) : null}
 
@@ -580,11 +657,22 @@ export function SelfCheckInFlow({
             <button className="secondary-action" type="button" disabled={disabled || isSubmitting} onClick={goToPreviousStep}>
               Zurück
             </button>
-            <button className="primary-action self-checkin-submit" type="submit" disabled={!canSubmit} aria-busy={isSubmitting}>
+            <button
+              aria-describedby={submitDisabledReason ? 'self-checkin-submit-disabled-reason' : undefined}
+              className="primary-action self-checkin-submit"
+              type="submit"
+              disabled={Boolean(submitDisabledReason)}
+              aria-busy={isSubmitting}
+            >
               <Send className="nav-icon" aria-hidden />
               <span>{isSubmitting ? submittingLabel : submitLabel}</span>
             </button>
           </div>
+          {submitDisabledReason ? (
+            <p className="disabled-action-reason" id="self-checkin-submit-disabled-reason">
+              {submitDisabledReason}
+            </p>
+          ) : null}
         </section>
       ) : null}
 

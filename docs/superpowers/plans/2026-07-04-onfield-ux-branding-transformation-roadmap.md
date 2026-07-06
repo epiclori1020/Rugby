@@ -1784,6 +1784,8 @@ Research-Regel:
 
 ## Sprint 18 - Accessibility, PWA und Install Polish
 
+Status: Abgeschlossen am 2026-07-06.
+
 ### Was genau machen wir?
 
 Wir machen die App fuer externe Nutzer robuster.

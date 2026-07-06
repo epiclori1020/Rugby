@@ -16,6 +16,7 @@ type SettingsViewProps = {
   lastExportAt: string | null
   latestCompletedSession: SessionLog | null
   needsAppRefresh: boolean
+  pwaDisplayMode: 'browser' | 'standalone'
   onManualSync: () => void
   onNavigate: (tab: HubTab) => void
   onReloadApp: () => void
@@ -95,6 +96,7 @@ export function SettingsView({
   lastExportAt,
   latestCompletedSession,
   needsAppRefresh,
+  pwaDisplayMode,
   onManualSync,
   onNavigate,
   onReloadApp,
@@ -110,6 +112,11 @@ export function SettingsView({
   const canManualSync = syncDisabledReason === null
   const SyncIcon = syncOverview.isOnline ? Cloud : CloudOff
   const syncDisabledReasonId = 'manual-sync-disabled-reason'
+  const pwaModeLabel = pwaDisplayMode === 'standalone' ? 'PWA installiert' : 'Browser-Modus'
+  const pwaModeDescription =
+    pwaDisplayMode === 'standalone'
+      ? 'OnField Coach laeuft im Home-Screen-Modus.'
+      : 'Installiere OnField Coach fuer mehr Platz am Spielfeldrand.'
 
   return (
     <div className="settings-layout">
@@ -201,6 +208,11 @@ export function SettingsView({
           <span className={storageStatusDotClassName(storagePersistence.status)} aria-hidden />
           <strong>Speicherstatus</strong>
           <span>{storageStatusLabel(storagePersistence.status)}</span>
+        </div>
+        <div className="sync-mini">
+          <span className={pwaDisplayMode === 'standalone' ? 'status-dot online' : 'status-dot'} aria-hidden />
+          <strong>{pwaModeLabel}</strong>
+          <span>{pwaModeDescription}</span>
         </div>
       </section>
 

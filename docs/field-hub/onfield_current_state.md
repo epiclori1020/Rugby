@@ -29,7 +29,7 @@ Letztes Update: 2026-07-06
 |---|---|
 | Navigation | Sprint 6 hat die App-Shell im Code auf `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` umgestellt. Sprint 8 hat `Einheit` als echten Arbeitscontainer mit Session Header, Session-Auswahl, Check-in/Training/Nachbereitung-Subnavigation und gemeinsamen Kontextstatus umgesetzt. Sprint 14 hat `Mehr` als ruhige Utility-Zone fuer `Bibliothek`, `Export & Backup`, `Einstellungen` und `Returner` geschaerft. |
 | Designsystem | Sprint 5 hat das erste Core Component Kit in Code, Repo-Dokumentation und Figma-Sheet angelegt. Screen-weite Migrationen folgen spaeter. |
-| PWA-Metadaten | Sprint 7 hat Manifest-/Install-Metadaten, Brand-Surfaces und das eigene OnField Coach SVG/PNG-Icon-Set fuer PWA/iOS aktualisiert. |
+| PWA/Install | Sprint 7 hat Manifest-/Install-Metadaten, Brand-Surfaces und das eigene OnField Coach SVG/PNG-Icon-Set fuer PWA/iOS aktualisiert. Sprint 18 hat Offline-Navigation per App-Shell-Fallback, Settings-Display-Mode-Hinweise, sichtbare Disabled-Gruende und automatisierten PWA-Smoke fuer iPhone/iPad-Viewports ergaenzt. |
 | iPhone | Hat in Sprint 6 die neue 5er-Bottom-Tab-Bar mit Safe-Area-Abstand erhalten; Unterbereiche bleiben erreichbar. |
 | iPad | Hat in Sprint 6 die neue 5er-Sidebar plus Content-Struktur erhalten; Unterbereiche bleiben erreichbar. |
 | Check-in | Sprint 9 ist umgesetzt: Check-in ist roster-first mit Listenzeilen, Ampel plus Textgrund, direkten Da/Nicht-da-Schnellaktionen und Detail-Sheet pro Spieler. Public/Kiosk, Reset, Legende, Mitnahmen und Notizen sind sekundaer erreichbar. |
@@ -107,10 +107,11 @@ Letztes Update: 2026-07-06
 - Sprint 15 ist abgeschlossen: Public/Kiosk Check-in ist eine reduzierte eigene Experience. `SelfCheckInFlow` fuehrt linear durch Name, Readiness, Alltag, Schmerz, Veraenderung, Review und Abschluss; Kiosk setzt nach Abschluss automatisch zurueck, Public bleibt manuell wiederverwendbar.
 - Sprint 16 ist abgeschlossen: Eine kleine statische Sport-Konfiguration ist im Code verankert. OnField Rugby ist weiterhin das einzige aktive Preset; es gibt keinen Runtime-Selector, keine zweite Sportart, keine Datenmigration und keine Supabase-Aenderung.
 - Sprint 17 ist abgeschlossen: Sync, Backup und Offline-Kommunikation sind global vereinheitlicht. Der kompakte App-Shell-Status oeffnet ein Detailsheet mit offenen Bereichen, Public/Kiosk-Check-in-Konflikten, Backup-Status und manueller Retry-Aktion. Sync-Texte nutzen coachnahe Begriffe wie `lokal gespeichert`, `wartet auf Sync`, `zuletzt synchronisiert`, `Konflikt pruefen` und `offline`; rohe Queue-Begriffe bleiben aus der UI heraus.
+- Sprint 18 ist abgeschlossen: PWA/Install und Accessibility Polish sind umgesetzt. Workbox nutzt einen Offline-App-Shell-Fallback, Settings zeigen Browser-/Home-Screen-Modus, Self-Check-in-Disabled-Actions haben sichtbare `aria-describedby`-Gruende, Legacy-Actions/PDF/Kiosk-Buttons teilen den sichtbaren Focus Ring, und `npm run test:e2e:pwa` prueft die iPhone-/iPad-Viewport-Matrix plus Offline-Fallback gegen den gebauten Preview.
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 18 angehen: Accessibility, PWA und Install Polish.
+1. Sprint 19 angehen: Screen-by-Screen Full Rollout und visuelle QA.
 2. Danach Roadmap-Reihenfolge beibehalten und keine weiteren Sport-Presets vorziehen.
 
 ## Offene Risiken

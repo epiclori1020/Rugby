@@ -1,18 +1,23 @@
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import {
+  Component,
+  Suspense,
+  lazy,
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type ReactNode,
+} from 'react'
 import { useRegisterSW } from 'virtual:pwa-register/react'
 import { AppShell } from './components/AppShell'
-import { AnalysisView } from './components/AnalysisView'
 import { CheckInView } from './components/CheckInView'
-import { ExportView } from './components/ExportView'
 import { KioskCheckInView } from './components/KioskCheckInView'
-import { LibraryView } from './components/LibraryView'
 import { PostSessionView } from './components/PostSessionView'
 import { PublicCheckInView } from './components/PublicCheckInView'
 import { PwaUpdateNotice } from './components/PwaUpdateNotice'
 import { PlayersView } from './components/PlayersView'
-import { ReturnerView } from './components/ReturnerView'
 import { SessionWorkspace } from './components/SessionWorkspace'
-import { SettingsView } from './components/SettingsView'
 import type { SelfCheckInSubmissionInput } from './components/SelfCheckInFlow'
 import { TodayDashboard } from './components/TodayDashboard'
 import { TrainingView } from './components/TrainingView'
@@ -59,8 +64,81 @@ import {
   type UnitSubTab,
 } from './navigation'
 
+const AnalysisView = lazy(() =>
+  import('./components/AnalysisView').then((module) => ({ default: module.AnalysisView })),
+)
+const ExportView = lazy(() => import('./components/ExportView').then((module) => ({ default: module.ExportView })))
+const LibraryView = lazy(() =>
+  import('./components/LibraryView').then((module) => ({ default: module.LibraryView })),
+)
+const ReturnerView = lazy(() =>
+  import('./components/ReturnerView').then((module) => ({ default: module.ReturnerView })),
+)
+const SettingsView = lazy(() =>
+  import('./components/SettingsView').then((module) => ({ default: module.SettingsView })),
+)
+
 const selectedSessionStorageKey = 'fieldHub:selectedSessionId'
 const kioskSessionStorageKey = 'fieldHub:kioskSessionId'
+type PwaDisplayMode = 'browser' | 'standalone'
+
+type LazyScreenBoundaryProps = {
+  children: ReactNode
+  resetKey: string
+  screenName: string
+}
+
+type LazyScreenBoundaryState = {
+  hasError: boolean
+}
+
+class LazyScreenBoundary extends Component<LazyScreenBoundaryProps, LazyScreenBoundaryState> {
+  state: LazyScreenBoundaryState = {
+    hasError: false,
+  }
+
+  static getDerivedStateFromError() {
+    return { hasError: true }
+  }
+
+  componentDidUpdate(previousProps: LazyScreenBoundaryProps) {
+    if (previousProps.resetKey !== this.props.resetKey && this.state.hasError) {
+      this.setState({ hasError: false })
+    }
+  }
+
+  render() {
+    if (this.state.hasError) {
+      return (
+        <div className="screen-load-state screen-load-state-error" role="alert">
+          <h3>{this.props.screenName} konnte nicht geladen werden.</h3>
+          <p>App neu laden oder Verbindung prüfen.</p>
+          <button className="secondary-action" type="button" onClick={() => window.location.reload()}>
+            App neu laden
+          </button>
+        </div>
+      )
+    }
+
+    return this.props.children
+  }
+}
+
+function ScreenLoadingFallback({ screenName }: { screenName: string }) {
+  return (
+    <div className="screen-load-state" role="status" aria-live="polite">
+      <p>{screenName} wird geladen...</p>
+    </div>
+  )
+}
+
+function LazyScreen({ children, resetKey, screenName }: LazyScreenBoundaryProps) {
+  return (
+    <LazyScreenBoundary resetKey={resetKey} screenName={screenName}>
+      <Suspense fallback={<ScreenLoadingFallback screenName={screenName} />}>{children}</Suspense>
+    </LazyScreenBoundary>
+  )
+}
 
 function toLocalDateKey(date: Date) {
   const year = date.getFullYear()
@@ -71,6 +149,49 @@ function toLocalDateKey(date: Date) {
 
 function findSessionById(sessionId: string | null) {
   return sessionDefinitions.find((session) => session.id === sessionId) ?? null
+}
+
+function getPwaDisplayMode(): PwaDisplayMode {
+  if (typeof window === 'undefined') {
+    return 'browser'
+  }
+
+  const navigatorWithStandalone = window.navigator as Navigator & { standalone?: boolean }
+  const isIosStandalone = navigatorWithStandalone.standalone === true
+  const isDisplayModeStandalone =
+    typeof window.matchMedia === 'function' && window.matchMedia('(display-mode: standalone)').matches
+
+  return isIosStandalone || isDisplayModeStandalone ? 'standalone' : 'browser'
+}
+
+function usePwaDisplayMode() {
+  const [displayMode, setDisplayMode] = useState<PwaDisplayMode>(getPwaDisplayMode)
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return undefined
+    }
+
+    const mediaQuery = window.matchMedia('(display-mode: standalone)')
+    const legacyMediaQuery = mediaQuery as MediaQueryList & {
+      addListener?: (listener: (event: MediaQueryListEvent) => void) => void
+      removeListener?: (listener: (event: MediaQueryListEvent) => void) => void
+    }
+    const updateDisplayMode = () => setDisplayMode(getPwaDisplayMode())
+
+    updateDisplayMode()
+    if (typeof mediaQuery.addEventListener === 'function') {
+      mediaQuery.addEventListener('change', updateDisplayMode)
+
+      return () => mediaQuery.removeEventListener('change', updateDisplayMode)
+    }
+
+    legacyMediaQuery.addListener?.(updateDisplayMode)
+
+    return () => legacyMediaQuery.removeListener?.(updateDisplayMode)
+  }, [])
+
+  return displayMode
 }
 
 function isCurrentOrFutureSession(sessionId: string | null, todayKey = toLocalDateKey(new Date())) {
@@ -138,6 +259,7 @@ function CoachApp() {
   const [publicSyncOverview, setPublicSyncOverview] = useState<PlayerSyncOverview | null>(null)
   const [syncDetails, setSyncDetails] = useState<SyncDetailSummary | null>(null)
   const storagePersistence = useStoragePersistence()
+  const pwaDisplayMode = usePwaDisplayMode()
   const authState = useAuthSession()
   const playerActions = usePlayers(authState.status === 'signed-in' ? authState.user.id : null)
   const todayDate = useMemo(() => new Date(`${appTodayKey}T12:00:00`), [appTodayKey])
@@ -755,62 +877,73 @@ function CoachApp() {
           />
         </SessionWorkspace>
       ) : activeTab === 'returner' ? (
-        <ReturnerView
-          authState={authState}
-          onNavigate={handleTabChange}
-          onSessionChange={setSelectedSessionId}
-          returnerActions={returnerActions}
-          selectedSession={selectedSession}
-          selectedSessionId={selectedSession.id}
-          sessions={sessionDefinitions}
-        />
+        <LazyScreen resetKey={activeTab} screenName="Returner">
+          <ReturnerView
+            authState={authState}
+            onNavigate={handleTabChange}
+            onSessionChange={setSelectedSessionId}
+            returnerActions={returnerActions}
+            selectedSession={selectedSession}
+            selectedSessionId={selectedSession.id}
+            sessions={sessionDefinitions}
+          />
+        </LazyScreen>
       ) : activeTab === 'analysis' ? (
-        <AnalysisView
-          coachInsights={coachInsightActions.insights}
-          onOpenCoachInsightSource={handleOpenCoachInsightSource}
-          players={playerActions.players}
-          sessions={sessionDefinitions}
-          todayKey={appTodayKey}
-          userId={userId}
-        />
+        <LazyScreen resetKey={activeTab} screenName="Analyse">
+          <AnalysisView
+            coachInsights={coachInsightActions.insights}
+            onOpenCoachInsightSource={handleOpenCoachInsightSource}
+            players={playerActions.players}
+            sessions={sessionDefinitions}
+            todayKey={appTodayKey}
+            userId={userId}
+          />
+        </LazyScreen>
       ) : activeTab === 'bibliothek' ? (
-        <LibraryView
-          initialCategory={libraryInitialCategory}
-          initialItemId={libraryInitialItemId}
-          initialPdfHref={libraryInitialPdfHref}
-          onPdfClose={handleLibraryPdfClose}
-          onReturn={libraryReturnTab ? handleReturnFromLibrary : undefined}
-          returnLabel={
-            libraryReturnTab === 'heute'
-              ? 'Zurück zu Heute'
-              : libraryReturnTab === 'training'
-                ? 'Zurück zu Training'
-                : undefined
-          }
-          selectedSession={selectedSession}
-        />
+        <LazyScreen resetKey={activeTab} screenName="Bibliothek">
+          <LibraryView
+            initialCategory={libraryInitialCategory}
+            initialItemId={libraryInitialItemId}
+            initialPdfHref={libraryInitialPdfHref}
+            onPdfClose={handleLibraryPdfClose}
+            onReturn={libraryReturnTab ? handleReturnFromLibrary : undefined}
+            returnLabel={
+              libraryReturnTab === 'heute'
+                ? 'Zurück zu Heute'
+                : libraryReturnTab === 'training'
+                  ? 'Zurück zu Training'
+                  : undefined
+            }
+            selectedSession={selectedSession}
+          />
+        </LazyScreen>
       ) : activeTab === 'export' ? (
-        <ExportView
-          authState={authState}
-          lastExportAt={lastExportAt}
-          onDataChanged={refreshAllLocalData}
-          onExportComplete={setLastExportAtState}
-        />
+        <LazyScreen resetKey={activeTab} screenName="Export & Backup">
+          <ExportView
+            authState={authState}
+            lastExportAt={lastExportAt}
+            onDataChanged={refreshAllLocalData}
+            onExportComplete={setLastExportAtState}
+          />
+        </LazyScreen>
       ) : activeTab === 'einstellungen' ? (
-        <SettingsView
-          authState={authState}
-          backupRecommended={showBackupReminder}
-          isManualSyncing={isManualSyncing}
-          lastExportAt={lastExportAt}
-          latestCompletedSession={latestCompletedSession}
-          needsAppRefresh={needsAppRefresh}
-          onManualSync={runManualSync}
-          onNavigate={handleTabChange}
-          onReloadApp={() => void updateServiceWorker(true)}
-          storagePersistence={storagePersistence}
-          syncFeedback={manualSyncFeedback}
-          syncOverview={syncOverview}
-        />
+        <LazyScreen resetKey={activeTab} screenName="Einstellungen">
+          <SettingsView
+            authState={authState}
+            backupRecommended={showBackupReminder}
+            isManualSyncing={isManualSyncing}
+            lastExportAt={lastExportAt}
+            latestCompletedSession={latestCompletedSession}
+            needsAppRefresh={needsAppRefresh}
+            pwaDisplayMode={pwaDisplayMode}
+            onManualSync={runManualSync}
+            onNavigate={handleTabChange}
+            onReloadApp={() => void updateServiceWorker(true)}
+            storagePersistence={storagePersistence}
+            syncFeedback={manualSyncFeedback}
+            syncOverview={syncOverview}
+          />
+        </LazyScreen>
       ) : (
         null
       )}

@@ -65,6 +65,7 @@ function renderSettings(
       lastExportAt: null,
       latestCompletedSession: completedSession,
       needsAppRefresh: true,
+      pwaDisplayMode: 'browser',
       onManualSync: () => undefined,
       onNavigate: () => undefined,
       onReloadApp: () => undefined,
@@ -86,6 +87,8 @@ describe('SettingsView', () => {
     expect(markup).toContain('Backup empfohlen')
     expect(markup).toContain('Export &amp; Backup oeffnen')
     expect(markup).toContain('Speicherstatus')
+    expect(markup).toContain('Browser-Modus')
+    expect(markup).toContain('Installiere OnField Coach fuer mehr Platz am Spielfeldrand.')
     expect(markup).toContain('OnField als PWA nutzen')
     expect(markup).toContain('Zum Home-Bildschirm')
     expect(markup).toContain('Neue App-Version bereit')
@@ -137,5 +140,16 @@ describe('SettingsView', () => {
     expect(persistedMarkup).toContain('<span class="status-dot online" aria-hidden="true"></span><strong>Speicherstatus')
     expect(deniedMarkup).toContain('<span class="status-dot" aria-hidden="true"></span><strong>Speicherstatus')
     expect(deniedMarkup).not.toContain('<span class="status-dot online" aria-hidden="true"></span><strong>Speicherstatus')
+  })
+
+  it('shows standalone install status without changing iPad feature parity copy', () => {
+    const markup = renderSettings(signedInAuthState, {
+      pwaDisplayMode: 'standalone',
+    })
+
+    expect(markup).toContain('PWA installiert')
+    expect(markup).toContain('OnField Coach laeuft im Home-Screen-Modus.')
+    expect(markup).toContain('iPadOS: dieselbe PWA, derselbe Funktionsumfang, nur mehr Flaeche.')
+    expect(markup).not.toContain('beforeinstallprompt')
   })
 })

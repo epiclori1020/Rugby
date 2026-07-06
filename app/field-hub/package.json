@@ -10,6 +10,7 @@
     "lint": "eslint .",
     "test": "vitest run",
     "test:e2e:kiosk": "node scripts/e2e-kiosk-smoke.mjs",
+    "test:e2e:pwa": "npm run build && node scripts/e2e-pwa-smoke.mjs",
     "preview": "vite preview"
   },
   "dependencies": {
