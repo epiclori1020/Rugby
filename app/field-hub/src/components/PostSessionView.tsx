@@ -1147,7 +1147,7 @@ function ExercisePlayerRow({
         </label>
 
         <label className="inline-field">
-          <span>Pain Response</span>
+          <span>Pain-Reaktion</span>
           <select
             defaultValue={exercise.painResponse}
             disabled={isSavingDisabled}
@@ -1184,7 +1184,7 @@ function ExercisePlayerRow({
             }
           }}
         >
-          Copy previous player
+          Vorheriges Resultat kopieren
         </button>
       </div>
     </article>
@@ -1557,9 +1557,9 @@ export function PostSessionView({
       </details>
 
       <details className="panel baseline-panel post-session-secondary-section" aria-labelledby="exercise-results-heading">
-        <summary>Structured Exercise Result</summary>
+        <summary>Exercise-Resultate</summary>
         <div className="library-heading">
-          <p className="eyebrow">Structured Exercise Result</p>
+          <p className="eyebrow">Exercise-Resultate</p>
           <h3 id="exercise-results-heading">Exercise-Progression</h3>
           <p>Ein Hauptresultat pro Spieler schnell erfassen. Legacy-Progression bleibt darunter sichtbar.</p>
         </div>
@@ -1595,7 +1595,7 @@ export function PostSessionView({
             type="button"
             onClick={() => setExerciseDefaultVersion((currentVersion) => currentVersion + 1)}
           >
-            Apply to present
+            Auf Anwesende anwenden
           </button>
         </div>
 

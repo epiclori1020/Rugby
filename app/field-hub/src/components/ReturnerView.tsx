@@ -128,7 +128,7 @@ function ReturnerPlayerCard({
       <div className={isConservative ? 'warning-note danger' : 'warning-note'}>
         <ShieldAlert className="nav-icon" aria-hidden />
         <span>
-          Vorschlag: {suggestedDecision}. App dokumentiert Caps und Hinweise, gibt aber keine medizinische Freigabe.
+          Vorschlag: {suggestedDecision}. App dokumentiert Caps und Hinweise, trifft aber keine medizinische Entscheidung.
         </span>
       </div>
 
@@ -409,7 +409,7 @@ export function ReturnerView({
             <li key={flag}>{flag}</li>
           ))}
         </ul>
-        <p>S&C dokumentiert und steuert Belastung. Medizinische Freigabe, Concussion und RTP bleiben medizinisch.</p>
+        <p>S&C dokumentiert Caps und Belastungshinweise. Medizinische Entscheidungen bleiben bei Fachpersonal.</p>
       </section>
 
       <div className="checkin-list">

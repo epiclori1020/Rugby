@@ -78,7 +78,7 @@ const limitLabels: Record<CheckInLimit, string> = {
 
 const quickActions: Array<{ action: TrainingQuickAction; label: string; tone?: 'danger' }> = [
   { action: 'variant_c', label: 'C-Variante' },
-  { action: 'variant_d', label: 'D / stop / klaeren', tone: 'danger' },
+  { action: 'variant_d', label: 'D / stoppen / klaeren', tone: 'danger' },
   { action: 'kein_sprint', label: 'kein Sprint' },
   { action: 'kein_conditioning', label: 'kein Conditioning' },
   { action: 'kein_schweres_heben', label: 'kein schweres Heben' },

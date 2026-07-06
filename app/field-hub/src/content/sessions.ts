@@ -528,7 +528,7 @@ export const sessionDefinitions: SessionDefinition[] = [
             key: 'kw26-acl-returner-rule',
             name: 'ACL-Returner Regel',
             prescription: 'Kein Jump, kein Sprint, kein COD.',
-            coachingCues: ['Alternative Mobility/leichtes Kraftmuster waehlen', 'Keine medizinische Freigabe ableiten'],
+            coachingCues: ['Alternative Mobility/leichtes Kraftmuster waehlen', 'Keine medizinische Entscheidung ableiten'],
             safety: 'Nur nach Physio-/Medical-Vorgaben belasten.',
             targeting: 'returner',
             returnerRule: 'ACL/offener Returner: Jump/Sprint/COD auslassen.',

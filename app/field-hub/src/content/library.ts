@@ -98,7 +98,7 @@ export const libraryItems: LibraryItem[] = [
         title: 'App-Fokus',
         body: [
           'App-Dokumentation fuer Ampel, Reaktion auf Dienstag, Schmerz, Returner, Anpassungen, sRPE und Pain/Issue.',
-          'Keine Diagnosen und keine medizinischen Freigaben dokumentieren.',
+          'Keine Diagnosen und keine medizinischen Entscheidungen dokumentieren.',
         ],
       },
     ],
@@ -400,7 +400,7 @@ export const libraryItems: LibraryItem[] = [
         title: 'Medizinische Grenze',
         body: [
           'Der S&C Coach stellt keine medizinischen Diagnosen.',
-          'Return-to-Play und Concussion-Entscheidungen bleiben medizinisch oder physiotherapeutisch.',
+          'Concussion- und Rueckkehr-Entscheidungen bleiben medizinisch oder physiotherapeutisch.',
         ],
       },
     ],

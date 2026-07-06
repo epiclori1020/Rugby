@@ -186,7 +186,7 @@ export function buildCheckInGuidance(input: {
           meaning: `Letzter Belastungsplan vom ${returnerCap.sessionDate}: ${capParts.join(' · ')}.`,
           why: 'Caps trennen Speed, COD/Decel, Conditioning und Kontakt.',
           coachAction: 'Caps mit heutigem Status abgleichen und im Training beobachten.',
-          consequence: 'Caps sind ein Belastungsplan, keine medizinische Freigabe.',
+          consequence: 'Caps sind ein Belastungsplan, keine medizinische Entscheidung.',
         }),
       )
     }

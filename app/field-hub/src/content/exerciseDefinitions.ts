@@ -194,7 +194,7 @@ export const exerciseDefinitions = [
     defaultUnit: 's',
     active: true,
     referencePattern: 'Microdose',
-    description: 'Nacken-Isometrie nur symptomfrei und ohne medizinische Freigabelogik.',
+    description: 'Nacken-Isometrie nur symptomfrei und ohne medizinische Entscheidungslogik.',
   },
   {
     key: 'sled_march',
@@ -244,4 +244,3 @@ export const exerciseDefinitions = [
 ] as const satisfies ExerciseDefinition[]
 
 export type ExerciseKey = (typeof exerciseDefinitions)[number]['key']
-

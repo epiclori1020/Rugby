@@ -130,7 +130,7 @@ describe('buildCheckInGuidance', () => {
           level: 'info',
           source: 'returner_caps',
           title: 'Returner-Caps',
-          consequence: 'Caps sind ein Belastungsplan, keine medizinische Freigabe.',
+          consequence: 'Caps sind ein Belastungsplan, keine medizinische Entscheidung.',
         }),
       ]),
     )

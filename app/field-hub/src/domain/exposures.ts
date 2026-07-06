@@ -335,7 +335,7 @@ export function mergeManualExposureOverrides(
 ): ManualExposureOverrides {
   const normalizedNote = override.note.trim().toLocaleLowerCase('de-AT')
   if (medicalClearanceWords.some((word) => normalizedNote.includes(word))) {
-    throw new Error('Keine medizinische Freigabe in Exposure-Overrides dokumentieren.')
+    throw new Error('Keine medizinische Entscheidung in Exposure-Overrides dokumentieren.')
   }
 
   return {

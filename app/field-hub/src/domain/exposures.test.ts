@@ -333,14 +333,14 @@ describe('Exposure derivation', () => {
     expect(summaries[0].manualOverrides.speed?.note).toBe('Coach override')
   })
 
-  it('merges manual overrides without accepting medical clearance wording', () => {
+  it('merges manual overrides without accepting medical decision wording', () => {
     expect(() =>
       mergeManualExposureOverrides({}, 'speed', {
         status: 'completed',
-        note: 'medizinische Freigabe liegt vor',
+        note: 'medical clearance liegt vor',
         updatedAt: '2026-06-18T19:00:00.000Z',
       }),
-    ).toThrow('Keine medizinische Freigabe')
+    ).toThrow('Keine medizinische Entscheidung')
 
     expect(
       mergeManualExposureOverrides({}, 'speed', {
