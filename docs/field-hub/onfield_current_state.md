@@ -116,9 +116,10 @@ Letztes Update: 2026-07-06
 - Sprint 19 ist abgeschlossen: Die Screen-by-Screen Full-Rollout-QA ist dokumentiert, `npm run test:e2e:sprint19` prueft die Sprint-19-Hauptscreens ueber iPhone-/iPad-Viewports, der signed-in Spielerbereich wurde mit Test-Credentials als Laufzeit-Env verifiziert, `npm run test:e2e:kiosk` verifiziert Remote-Kiosk-Submit mit temporaerem Seed und Cleanup, LUVI-Pattern wurden als QA-Referenz bewertet, alte englische Nachbereitungslabels wurden bereinigt, und medizinisch riskante Entscheidungs-/Freigabe-Sprache wurde aus sichtbarem App-Content ersetzt. Lazy-Error-UI ist zusaetzlich ueber einen deterministischen Boundary-Komponententest abgedeckt.
 - Sprint 20 ist abgeschlossen: `onfield_beta_readiness.md` definiert den kontrollierten externen Beta-Rahmen fuer bis zu 10 Coach-Tester aus bis zu 3 Club-Kontexten, inklusive Install-, signed-in-, Public/Kiosk-, Offline-/Sync-, Datenschutz-/Safety- und Feedback-Triage-Kriterien. `onfield_native_saas_decision_criteria.md` legt fest, dass Native/Flutter/React Native und OnField Performance/SaaS erst nach Beta-Evidence bewertet werden. `onfield_luvi_reuse_audit.md` dokumentiert, welche LUVI-Patterns als Audit-/QA-/Privacy-Muster uebernommen oder bewusst nicht uebernommen werden.
 - Sprint 21 ist abgeschlossen: `app/field-hub` hat `qa:local` als Entwicklungscheck und `qa:beta` als hartes Beta-Gate. `qa:beta` blockiert ohne `FIELD_HUB_E2E_EMAIL`, `FIELD_HUB_E2E_PASSWORD` und `FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1`; Sprint-19-Signed-in und Kiosk-Remote-Mutation koennen nicht mehr still als gruen geskippt werden. Die Sprint-19-QA- und Beta-Readiness-Doku enthalten die LUVI-QA-Audit-Uebernahme fuer Gate-, Evidence-, Cleanup- und Secret-Hygiene-Muster.
+- Sprint 22 ist abgeschlossen: Runtime-Memory-Redaction ist fuer Env-Werte, Supabase-/API-Keys, Bearer/Auth-Tokens, URL-Keys, UUID/IP/prefixed Tokens, lange Token-Strings und sensible Payload-Werte gehaertet. Runtime-Lint meldet nur Pfad, Pattern-Typ, Anzahl und Schweregrad; keine Roh-Secrets in Lint-Output oder Reports. Runtime-Lint ist gruen.
 - Die Anschluss-Roadmap `docs/superpowers/plans/2026-07-06-onfield-post-roadmap-hardening.md` ist aktiv. Phase A ist beta-blockierend:
   - Sprint 21: Harte Beta-QA-Gates ist abgeschlossen.
-  - Sprint 22: Runtime-Memory Privacy & Lint Fix.
+  - Sprint 22: Runtime-Memory Privacy & Lint Fix ist abgeschlossen.
   - Sprint 23: Supabase/Auth/RLS Beta Guardrails.
   Phase B ist Qualitaets- und Struktur-Hardening:
   - Sprint 24: Coach-Routing & Navigation Refactor.
@@ -127,7 +128,7 @@ Letztes Update: 2026-07-06
 
 ## Naechste empfohlene Schritte
 
-1. Anschluss-Roadmap Phase A weiter umsetzen: Sprint 22 und Sprint 23.
+1. Anschluss-Roadmap Phase A weiter umsetzen: Sprint 23.
 2. Erst nach Phase A eine kontrollierte externe Beta nach `docs/field-hub/onfield_beta_readiness.md` vorbereiten und durchfuehren.
 3. Phase B umsetzen, bevor groessere Beta, App-Store-Ueberlegung oder OnField-Performance-/SaaS-Vorbereitung startet.
 4. Native/SaaS-Fragen erst anhand der Sprint-20-Entscheidungskriterien und echter Beta-Evidence neu bewerten.
@@ -136,7 +137,6 @@ Letztes Update: 2026-07-06
 
 | Risiko | Auswirkung | Naechster Schritt |
 |---|---|---|
-| Runtime-Memory-Lint/Privacy ist noch nicht abschliessend gehaertet. | Generated Runtime Memory kann falsches Vertrauen erzeugen, wenn lokale Captures/Reports Leak-Findings enthalten. | Sprint 22 umsetzen; Lint muss gruen sein, bevor generated Runtime Memory als hilfreicher Kontext gilt. |
 | Supabase-Beta-Defaults passen noch nicht voll zur kontrollierten Beta. | Offene Signup-/Auth-Defaults koennen der Beta-Strategie widersprechen. | Sprint 23 umsetzen; Config, Setup Guide und statischen Supabase-Audit angleichen. |
 | Coach-Navigation nutzt intern noch teilweise Legacy-Tab-Modell. | Deep Links, Back/Forward und spaetere App-Store-/SaaS-Reife bleiben schwach. | Sprint 24 umsetzen; echtes OnField-Routingmodell einfuehren. |
 | Core Components sind noch nicht screen-weit ausgerollt. | Das Kit existiert, aber viele Screens nutzen weiterhin Legacy-Klassen und Inline-Muster. | In den naechsten Screen-Sprints gezielt migrieren, ohne Sprint-6-IA vorzuziehen. |

@@ -13,12 +13,29 @@ from redact import MEDICAL_CLEARANCE_PATTERN, SECRET_PATTERNS
 LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
 
 
-def has_secret(text: str) -> bool:
-    return any(pattern.search(text) for _name, pattern in SECRET_PATTERNS)
+def add_issue(issues: dict[tuple[str, str, str], dict], severity: str, path: str, pattern_type: str, count: int = 1) -> None:
+    key = (severity, path, pattern_type)
+    if key not in issues:
+        issues[key] = {
+            "severity": severity,
+            "path": path,
+            "pattern_type": pattern_type,
+            "count": 0,
+        }
+    issues[key]["count"] += count
+
+
+def secret_pattern_counts(text: str) -> dict[str, int]:
+    counts: dict[str, int] = {}
+    for name, pattern in SECRET_PATTERNS:
+        count = len(pattern.findall(text))
+        if count:
+            counts[name] = count
+    return counts
 
 
 def lint_memory() -> dict:
-    issues: list[dict] = []
+    grouped_issues: dict[tuple[str, str, str], dict] = {}
     knowledge_dir = runtime_path("knowledge")
     articles_dir = runtime_path("articles")
     index_path = knowledge_dir / "index.md"
@@ -34,23 +51,24 @@ def lint_memory() -> dict:
             if not path.is_file():
                 continue
             text = path.read_text(encoding="utf-8", errors="ignore")
-            if has_secret(text):
-                issues.append({"severity": "error", "path": str(path), "message": "possible secret leakage"})
-            if MEDICAL_CLEARANCE_PATTERN.search(text):
-                issues.append({"severity": "warning", "path": str(path), "message": "possible medical clearance wording"})
+            for pattern_type, count in secret_pattern_counts(text).items():
+                add_issue(grouped_issues, "error", str(path), pattern_type, count)
+            medical_count = len(MEDICAL_CLEARANCE_PATTERN.findall(text))
+            if medical_count:
+                add_issue(grouped_issues, "warning", str(path), "medical_clearance_wording", medical_count)
 
     if hot_path.exists():
         text = hot_path.read_text(encoding="utf-8")
         if len(text.splitlines()) > int(config.get("hot_cache_max_lines", 200)):
-            issues.append({"severity": "error", "path": str(hot_path), "message": "hot cache has too many lines"})
+            add_issue(grouped_issues, "error", str(hot_path), "hot_cache_line_limit")
         if len(text.encode("utf-8")) > int(config.get("hot_cache_max_bytes", 12288)):
-            issues.append({"severity": "error", "path": str(hot_path), "message": "hot cache exceeds byte cap"})
+            add_issue(grouped_issues, "error", str(hot_path), "hot_cache_byte_limit")
 
     if articles_dir.exists() and index_path.exists():
         index_text = index_path.read_text(encoding="utf-8")
         for article in articles_dir.glob("*.md"):
             if article.name not in index_text:
-                issues.append({"severity": "error", "path": str(index_path), "message": f"missing article in index: {article.name}"})
+                add_issue(grouped_issues, "error", str(index_path), "missing_article_in_index")
 
     for md in knowledge_dir.glob("**/*.md") if knowledge_dir.exists() else []:
         text = md.read_text(encoding="utf-8")
@@ -59,16 +77,18 @@ def lint_memory() -> dict:
                 continue
             target = (md.parent / link.split("#", 1)[0]).resolve()
             if not target.exists():
-                issues.append({"severity": "warning", "path": str(md), "message": f"broken local link: {link}"})
+                add_issue(grouped_issues, "warning", str(md), "broken_local_link")
 
     daily_dir = runtime_path("daily")
     if daily_dir.exists():
         for daily in daily_dir.glob("*.md"):
             if state["daily_hashes"].get(daily.stem) != __import__("common").sha256_file(daily):
-                issues.append({"severity": "warning", "path": str(daily), "message": "daily log changed since last compile"})
+                add_issue(grouped_issues, "warning", str(daily), "daily_log_changed_since_compile")
 
     if state.get("pending_compile"):
-        issues.append({"severity": "warning", "path": "state.json", "message": "compile pending"})
+        add_issue(grouped_issues, "warning", "state.json", "compile_pending")
+
+    issues = sorted(grouped_issues.values(), key=lambda issue: (issue["severity"], issue["path"], issue["pattern_type"]))
 
     result = {
         "generated_at": utc_now(),

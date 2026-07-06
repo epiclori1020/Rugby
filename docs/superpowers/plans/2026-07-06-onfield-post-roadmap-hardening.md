@@ -174,7 +174,7 @@ Keine echten Credentials in Dateien schreiben. Wenn Credentials fuer einen Lauf 
 
 ## Sprint 22 - Runtime-Memory Privacy & Lint Fix
 
-Status: Geplant.
+Status: Abgeschlossen am 2026-07-06.
 Phase: A, beta-blockierend.
 
 ### Was genau machen wir?

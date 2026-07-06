@@ -24,7 +24,18 @@ def test_capture_flush_redacts_and_compiles() -> None:
     reset_runtime()
     service_key_name = "SUPABASE" + "_SERVICE_ROLE_KEY"
     supabase_secret = "sb" + "_secret_" + "abcdefghijklmnopqrstuvwxyz"
-    payload = f"OnField decision candidate. {service_key_name}={supabase_secret}"
+    uuid = "123e4567-e89b-12d3-a456-426614174000"
+    url_token = "abcdef0123456789abcdef0123456789"
+    valid_test_card = "4111 1111 1111 1111"
+    payload = "\n".join(
+        [
+            f"OnField decision candidate. {service_key_name}={supabase_secret}",
+            f"request_id={uuid}",
+            f"https://example.test/callback?access_token={url_token}",
+            f"payment test card {valid_test_card}",
+            "Neutral OnField workflow context remains readable.",
+        ]
+    )
     result = subprocess.run(
         [sys.executable, str(SCRIPTS / "session_capture.py"), "--event", "Stop", "--sync"],
         input=payload,
@@ -38,9 +49,18 @@ def test_capture_flush_redacts_and_compiles() -> None:
     assert len(captures) == 1
     capture_text = captures[0].read_text(encoding="utf-8")
     assert "sb" + "_secret_" not in capture_text
+    assert uuid not in capture_text
+    assert url_token not in capture_text
+    assert valid_test_card not in capture_text
+    assert "Neutral OnField workflow context remains readable." in capture_text
     daily = list((ROOT / "daily").glob("*.md"))
     assert len(daily) == 1
-    assert "sb" + "_secret_" not in daily[0].read_text(encoding="utf-8")
+    daily_text = daily[0].read_text(encoding="utf-8")
+    assert "sb" + "_secret_" not in daily_text
+    assert uuid not in daily_text
+    assert url_token not in daily_text
+    assert valid_test_card not in daily_text
+    assert "Neutral OnField workflow context remains readable." in daily_text
     state = json.loads((ROOT / "state.json").read_text(encoding="utf-8"))
     assert state["pending_compile"] is False
     assert state["last_compile_status"] == "compiled"

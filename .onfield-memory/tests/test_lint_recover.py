@@ -70,7 +70,35 @@ def test_compile_clears_pending_without_daily_logs() -> None:
     assert state["pending_compile"] is False
 
 
+def test_lint_reports_pattern_counts_without_raw_secret_values() -> None:
+    reset_runtime()
+    fake_secret = "sk" + "-proj-" + "abcdefghijklmnopqrstuvwxyz123456"
+    report = ROOT / "reports" / "raw.log"
+    report.parent.mkdir(parents=True, exist_ok=True)
+    report.write_text(
+        f"failed request value {fake_secret}\n"
+        "neutral OnField note stays visible\n",
+        encoding="utf-8",
+    )
+    lint = subprocess.run([sys.executable, str(SCRIPTS / "lint.py"), "--json"], text=True, capture_output=True, check=False)
+    assert lint.returncode == 1
+    assert fake_secret not in lint.stdout
+    payload = json.loads(lint.stdout)
+    assert payload["ok"] is False
+    assert payload["issue_count"] == 1
+    issue = payload["issues"][0]
+    assert issue == {
+        "count": 1,
+        "path": str(report),
+        "pattern_type": "openai_project_key",
+        "severity": "error",
+    }
+    report_payload = json.loads((ROOT / "reports" / "lint-report.json").read_text(encoding="utf-8"))
+    assert fake_secret not in json.dumps(report_payload)
+
+
 if __name__ == "__main__":
     test_lint_and_recovery()
     test_compile_clears_pending_without_daily_logs()
+    test_lint_reports_pattern_counts_without_raw_secret_values()
     print("test_lint_recover.py PASS")
