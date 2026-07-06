@@ -92,7 +92,7 @@ type LazyScreenBoundaryState = {
   hasError: boolean
 }
 
-class LazyScreenBoundary extends Component<LazyScreenBoundaryProps, LazyScreenBoundaryState> {
+export class LazyScreenBoundary extends Component<LazyScreenBoundaryProps, LazyScreenBoundaryState> {
   state: LazyScreenBoundaryState = {
     hasError: false,
   }

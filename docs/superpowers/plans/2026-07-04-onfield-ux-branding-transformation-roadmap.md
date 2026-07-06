@@ -1848,6 +1848,8 @@ Vorher in Sprints entstandene UI muss jetzt systematisch getestet werden:
 
 ## Sprint 19 - Screen-by-Screen Full Rollout und visuelle QA
 
+Status: Abgeschlossen am 2026-07-06.
+
 ### Was genau machen wir?
 
 Wir pruefen alle Hauptscreens nach dem Umbau und korrigieren Inkonsistenzen.
@@ -2064,7 +2066,7 @@ Nicht springen, ausser es gibt einen klaren Grund.
 20. Sprint 16: Sport Config. **Abgeschlossen.**
 21. Sprint 17: Sync/Backup.
 22. Sprint 18: PWA/A11y.
-23. Sprint 19: Full Rollout QA.
+23. Sprint 19: Full Rollout QA. **Abgeschlossen.**
 24. Sprint 20: External Beta.
 
 ## Definition of Done fuer die gesamte Roadmap

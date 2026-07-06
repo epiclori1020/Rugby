@@ -112,21 +112,38 @@ async function stopDevServer(child) {
   })
 }
 
-async function clickButtonByText(page, text) {
-  await page.waitForFunction(
-    (label) =>
-      [...document.querySelectorAll('button')].some(
-        (button) => button.textContent?.trim() === label && !button.disabled,
-      ),
-    { timeout: 20_000 },
-    text,
-  )
-  await page.evaluate((label) => {
+async function clickButtonByLabelOrText(page, label, contextLabel = label) {
+  try {
+    await page.waitForFunction(
+      (buttonLabel) =>
+        [...document.querySelectorAll('button')].some(
+          (button) =>
+            !button.disabled &&
+            (button.getAttribute('aria-label') === buttonLabel || button.textContent?.trim() === buttonLabel),
+        ),
+      { timeout: 20_000 },
+      label,
+    )
+  } catch (error) {
+    const diagnostics = await page.evaluate(() => ({
+      buttons: [...document.querySelectorAll('button')].map((button) => ({
+        ariaLabel: button.getAttribute('aria-label'),
+        disabled: button.disabled,
+        text: button.textContent?.trim(),
+      })),
+      textPreview: document.body.innerText.slice(0, 800),
+    }))
+    throw new Error(`${contextLabel}: Button nicht gefunden: ${label}. ${JSON.stringify(diagnostics)}`, { cause: error })
+  }
+
+  await page.evaluate((buttonLabel) => {
     const button = [...document.querySelectorAll('button')].find(
-      (candidate) => candidate.textContent?.trim() === label && !candidate.disabled,
+      (candidate) =>
+        !candidate.disabled &&
+        (candidate.getAttribute('aria-label') === buttonLabel || candidate.textContent?.trim() === buttonLabel),
     )
     button?.click()
-  }, text)
+  }, label)
 }
 
 async function waitForText(page, text) {
@@ -228,28 +245,30 @@ async function main() {
     page.on('pageerror', (error) => consoleMessages.push({ type: 'pageerror', text: error.message }))
 
     await page.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 30_000 })
-    await clickButtonByText(page, 'Einstellungen')
+    await clickButtonByLabelOrText(page, 'Mehr', 'Coach login navigation')
+    await clickButtonByLabelOrText(page, 'Einstellungen', 'Coach login navigation')
     await page.waitForSelector('input[type="email"]', { timeout: 20_000 })
     await page.type('input[type="email"]', e2eEmail)
     await page.type('input[type="password"]', e2ePassword)
-    await clickButtonByText(page, 'Einloggen')
+    await clickButtonByLabelOrText(page, 'Einloggen', 'Coach login')
     await waitForText(page, 'Coach-Session')
 
-    await clickButtonByText(page, 'Check-in')
-    await clickButtonByText(page, 'Kiosk starten')
+    await clickButtonByLabelOrText(page, 'Einheit', 'Kiosk navigation')
+    await clickButtonByLabelOrText(page, 'Check-in', 'Kiosk navigation')
+    await clickButtonByLabelOrText(page, 'Kiosk starten', 'Kiosk navigation')
     await waitForText(page, 'Training Check-in')
 
     await page.waitForSelector('input[placeholder="2-3 Buchstaben tippen"]', { timeout: 20_000 })
     await page.type('input[placeholder="2-3 Buchstaben tippen"]', playerName)
-    await clickButtonByText(page, playerName)
-    await clickButtonByText(page, 'Weiter')
-    await clickButtonByText(page, '4')
-    await clickButtonByText(page, 'Weiter')
-    await clickButtonByText(page, 'Stress')
-    await clickButtonByText(page, 'Muskelkater')
-    await clickButtonByText(page, 'Weiter')
-    await clickButtonByText(page, '0')
-    await clickButtonByText(page, 'Weiter')
+    await clickButtonByLabelOrText(page, playerName, 'Kiosk player selection')
+    await clickButtonByLabelOrText(page, 'Weiter', 'Kiosk player selection')
+    await clickButtonByLabelOrText(page, '4', 'Kiosk readiness')
+    await clickButtonByLabelOrText(page, 'Weiter', 'Kiosk readiness')
+    await clickButtonByLabelOrText(page, 'Stress', 'Kiosk life flags')
+    await clickButtonByLabelOrText(page, 'Muskelkater', 'Kiosk life flags')
+    await clickButtonByLabelOrText(page, 'Weiter', 'Kiosk life flags')
+    await clickButtonByLabelOrText(page, '0', 'Kiosk pain')
+    await clickButtonByLabelOrText(page, 'Weiter', 'Kiosk pain')
 
     const submitDisabledBeforeReaction = await page.evaluate(() => {
       const next = [...document.querySelectorAll('button')].find((button) => button.textContent?.trim() === 'Weiter')
@@ -259,9 +278,9 @@ async function main() {
       throw new Error('Weiter war ohne explizite Session-Reaktion aktiviert.')
     }
 
-    await clickButtonByText(page, 'Nein')
-    await clickButtonByText(page, 'Weiter')
-    await clickButtonByText(page, 'Speichern und weitergeben')
+    await clickButtonByLabelOrText(page, 'Nein', 'Kiosk reaction')
+    await clickButtonByLabelOrText(page, 'Weiter', 'Kiosk reaction')
+    await clickButtonByLabelOrText(page, 'Speichern und weitergeben', 'Kiosk review')
     await waitForText(page, 'Gespeichert')
 
     const entry = await queryEntryForPlayer(supabase, playerId)
@@ -270,7 +289,7 @@ async function main() {
       entry.life_flag !== 'Stress; Muskelkater' ||
       entry.pain_score !== 0 ||
       entry.pain_location !== '' ||
-      entry.returner_flag !== 'offen' ||
+      entry.returner_flag !== 'nein' ||
       entry.session_reaction !== 'none' ||
       entry.checkin_source !== 'player_kiosk'
     ) {

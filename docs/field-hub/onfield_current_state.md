@@ -29,7 +29,7 @@ Letztes Update: 2026-07-06
 |---|---|
 | Navigation | Sprint 6 hat die App-Shell im Code auf `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` umgestellt. Sprint 8 hat `Einheit` als echten Arbeitscontainer mit Session Header, Session-Auswahl, Check-in/Training/Nachbereitung-Subnavigation und gemeinsamen Kontextstatus umgesetzt. Sprint 14 hat `Mehr` als ruhige Utility-Zone fuer `Bibliothek`, `Export & Backup`, `Einstellungen` und `Returner` geschaerft. |
 | Designsystem | Sprint 5 hat das erste Core Component Kit in Code, Repo-Dokumentation und Figma-Sheet angelegt. Screen-weite Migrationen folgen spaeter. |
-| PWA/Install | Sprint 7 hat Manifest-/Install-Metadaten, Brand-Surfaces und das eigene OnField Coach SVG/PNG-Icon-Set fuer PWA/iOS aktualisiert. Sprint 18 hat Offline-Navigation per App-Shell-Fallback, Settings-Display-Mode-Hinweise, sichtbare Disabled-Gruende und automatisierten PWA-Smoke fuer iPhone/iPad-Viewports ergaenzt. |
+| PWA/Install | Sprint 7 hat Manifest-/Install-Metadaten, Brand-Surfaces und das eigene OnField Coach SVG/PNG-Icon-Set fuer PWA/iOS aktualisiert. Sprint 18 hat Offline-Navigation per App-Shell-Fallback, Settings-Display-Mode-Hinweise, sichtbare Disabled-Gruende und automatisierten PWA-Smoke fuer iPhone/iPad-Viewports ergaenzt. Sprint 19 hat eine Screen-by-Screen-QA-Matrix plus automatisierten Sprint-19-Visual-QA-Smoke fuer iPhone/iPad-Viewports ergaenzt. |
 | iPhone | Hat in Sprint 6 die neue 5er-Bottom-Tab-Bar mit Safe-Area-Abstand erhalten; Unterbereiche bleiben erreichbar. |
 | iPad | Hat in Sprint 6 die neue 5er-Sidebar plus Content-Struktur erhalten; Unterbereiche bleiben erreichbar. |
 | Check-in | Sprint 9 ist umgesetzt: Check-in ist roster-first mit Listenzeilen, Ampel plus Textgrund, direkten Da/Nicht-da-Schnellaktionen und Detail-Sheet pro Spieler. Public/Kiosk, Reset, Legende, Mitnahmen und Notizen sind sekundaer erreichbar. |
@@ -54,6 +54,7 @@ Letztes Update: 2026-07-06
 - Component Inventory: `docs/field-hub/onfield_component_inventory.md`
 - Sports Configuration Model: `docs/field-hub/onfield_sports_configuration_model.md`
 - PWA/A11y QA: `docs/field-hub/onfield_pwa_accessibility_qa.md`
+- Sprint 19 Visual QA: `docs/field-hub/2026-07-06_onfield_sprint19_visual_qa.md`
 - Sprint 3 Research-Synthese: `docs/field-hub/2026-07-05_onfield_brand_competitive_research_synthesis.md`
 - Sprint 3 Figma Brand Board: `https://www.figma.com/design/BBaL4jQKLHeOC7tP5lajdW`
 - Runtime Memory FAQ: `docs/field-hub/onfield_runtime_memory_faq.md`
@@ -108,11 +109,12 @@ Letztes Update: 2026-07-06
 - Sprint 16 ist abgeschlossen: Eine kleine statische Sport-Konfiguration ist im Code verankert. OnField Rugby ist weiterhin das einzige aktive Preset; es gibt keinen Runtime-Selector, keine zweite Sportart, keine Datenmigration und keine Supabase-Aenderung.
 - Sprint 17 ist abgeschlossen: Sync, Backup und Offline-Kommunikation sind global vereinheitlicht. Der kompakte App-Shell-Status oeffnet ein Detailsheet mit offenen Bereichen, Public/Kiosk-Check-in-Konflikten, Backup-Status und manueller Retry-Aktion. Sync-Texte nutzen coachnahe Begriffe wie `lokal gespeichert`, `wartet auf Sync`, `zuletzt synchronisiert`, `Konflikt pruefen` und `offline`; rohe Queue-Begriffe bleiben aus der UI heraus.
 - Sprint 18 ist abgeschlossen: PWA/Install und Accessibility Polish sind umgesetzt. Workbox nutzt einen Offline-App-Shell-Fallback, Settings zeigen Browser-/Home-Screen-Modus, Self-Check-in-Disabled-Actions haben sichtbare `aria-describedby`-Gruende, Legacy-Actions/PDF/Kiosk-Buttons teilen den sichtbaren Focus Ring, und `npm run test:e2e:pwa` prueft die iPhone-/iPad-Viewport-Matrix plus Offline-Fallback gegen den gebauten Preview.
+- Sprint 19 ist abgeschlossen: Die Screen-by-Screen Full-Rollout-QA ist dokumentiert, `npm run test:e2e:sprint19` prueft die Sprint-19-Hauptscreens ueber iPhone-/iPad-Viewports, der signed-in Spielerbereich wurde mit Test-Credentials als Laufzeit-Env verifiziert, `npm run test:e2e:kiosk` verifiziert Remote-Kiosk-Submit mit temporaerem Seed und Cleanup, LUVI-Pattern wurden als QA-Referenz bewertet, alte englische Nachbereitungslabels wurden bereinigt, und medizinisch riskante Entscheidungs-/Freigabe-Sprache wurde aus sichtbarem App-Content ersetzt. Lazy-Error-UI ist zusaetzlich ueber einen deterministischen Boundary-Komponententest abgedeckt.
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 19 angehen: Screen-by-Screen Full Rollout und visuelle QA.
-2. Danach Roadmap-Reihenfolge beibehalten und keine weiteren Sport-Presets vorziehen.
+1. Sprint 20 angehen: Externe Beta Readiness und Plattform-Entscheidungsvorbereitung.
+2. Roadmap-Reihenfolge beibehalten und keine weiteren Sport-Presets vorziehen.
 
 ## Offene Risiken
 
