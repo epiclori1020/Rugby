@@ -129,7 +129,7 @@ export function SettingsView({
             <strong>{syncOverview.isOnline ? 'Online' : 'Offline'}</strong>
           </div>
           <div className="metric">
-            <span>Warten auf Sync</span>
+            <span>Wartet auf Sync</span>
             <strong>{syncOverview.pendingCount}</strong>
           </div>
           <div className="metric">
@@ -161,7 +161,7 @@ export function SettingsView({
         ) : null}
         <p className="sync-help">
           {syncOverview.pendingCount > 0
-            ? `${pendingCountLabel(syncOverview.pendingCount)} warten auf Sync.`
+            ? `${pendingCountLabel(syncOverview.pendingCount)}.`
             : `${pendingCountLabel(syncOverview.pendingCount)}.`}{' '}
           Bei Unterschieden zwischen Geraeten zaehlt die zuletzt gespeicherte Version.
         </p>

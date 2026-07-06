@@ -1720,6 +1720,8 @@ Nicht alles sofort generisch machen. Zu viel Abstraktion waere riskant. Ziel ist
 
 ## Sprint 17 - Sync/Backup/Offline vereinheitlichen
 
+Status: abgeschlossen am 2026-07-06.
+
 ### Was genau machen wir?
 
 Wir vereinheitlichen Sync, Backup und Offline-Kommunikation.

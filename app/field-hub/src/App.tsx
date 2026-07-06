@@ -23,6 +23,8 @@ import { deriveRedFlagFromPainLocation, type CheckInEntryPatch, type SessionLog 
 import type { CoachInsightSource } from './domain/coachInsights'
 import type { PlayerAnalysisSource } from './domain/playerAnalysis'
 import { derivePostSessionCompletion } from './domain/postSessionCompletion'
+import type { PlayerSyncOverview, SyncDetailSummary } from './domain/sync'
+import { defaultPlayerSyncOverview } from './domain/sync'
 import { useAuthSession } from './hooks/useAuthSession'
 import { useBaselines } from './hooks/useBaselines'
 import { useCheckIns } from './hooks/useCheckIns'
@@ -38,7 +40,14 @@ import { useSessionBlocks } from './hooks/useSessionBlocks'
 import { useStoragePersistence } from './hooks/useStoragePersistence'
 import { getLastExportAt, getLatestCompletedSession } from './lib/backupRepository'
 import { flushBackgroundSyncs } from './lib/backgroundSync'
-import { buildManualSyncFeedback, combineSyncOverviews, syncAllUserData, type ManualSyncFeedback } from './lib/syncRepository'
+import { getPublicCheckInSyncOverview } from './lib/publicCheckInRepository'
+import {
+  buildManualSyncFeedback,
+  combineSyncOverviews,
+  getSyncDetailSummary,
+  syncAllUserData,
+  type ManualSyncFeedback,
+} from './lib/syncRepository'
 import {
   defaultTabForSection,
   isMoreSubTab,
@@ -126,6 +135,8 @@ function CoachApp() {
   } = useRegisterSW()
   const [lastExportAt, setLastExportAtState] = useState<string | null>(null)
   const [latestCompletedSession, setLatestCompletedSession] = useState<SessionLog | null>(null)
+  const [publicSyncOverview, setPublicSyncOverview] = useState<PlayerSyncOverview | null>(null)
+  const [syncDetails, setSyncDetails] = useState<SyncDetailSummary | null>(null)
   const storagePersistence = useStoragePersistence()
   const authState = useAuthSession()
   const playerActions = usePlayers(authState.status === 'signed-in' ? authState.user.id : null)
@@ -204,6 +215,7 @@ function CoachApp() {
         returnerActions.syncOverview,
         sessionBlockActions.syncOverview,
         exposureActions.syncOverview,
+        userId && publicSyncOverview ? publicSyncOverview : defaultPlayerSyncOverview,
       ]),
     [
       baselineActions.syncOverview,
@@ -211,9 +223,11 @@ function CoachApp() {
       exerciseActions.syncOverview,
       metricActions.syncOverview,
       playerActions.syncOverview,
+      publicSyncOverview,
       returnerActions.syncOverview,
       sessionBlockActions.syncOverview,
       exposureActions.syncOverview,
+      userId,
     ],
   )
   const coachInsightRefreshKey = [
@@ -447,12 +461,16 @@ function CoachApp() {
       refreshSessionBlocksNow(),
       refreshExposuresNow(currentCheckInSessionLogId),
     ])
-    const [storedLastExportAt, completedSession] = await Promise.all([
+    const [storedLastExportAt, completedSession, refreshedPublicSyncOverview, refreshedSyncDetails] = await Promise.all([
       getLastExportAt(userId),
       getLatestCompletedSession(userId),
+      getPublicCheckInSyncOverview(userId),
+      getSyncDetailSummary(userId),
     ])
     setLastExportAtState(storedLastExportAt)
     setLatestCompletedSession(completedSession)
+    setPublicSyncOverview(refreshedPublicSyncOverview)
+    setSyncDetails(refreshedSyncDetails)
   }, [currentCheckInSessionLogId, userId])
 
   const runManualSync = useCallback(async () => {
@@ -485,6 +503,26 @@ function CoachApp() {
       .then(refreshAllLocalData)
       .catch(() => undefined)
   }, [refreshAllLocalData, selectedSession.id])
+
+  useEffect(() => {
+    if (!userId) {
+      return undefined
+    }
+
+    let isCurrent = true
+    Promise.resolve()
+      .then(() => getSyncDetailSummary(userId))
+      .then((refreshedSyncDetails) => {
+        if (isCurrent) {
+          setSyncDetails(refreshedSyncDetails)
+        }
+      })
+      .catch(() => undefined)
+
+    return () => {
+      isCurrent = false
+    }
+  }, [syncOverview.errorMessage, syncOverview.pendingCount, syncOverview.status, userId])
 
   useEffect(() => {
     if (!manualSyncFeedback) {
@@ -583,7 +621,13 @@ function CoachApp() {
       onSectionChange={handleSectionChange}
       onTabChange={handleTabChange}
       authState={authState}
+      backupRecommended={showBackupReminder}
+      isManualSyncing={isManualSyncing}
+      lastExportAt={lastExportAt}
+      onManualSync={runManualSync}
       playerSync={syncOverview}
+      syncDetails={syncDetails}
+      syncFeedback={manualSyncFeedback}
       transientNotice={transientNotice}
     >
       {needsAppRefresh ? <PwaUpdateNotice onReload={() => void updateServiceWorker(true)} /> : null}

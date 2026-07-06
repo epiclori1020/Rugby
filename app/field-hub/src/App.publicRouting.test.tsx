@@ -335,7 +335,17 @@ vi.mock('./lib/auth', () => ({
 vi.mock('./lib/syncRepository', () => ({
   buildManualSyncFeedback: () => ({ kind: 'success', message: 'Synchronisiert.' }),
   combineSyncOverviews: () => syncOverview,
+  getSyncDetailSummary: vi.fn(async () => ({
+    groups: [],
+    pendingCount: 0,
+    errorCount: 0,
+    conflictCount: 0,
+  })),
   syncAllUserData: syncRepositoryMocks.syncAllUserData,
+}))
+
+vi.mock('./lib/publicCheckInRepository', () => ({
+  getPublicCheckInSyncOverview: vi.fn(async () => syncOverview),
 }))
 
 async function renderApp() {

@@ -31,6 +31,29 @@ describe('scheduleBackgroundSync', () => {
     vi.useRealTimers()
   })
 
+  it('runs repeated requests for the same user and scope serially', async () => {
+    vi.useFakeTimers()
+    let activeRuns = 0
+    let maxActiveRuns = 0
+    const runner = vi.fn(async () => {
+      activeRuns += 1
+      maxActiveRuns = Math.max(maxActiveRuns, activeRuns)
+      await new Promise((resolve) => setTimeout(resolve, 20))
+      activeRuns -= 1
+    })
+
+    scheduleBackgroundSync('user-1', 'check-ins', runner, 5)
+    await vi.advanceTimersByTimeAsync(5)
+    scheduleBackgroundSync('user-1', 'check-ins', runner, 5)
+    await vi.advanceTimersByTimeAsync(5)
+    await vi.advanceTimersByTimeAsync(20)
+    await vi.advanceTimersByTimeAsync(20)
+
+    expect(runner).toHaveBeenCalledTimes(2)
+    expect(maxActiveRuns).toBe(1)
+    vi.useRealTimers()
+  })
+
   it('flushes delayed sync work before the page is hidden', async () => {
     vi.useFakeTimers()
     const runner = vi.fn(async () => undefined)

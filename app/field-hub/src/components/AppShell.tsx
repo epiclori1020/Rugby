@@ -1,7 +1,8 @@
 import { Archive, FileDown, HeartPulse, Settings } from 'lucide-react'
 import type { ReactNode } from 'react'
-import type { PlayerSyncOverview } from '../domain/sync'
+import type { PlayerSyncOverview, SyncDetailSummary } from '../domain/sync'
 import type { AuthSessionState } from '../lib/auth'
+import type { ManualSyncFeedback } from '../lib/syncRepository'
 import {
   isMoreSubTab,
   type AppSection,
@@ -19,7 +20,13 @@ type AppShellProps = {
   onSectionChange: (section: AppSection) => void
   onTabChange: (tab: HubTab) => void
   authState: AuthSessionState
+  backupRecommended?: boolean
+  isManualSyncing?: boolean
+  lastExportAt?: string | null
+  onManualSync?: () => void
   playerSync: PlayerSyncOverview
+  syncDetails?: SyncDetailSummary | null
+  syncFeedback?: ManualSyncFeedback | null
   transientNotice?: string | null
 }
 
@@ -90,7 +97,13 @@ export function AppShell({
   onSectionChange,
   onTabChange,
   authState,
+  backupRecommended = false,
+  isManualSyncing = false,
+  lastExportAt = null,
+  onManualSync = () => undefined,
   playerSync,
+  syncDetails = null,
+  syncFeedback = null,
   transientNotice = null,
 }: AppShellProps) {
   const meta = tabMeta[activeTab]
@@ -116,7 +129,13 @@ export function AppShell({
           </div>
           <SyncStatusBadge
             authState={authState}
+            backupRecommended={backupRecommended}
+            isManualSyncing={isManualSyncing}
+            lastExportAt={lastExportAt}
+            onManualSync={onManualSync}
             playerSync={playerSync}
+            syncDetails={syncDetails}
+            syncFeedback={syncFeedback}
           />
         </div>
         {transientNotice ? (

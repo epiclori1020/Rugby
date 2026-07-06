@@ -1,10 +1,11 @@
 import type { SessionDefinition } from '../content/types'
-import type { PlayerSyncOverview } from '../domain/sync'
+import type { PlayerSyncOverview, SyncDetailGroup, SyncDetailSummary, SyncDetailStatus } from '../domain/sync'
 import { getBaselineSyncOverview } from './baselineRepository'
 import { getCheckInSyncOverview, syncCheckIns } from './checkInRepository'
 import { getExerciseSyncOverview } from './exerciseRepository'
 import { getExposureSyncOverview } from './exposureRepository'
 import { localDb } from './localDb'
+import type { PendingWriteTable } from './localDb'
 import { getMetricSyncOverview } from './metricRepository'
 import { getPlayerSyncOverview, syncPlayers } from './playerRepository'
 import {
@@ -49,6 +50,178 @@ export async function getCombinedSyncOverview(userId: string) {
       getPublicCheckInSyncOverview(userId),
     ]),
   )
+}
+
+type SyncGroupDefinition = {
+  id: string
+  label: string
+  tables: PendingWriteTable[]
+}
+
+type SyncRecord = {
+  userId: string
+  syncStatus: 'synced' | 'pending' | 'error'
+  syncError: string | null
+}
+
+const syncGroupDefinitions: SyncGroupDefinition[] = [
+  { id: 'players', label: 'Spieler', tables: ['players'] },
+  {
+    id: 'sessions',
+    label: 'Einheiten',
+    tables: ['session_logs', 'player_session_entries', 'progress_entries', 'session_block_logs', 'player_exposure_summaries'],
+  },
+  { id: 'tests', label: 'Tests', tables: ['baseline_entries', 'exercise_results', 'metric_results'] },
+  { id: 'returners', label: 'Returner', tables: ['returner_entries'] },
+  {
+    id: 'public-checkin',
+    label: 'Public Check-in',
+    tables: ['public_checkin_links', 'public_checkin_link_players', 'public_checkin_submissions'],
+  },
+]
+
+const pendingTableToGroupId = new Map(
+  syncGroupDefinitions.flatMap((group) => group.tables.map((table) => [table, group.id] as const)),
+)
+
+function groupStatus({
+  conflictCount,
+  errorCount,
+  pendingCount,
+}: {
+  conflictCount: number
+  errorCount: number
+  pendingCount: number
+}): SyncDetailStatus {
+  if (conflictCount > 0) {
+    return 'conflict'
+  }
+
+  if (errorCount > 0) {
+    return 'error'
+  }
+
+  if (pendingCount > 0) {
+    return 'pending'
+  }
+
+  return 'synced'
+}
+
+function groupDetail({
+  conflictCount,
+  errorCount,
+  pendingCount,
+}: {
+  conflictCount: number
+  errorCount: number
+  pendingCount: number
+}) {
+  if (conflictCount > 0) {
+    return conflictCount === 1 ? '1 Konflikt pruefen.' : `${conflictCount} Konflikte pruefen.`
+  }
+
+  if (errorCount > 0) {
+    return errorCount === 1 ? '1 Datensatz braucht Retry.' : `${errorCount} Datensaetze brauchen Retry.`
+  }
+
+  if (pendingCount > 0) {
+    return pendingCount === 1 ? '1 Aenderung lokal gespeichert.' : `${pendingCount} Aenderungen lokal gespeichert.`
+  }
+
+  return 'zuletzt synchronisiert oder keine offenen Aenderungen.'
+}
+
+function emptyGroupCounts() {
+  return syncGroupDefinitions.reduce<Record<string, { pendingCount: number; errorCount: number; conflictCount: number }>>(
+    (counts, group) => ({
+      ...counts,
+      [group.id]: { pendingCount: 0, errorCount: 0, conflictCount: 0 },
+    }),
+    {},
+  )
+}
+
+function countSyncRecords(records: SyncRecord[], groupCounts: ReturnType<typeof emptyGroupCounts>, groupId: string) {
+  for (const record of records) {
+    if (record.syncStatus === 'error') {
+      groupCounts[groupId].errorCount += 1
+    }
+  }
+}
+
+export async function getSyncDetailSummary(userId: string): Promise<SyncDetailSummary> {
+  const [
+    players,
+    sessionLogs,
+    playerSessionEntries,
+    progressEntries,
+    baselineEntries,
+    returnerEntries,
+    sessionBlockLogs,
+    playerExposureSummaries,
+    exerciseResults,
+    metricResults,
+    publicCheckInLinks,
+    publicCheckInLinkPlayers,
+    publicCheckInSubmissions,
+    pendingWrites,
+  ] = await Promise.all([
+    localDb.players.where('userId').equals(userId).toArray(),
+    localDb.sessionLogs.where('userId').equals(userId).toArray(),
+    localDb.playerSessionEntries.where('userId').equals(userId).toArray(),
+    localDb.progressEntries.where('userId').equals(userId).toArray(),
+    localDb.baselineEntries.where('userId').equals(userId).toArray(),
+    localDb.returnerEntries.where('userId').equals(userId).toArray(),
+    localDb.sessionBlockLogs.where('userId').equals(userId).toArray(),
+    localDb.playerExposureSummaries.where('userId').equals(userId).toArray(),
+    localDb.exerciseResults.where('userId').equals(userId).toArray(),
+    localDb.metricResults.where('userId').equals(userId).toArray(),
+    localDb.publicCheckInLinks.where('userId').equals(userId).toArray(),
+    localDb.publicCheckInLinkPlayers.where('userId').equals(userId).toArray(),
+    localDb.publicCheckInSubmissions.where('userId').equals(userId).toArray(),
+    localDb.pendingWrites.where('userId').equals(userId).toArray(),
+  ])
+  const groupCounts = emptyGroupCounts()
+
+  for (const write of pendingWrites) {
+    const groupId = pendingTableToGroupId.get(write.table)
+    if (groupId) {
+      groupCounts[groupId].pendingCount += 1
+    }
+  }
+
+  countSyncRecords(players, groupCounts, 'players')
+  countSyncRecords([...sessionLogs, ...playerSessionEntries, ...progressEntries, ...sessionBlockLogs, ...playerExposureSummaries], groupCounts, 'sessions')
+  countSyncRecords([...baselineEntries, ...exerciseResults, ...metricResults], groupCounts, 'tests')
+  countSyncRecords(returnerEntries, groupCounts, 'returners')
+  countSyncRecords([...publicCheckInLinks, ...publicCheckInLinkPlayers, ...publicCheckInSubmissions], groupCounts, 'public-checkin')
+
+  for (const submission of publicCheckInSubmissions) {
+    if (submission.status === 'conflict' && !submission.deletedAt) {
+      groupCounts['public-checkin'].conflictCount += 1
+    }
+  }
+
+  const groups: SyncDetailGroup[] = syncGroupDefinitions
+    .map((definition) => {
+      const counts = groupCounts[definition.id]
+      return {
+        id: definition.id,
+        label: definition.label,
+        ...counts,
+        status: groupStatus(counts),
+        detail: groupDetail(counts),
+      }
+    })
+    .filter((group) => group.pendingCount > 0 || group.errorCount > 0 || group.conflictCount > 0)
+
+  return {
+    groups,
+    pendingCount: groups.reduce((total, group) => total + group.pendingCount, 0),
+    errorCount: groups.reduce((total, group) => total + group.errorCount, 0),
+    conflictCount: groups.reduce((total, group) => total + group.conflictCount, 0),
+  }
 }
 
 export function mergeManualSyncOverview(
@@ -131,6 +304,24 @@ export async function resetErroredPendingWritesForRetry(userId: string) {
         await localDb.exerciseResults.put({ ...record, syncStatus: 'pending', syncError: null })
         resetCount += 1
       }
+    } else if (write.table === 'public_checkin_links') {
+      const record = await localDb.publicCheckInLinks.get(write.recordId)
+      if (record?.syncStatus === 'error') {
+        await localDb.publicCheckInLinks.put({ ...record, syncStatus: 'pending', syncError: null })
+        resetCount += 1
+      }
+    } else if (write.table === 'public_checkin_link_players') {
+      const record = await localDb.publicCheckInLinkPlayers.get(write.recordId)
+      if (record?.syncStatus === 'error') {
+        await localDb.publicCheckInLinkPlayers.put({ ...record, syncStatus: 'pending', syncError: null })
+        resetCount += 1
+      }
+    } else if (write.table === 'public_checkin_submissions') {
+      const record = await localDb.publicCheckInSubmissions.get(write.recordId)
+      if (record?.syncStatus === 'error') {
+        await localDb.publicCheckInSubmissions.put({ ...record, syncStatus: 'pending', syncError: null })
+        resetCount += 1
+      }
     }
   }
 
@@ -142,13 +333,9 @@ export type ManualSyncFeedback = {
   message: string
 }
 
-function syncChangeCountLabel(count: number) {
-  return count === 1 ? '1 Aenderung' : `${count} Aenderungen`
-}
-
 export function buildManualSyncFeedback(overview: PlayerSyncOverview): ManualSyncFeedback {
   if (!overview.isOnline) {
-    return { kind: 'error', message: 'Offline: lokal gespeichert, Sync offen.' }
+    return { kind: 'error', message: 'Offline: Aenderungen bleiben lokal gespeichert.' }
   }
 
   if (overview.status === 'error' || overview.errorMessage) {
@@ -159,9 +346,10 @@ export function buildManualSyncFeedback(overview: PlayerSyncOverview): ManualSyn
   }
 
   if (overview.status === 'pending' || overview.pendingCount > 0) {
+    const changeLabel = overview.pendingCount === 1 ? '1 Aenderung wartet' : `${overview.pendingCount} Aenderungen warten`
     return {
       kind: 'warning',
-      message: `Sync offen: ${syncChangeCountLabel(overview.pendingCount)} noch nicht synchronisiert.`,
+      message: `${changeLabel} auf Sync.`,
     }
   }
 

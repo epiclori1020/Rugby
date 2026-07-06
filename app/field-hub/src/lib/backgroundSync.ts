@@ -2,9 +2,24 @@ type BackgroundSyncRunner = () => Promise<void>
 
 const pendingSyncTimers = new Map<string, ReturnType<typeof setTimeout>>()
 const pendingSyncRunners = new Map<string, BackgroundSyncRunner>()
+const runningSyncs = new Map<string, Promise<void>>()
 
 function syncKey(userId: string, scope: string) {
   return `${userId}:${scope}`
+}
+
+function runQueuedSync(key: string, runner: BackgroundSyncRunner) {
+  const previousRun = runningSyncs.get(key) ?? Promise.resolve()
+  const run = previousRun.catch(() => undefined).then(runner)
+  const trackedRun = run
+    .catch(() => undefined)
+    .finally(() => {
+      if (runningSyncs.get(key) === trackedRun) {
+        runningSyncs.delete(key)
+      }
+    })
+  runningSyncs.set(key, trackedRun)
+  return run
 }
 
 export function scheduleBackgroundSync(
@@ -24,7 +39,11 @@ export function scheduleBackgroundSync(
     pendingSyncTimers.delete(key)
     const pendingRunner = pendingSyncRunners.get(key)
     pendingSyncRunners.delete(key)
-    void pendingRunner?.()
+    if (pendingRunner) {
+      void runQueuedSync(key, pendingRunner).catch((caughtError) => {
+        console.error(`Background sync failed for ${key}:`, caughtError)
+      })
+    }
   }, delayMs)
 
   pendingSyncTimers.set(key, timer)
@@ -41,7 +60,7 @@ export async function flushBackgroundSyncs() {
       pendingSyncTimers.delete(key)
     }
     try {
-      await runner()
+      await runQueuedSync(key, runner)
     } catch (caughtError) {
       console.error(`Background sync flush failed for ${key}:`, caughtError)
     }

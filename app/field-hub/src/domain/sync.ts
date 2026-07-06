@@ -1,4 +1,22 @@
 export type SyncStatus = 'synced' | 'pending' | 'error'
+export type SyncDetailStatus = SyncStatus | 'conflict'
+
+export type SyncDetailGroup = {
+  id: string
+  label: string
+  status: SyncDetailStatus
+  pendingCount: number
+  errorCount: number
+  conflictCount: number
+  detail: string
+}
+
+export type SyncDetailSummary = {
+  groups: SyncDetailGroup[]
+  pendingCount: number
+  errorCount: number
+  conflictCount: number
+}
 
 export type PlayerSyncOverview = {
   isOnline: boolean
@@ -15,4 +33,3 @@ export const defaultPlayerSyncOverview: PlayerSyncOverview = {
   lastSuccessfulSyncAt: null,
   errorMessage: null,
 }
-

@@ -192,6 +192,94 @@ button {
   font-weight: 800;
 }
 
+.sync-status-trigger {
+  width: min(320px, 100%);
+  min-height: 56px;
+  border: 1px solid var(--line);
+  border-radius: var(--of-radius-sm);
+  background: var(--surface);
+  color: var(--text);
+  cursor: pointer;
+  display: grid;
+  gap: 6px;
+  padding: 10px 12px;
+  text-align: left;
+}
+
+.sync-status-trigger:focus-visible {
+  outline: 3px solid var(--of-color-focus-ring-soft);
+  outline-offset: 2px;
+}
+
+.sync-status-trigger-line {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-weight: 850;
+}
+
+.sync-status-trigger > span:last-child {
+  color: var(--muted);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.sync-status-trigger-icon {
+  color: var(--brand);
+  display: inline-flex;
+}
+
+.sync-status-trigger-icon svg {
+  width: 20px;
+  height: 20px;
+}
+
+.sync-status-trigger-error .sync-status-trigger-icon {
+  color: var(--of-color-status-danger);
+}
+
+.sync-status-trigger-offline .sync-status-trigger-icon,
+.sync-status-trigger-pending .sync-status-trigger-icon {
+  color: var(--of-color-status-warning);
+}
+
+.sync-status-trigger-synced .sync-status-trigger-icon {
+  color: var(--of-color-status-success);
+}
+
+.sync-status-trigger-syncing .sync-status-trigger-icon {
+  color: var(--of-color-status-info);
+}
+
+.sync-detail-stack,
+.sync-detail-groups {
+  display: grid;
+  gap: var(--of-space-md);
+}
+
+.sync-detail-summary {
+  border: 1px solid var(--line);
+  border-radius: var(--of-radius-sm);
+  background: var(--surface-2);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+  padding: 12px;
+}
+
+.sync-detail-summary p {
+  flex-basis: 100%;
+  margin: 0;
+  color: var(--muted);
+  line-height: 1.45;
+}
+
+.sync-detail-actions {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--of-space-sm);
+}
+
 .app-transient-notice {
   animation: notice-enter var(--of-motion-duration-feedback) var(--of-motion-ease-out);
   border: 1px solid var(--of-color-brand-border-subtle);
@@ -3670,6 +3758,10 @@ code {
 
   .sync-status {
     min-width: 0;
+  }
+
+  .sync-status-trigger {
+    width: 100%;
   }
 
   .brand-surface {

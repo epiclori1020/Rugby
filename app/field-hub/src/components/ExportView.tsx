@@ -163,7 +163,7 @@ export function ExportView({
 
     try {
       const backup = await createFieldHubBackup(userId)
-      downloadJson(`field-hub-backup-${todayStamp()}.json`, backup)
+      downloadJson(`onfield-coach-backup-${todayStamp()}.json`, backup)
       await markExportComplete(userId)
       setExportResult('JSON-Backup: Download gestartet.')
     } catch (caughtError) {
@@ -181,7 +181,7 @@ export function ExportView({
 
     try {
       const backup = await createFieldHubBackup(userId)
-      const filename = `field-hub-${kind}-${todayStamp()}.csv`
+      const filename = `onfield-coach-${kind}-${todayStamp()}.csv`
       const content =
         kind === 'players'
           ? buildPlayersCsv(backup.data.players)

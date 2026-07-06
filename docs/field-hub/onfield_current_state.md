@@ -38,7 +38,7 @@ Letztes Update: 2026-07-06
 | Spieler | Sprint 12 ist umgesetzt: Spieler ist ein list-detail Athletenbereich. Die Liste bleibt zuerst, Profile starten mit aktuellem Status, letzter Teilnahme, aktuellen Limits, offenen Themen und kurzem Verlauf. Stammdaten, Consent, Foto-Status, Tests, Training, Load, Issues und Returner bleiben darunter bzw. in Detail-Tabs erreichbar. |
 | Analyse | Sprint 13 ist umgesetzt: Analyse ist ein separater, ruhiger Auswertungsraum mit kompaktem Kontext, aktiven Filter-Chips, vier Coach-Fragen, Kernwerten und sekundaeren Detailpanels. Live-Erfassung, Check-in- und Trainingsaktionen bleiben ausserhalb der Analyse. |
 | Mehr | Sprint 14 ist umgesetzt: Bibliothek ist Referenzbereich mit sichtbarem `Heute relevant`-Filter, Export & Backup trennt JSON-Backup, CSV-Tabellen und Import-Vorschau, und Einstellungen zeigen Sync-/Offline-/Backup-Zustaende mit coachnaher Sprache und sichtbaren Disabled-Gruenden. |
-| Sync/Offline | Pending/Sync-Logik existiert, muss global ruhiger und einheitlicher kommuniziert werden. |
+| Sync/Offline | Sprint 17 ist umgesetzt: Die App-Shell zeigt signed-in global einen kompakten Sync-Status mit Detailsheet, einheitlicher coachnaher Sprache, manueller Retry-Aktion, Backup-Hinweis und Public/Kiosk-Check-in-Detailgruppen. Background Sync bleibt PWA-best-effort und setzt iOS/Safari Background Sync nicht voraus. |
 | Kiosk/Public | Sprint 15 ist umgesetzt: Public/Kiosk nutzen einen eigenen reduzierten Self-Check-in mit linearer Schrittfolge, Review vor Absenden, Abschlusszustand, Kiosk-Auto-Reset und ohne Coach-Notizen/Historie/Analyse. Public speichert keine lokale `submitted`-Marke mehr. |
 | Brand-Surfaces | Sprint 7 hat eine wiederverwendbare `BrandSurface` fuer Auth, Welcome/Empty, Install, Public Check-in und Kiosk-Welcome eingefuehrt. Live-Coaching-Flows bleiben ohne Hero-Flaechen. |
 | Sport-Konfiguration | Sprint 16 ist umgesetzt: `src/config/sports.ts` definiert eine kleine generische Config-Schicht, `src/config/onfieldRugby.ts` ist das einzige aktive Preset, `src/config/labels.ts` liefert erste UI-Labels, und bestehende Player-/Cluster-Exporte bleiben kompatibel. Erste Nutzung liegt in Spieler, Analyse, Training, Public Check-in und Kiosk Check-in. |
@@ -106,10 +106,11 @@ Letztes Update: 2026-07-06
 - Sprint 14 ist abgeschlossen: `Mehr` ist als Utility-Zone geschaerft. Bibliothek/Export/Einstellungen bleiben Unterbereiche, Backup/Sync-Sprache ist coachnah, Import laeuft ueber Vorschau und explizite Bestaetigung, und das Figma Brand Board enthaelt den Frame `Sprint 14 Mehr Utility Zone`.
 - Sprint 15 ist abgeschlossen: Public/Kiosk Check-in ist eine reduzierte eigene Experience. `SelfCheckInFlow` fuehrt linear durch Name, Readiness, Alltag, Schmerz, Veraenderung, Review und Abschluss; Kiosk setzt nach Abschluss automatisch zurueck, Public bleibt manuell wiederverwendbar.
 - Sprint 16 ist abgeschlossen: Eine kleine statische Sport-Konfiguration ist im Code verankert. OnField Rugby ist weiterhin das einzige aktive Preset; es gibt keinen Runtime-Selector, keine zweite Sportart, keine Datenmigration und keine Supabase-Aenderung.
+- Sprint 17 ist abgeschlossen: Sync, Backup und Offline-Kommunikation sind global vereinheitlicht. Der kompakte App-Shell-Status oeffnet ein Detailsheet mit offenen Bereichen, Public/Kiosk-Check-in-Konflikten, Backup-Status und manueller Retry-Aktion. Sync-Texte nutzen coachnahe Begriffe wie `lokal gespeichert`, `wartet auf Sync`, `zuletzt synchronisiert`, `Konflikt pruefen` und `offline`; rohe Queue-Begriffe bleiben aus der UI heraus.
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 17 angehen: Sync, Backup und Offline-Kommunikation schaerfen.
+1. Sprint 18 angehen: Accessibility, PWA und Install Polish.
 2. Danach Roadmap-Reihenfolge beibehalten und keine weiteren Sport-Presets vorziehen.
 
 ## Offene Risiken

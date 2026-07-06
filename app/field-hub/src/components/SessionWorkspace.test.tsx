@@ -108,7 +108,7 @@ describe('SessionWorkspace', () => {
     expect(markup).toContain('Nachbereitung')
     expect(markup).toContain('Returner')
     expect(markup).toContain('Sync')
-    expect(markup).toContain('2 Aenderungen offen')
+    expect(markup).toContain('2 Aenderungen warten auf Sync')
     expect(markup).toContain('Training content')
   })
 

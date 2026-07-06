@@ -7,6 +7,7 @@ import type { SessionBlockLog } from '../domain/sessionBlocks'
 import {
   buildManualSyncFeedback,
   combineSyncOverviews,
+  getSyncDetailSummary,
   mergeManualSyncOverview,
   resetErroredPendingWritesForRetry,
 } from './syncRepository'
@@ -198,6 +199,102 @@ describe('syncRepository', () => {
     })
   })
 
+  it('resets errored public check-in records with pending writes before retrying sync', async () => {
+    await localDb.publicCheckInSubmissions.put({
+      id: 'public-submission-1',
+      userId,
+      linkId: 'link-1',
+      linkPlayerId: 'link-player-1',
+      playerId: 'player-1',
+      readiness: 4,
+      lifeFlag: '',
+      painScore: 0,
+      painLocation: '',
+      returnerFlag: 'offen',
+      sessionReaction: 'none',
+      playerNote: '',
+      status: 'pending',
+      submittedAt: '2026-06-18T18:00:00.000Z',
+      importedAt: null,
+      conflictReason: null,
+      createdAt: '2026-06-18T18:00:00.000Z',
+      updatedAt: '2026-06-18T18:00:00.000Z',
+      deletedAt: null,
+      clientUpdatedAt: '2026-06-18T18:00:00.000Z',
+      syncStatus: 'error',
+      syncError: 'network',
+    })
+    await localDb.pendingWrites.add({
+      table: 'public_checkin_submissions',
+      operation: 'upsert',
+      recordId: 'public-submission-1',
+      userId,
+      createdAt: '2026-06-18T18:05:00.000Z',
+    })
+
+    const resetCount = await resetErroredPendingWritesForRetry(userId)
+
+    expect(resetCount).toBe(1)
+    await expect(localDb.publicCheckInSubmissions.get('public-submission-1')).resolves.toMatchObject({
+      syncStatus: 'pending',
+      syncError: null,
+    })
+  })
+
+  it('builds coach-facing detail groups from pending writes, errors and public conflicts', async () => {
+    await localDb.players.put(erroredPlayer)
+    await localDb.pendingWrites.add({
+      table: 'players',
+      operation: 'upsert',
+      recordId: erroredPlayer.id,
+      userId,
+      createdAt: '2026-06-16T18:05:00.000Z',
+    })
+    await localDb.publicCheckInSubmissions.put({
+      id: 'public-conflict-1',
+      userId,
+      linkId: 'link-1',
+      linkPlayerId: 'link-player-1',
+      playerId: 'player-1',
+      readiness: 4,
+      lifeFlag: '',
+      painScore: 0,
+      painLocation: '',
+      returnerFlag: 'offen',
+      sessionReaction: 'none',
+      playerNote: '',
+      status: 'conflict',
+      submittedAt: '2026-06-18T18:00:00.000Z',
+      importedAt: null,
+      conflictReason: 'Coach hat diesen Spieler bereits bearbeitet.',
+      createdAt: '2026-06-18T18:00:00.000Z',
+      updatedAt: '2026-06-18T18:00:00.000Z',
+      deletedAt: null,
+      clientUpdatedAt: '2026-06-18T18:00:00.000Z',
+      syncStatus: 'synced',
+      syncError: null,
+    })
+
+    const summary = await getSyncDetailSummary(userId)
+
+    expect(summary.groups).toEqual(
+      expect.arrayContaining([
+        expect.objectContaining({
+          id: 'players',
+          label: 'Spieler',
+          pendingCount: 1,
+          errorCount: 1,
+        }),
+        expect.objectContaining({
+          id: 'public-checkin',
+          label: 'Public Check-in',
+          conflictCount: 1,
+          detail: '1 Konflikt pruefen.',
+        }),
+      ]),
+    )
+  })
+
   it('does not double count pending writes when manual sync returns an error overview', () => {
     const merged = mergeManualSyncOverview(
       { isOnline: true, status: 'error', pendingCount: 2, lastSuccessfulSyncAt: null, errorMessage: 'network' },
@@ -218,7 +315,7 @@ describe('syncRepository', () => {
         lastSuccessfulSyncAt: null,
         errorMessage: null,
       }),
-    ).toEqual({ kind: 'warning', message: 'Sync offen: 1 Aenderung noch nicht synchronisiert.' })
+    ).toEqual({ kind: 'warning', message: '1 Aenderung wartet auf Sync.' })
 
     expect(
       buildManualSyncFeedback({
@@ -228,7 +325,7 @@ describe('syncRepository', () => {
         lastSuccessfulSyncAt: null,
         errorMessage: null,
       }),
-    ).toEqual({ kind: 'warning', message: 'Sync offen: 2 Aenderungen noch nicht synchronisiert.' })
+    ).toEqual({ kind: 'warning', message: '2 Aenderungen warten auf Sync.' })
 
     expect(
       buildManualSyncFeedback({

@@ -22,7 +22,7 @@ function renderBadge(playerSync: PlayerSyncOverview) {
 }
 
 describe('SyncStatusBadge copy', () => {
-  it('uses coach-facing sync language only when sync needs attention', () => {
+  it('uses coach-facing sync language in the global compact status', () => {
     const markup = renderBadge({
       isOnline: true,
       status: 'pending',
@@ -31,24 +31,26 @@ describe('SyncStatusBadge copy', () => {
       errorMessage: null,
     })
 
-    expect(markup).toContain('Online · Aenderungen offen')
+    expect(markup).toContain('wartet auf Sync')
+    expect(markup).toContain('2 Aenderungen lokal gespeichert')
     expect(markup).not.toContain('client_updated_at')
     expect(markup).not.toContain('last-write-wins')
     expect(markup).not.toContain('Konflikt-MVP')
     expect(markup).not.toContain('Jetzt synchronisieren')
   })
 
-  it('does not render in the topbar when everything is already synced', () => {
+  it('stays visible when everything is already synced', () => {
     const markup = renderBadge(
       {
         isOnline: true,
         status: 'synced',
         pendingCount: 0,
-        lastSuccessfulSyncAt: null,
+        lastSuccessfulSyncAt: '2026-06-18T20:00:00.000Z',
         errorMessage: null,
       },
     )
 
-    expect(markup).toBe('')
+    expect(markup).toContain('synchronisiert')
+    expect(markup).toContain('zuletzt synchronisiert')
   })
 })

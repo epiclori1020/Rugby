@@ -89,7 +89,7 @@ describe('SettingsView', () => {
     expect(markup).toContain('OnField als PWA nutzen')
     expect(markup).toContain('Zum Home-Bildschirm')
     expect(markup).toContain('Neue App-Version bereit')
-    expect(markup).toContain('Warten auf Sync')
+    expect(markup).toContain('Wartet auf Sync')
     expect(markup).not.toContain('pending write queue')
   })
 
@@ -102,11 +102,11 @@ describe('SettingsView', () => {
 
   it('renders warning feedback without using success or error styling', () => {
     const markup = renderSettings(signedInAuthState, {
-      syncFeedback: { kind: 'warning', message: 'Sync offen: 2 Aenderungen noch nicht synchronisiert.' },
+      syncFeedback: { kind: 'warning', message: '2 Aenderungen warten auf Sync.' },
     })
 
     expect(markup).toContain('class="form-warning"')
-    expect(markup).toContain('Sync offen: 2 Aenderungen noch nicht synchronisiert.')
+    expect(markup).toContain('2 Aenderungen warten auf Sync.')
   })
 
   it('explains why manual sync is disabled', () => {
@@ -121,7 +121,7 @@ describe('SettingsView', () => {
     expect(signedOutMarkup).toContain('Coach-Login noetig.')
     expect(signedOutMarkup).toContain('aria-describedby="manual-sync-disabled-reason"')
     expect(offlineMarkup).toContain('Offline - Aenderungen bleiben lokal gespeichert.')
-    expect(offlineMarkup).toContain('2 Aenderungen offen warten auf Sync.')
+    expect(offlineMarkup).toContain('2 Aenderungen warten auf Sync.')
     expect(syncingMarkup).toContain('Sync laeuft gerade.')
     expect(syncingMarkup).toContain('Sync laeuft gerade</span>')
   })
