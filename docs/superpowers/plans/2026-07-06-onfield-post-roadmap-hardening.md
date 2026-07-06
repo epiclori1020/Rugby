@@ -91,7 +91,7 @@ Je nach Sprint zusaetzlich:
 
 ## Sprint 21 - Harte Beta-QA-Gates
 
-Status: Geplant.
+Status: Abgeschlossen am 2026-07-06.
 Phase: A, beta-blockierend.
 
 ### Was genau machen wir?
