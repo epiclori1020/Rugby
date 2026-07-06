@@ -1,6 +1,6 @@
 # OnField Current State
 
-Letztes Update: 2026-07-05
+Letztes Update: 2026-07-06
 
 ## Aktueller Produktname
 
@@ -41,7 +41,7 @@ Letztes Update: 2026-07-05
 | Sync/Offline | Pending/Sync-Logik existiert, muss global ruhiger und einheitlicher kommuniziert werden. |
 | Kiosk/Public | Sprint 15 ist umgesetzt: Public/Kiosk nutzen einen eigenen reduzierten Self-Check-in mit linearer Schrittfolge, Review vor Absenden, Abschlusszustand, Kiosk-Auto-Reset und ohne Coach-Notizen/Historie/Analyse. Public speichert keine lokale `submitted`-Marke mehr. |
 | Brand-Surfaces | Sprint 7 hat eine wiederverwendbare `BrandSurface` fuer Auth, Welcome/Empty, Install, Public Check-in und Kiosk-Welcome eingefuehrt. Live-Coaching-Flows bleiben ohne Hero-Flaechen. |
-| Sport-Konfiguration | Sprint 0B hat das SSOT fuer generische Kernobjekte und OnField Rugby als ersten Preset erstellt. Code ist noch nicht extrahiert. |
+| Sport-Konfiguration | Sprint 16 ist umgesetzt: `src/config/sports.ts` definiert eine kleine generische Config-Schicht, `src/config/onfieldRugby.ts` ist das einzige aktive Preset, `src/config/labels.ts` liefert erste UI-Labels, und bestehende Player-/Cluster-Exporte bleiben kompatibel. Erste Nutzung liegt in Spieler, Analyse, Training, Public Check-in und Kiosk Check-in. |
 
 ## Aktuelle massgebliche Dokumente
 
@@ -105,11 +105,12 @@ Letztes Update: 2026-07-05
 - Sprint 13 ist abgeschlossen: `Analyse` ist ein eigener Auswertungsraum fuer Beobachten, Modifizieren, Progression und Rueckmeldung. Die Ansicht nutzt bestehende lokale Daten, verzichtet auf Live-Quick-Actions und behaelt iPhone/iPad-Funktionsparitaet.
 - Sprint 14 ist abgeschlossen: `Mehr` ist als Utility-Zone geschaerft. Bibliothek/Export/Einstellungen bleiben Unterbereiche, Backup/Sync-Sprache ist coachnah, Import laeuft ueber Vorschau und explizite Bestaetigung, und das Figma Brand Board enthaelt den Frame `Sprint 14 Mehr Utility Zone`.
 - Sprint 15 ist abgeschlossen: Public/Kiosk Check-in ist eine reduzierte eigene Experience. `SelfCheckInFlow` fuehrt linear durch Name, Readiness, Alltag, Schmerz, Veraenderung, Review und Abschluss; Kiosk setzt nach Abschluss automatisch zurueck, Public bleibt manuell wiederverwendbar.
+- Sprint 16 ist abgeschlossen: Eine kleine statische Sport-Konfiguration ist im Code verankert. OnField Rugby ist weiterhin das einzige aktive Preset; es gibt keinen Runtime-Selector, keine zweite Sportart, keine Datenmigration und keine Supabase-Aenderung.
 
 ## Naechste empfohlene Schritte
 
-1. Sprint 16 angehen: Sportarten-Konfiguration und OnField Rugby Preset.
-2. Danach Roadmap-Reihenfolge beibehalten und die Sprint-5-Komponenten schrittweise in Screen-Sprints nutzen.
+1. Sprint 17 angehen: Sync, Backup und Offline-Kommunikation schaerfen.
+2. Danach Roadmap-Reihenfolge beibehalten und keine weiteren Sport-Presets vorziehen.
 
 ## Offene Risiken
 
@@ -117,6 +118,6 @@ Letztes Update: 2026-07-05
 |---|---|---|
 | Core Components sind noch nicht screen-weit ausgerollt. | Das Kit existiert, aber viele Screens nutzen weiterhin Legacy-Klassen und Inline-Muster. | In den naechsten Screen-Sprints gezielt migrieren, ohne Sprint-6-IA vorzuziehen. |
 | iPhone wird wieder als Nebenansicht behandelt. | Externe Nutzung und App-Store-Perspektive werden geschwaecht. | iPhone-Paritaet in jedem Sprint pruefen. |
-| Rugby bleibt im Code zu stark in generischer Architektur. | Multi-Sport-Faehigkeit wird spaeter teuer. | Sport-Konfiguration schrittweise extrahieren. |
+| Rugby bleibt teilweise noch in bestehenden Screens und Content hart verdrahtet. | Spaetere Sport-Presets brauchen weitere Extraktion und fachliche Validierung. | Nach Sprint 16 nur gezielt in geplanten Refactor-Sprints weiter extrahieren; keine zweite Sportart nebenbei einfuehren. |
 | Memory wird als Archiv statt Router genutzt. | Agenten laden zu viel Kontext und das System wird traege. | Memory Governance und Index in jeder OnField-Session beachten. |
 | Hook-Automatik erzeugt falsche Sicherheit. | Agenten verlassen sich auf Runtime Memory statt Memory Governance. | Sprint 0D-Runtime bleibt lokal/ignored, fail-open und unterhalb von AGENTS, Decision Log, Current State und SSOTs; Sprint 1 hat die Agentenregeln darauf synchronisiert. |

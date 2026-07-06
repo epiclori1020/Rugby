@@ -1,4 +1,5 @@
 import { describe, expect, it } from 'vitest'
+import { activeSportConfig, positionGroupOptions } from '../config/labels'
 import { clusterOptions, onFieldRugbyAthletePreset } from './players'
 
 describe('onFieldRugbyAthletePreset', () => {
@@ -10,6 +11,8 @@ describe('onFieldRugbyAthletePreset', () => {
       positionGroupLabel: 'Position Group',
       presetName: 'OnField Rugby',
     })
+    expect(activeSportConfig.productLabel).toBe('OnField Rugby')
+    expect(clusterOptions).toBe(positionGroupOptions)
     expect(onFieldRugbyAthletePreset.positionGroups).toEqual(clusterOptions)
     expect(onFieldRugbyAthletePreset.positionGroups.map((option) => option.label)).toEqual([
       'Offen',

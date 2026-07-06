@@ -1,6 +1,6 @@
 # OnField Sports Configuration Model
 
-Stand: 2026-07-04
+Stand: 2026-07-06
 
 ## Zweck
 
@@ -56,6 +56,24 @@ Perspektivisch konfigurierbar sein sollten:
 - Library-Kategorien und Vorlagen.
 - Kiosk/Public-Check-in-Texte.
 
+## Sprint 16 Code-Stand
+
+Sprint 16 hat eine kleine statische Sport-Konfigurationsschicht eingefuehrt:
+
+- `app/field-hub/src/config/sports.ts` definiert die generischen Config-Typen.
+- `app/field-hub/src/config/onfieldRugby.ts` enthaelt OnField Rugby als einziges aktives Preset.
+- `app/field-hub/src/config/labels.ts` stellt erste UI-Labels aus der aktiven Config bereit.
+- `app/field-hub/src/domain/players.ts` exportiert bestehende Player-/Cluster-APIs kompatibel weiter, speist die Optionen aber aus OnField Rugby.
+- Erste UI-Nutzung liegt in Spieler, Analyse, Training, Public Check-in und Kiosk Check-in.
+
+Bewusst nicht enthalten:
+
+- keine zweite Sportart.
+- kein Runtime-Sportartenwechsel.
+- keine Config-Engine.
+- keine Datenmigration.
+- keine Supabase- oder Auth-Aenderung.
+
 ## Vorerst hart bleiben darf
 
 Im Coach-MVP darf noch hart im Code oder Content bleiben:
@@ -69,9 +87,9 @@ Diese Toleranz ist keine Dauerentscheidung. Neue generische Architektur soll nic
 
 ## Nicht-Regeln
 
-- Sprint 0B baut keine Config-Engine.
-- Sprint 0B fuehrt keine Datenmigrationen ein.
-- Sprint 0B benennt keine bestehenden Code-Types um.
+- Sprint 16 baut keine Config-Engine.
+- Sprint 16 fuehrt keine Datenmigrationen ein.
+- Sprint 16 benennt keine bestehenden Code-Types um, wenn Kompatibilitaet fuer vorhandene Tests und lokale Daten sinnvoll ist.
 - Multi-Sport-Faehigkeit ist eine Produkt- und Architekturleitplanke, kein aktuelles SaaS-Feature.
 
 ## Offene Fragen

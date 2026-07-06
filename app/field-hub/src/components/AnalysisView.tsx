@@ -1,5 +1,6 @@
 import { BarChart3, CalendarDays, Database, Eye, MessageSquareText, SlidersHorizontal, TrendingUp, Wrench } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useState } from 'react'
+import { positionGroupOptions } from '../config/labels'
 import type { SessionDefinition } from '../content/types'
 import {
   analysisStartDateForRange,
@@ -16,7 +17,7 @@ import { exposureTypes } from '../domain/exposures'
 import type { PlayerExposureSummary } from '../domain/exposures'
 import type { ExerciseResult } from '../domain/exercises'
 import type { MetricResult } from '../domain/metrics'
-import { clusterOptions, type Player } from '../domain/players'
+import type { Player } from '../domain/players'
 import type { SessionBlockLog } from '../domain/sessionBlocks'
 import { localDb } from '../lib/localDb'
 import { CoachInsightsPanel } from './CoachInsightsPanel'
@@ -107,7 +108,7 @@ function clusterLabel(cluster: AnalysisClusterFilter) {
     return 'Alle Cluster'
   }
 
-  return clusterOptions.find((option) => option.value === cluster)?.label ?? cluster
+  return positionGroupOptions.find((option) => option.value === cluster)?.label ?? cluster
 }
 
 function rangeLabel(rangeWeeks: AnalysisRangeWeeks) {
@@ -345,7 +346,7 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
             <span>Cluster</span>
             <select value={cluster} onChange={(event) => setCluster(event.target.value as AnalysisClusterFilter)}>
               <option value="all">Alle Cluster</option>
-              {clusterOptions.map((option) => (
+              {positionGroupOptions.map((option) => (
                 <option key={option.value} value={option.value}>
                   {option.label}
                 </option>

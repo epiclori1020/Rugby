@@ -1650,6 +1650,8 @@ Kiosk darf Brand/Hero am Start nutzen, aber nur wenn der eigentliche Check-in da
 
 ## Sprint 16 - Sportarten-Konfiguration und OnField Rugby Preset
 
+Status: **abgeschlossen**
+
 ### Was genau machen wir?
 
 Wir extrahieren sportartspezifische Begriffe und Presets schrittweise.
@@ -2055,7 +2057,7 @@ Nicht springen, ausser es gibt einen klaren Grund.
 17. Sprint 13: Analyse.
 18. Sprint 14: Mehr/Utility. **Abgeschlossen.**
 19. Sprint 15: Public/Kiosk.
-20. Sprint 16: Sport Config.
+20. Sprint 16: Sport Config. **Abgeschlossen.**
 21. Sprint 17: Sync/Backup.
 22. Sprint 18: PWA/A11y.
 23. Sprint 19: Full Rollout QA.

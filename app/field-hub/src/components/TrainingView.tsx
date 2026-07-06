@@ -10,12 +10,13 @@ import {
   X,
 } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
+import { positionGroupOptions } from '../config/labels'
 import type { HubTab } from '../navigation'
 import { libraryItems } from '../content/library'
 import { exerciseMappings, variantCards } from '../content/trainingReference'
 import type { SessionBlock, SessionBlockExercise, SessionDefinition } from '../content/types'
 import type { CheckInEntryPatch, CheckInLimit, PlayerSessionEntry, PlayerWarning, TrafficLight } from '../domain/checkIn'
-import { clusterOptions, type Player } from '../domain/players'
+import type { Player } from '../domain/players'
 import type { ReturnerCapSummary } from '../domain/returners'
 import { sessionBlockStatusLabels } from '../domain/sessionBlocks'
 import {
@@ -898,7 +899,7 @@ export function TrainingView({
             <label className="inline-field">
               <span>Cluster</span>
               <select value={trainingClusterFilter} onChange={(event) => setTrainingClusterFilter(event.target.value)}>
-                {clusterOptions.map((option) => (
+                {positionGroupOptions.map((option) => (
                   <option key={option.value} value={option.value}>
                     {option.label}
                   </option>

@@ -1,16 +1,15 @@
 import { Camera, RefreshCw, Search, Settings, Trash2, UserMinus, UserPlus, Users, X } from 'lucide-react'
 import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
+import { activeSportConfig, positionGroupOptions } from '../config/labels'
 import { sprint30mOptionalLabel } from '../domain/baseline'
 import { metricDefinitions, type MetricDefinition } from '../content/metricDefinitions'
 import { formatExerciseResult, getExerciseDefinition, type ExerciseResult } from '../domain/exercises'
 import { exposureTypes, type PlayerExposureSummary } from '../domain/exposures'
 import { getMetricDefinition, type MetricResult } from '../domain/metrics'
 import {
-  clusterOptions,
   consentStatusOptions,
   emptyPlayerFormValues,
   getPlayerInitials,
-  onFieldRugbyAthletePreset,
   photoConsentOptions,
   playerToFormValues,
   returnerStatusOptions,
@@ -86,7 +85,7 @@ const trafficLabels = {
   red: 'Rot',
 } as const
 
-function optionLabel<T extends string>(options: Array<{ value: T; label: string }>, value: T) {
+function optionLabel<T extends string>(options: ReadonlyArray<{ value: T; label: string }>, value: T) {
   return options.find((option) => option.value === value)?.label ?? value
 }
 
@@ -128,7 +127,7 @@ function playerRowAriaLabel(player: Player, profile: PlayerProfileSummary | unde
   const labels = [
     `Profil öffnen: ${player.name}`,
     player.position,
-    optionLabel(clusterOptions, player.cluster),
+    optionLabel(positionGroupOptions, player.cluster),
     player.active ? 'aktiv' : 'inaktiv',
   ]
 
@@ -394,7 +393,7 @@ function PlayerDetailView({
           <div>
             <p className="eyebrow">Spielerprofil</p>
             <h3 id="player-detail-heading">{player.name}</h3>
-            <p>{player.position} · {optionLabel(clusterOptions, player.cluster)}</p>
+            <p>{player.position} · {optionLabel(positionGroupOptions, player.cluster)}</p>
             <PlayerBadgeRow player={player} profile={profile} />
           </div>
         </div>
@@ -493,14 +492,14 @@ function PlayerDetailView({
           </ProfileSection>
           <ProfileSection title="Stammdaten & Consent">
             <div className="metric-grid mini">
-              <MetricCard label={onFieldRugbyAthletePreset.positionLabel} value={player.position} />
+              <MetricCard label={activeSportConfig.athleteLabels.positionLabel} value={player.position} />
               <MetricCard
-                label={onFieldRugbyAthletePreset.positionGroupLabel}
-                value={optionLabel(clusterOptions, player.cluster)}
+                label={activeSportConfig.athleteLabels.positionGroupLabel}
+                value={optionLabel(positionGroupOptions, player.cluster)}
               />
               <MetricCard label="Consent" value={optionLabel(consentStatusOptions, player.consentStatus)} />
               <MetricCard label="Foto" value={optionLabel(photoConsentOptions, player.photoConsentStatus)} />
-              <MetricCard label="Preset" value={onFieldRugbyAthletePreset.presetName} />
+              <MetricCard label="Preset" value={activeSportConfig.productLabel} />
               <MetricCard label="Status" value={player.active ? 'aktiv' : 'inaktiv'} />
             </div>
           </ProfileSection>
@@ -1237,7 +1236,7 @@ export function PlayersView({
                 <span>
                   <strong>{player.name}</strong>
                   <small>
-                    {player.position} · {optionLabel(clusterOptions, player.cluster)}
+                    {player.position} · {optionLabel(positionGroupOptions, player.cluster)}
                   </small>
                   <PlayerBadgeRow player={player} profile={profile} />
                 </span>
@@ -1302,8 +1301,8 @@ export function PlayersView({
                 <p className="eyebrow">Neu anlegen</p>
                 <h3 id="player-editor-heading">Spieler-Stammdaten</h3>
                 <p>
-                  {onFieldRugbyAthletePreset.positionLabel}, {onFieldRugbyAthletePreset.positionGroupLabel}, Consent,
-                  Returner-Status und Foto-Erlaubnis.
+                  {activeSportConfig.athleteLabels.positionLabel}, {activeSportConfig.athleteLabels.positionGroupLabel},
+                  Consent, {activeSportConfig.reconditioningLabels.statusLabel} und Foto-Erlaubnis.
                 </p>
               </div>
               <button

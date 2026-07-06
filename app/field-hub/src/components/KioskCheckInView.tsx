@@ -1,4 +1,5 @@
 import { ClipboardCheck, LogOut } from 'lucide-react'
+import { activeSportConfig } from '../config/labels'
 import type { SessionDefinition } from '../content/types'
 import { BrandSurface } from './onfield'
 import { SelfCheckInFlow, type SelfCheckInPlayerOption, type SelfCheckInSubmissionInput } from './SelfCheckInFlow'
@@ -44,7 +45,7 @@ export function KioskCheckInView({
         body={`${formatSessionDate(selectedSession.date)} · ${sessionDetail(selectedSession.title)}`}
         className="kiosk-checkin-panel"
         claim="Know squad status before the whistle."
-        meta={<span>OnField Rugby Kiosk</span>}
+        meta={<span>{activeSportConfig.productLabel} Kiosk</span>}
         title="Training Check-in"
         variant="kiosk"
       >

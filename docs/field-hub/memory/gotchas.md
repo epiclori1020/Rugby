@@ -1,6 +1,6 @@
 # OnField Gotchas
 
-Stand: 2026-07-05
+Stand: 2026-07-06
 
 Dieses Dokument speichert wiederkehrende Fehler, Fallen und konkrete Vermeidungsregeln fuer OnField-Agenten. Ein Gotcha gehoert nur hierher, wenn es zukuenftige Arbeit wahrscheinlich verbessert.
 
@@ -20,8 +20,10 @@ Dieses Dokument speichert wiederkehrende Fehler, Fallen und konkrete Vermeidungs
 | active | Runtime-Redaction ist kein Datenschutzmodell. | E-Mails, Telefonnummern, Geburtsdaten, Secrets und Clearance-Wording werden redigiert/markiert, aber Agenten duerfen keine sensiblen Spieler- oder Gesundheitsdaten bewusst in Memory-Kontext einspeisen. |
 | active | Lokale ignored Claude-Konfiguration kann existieren. | Eine vorhandene `.claude/settings.local.json` nicht als OnField-Runtime werten und nicht bearbeiten oder committen. Tracked Codex-Hooks und `.onfield-memory`-Scripts/Config aus Sprint 0C/0D sind erlaubt; generierte Runtime-Outputs bleiben ignored. |
 | active | PDFs und kopierte Researches koennen Whitespace-Warnungen erzeugen. | PDFs nicht mechanisch formatieren, weil PDF-Strukturen beschaedigt werden koennen. Research-Markdown nur gezielt bereinigen, wenn es keine Quellenstruktur zerstoert. |
+| active | Verschobene Trainingstermine duerfen nicht nur per App-Link umgehaengt werden. | Bei Terminverschiebungen immer auch Markdown-Quellen, PDF-Inhalte, Dateinamen, App-`pdfRefs`, Library-Eintrag und Session-Timeline gegen interne Datums-/Progressionslogik pruefen; bei inhaltlichem Datumskonflikt neue Unterlagen bauen statt nur Links umzubenennen. |
 | active | Signed-in UI-QA braucht expliziten Testzustand. | Ohne sichere Test-Auth oder Seed-State zeigt die echte App nur Locked-/Welcome-Zustaende. Fuer Screen-QA mit Daten einen lokalen Komponenten-Harness oder eine bewusst konfigurierte Test-Session nutzen und den Workaround im Abschlussbericht offen nennen. |
 | active | Lokaler Vite-Dev-Server kann in der Codex-Sandbox mit `EPERM` blockieren. | Einmal direkt versuchen; bei Policy-Ablehnung keine indirekten Workarounds nutzen. Automatisierte Checks, Figma/static QA und den fehlenden Live-Browser-/PWA-Check im Abschlussbericht klar benennen. |
+| active | OnField-Worktrees koennen parallele Content- oder PDF-Aenderungen enthalten. | Vor Abschluss `git status --short --untracked-files=all` und sprintbezogene `git diff -- ...` pruefen; fremde Content-/PDF-Aenderungen klar aus dem Sprint-Scope und aus spaeteren Commits heraushalten. |
 
 ## Wann Neue Gotchas Hinzukommen
 

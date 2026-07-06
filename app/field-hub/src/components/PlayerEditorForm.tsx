@@ -1,9 +1,8 @@
 import { Save } from 'lucide-react'
 import type { FormEvent, ReactNode } from 'react'
+import { activeSportConfig, positionGroupOptions } from '../config/labels'
 import {
-  clusterOptions,
   consentStatusOptions,
-  onFieldRugbyAthletePreset,
   photoConsentOptions,
   returnerStatusOptions,
   type ConsentStatus,
@@ -46,7 +45,7 @@ export function PlayerEditorForm({
       </label>
 
       <label>
-        <span>{onFieldRugbyAthletePreset.positionLabel}</span>
+        <span>{activeSportConfig.athleteLabels.positionLabel}</span>
         <input
           value={values.position}
           placeholder="z. B. Prop, Lock, 9, Centre"
@@ -56,9 +55,9 @@ export function PlayerEditorForm({
 
       <div className="form-grid">
         <label>
-          <span>{onFieldRugbyAthletePreset.positionGroupLabel}</span>
+          <span>{activeSportConfig.athleteLabels.positionGroupLabel}</span>
           <select value={values.cluster} onChange={(event) => onFieldChange('cluster', event.target.value as PlayerCluster)}>
-            {clusterOptions.map((option) => (
+            {positionGroupOptions.map((option) => (
               <option key={option.value} value={option.value}>
                 {option.label}
               </option>
@@ -81,7 +80,7 @@ export function PlayerEditorForm({
         </label>
 
         <label>
-          <span>Returner / Rückkehrstatus</span>
+          <span>{activeSportConfig.reconditioningLabels.statusLabel}</span>
           <select
             value={values.returnerStatus}
             onChange={(event) => onFieldChange('returnerStatus', event.target.value as ReturnerStatus)}

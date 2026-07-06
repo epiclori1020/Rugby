@@ -1,5 +1,6 @@
 import { ClipboardCheck } from 'lucide-react'
 import { useEffect, useState } from 'react'
+import { activeSportConfig } from '../config/labels'
 import {
   loadPublicCheckInForm,
   submitPublicCheckIn,
@@ -71,7 +72,7 @@ export function PublicCheckInView({ token }: PublicCheckInViewProps) {
         }
         className="public-checkin-panel"
         claim="Know squad status before the whistle."
-        meta={<span>OnField Rugby Public Check-in</span>}
+        meta={<span>{activeSportConfig.productLabel} Public Check-in</span>}
         title="Training Check-in"
         variant="public"
       >
@@ -90,7 +91,7 @@ export function PublicCheckInView({ token }: PublicCheckInViewProps) {
             completionBody="Deine Angaben sind angekommen. Wenn du versehentlich den falschen Namen gewählt hast, sag dem Coach direkt Bescheid."
             completionTitle="Check-in gespeichert"
             disabled={isSubmitting}
-            helperText="Deine Angaben gehen nur an Rugby Donau S&C für diese Trainingseinheit. Wenn du den falschen Namen wählst oder etwas Sensibles hast, sag dem Coach direkt Bescheid."
+            helperText={activeSportConfig.safetyCopy.publicCheckInPrivacy}
             mode="public"
             onSubmit={handleSubmit}
             players={formData?.linkPlayers.map((player) => ({ id: player.id, displayName: player.displayName })) ?? []}

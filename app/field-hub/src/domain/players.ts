@@ -1,13 +1,8 @@
 import type { SyncStatus } from './sync'
+import { activeSportConfig, positionGroupOptions } from '../config/labels'
+import type { OnFieldRugbyPositionGroupId } from '../config/onfieldRugby'
 
-export type PlayerCluster =
-  | 'front_row'
-  | 'locks'
-  | 'back_row'
-  | 'halves'
-  | 'centres'
-  | 'back_three'
-  | 'offen'
+export type PlayerCluster = OnFieldRugbyPositionGroupId
 
 export type ConsentStatus = 'vorhanden' | 'offen' | 'unklar'
 export type PhotoConsentStatus = 'not_asked' | 'allowed' | 'denied'
@@ -45,15 +40,7 @@ export type PlayerFormValues = {
   notes: string
 }
 
-export const clusterOptions: Array<{ value: PlayerCluster; label: string }> = [
-  { value: 'offen', label: 'Offen' },
-  { value: 'front_row', label: 'Front Row' },
-  { value: 'locks', label: 'Locks' },
-  { value: 'back_row', label: 'Back Row' },
-  { value: 'halves', label: 'Halves' },
-  { value: 'centres', label: 'Centres' },
-  { value: 'back_three', label: 'Back Three' },
-]
+export const clusterOptions = positionGroupOptions
 
 export type AthletePresetLabels = {
   athleteGenericName: 'Athlete'
@@ -65,11 +52,11 @@ export type AthletePresetLabels = {
 }
 
 export const onFieldRugbyAthletePreset: AthletePresetLabels = {
-  athleteGenericName: 'Athlete',
-  athleteDisplayName: 'Spieler',
-  positionLabel: 'Position',
-  positionGroupLabel: 'Position Group',
-  presetName: 'OnField Rugby',
+  athleteGenericName: activeSportConfig.athleteLabels.genericName,
+  athleteDisplayName: activeSportConfig.athleteLabels.displayName,
+  positionLabel: activeSportConfig.athleteLabels.positionLabel,
+  positionGroupLabel: activeSportConfig.athleteLabels.positionGroupLabel,
+  presetName: activeSportConfig.productLabel,
   positionGroups: clusterOptions,
 }
 
