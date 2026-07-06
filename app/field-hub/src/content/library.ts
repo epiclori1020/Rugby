@@ -203,6 +203,39 @@ export const libraryItems: LibraryItem[] = [
     ],
   },
   {
+    id: 'kw28-thursday-active-pack',
+    category: 'Aktive Pläne',
+    title: 'Donnerstag 09.07: aktives PDF-Paket',
+    summary:
+      'Aktuelle iPad- und Druckunterlagen fuer KW28 Session 3A angepasst nach der 2B-Nachholung: Training kompakt, Check-in/Beobachtung und Deep Playbook.',
+    sourcePath: 'plans/offseason_coach_sheets/KW28_thursday_training_compact_2026-07-09.md',
+    tags: ['KW28', 'Donnerstag', '09.07', 'Training kompakt', 'Check-in', 'Deep Playbook', '3A angepasst'],
+    sections: [
+      {
+        title: 'Am Feld',
+        body: [
+          'Training kompakt ist die kurze Klemmbrett-Referenz fuer die angepasste 3A.',
+          'Check-in + Beobachtung ist als zweiseitige Querformat-PDF gebaut, mit separatem Check-in- und Beobachtungszettel.',
+          'Deep Playbook erklaert Verschiebung, Wording, Speed, Kraft-Pods, kontrollierte Contact Prep, Fallbacks und Safety-Grenzen.',
+        ],
+      },
+      {
+        title: 'Kernentscheidungen',
+        body: [
+          'Dienstag 07.07 ist die nachgeholte Session 2B vom 02.07; Donnerstag 09.07 wird deshalb keine doppelte Nachholbelastung.',
+          'Der naechste Aufbau-Schritt ist eine angepasste 3A: Speed technisch, Power kurz, Kraftbasis und kontrollierte Contact Prep.',
+          'Conditioning ist optional und wird zuerst gestrichen, wenn Dienstag schwer angekommen ist.',
+          'Kein Full Contact und keine Contact Prep fuer offene Returner oder Kopf-/Nackenflags.',
+        ],
+      },
+    ],
+    pdfRefs: [
+      pdfRefs.kw28ThursdayTrainingCompact,
+      pdfRefs.kw28ThursdayCheckIn,
+      pdfRefs.kw28ThursdayDeepPlaybook,
+    ],
+  },
+  {
     id: 'spieler-briefing-start',
     category: 'Quellen',
     title: 'Spieler-Briefing: S&C Start',
