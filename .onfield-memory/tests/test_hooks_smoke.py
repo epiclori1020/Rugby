@@ -7,10 +7,11 @@ import shutil
 import subprocess
 import sys
 import time
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS = ROOT / "scripts"
+from test_support import SCRIPTS, make_runtime_root, runtime_env
+
+ROOT = make_runtime_root()
+ENV = runtime_env(ROOT)
 
 
 def reset_runtime() -> None:
@@ -23,7 +24,13 @@ def reset_runtime() -> None:
 
 def test_session_start_and_lock_fail_open() -> None:
     reset_runtime()
-    start = subprocess.run([sys.executable, str(SCRIPTS / "session_start.py")], text=True, capture_output=True, check=False)
+    start = subprocess.run(
+        [sys.executable, str(SCRIPTS / "session_start.py")],
+        text=True,
+        capture_output=True,
+        check=False,
+        env=ENV,
+    )
     assert start.returncode == 0
     assert "kein Hot Cache" in start.stdout
 
@@ -36,6 +43,7 @@ def test_session_start_and_lock_fail_open() -> None:
         text=True,
         capture_output=True,
         check=False,
+        env=ENV,
     )
     assert captured.returncode == 0
     assert "Memory Closeout" in captured.stdout
@@ -57,6 +65,7 @@ def test_stale_lock_is_recovered() -> None:
         text=True,
         capture_output=True,
         check=False,
+        env=ENV,
     )
     assert captured.returncode == 0
     assert list((ROOT / "captures").glob("**/*.json"))
@@ -77,7 +86,13 @@ def test_pending_compile_message() -> None:
     hot = ROOT / "knowledge" / "hot.md"
     hot.parent.mkdir(parents=True, exist_ok=True)
     hot.write_text("# OnField Runtime Hot Cache\n", encoding="utf-8")
-    start = subprocess.run([sys.executable, str(SCRIPTS / "session_start.py")], text=True, capture_output=True, check=False)
+    start = subprocess.run(
+        [sys.executable, str(SCRIPTS / "session_start.py")],
+        text=True,
+        capture_output=True,
+        check=False,
+        env=ENV,
+    )
     assert start.returncode == 0
     assert "pending" in start.stdout
     reset_runtime()

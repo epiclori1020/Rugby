@@ -84,12 +84,14 @@ def lint_memory() -> dict:
     state = load_state()
     config = load_config()
 
-    for root_name in ("captures", "daily", "knowledge", "reports"):
+    for root_name in ("captures", "daily", "knowledge", "reports", "backups", "orphans", "tmp"):
         root = runtime_path(root_name)
         if not root.exists():
             continue
         for path in root.glob("**/*"):
             if not path.is_file():
+                continue
+            if root_name == "tmp" and path.suffix == ".lock":
                 continue
             text = path.read_text(encoding="utf-8", errors="ignore")
             for segment in lint_text_segments(path, text):

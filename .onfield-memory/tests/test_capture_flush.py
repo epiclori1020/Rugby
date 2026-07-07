@@ -2,14 +2,14 @@
 from __future__ import annotations
 
 import json
-import os
 import shutil
 import subprocess
 import sys
-from pathlib import Path
 
-ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS = ROOT / "scripts"
+from test_support import SCRIPTS, make_runtime_root, runtime_env
+
+ROOT = make_runtime_root()
+ENV = runtime_env(ROOT)
 
 
 def reset_runtime() -> None:
@@ -42,6 +42,7 @@ def test_capture_flush_redacts_and_compiles() -> None:
         text=True,
         capture_output=True,
         check=False,
+        env=ENV,
     )
     assert result.returncode == 0
     assert "Memory Closeout" in result.stdout

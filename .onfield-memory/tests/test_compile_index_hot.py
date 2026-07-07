@@ -6,10 +6,13 @@ import shutil
 import subprocess
 import sys
 import importlib
-from pathlib import Path
+import os
 
-ROOT = Path(__file__).resolve().parents[1]
-SCRIPTS = ROOT / "scripts"
+from test_support import SCRIPTS, make_runtime_root, runtime_env
+
+ROOT = make_runtime_root()
+ENV = runtime_env(ROOT)
+os.environ["ONFIELD_MEMORY_DIR"] = str(ROOT)
 sys.path.insert(0, str(SCRIPTS))
 
 compile_module = importlib.import_module("compile")
@@ -33,7 +36,13 @@ def test_compile_index_hot_cache() -> None:
         "Decision candidate: Runtime Memory may suggest but not overwrite SSOTs.\n",
         encoding="utf-8",
     )
-    result = subprocess.run([sys.executable, str(SCRIPTS / "compile.py"), "--force"], text=True, capture_output=True, check=False)
+    result = subprocess.run(
+        [sys.executable, str(SCRIPTS / "compile.py"), "--force"],
+        text=True,
+        capture_output=True,
+        check=False,
+        env=ENV,
+    )
     assert result.returncode == 0
     assert (ROOT / "knowledge" / "index.md").exists()
     assert (ROOT / "knowledge" / "hot.md").exists()

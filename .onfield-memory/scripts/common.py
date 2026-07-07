@@ -17,7 +17,16 @@ from typing import Any, Iterator
 
 
 SCHEMA_VERSION = 1
-MEMORY_DIR = Path(__file__).resolve().parents[1]
+
+
+def memory_dir() -> Path:
+    override = os.environ.get("ONFIELD_MEMORY_DIR")
+    if override:
+        return Path(override).expanduser().resolve()
+    return Path(__file__).resolve().parents[1]
+
+
+MEMORY_DIR = memory_dir()
 
 
 def repo_root() -> Path:
