@@ -1,6 +1,6 @@
 import { useCallback } from 'react'
 import { ArrowRight, CalendarDays, ClipboardCheck, Dumbbell, FileText, ShieldAlert, Users } from 'lucide-react'
-import type { HubTab } from '../navigation'
+import { routeKey, routes, type AppRoute } from '../navigation'
 import type { PdfRef, SessionDefinition, SessionType } from '../content/types'
 import type { CoachInsight, CoachInsightSource } from '../domain/coachInsights'
 import type { Player } from '../domain/players'
@@ -20,7 +20,7 @@ type TodayDashboardProps = {
   isSignedIn: boolean
   onActionFeedback: (message: string) => void
   onOpenCoachInsightSource: (source: CoachInsightSource) => void
-  onNavigate: (tab: HubTab) => void
+  onNavigate: (route: AppRoute) => void
   onOpenLibrary: (session: SessionDefinition) => void
   onOpenPdf: (pdf: PdfRef) => void
   onResetToTodaySession: () => void
@@ -35,11 +35,11 @@ type TodayDashboardProps = {
   upcomingSessions: SessionDefinition[]
 }
 
-const quickActions: Array<{ label: string; tab: HubTab; feedback: string; testId: string }> = [
-  { label: 'Check-in öffnen', tab: 'check-in', feedback: 'Check-in geöffnet.', testId: 'today-quick-action-check-in' },
-  { label: 'Training anzeigen', tab: 'training', feedback: 'Training geöffnet.', testId: 'today-quick-action-training' },
-  { label: 'Nachbereitung', tab: 'nachbereitung', feedback: 'Nachbereitung geöffnet.', testId: 'today-quick-action-post' },
-  { label: 'Bibliothek', tab: 'bibliothek', feedback: 'Bibliothek geöffnet.', testId: 'today-quick-action-library' },
+const quickActions: Array<{ label: string; route: AppRoute; feedback: string; testId: string }> = [
+  { label: 'Check-in öffnen', route: routes.unitCheckIn, feedback: 'Check-in geöffnet.', testId: 'today-quick-action-check-in' },
+  { label: 'Training anzeigen', route: routes.unitTraining, feedback: 'Training geöffnet.', testId: 'today-quick-action-training' },
+  { label: 'Nachbereitung', route: routes.unitPostSession, feedback: 'Nachbereitung geöffnet.', testId: 'today-quick-action-post' },
+  { label: 'Bibliothek', route: routes.moreLibrary, feedback: 'Bibliothek geöffnet.', testId: 'today-quick-action-library' },
 ]
 
 const sessionTypeLabels: Record<SessionType, string> = {
@@ -146,9 +146,9 @@ export function TodayDashboard({
     : 'Lege aktive Spieler an, damit Check-in, Session Flow und Wrap-up mit demselben Funktionsumfang starten.'
 
   const navigateWithFeedback = useCallback(
-    (tab: HubTab, message: string) => {
+    (route: AppRoute, message: string) => {
       onActionFeedback(message)
-      onNavigate(tab)
+      onNavigate(route)
     },
     [onActionFeedback, onNavigate],
   )
@@ -183,7 +183,7 @@ export function TodayDashboard({
     if (postSessionWork) {
       onSessionChange(postSessionWork.sessionLog.sessionDefinitionId)
     }
-    navigateWithFeedback('nachbereitung', 'Nachbereitung geöffnet.')
+    navigateWithFeedback(routes.unitPostSession, 'Nachbereitung geöffnet.')
   }, [navigateWithFeedback, onSessionChange, postSessionWork])
 
   return (
@@ -200,8 +200,8 @@ export function TodayDashboard({
                 type="button"
                 onClick={() =>
                   !isSignedIn
-                    ? navigateWithFeedback('einstellungen', 'Einstellungen geöffnet.')
-                    : navigateWithFeedback('spieler', 'Spieler geöffnet.')
+                    ? navigateWithFeedback(routes.moreSettings, 'Einstellungen geöffnet.')
+                    : navigateWithFeedback(routes.players, 'Spieler geöffnet.')
                 }
               >
                 <span>{!isSignedIn ? 'Login öffnen' : 'Spieler anlegen'}</span>
@@ -263,10 +263,12 @@ export function TodayDashboard({
               <button
                 className={index === 0 ? 'quick-action primary-quick-action' : 'quick-action'}
                 data-testid={action.testId}
-                key={action.tab}
+                key={routeKey(action.route)}
                 type="button"
                 onClick={() =>
-                  action.tab === 'bibliothek' ? handleOpenLibrary() : navigateWithFeedback(action.tab, action.feedback)
+                  action.route.section === 'more' && action.route.moreRoute === 'library'
+                    ? handleOpenLibrary()
+                    : navigateWithFeedback(action.route, action.feedback)
                 }
               >
                 <span>{action.label}</span>
@@ -321,7 +323,7 @@ export function TodayDashboard({
           <button
             className="quick-action"
             type="button"
-            onClick={() => navigateWithFeedback('training', 'Training geöffnet.')}
+            onClick={() => navigateWithFeedback(routes.unitTraining, 'Training geöffnet.')}
           >
             <span>Vollständigen Ablauf öffnen</span>
             <ArrowRight className="nav-icon" aria-hidden />
@@ -339,7 +341,7 @@ export function TodayDashboard({
               className="quick-action compact-status-action"
               data-testid="today-warning-action"
               type="button"
-              onClick={() => navigateWithFeedback('check-in', 'Check-in geöffnet.')}
+              onClick={() => navigateWithFeedback(routes.unitCheckIn, 'Check-in geöffnet.')}
             >
               <span>{warningCount} Warnung(en) prüfen</span>
               <ArrowRight className="nav-icon" aria-hidden />
@@ -352,7 +354,7 @@ export function TodayDashboard({
               className="quick-action compact-status-action"
               data-testid="today-followup-action"
               type="button"
-              onClick={() => navigateWithFeedback('nachbereitung', 'Nachbereitung geöffnet.')}
+              onClick={() => navigateWithFeedback(routes.unitPostSession, 'Nachbereitung geöffnet.')}
             >
               <span>{postSessionFollowUpCount} Follow-up(s) prüfen</span>
               <ArrowRight className="nav-icon" aria-hidden />
@@ -365,7 +367,7 @@ export function TodayDashboard({
               className="quick-action compact-status-action"
               data-testid="today-pending-action"
               type="button"
-              onClick={() => navigateWithFeedback('einstellungen', 'Einstellungen geöffnet.')}
+              onClick={() => navigateWithFeedback(routes.moreSettings, 'Einstellungen geöffnet.')}
             >
               <span>{pendingCountLabel(pendingCount, 'Check-in-Änderungen')}</span>
               <ArrowRight className="nav-icon" aria-hidden />
@@ -460,7 +462,7 @@ export function TodayDashboard({
           <button
             className="quick-action"
             type="button"
-            onClick={() => navigateWithFeedback('check-in', 'Check-in geöffnet.')}
+            onClick={() => navigateWithFeedback(routes.unitCheckIn, 'Check-in geöffnet.')}
           >
             <span>Zum Check-in</span>
             <ArrowRight className="nav-icon" aria-hidden />
@@ -497,7 +499,7 @@ export function TodayDashboard({
             <button
               className="quick-action"
               type="button"
-              onClick={() => navigateWithFeedback('einstellungen', 'Einstellungen geöffnet.')}
+              onClick={() => navigateWithFeedback(routes.moreSettings, 'Einstellungen geöffnet.')}
             >
               <span>Zu Einstellungen</span>
               <ArrowRight className="nav-icon" aria-hidden />

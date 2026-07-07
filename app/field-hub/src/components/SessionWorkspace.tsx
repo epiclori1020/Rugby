@@ -6,17 +6,17 @@ import type { PostSessionCompletion } from '../domain/postSessionCompletion'
 import type { ReturnerCapSummary } from '../domain/returners'
 import type { PlayerSyncOverview } from '../domain/sync'
 import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
-import type { UnitSubTab } from '../navigation'
+import type { UnitRoute } from '../navigation'
 import { SessionPicker } from './SessionPicker'
 import { SessionHeader } from './onfield/SessionHeader'
 import { SegmentedControl, StatusChip, type SegmentedControlOption, type StatusTone } from './ui'
 
 type SessionWorkspaceProps = {
-  activeSubTab: UnitSubTab
+  activeUnitRoute: UnitRoute
   children: ReactNode
   entries: PlayerSessionEntry[]
   onSessionChange: (sessionId: string) => void
-  onSubTabChange: (tab: UnitSubTab) => void
+  onUnitRouteChange: (route: UnitRoute) => void
   postSessionCompletion: PostSessionCompletion
   returnerCaps: ReturnerCapSummary[]
   selectedSession: SessionDefinition
@@ -26,10 +26,10 @@ type SessionWorkspaceProps = {
   warnings: PlayerWarning[]
 }
 
-const unitOptions: SegmentedControlOption<UnitSubTab>[] = [
+const unitOptions: SegmentedControlOption<UnitRoute>[] = [
   { value: 'check-in', label: 'Check-in', icon: <ClipboardCheck aria-hidden /> },
   { value: 'training', label: 'Training', icon: <Dumbbell aria-hidden /> },
-  { value: 'nachbereitung', label: 'Nachbereitung', icon: <Activity aria-hidden /> },
+  { value: 'post-session', label: 'Nachbereitung', icon: <Activity aria-hidden /> },
 ]
 
 const sessionTypeLabel: Record<SessionType, string> = {
@@ -100,11 +100,11 @@ function syncTone(syncOverview: PlayerSyncOverview): StatusTone {
 }
 
 export function SessionWorkspace({
-  activeSubTab,
+  activeUnitRoute,
   children,
   entries,
   onSessionChange,
-  onSubTabChange,
+  onUnitRouteChange,
   postSessionCompletion,
   returnerCaps,
   selectedSession,
@@ -171,9 +171,9 @@ export function SessionWorkspace({
       <div className="session-workspace-subnav">
         <SegmentedControl
           label="Einheit Unterbereiche"
-          onChange={onSubTabChange}
+          onChange={onUnitRouteChange}
           options={unitOptions}
-          value={activeSubTab}
+          value={activeUnitRoute}
         />
       </div>
 

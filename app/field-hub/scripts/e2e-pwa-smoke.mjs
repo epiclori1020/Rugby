@@ -53,6 +53,21 @@ const lazyScreenChecks = [
   },
 ]
 
+const routeSmokeChecks = [
+  { hash: '#/today', expectedHash: '#/today', expectedText: 'Heute' },
+  { hash: '#/unit/check-in', expectedHash: '#/unit/check-in', expectedText: 'Einheit / Check-in' },
+  { hash: '#/unit/training', expectedHash: '#/unit/training', expectedText: 'Einheit / Training' },
+  { hash: '#/unit/post-session', expectedHash: '#/unit/post-session', expectedText: 'Einheit / Nachbereitung' },
+  { hash: '#/players', expectedHash: '#/players', expectedText: 'Spieler' },
+  { hash: '#/analysis', expectedHash: '#/analysis', expectedText: 'Analyse' },
+  { hash: '#/more/library', expectedHash: '#/more/library', expectedText: 'Mehr / Bibliothek' },
+  { hash: '#/more/export', expectedHash: '#/more/export', expectedText: 'Mehr / Export & Backup' },
+  { hash: '#/more/settings', expectedHash: '#/more/settings', expectedText: 'Mehr / Einstellungen' },
+  { hash: '#/more/returners', expectedHash: '#/more/returners', expectedText: 'Mehr / Returner' },
+  { hash: '#/nachbereitung', expectedHash: '#/unit/post-session', expectedText: 'Einheit / Nachbereitung' },
+  { hash: '#/bibliothek', expectedHash: '#/more/library', expectedText: 'Mehr / Bibliothek' },
+]
+
 function chromeExecutablePath() {
   const candidates = [
     process.env.PUPPETEER_EXECUTABLE_PATH,
@@ -152,6 +167,34 @@ async function stopChild(child) {
 async function waitForAppShell(page) {
   await page.waitForSelector('#root', { timeout: 20_000 })
   await page.waitForFunction(() => document.body.innerText.trim().length > 20, { timeout: 20_000 })
+}
+
+async function waitForCoachRoute(page, expectedHash, expectedText, contextLabel) {
+  try {
+    await page.waitForFunction(
+      (routeHash, routeText) => {
+        const bodyText = document.body.innerText.toLocaleLowerCase('de-AT')
+        const hasRouteText = bodyText.includes(routeText.toLocaleLowerCase('de-AT'))
+        const hasLazyError = Boolean(document.querySelector('.screen-load-state-error'))
+        return window.location.hash === routeHash && hasRouteText && !hasLazyError
+      },
+      { timeout: 20_000 },
+      expectedHash,
+      expectedText,
+    )
+  } catch (error) {
+    const diagnostics = await page.evaluate((routeText) => ({
+      currentHash: window.location.hash,
+      hasRouteText: document.body.innerText.toLocaleLowerCase('de-AT').includes(routeText.toLocaleLowerCase('de-AT')),
+      screenError: document.querySelector('.screen-load-state-error')?.textContent?.trim() ?? null,
+      textPreview: document.body.innerText.slice(0, 600),
+    }), expectedText)
+
+    throw new Error(
+      `${contextLabel}: Coach-Route nicht vollstaendig geladen. Erwarteter Hash: ${expectedHash}, aktueller Hash: ${diagnostics.currentHash}. Erwarteter Text: ${expectedText}, gefunden: ${diagnostics.hasRouteText ? 'ja' : 'nein'}. Lazy-Fehler: ${diagnostics.screenError ?? 'nein'}. Sichtbarer Text: ${diagnostics.textPreview}`,
+      { cause: error },
+    )
+  }
 }
 
 async function assertNoHorizontalOverflow(page, viewportName) {
@@ -290,6 +333,52 @@ async function assertLazyScreensLoad(page, viewport) {
   }
 }
 
+async function assertCoachRouteDeepLinks(page, viewport) {
+  await page.setViewport({
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 2,
+    isMobile: viewport.isMobile,
+  })
+
+  for (const check of routeSmokeChecks) {
+    await page.goto(`${baseUrl}${check.hash}`, { waitUntil: 'networkidle2', timeout: 30_000 })
+    await waitForAppShell(page)
+    await waitForCoachRoute(page, check.expectedHash, check.expectedText, `${viewport.name}: ${check.hash}`)
+  }
+}
+
+async function assertCoachRouteHistory(page, viewport) {
+  await page.setViewport({
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 2,
+    isMobile: viewport.isMobile,
+  })
+  await page.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 30_000 })
+  await waitForAppShell(page)
+
+  await clickButtonByLabelOrText(page, 'Einheit', viewport.name)
+  await clickButtonByLabelOrText(page, 'Training', viewport.name)
+  await waitForCoachRoute(page, '#/unit/training', 'Einheit / Training', `${viewport.name}: Training route`)
+
+  await clickButtonByLabelOrText(page, 'Mehr', viewport.name)
+  await clickButtonByLabelOrText(page, 'Einstellungen', viewport.name)
+  await waitForCoachRoute(page, '#/more/settings', 'Mehr / Einstellungen', `${viewport.name}: Settings route`)
+
+  await page.goBack({ waitUntil: 'domcontentloaded' })
+  await waitForCoachRoute(page, '#/more/library', 'Mehr / Bibliothek', `${viewport.name}: history back to more default`)
+
+  await page.goBack({ waitUntil: 'domcontentloaded' })
+  await waitForCoachRoute(page, '#/unit/training', 'Einheit / Training', `${viewport.name}: history back to unit`)
+
+  await page.goForward({ waitUntil: 'domcontentloaded' })
+  await waitForCoachRoute(page, '#/more/library', 'Mehr / Bibliothek', `${viewport.name}: history forward to more default`)
+
+  await page.goForward({ waitUntil: 'domcontentloaded' })
+  await waitForCoachRoute(page, '#/more/settings', 'Mehr / Einstellungen', `${viewport.name}: history forward to settings`)
+}
+
 async function prepareServiceWorker(page) {
   await page.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 30_000 })
   await page.evaluate(async () => {
@@ -362,6 +451,11 @@ async function main() {
       await assertLazyScreensLoad(page, viewport)
     }
 
+    for (const viewport of lazyScreenViewports) {
+      await assertCoachRouteDeepLinks(page, viewport)
+      await assertCoachRouteHistory(page, viewport)
+    }
+
     await assertOfflineFallback(page)
 
     if (consoleMessages.length > 0 && process.env.FIELD_HUB_E2E_VERBOSE === '1') {
@@ -370,6 +464,8 @@ async function main() {
 
     console.log(
       `PWA smoke passed for ${viewports.map((viewport) => viewport.name).join(', ')}; lazy screens passed for ${lazyScreenViewports
+        .map((viewport) => viewport.name)
+        .join(', ')}; coach route deep links and history passed for ${lazyScreenViewports
         .map((viewport) => viewport.name)
         .join(', ')}.`,
     )

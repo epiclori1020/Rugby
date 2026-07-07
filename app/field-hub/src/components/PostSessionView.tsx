@@ -1,6 +1,6 @@
 import { AlertTriangle, ClipboardCheck, RefreshCw, ShieldAlert, UserCheck } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
-import type { HubTab } from '../navigation'
+import { routes, type AppRoute } from '../navigation'
 import type { SessionDefinition } from '../content/types'
 import { metricDefinitions } from '../content/metricDefinitions'
 import { exerciseDefinitions } from '../content/exerciseDefinitions'
@@ -57,7 +57,7 @@ type PostSessionViewProps = {
   exerciseActions: ExerciseActions
   lastExportAt: string | null
   metricActions: MetricActions
-  onNavigate: (tab: HubTab) => void
+  onNavigate: (route: AppRoute) => void
   onSessionChange: (sessionId: string) => void
   postSessionActions: PostSessionActions
   returnerCaps: ReturnerCapSummary[]
@@ -179,7 +179,7 @@ function MissingValuesPanel({
   items: MissingPostSessionValue[]
   onMetricParseError: (message: string | null) => void
   onMetricSave: MetricActions['savePlayerMetric']
-  onNavigate: (tab: HubTab) => void
+  onNavigate: (route: AppRoute) => void
   onPostSave: PostSessionActions['savePlayerPostSession']
   onProgressSave: PostSessionActions['savePlayerProgress']
   onSessionSave: PostSessionActions['saveSessionPatch']
@@ -289,7 +289,7 @@ function MissingValuesPanel({
 
     if (item.kind === 'backup_export') {
       return (
-        <SecondaryButton compact onClick={() => onNavigate('export')}>
+        <SecondaryButton compact onClick={() => onNavigate(routes.moreExport)}>
           Export
         </SecondaryButton>
       )
@@ -1345,7 +1345,7 @@ export function PostSessionView({
               <span>{isLoading || baselineActions.isLoading || metricActions.isLoading ? 'Sync laeuft...' : 'Retry'}</span>
             </button>
           ) : null}
-          <button className="secondary-action" type="button" onClick={() => onNavigate('training')}>
+          <button className="secondary-action" type="button" onClick={() => onNavigate(routes.unitTraining)}>
             <UserCheck className="nav-icon" aria-hidden />
             <span>Training</span>
           </button>

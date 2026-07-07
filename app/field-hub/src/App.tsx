@@ -54,14 +54,18 @@ import {
   type ManualSyncFeedback,
 } from './lib/syncRepository'
 import {
-  defaultTabForSection,
-  isMoreSubTab,
-  isUnitSubTab,
-  sectionForTab,
+  defaultRouteForSection,
+  legacyTargetToRoute,
+  parseHashRoute,
+  routeForUnit,
+  routeKey,
+  routeToHash,
+  routes,
+  routesEqual,
+  type AppRoute,
   type AppSection,
-  type HubTab,
-  type MoreSubTab,
-  type UnitSubTab,
+  type MoreRoute,
+  type UnitRoute,
 } from './navigation'
 
 const AnalysisView = lazy(() =>
@@ -204,8 +208,21 @@ function getPublicCheckInTokenFromHash() {
     return null
   }
 
-  const match = window.location.hash.match(/^#\/checkin\/([^/?#]+)/)
-  return match ? decodeURIComponent(match[1]) : null
+  const parsedRoute = parseHashRoute(window.location.hash)
+  return parsedRoute.kind === 'public-check-in' ? parsedRoute.token : null
+}
+
+function getInitialCoachRoute() {
+  if (typeof window === 'undefined') {
+    return routes.today
+  }
+
+  const parsedRoute = parseHashRoute(window.location.hash)
+  if (parsedRoute.kind === 'coach') {
+    return parsedRoute.route
+  }
+
+  return routes.today
 }
 
 function getInitialSessionState(fallbackSessionId: string, todayKey = toLocalDateKey(new Date())) {
@@ -239,15 +256,21 @@ function getInitialSessionState(fallbackSessionId: string, todayKey = toLocalDat
 }
 
 function CoachApp() {
-  const [activeTab, setActiveTab] = useState<HubTab>('heute')
-  const [activeUnitSubTab, setActiveUnitSubTab] = useState<UnitSubTab>('check-in')
-  const [activeMoreSubTab, setActiveMoreSubTab] = useState<MoreSubTab>('bibliothek')
+  const [activeRoute, setActiveRoute] = useState<AppRoute>(getInitialCoachRoute)
+  const [rememberedUnitRoute, setRememberedUnitRoute] = useState<UnitRoute>(() => {
+    const initialRoute = getInitialCoachRoute()
+    return initialRoute.section === 'unit' ? initialRoute.unitRoute : 'check-in'
+  })
+  const [rememberedMoreRoute, setRememberedMoreRoute] = useState<MoreRoute>(() => {
+    const initialRoute = getInitialCoachRoute()
+    return initialRoute.section === 'more' ? initialRoute.moreRoute : 'library'
+  })
   const [isManualSyncing, setIsManualSyncing] = useState(false)
   const [manualSyncFeedback, setManualSyncFeedback] = useState<ManualSyncFeedback | null>(null)
   const [libraryInitialPdfHref, setLibraryInitialPdfHref] = useState<string | undefined>(undefined)
   const [libraryInitialCategory, setLibraryInitialCategory] = useState<LibraryCategory | undefined>(undefined)
   const [libraryInitialItemId, setLibraryInitialItemId] = useState<string | undefined>(undefined)
-  const [libraryReturnTab, setLibraryReturnTab] = useState<HubTab | null>(null)
+  const [libraryReturnRoute, setLibraryReturnRoute] = useState<AppRoute | null>(null)
   const [transientNotice, setTransientNotice] = useState<string | null>(null)
   const [appTodayKey, setAppTodayKey] = useState(() => toLocalDateKey(new Date()))
   const {
@@ -309,11 +332,12 @@ function CoachApp() {
   const sessionBlockLogsForInsights = sessionBlockActions.blockLogs ?? []
   const exposureSummariesForInsights = exposureActions.summaries ?? []
   const activePlayers = useMemo(() => playerActions.players.filter((player) => player.active), [playerActions.players])
+  const activeRouteKey = routeKey(activeRoute)
   const postSessionOverview = usePostSessionCompletionOverview({
     activePlayers,
     lastExportAt,
     refreshKey: [
-      activeTab,
+      activeRouteKey,
       selectedSession.id,
       postSessionActions.sessionLog?.clientUpdatedAt ?? '',
       postSessionEntriesForOverview.map((entry) => entry.clientUpdatedAt).join('|'),
@@ -353,7 +377,7 @@ function CoachApp() {
     ],
   )
   const coachInsightRefreshKey = [
-    activeTab,
+    activeRouteKey,
     selectedSession.id,
     playerActions.players.map((player) => `${player.id}:${player.clientUpdatedAt}`).join('|'),
     checkInActions.entries.map((entry) => `${entry.id}:${entry.clientUpdatedAt}`).join('|'),
@@ -436,81 +460,124 @@ function CoachApp() {
     setTransientNotice(message)
   }, [])
   const currentCheckInSessionLogId = checkInActions.sessionLog?.id ?? null
-  const activeSection = sectionForTab(activeTab)
 
-  const rememberNavigationTarget = useCallback((tab: HubTab) => {
-    if (isUnitSubTab(tab)) {
-      setActiveUnitSubTab(tab)
-    }
-
-    if (isMoreSubTab(tab)) {
-      setActiveMoreSubTab(tab)
-    }
-  }, [])
-
-  const handleTabChange = useCallback((tab: HubTab) => {
+  const clearLibraryInitialState = useCallback(() => {
     setLibraryInitialPdfHref(undefined)
     setLibraryInitialCategory(undefined)
     setLibraryInitialItemId(undefined)
-    setLibraryReturnTab(null)
-    rememberNavigationTarget(tab)
-    setActiveTab(tab)
-  }, [rememberNavigationTarget])
+  }, [])
+
+  const rememberNavigationRoute = useCallback((route: AppRoute) => {
+    if (route.section === 'unit') {
+      setRememberedUnitRoute(route.unitRoute)
+    }
+
+    if (route.section === 'more') {
+      setRememberedMoreRoute(route.moreRoute)
+    }
+  }, [])
+
+  const navigateToRoute = useCallback(
+    (route: AppRoute, options: { replace?: boolean; resetLibrary?: boolean } = {}) => {
+      const { replace = false, resetLibrary = true } = options
+
+      if (resetLibrary) {
+        clearLibraryInitialState()
+        setLibraryReturnRoute(null)
+      }
+
+      rememberNavigationRoute(route)
+      setActiveRoute((currentRoute) => (routesEqual(currentRoute, route) ? currentRoute : route))
+
+      if (typeof window !== 'undefined') {
+        const hash = routeToHash(route)
+        if (window.location.hash !== hash) {
+          const historyMethod = replace ? 'replaceState' : 'pushState'
+          window.history[historyMethod](null, '', hash)
+        }
+      }
+    },
+    [clearLibraryInitialState, rememberNavigationRoute],
+  )
+
+  useEffect(() => {
+    function syncRouteFromHash() {
+      const parsedRoute = parseHashRoute(window.location.hash)
+      if (parsedRoute.kind === 'public-check-in') {
+        return
+      }
+
+      if (window.location.hash !== parsedRoute.canonicalHash) {
+        window.history.replaceState(null, '', parsedRoute.canonicalHash)
+      }
+
+      clearLibraryInitialState()
+      setLibraryReturnRoute(null)
+      rememberNavigationRoute(parsedRoute.route)
+      setActiveRoute((currentRoute) => (routesEqual(currentRoute, parsedRoute.route) ? currentRoute : parsedRoute.route))
+    }
+
+    syncRouteFromHash()
+    window.addEventListener('hashchange', syncRouteFromHash)
+    window.addEventListener('popstate', syncRouteFromHash)
+
+    return () => {
+      window.removeEventListener('hashchange', syncRouteFromHash)
+      window.removeEventListener('popstate', syncRouteFromHash)
+    }
+  }, [clearLibraryInitialState, rememberNavigationRoute])
 
   const handleSectionChange = useCallback(
     (section: AppSection) => {
-      setLibraryInitialPdfHref(undefined)
-      setLibraryInitialCategory(undefined)
-      setLibraryInitialItemId(undefined)
-      setLibraryReturnTab(null)
-
-      const targetTab = defaultTabForSection(section, {
-        moreSubTab: activeMoreSubTab,
-        unitSubTab: activeUnitSubTab,
+      const targetRoute = defaultRouteForSection(section, {
+        moreRoute: rememberedMoreRoute,
+        unitRoute: rememberedUnitRoute,
       })
-      rememberNavigationTarget(targetTab)
-      setActiveTab(targetTab)
+      navigateToRoute(targetRoute)
     },
-    [activeMoreSubTab, activeUnitSubTab, rememberNavigationTarget],
+    [navigateToRoute, rememberedMoreRoute, rememberedUnitRoute],
   )
 
-  const handleOpenPdf = useCallback((pdf: PdfRef) => {
-    setLibraryInitialPdfHref(pdf.href)
-    setLibraryInitialCategory(undefined)
-    setLibraryInitialItemId(undefined)
-    setLibraryReturnTab('heute')
-    setActiveMoreSubTab('bibliothek')
-    setActiveTab('bibliothek')
-  }, [])
+  const handleOpenPdf = useCallback(
+    (pdf: PdfRef) => {
+      setLibraryInitialPdfHref(pdf.href)
+      setLibraryInitialCategory(undefined)
+      setLibraryInitialItemId(undefined)
+      setLibraryReturnRoute(routes.today)
+      navigateToRoute(routes.moreLibrary, { resetLibrary: false })
+    },
+    [navigateToRoute],
+  )
 
-  const handleOpenLibraryForSession = useCallback((session: SessionDefinition) => {
-    setSelectedSessionId(session.id)
-    setLibraryInitialPdfHref(undefined)
-    setLibraryInitialCategory('Heute relevant')
-    setLibraryInitialItemId(undefined)
-    setLibraryReturnTab('heute')
-    setActiveMoreSubTab('bibliothek')
-    setActiveTab('bibliothek')
-  }, [])
+  const handleOpenLibraryForSession = useCallback(
+    (session: SessionDefinition) => {
+      setSelectedSessionId(session.id)
+      setLibraryInitialPdfHref(undefined)
+      setLibraryInitialCategory('Heute relevant')
+      setLibraryInitialItemId(undefined)
+      setLibraryReturnRoute(routes.today)
+      navigateToRoute(routes.moreLibrary, { resetLibrary: false })
+    },
+    [navigateToRoute],
+  )
 
-  const handleOpenLibraryItem = useCallback((itemId: string) => {
-    setLibraryInitialPdfHref(undefined)
-    setLibraryInitialCategory(undefined)
-    setLibraryInitialItemId(itemId)
-    setLibraryReturnTab('training')
-    setActiveMoreSubTab('bibliothek')
-    setActiveTab('bibliothek')
-  }, [])
+  const handleOpenLibraryItem = useCallback(
+    (itemId: string) => {
+      setLibraryInitialPdfHref(undefined)
+      setLibraryInitialCategory(undefined)
+      setLibraryInitialItemId(itemId)
+      setLibraryReturnRoute(routes.unitTraining)
+      navigateToRoute(routes.moreLibrary, { resetLibrary: false })
+    },
+    [navigateToRoute],
+  )
 
   const handleReturnFromLibrary = useCallback(() => {
-    setLibraryInitialPdfHref(undefined)
-    setLibraryInitialCategory(undefined)
-    setLibraryInitialItemId(undefined)
-    const targetTab = libraryReturnTab ?? 'heute'
-    rememberNavigationTarget(targetTab)
-    setActiveTab(targetTab)
-    setLibraryReturnTab(null)
-  }, [libraryReturnTab, rememberNavigationTarget])
+    clearLibraryInitialState()
+    const targetRoute = libraryReturnRoute ?? routes.today
+    setLibraryReturnRoute(null)
+    navigateToRoute(targetRoute)
+  }, [clearLibraryInitialState, libraryReturnRoute, navigateToRoute])
 
   const handleLibraryPdfClose = useCallback(() => {
     setLibraryInitialPdfHref(undefined)
@@ -520,15 +587,17 @@ function CoachApp() {
     setSelectedSessionId(featuredSession.id)
   }, [featuredSession.id])
 
-  const handleOpenPlayerSourceSession = useCallback((source: PlayerAnalysisSource) => {
-    if (!source.sessionDefinitionId || !findSessionById(source.sessionDefinitionId)) {
-      return
-    }
+  const handleOpenPlayerSourceSession = useCallback(
+    (source: PlayerAnalysisSource) => {
+      if (!source.sessionDefinitionId || !findSessionById(source.sessionDefinitionId)) {
+        return
+      }
 
-    setSelectedSessionId(source.sessionDefinitionId)
-    rememberNavigationTarget(source.correctionTarget)
-    setActiveTab(source.correctionTarget)
-  }, [rememberNavigationTarget])
+      setSelectedSessionId(source.sessionDefinitionId)
+      navigateToRoute(legacyTargetToRoute(source.correctionTarget))
+    },
+    [navigateToRoute],
+  )
   const canOpenPlayerSourceSession = useCallback((source: PlayerAnalysisSource) => {
     return Boolean(source.sessionDefinitionId && findSessionById(source.sessionDefinitionId))
   }, [])
@@ -539,11 +608,10 @@ function CoachApp() {
       }
 
       setSelectedSessionId(source.sessionDefinitionId)
-      rememberNavigationTarget(source.correctionTarget)
-      setActiveTab(source.correctionTarget)
+      navigateToRoute(legacyTargetToRoute(source.correctionTarget))
       showTransientNotice('Quelle geöffnet.')
     },
-    [rememberNavigationTarget, showTransientNotice],
+    [navigateToRoute, showTransientNotice],
   )
 
   const handleStartKiosk = useCallback(() => {
@@ -738,10 +806,9 @@ function CoachApp() {
 
   return (
     <AppShell
-      activeSection={activeSection}
-      activeTab={activeTab}
+      activeRoute={activeRoute}
       onSectionChange={handleSectionChange}
-      onTabChange={handleTabChange}
+      onNavigate={navigateToRoute}
       authState={authState}
       backupRecommended={showBackupReminder}
       isManualSyncing={isManualSyncing}
@@ -753,7 +820,7 @@ function CoachApp() {
       transientNotice={transientNotice}
     >
       {needsAppRefresh ? <PwaUpdateNotice onReload={() => void updateServiceWorker(true)} /> : null}
-      {activeTab === 'heute' ? (
+      {activeRouteKey === 'today' ? (
         <TodayDashboard
           checkInActions={checkInActions}
           coachInsights={coachInsightActions.insights}
@@ -761,7 +828,7 @@ function CoachApp() {
           isSignedIn={authState.status === 'signed-in'}
           onActionFeedback={showTransientNotice}
           onOpenCoachInsightSource={handleOpenCoachInsightSource}
-          onNavigate={handleTabChange}
+          onNavigate={navigateToRoute}
           onOpenLibrary={handleOpenLibraryForSession}
           onOpenPdf={handleOpenPdf}
           onResetToTodaySession={handleResetToTodaySession}
@@ -775,7 +842,7 @@ function CoachApp() {
           todayDate={todayDate}
           upcomingSessions={upcomingSessions}
         />
-      ) : activeTab === 'spieler' ? (
+      ) : activeRouteKey === 'players' ? (
         <PlayersView
           authState={authState}
           canOpenSourceSession={canOpenPlayerSourceSession}
@@ -785,12 +852,12 @@ function CoachApp() {
           playerActions={playerActions}
           todayKey={appTodayKey}
         />
-      ) : activeTab === 'check-in' ? (
+      ) : activeRouteKey === 'unit/check-in' ? (
         <SessionWorkspace
-          activeSubTab="check-in"
+          activeUnitRoute="check-in"
           entries={checkInActions.entries}
           onSessionChange={setSelectedSessionId}
-          onSubTabChange={handleTabChange}
+          onUnitRouteChange={(unitRoute) => navigateToRoute(routeForUnit(unitRoute))}
           postSessionCompletion={currentPostSessionCompletion}
           returnerCaps={returnerActions.returnerCaps}
           selectedSession={selectedSession}
@@ -802,7 +869,7 @@ function CoachApp() {
           <CheckInView
             authState={authState}
             checkInActions={checkInActions}
-            onNavigate={handleTabChange}
+            onNavigate={navigateToRoute}
             onSessionChange={setSelectedSessionId}
             onStartKiosk={handleStartKiosk}
             playerActions={playerActions}
@@ -813,12 +880,12 @@ function CoachApp() {
             showSessionPicker={false}
           />
         </SessionWorkspace>
-      ) : activeTab === 'training' ? (
+      ) : activeRouteKey === 'unit/training' ? (
         <SessionWorkspace
-          activeSubTab="training"
+          activeUnitRoute="training"
           entries={checkInActions.entries}
           onSessionChange={setSelectedSessionId}
-          onSubTabChange={handleTabChange}
+          onUnitRouteChange={(unitRoute) => navigateToRoute(routeForUnit(unitRoute))}
           postSessionCompletion={currentPostSessionCompletion}
           returnerCaps={returnerActions.returnerCaps}
           selectedSession={selectedSession}
@@ -834,7 +901,7 @@ function CoachApp() {
             exposureActions={exposureActions}
             metricActions={metricActions}
             onOpenLibraryItem={handleOpenLibraryItem}
-            onNavigate={handleTabChange}
+            onNavigate={navigateToRoute}
             onSessionChange={setSelectedSessionId}
             returnerCaps={returnerActions.returnerCaps}
             selectedSession={selectedSession}
@@ -844,12 +911,12 @@ function CoachApp() {
             showSessionPicker={false}
           />
         </SessionWorkspace>
-      ) : activeTab === 'nachbereitung' ? (
+      ) : activeRouteKey === 'unit/post-session' ? (
         <SessionWorkspace
-          activeSubTab="nachbereitung"
+          activeUnitRoute="post-session"
           entries={checkInActions.entries}
           onSessionChange={setSelectedSessionId}
-          onSubTabChange={handleTabChange}
+          onUnitRouteChange={(unitRoute) => navigateToRoute(routeForUnit(unitRoute))}
           postSessionCompletion={currentPostSessionCompletion}
           returnerCaps={returnerActions.returnerCaps}
           selectedSession={selectedSession}
@@ -860,7 +927,7 @@ function CoachApp() {
         >
           <PostSessionView
             authState={authState}
-            onNavigate={handleTabChange}
+            onNavigate={navigateToRoute}
             onSessionChange={setSelectedSessionId}
             baselineActions={baselineActions}
             exposureActions={exposureActions}
@@ -876,11 +943,11 @@ function CoachApp() {
             showSessionPicker={false}
           />
         </SessionWorkspace>
-      ) : activeTab === 'returner' ? (
-        <LazyScreen resetKey={activeTab} screenName="Returner">
+      ) : activeRouteKey === 'more/returners' ? (
+        <LazyScreen resetKey={activeRouteKey} screenName="Returner">
           <ReturnerView
             authState={authState}
-            onNavigate={handleTabChange}
+            onNavigate={navigateToRoute}
             onSessionChange={setSelectedSessionId}
             returnerActions={returnerActions}
             selectedSession={selectedSession}
@@ -888,8 +955,8 @@ function CoachApp() {
             sessions={sessionDefinitions}
           />
         </LazyScreen>
-      ) : activeTab === 'analysis' ? (
-        <LazyScreen resetKey={activeTab} screenName="Analyse">
+      ) : activeRouteKey === 'analysis' ? (
+        <LazyScreen resetKey={activeRouteKey} screenName="Analyse">
           <AnalysisView
             coachInsights={coachInsightActions.insights}
             onOpenCoachInsightSource={handleOpenCoachInsightSource}
@@ -899,26 +966,26 @@ function CoachApp() {
             userId={userId}
           />
         </LazyScreen>
-      ) : activeTab === 'bibliothek' ? (
-        <LazyScreen resetKey={activeTab} screenName="Bibliothek">
+      ) : activeRouteKey === 'more/library' ? (
+        <LazyScreen resetKey={activeRouteKey} screenName="Bibliothek">
           <LibraryView
             initialCategory={libraryInitialCategory}
             initialItemId={libraryInitialItemId}
             initialPdfHref={libraryInitialPdfHref}
             onPdfClose={handleLibraryPdfClose}
-            onReturn={libraryReturnTab ? handleReturnFromLibrary : undefined}
+            onReturn={libraryReturnRoute ? handleReturnFromLibrary : undefined}
             returnLabel={
-              libraryReturnTab === 'heute'
+              libraryReturnRoute && routeKey(libraryReturnRoute) === 'today'
                 ? 'Zurück zu Heute'
-                : libraryReturnTab === 'training'
+                : libraryReturnRoute && routeKey(libraryReturnRoute) === 'unit/training'
                   ? 'Zurück zu Training'
                   : undefined
             }
             selectedSession={selectedSession}
           />
         </LazyScreen>
-      ) : activeTab === 'export' ? (
-        <LazyScreen resetKey={activeTab} screenName="Export & Backup">
+      ) : activeRouteKey === 'more/export' ? (
+        <LazyScreen resetKey={activeRouteKey} screenName="Export & Backup">
           <ExportView
             authState={authState}
             lastExportAt={lastExportAt}
@@ -926,8 +993,8 @@ function CoachApp() {
             onExportComplete={setLastExportAtState}
           />
         </LazyScreen>
-      ) : activeTab === 'einstellungen' ? (
-        <LazyScreen resetKey={activeTab} screenName="Einstellungen">
+      ) : activeRouteKey === 'more/settings' ? (
+        <LazyScreen resetKey={activeRouteKey} screenName="Einstellungen">
           <SettingsView
             authState={authState}
             backupRecommended={showBackupReminder}
@@ -937,7 +1004,7 @@ function CoachApp() {
             needsAppRefresh={needsAppRefresh}
             pwaDisplayMode={pwaDisplayMode}
             onManualSync={runManualSync}
-            onNavigate={handleTabChange}
+            onNavigate={navigateToRoute}
             onReloadApp={() => void updateServiceWorker(true)}
             storagePersistence={storagePersistence}
             syncFeedback={manualSyncFeedback}

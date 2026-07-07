@@ -51,20 +51,23 @@ vi.mock('virtual:pwa-register/react', () => ({
 
 vi.mock('./components/AppShell', async () => {
   const React = await import('react')
+  const { routeKey, routes } = await import('./navigation')
   return {
     AppShell: ({
+      activeRoute,
       children,
-      onTabChange,
+      onNavigate,
     }: {
+      activeRoute: Parameters<typeof routeKey>[0]
       children: React.ReactNode
-      onTabChange: (tab: 'einstellungen') => void
+      onNavigate: (route: Parameters<typeof routeKey>[0]) => void
     }) =>
       React.createElement(
         'div',
-        { 'data-testid': 'coach-app' },
+        { 'data-testid': 'coach-app', 'data-active-route': routeKey(activeRoute) },
         React.createElement(
           'button',
-          { type: 'button', 'data-testid': 'open-settings', onClick: () => onTabChange('einstellungen') },
+          { type: 'button', 'data-testid': 'open-settings', onClick: () => onNavigate(routes.moreSettings) },
           'Settings',
         ),
         children,
@@ -100,7 +103,7 @@ vi.mock('./components/PublicCheckInView', async () => {
 
 vi.mock('./components/CheckInView', async () => {
   const React = await import('react')
-  return { CheckInView: () => React.createElement('div') }
+  return { CheckInView: () => React.createElement('div', { 'data-testid': 'checkin-view' }) }
 })
 
 vi.mock('./components/KioskCheckInView', async () => {
@@ -132,17 +135,17 @@ vi.mock('./components/KioskCheckInView', async () => {
 
 vi.mock('./components/ExportView', async () => {
   const React = await import('react')
-  return { ExportView: () => React.createElement('div') }
+  return { ExportView: () => React.createElement('div', { 'data-testid': 'export-view' }) }
 })
 
 vi.mock('./components/LibraryView', async () => {
   const React = await import('react')
-  return { LibraryView: () => React.createElement('div') }
+  return { LibraryView: () => React.createElement('div', { 'data-testid': 'library-view' }) }
 })
 
 vi.mock('./components/PostSessionView', async () => {
   const React = await import('react')
-  return { PostSessionView: () => React.createElement('div') }
+  return { PostSessionView: () => React.createElement('div', { 'data-testid': 'post-session-view' }) }
 })
 
 vi.mock('./components/PwaUpdateNotice', async () => {
@@ -174,7 +177,7 @@ vi.mock('./components/SettingsView', async () => {
 
 vi.mock('./components/TrainingView', async () => {
   const React = await import('react')
-  return { TrainingView: () => React.createElement('div') }
+  return { TrainingView: () => React.createElement('div', { 'data-testid': 'training-view' }) }
 })
 
 vi.mock('./content/sessions', () => {
@@ -373,6 +376,12 @@ async function dispatchPopState(path: string) {
   })
 }
 
+async function flushLazyScreens() {
+  await act(async () => {
+    await Promise.resolve()
+  })
+}
+
 describe('App public check-in routing', () => {
   let root: Root | null = null
 
@@ -430,6 +439,70 @@ describe('App public check-in routing', () => {
 
     const publicView = rendered.container.querySelector<HTMLElement>('[data-testid="public-checkin-view"]')
     expect(publicView?.dataset.token).toBe('token-pop')
+  })
+
+  it('opens the coach app on the canonical initial hash route', async () => {
+    window.history.replaceState(null, '', '/#/unit/training')
+
+    const rendered = await renderApp()
+    root = rendered.root
+    await flushLazyScreens()
+
+    const coachApp = rendered.container.querySelector<HTMLElement>('[data-testid="coach-app"]')
+    expect(coachApp?.dataset.activeRoute).toBe('unit/training')
+    expect(rendered.container.querySelector('[data-testid="training-view"]')).not.toBeNull()
+    expect(window.location.hash).toBe('#/unit/training')
+  })
+
+  it('updates the active coach route when the hash changes', async () => {
+    const rendered = await renderApp()
+    root = rendered.root
+
+    await dispatchHashChange('#/more/export')
+    await flushLazyScreens()
+
+    const coachApp = rendered.container.querySelector<HTMLElement>('[data-testid="coach-app"]')
+    expect(coachApp?.dataset.activeRoute).toBe('more/export')
+    expect(rendered.container.querySelector('[data-testid="export-view"]')).not.toBeNull()
+  })
+
+  it('updates the active coach route on browser popstate navigation', async () => {
+    const rendered = await renderApp()
+    root = rendered.root
+
+    await dispatchPopState('/#/unit/post-session')
+    await flushLazyScreens()
+
+    const coachApp = rendered.container.querySelector<HTMLElement>('[data-testid="coach-app"]')
+    expect(coachApp?.dataset.activeRoute).toBe('unit/post-session')
+    expect(rendered.container.querySelector('[data-testid="post-session-view"]')).not.toBeNull()
+  })
+
+  it('normalizes legacy coach hashes without treating them as successful public routes', async () => {
+    window.history.replaceState(null, '', '/#/nachbereitung')
+
+    const rendered = await renderApp()
+    root = rendered.root
+    await flushLazyScreens()
+
+    const coachApp = rendered.container.querySelector<HTMLElement>('[data-testid="coach-app"]')
+    expect(coachApp?.dataset.activeRoute).toBe('unit/post-session')
+    expect(window.location.hash).toBe('#/unit/post-session')
+    expect(rendered.container.querySelector('[data-testid="public-checkin-view"]')).toBeNull()
+  })
+
+  it('pushes canonical coach hashes when navigating inside the shell', async () => {
+    const rendered = await renderApp()
+    root = rendered.root
+
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('[data-testid="open-settings"]')?.click()
+    })
+    await flushLazyScreens()
+
+    const coachApp = rendered.container.querySelector<HTMLElement>('[data-testid="coach-app"]')
+    expect(coachApp?.dataset.activeRoute).toBe('more/settings')
+    expect(window.location.hash).toBe('#/more/settings')
   })
 
   it('restores the signed-in kiosk mode from local storage', async () => {

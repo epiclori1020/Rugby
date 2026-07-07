@@ -82,10 +82,10 @@ describe('SessionWorkspace', () => {
   it('renders the current session context and owns unit subnavigation', () => {
     const markup = renderToStaticMarkup(
       <SessionWorkspace
-        activeSubTab="training"
+        activeUnitRoute="training"
         entries={[entry]}
         onSessionChange={() => undefined}
-        onSubTabChange={() => undefined}
+        onUnitRouteChange={() => undefined}
         postSessionCompletion={completion}
         returnerCaps={[returnerCap]}
         selectedSession={selectedSession}
@@ -115,10 +115,10 @@ describe('SessionWorkspace', () => {
   it('limits live status announcements to sync and pending changes', () => {
     const markup = renderToStaticMarkup(
       <SessionWorkspace
-        activeSubTab="check-in"
+        activeUnitRoute="check-in"
         entries={[entry]}
         onSessionChange={() => undefined}
-        onSubTabChange={() => undefined}
+        onUnitRouteChange={() => undefined}
         postSessionCompletion={completion}
         returnerCaps={[returnerCap]}
         selectedSession={selectedSession}

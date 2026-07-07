@@ -36,6 +36,25 @@ npm run preview
 Der Dev-Server nutzt Vite. Lokal ist die URL typischerweise `http://127.0.0.1:5173/`
 oder `http://localhost:5173/`.
 
+## Coach-Routen
+
+Die Coach-App nutzt ab Sprint 24 kanonische Hash-Routen:
+
+- `#/today`
+- `#/unit/check-in`
+- `#/unit/training`
+- `#/unit/post-session`
+- `#/players`
+- `#/analysis`
+- `#/more/library`
+- `#/more/export`
+- `#/more/settings`
+- `#/more/returners`
+
+Alte interne Ziele wie `#/heute`, `#/nachbereitung`, `#/bibliothek` oder `#/einstellungen`
+bleiben als Legacy-Links kompatibel und werden beim Oeffnen auf die kanonische Route normalisiert.
+Der Public-Check-in bleibt separat unter `#/checkin/:token` und wird nicht als Coach-Route behandelt.
+
 Der Kiosk-E2E-Test nutzt echte Supabase Auth/RLS mit einem temporaeren Testspieler und raeumt
 diesen danach wieder auf. Remote-Mutation ist nur mit explizitem Opt-in erlaubt:
 

@@ -1,23 +1,96 @@
 import { describe, expect, it } from 'vitest'
-import { defaultTabForSection, sectionForTab } from './navigation'
+import {
+  canonicalCoachRoutes,
+  defaultRouteForSection,
+  legacyTargetToRoute,
+  parseHashRoute,
+  routeKey,
+  routeToHash,
+  routes,
+} from './navigation'
 
-describe('OnField navigation mapping', () => {
-  it('maps legacy screen tabs into the five app sections', () => {
-    expect(sectionForTab('heute')).toBe('heute')
-    expect(sectionForTab('check-in')).toBe('einheit')
-    expect(sectionForTab('training')).toBe('einheit')
-    expect(sectionForTab('nachbereitung')).toBe('einheit')
-    expect(sectionForTab('spieler')).toBe('spieler')
-    expect(sectionForTab('analysis')).toBe('analysis')
-    expect(sectionForTab('bibliothek')).toBe('mehr')
-    expect(sectionForTab('export')).toBe('mehr')
-    expect(sectionForTab('einstellungen')).toBe('mehr')
-    expect(sectionForTab('returner')).toBe('mehr')
+describe('OnField coach routing', () => {
+  it('keeps canonical coach routes unique and URL-stable', () => {
+    const routeKeys = canonicalCoachRoutes.map(routeKey)
+    const routeHashes = canonicalCoachRoutes.map(routeToHash)
+
+    expect(new Set(routeKeys).size).toBe(canonicalCoachRoutes.length)
+    expect(new Set(routeHashes).size).toBe(canonicalCoachRoutes.length)
+    expect(routeHashes).toEqual([
+      '#/today',
+      '#/unit/check-in',
+      '#/unit/training',
+      '#/unit/post-session',
+      '#/players',
+      '#/analysis',
+      '#/more/library',
+      '#/more/export',
+      '#/more/settings',
+      '#/more/returners',
+    ])
   })
 
-  it('keeps the last used unit and more subsection when changing top-level sections', () => {
-    expect(defaultTabForSection('einheit', { unitSubTab: 'training', moreSubTab: 'export' })).toBe('training')
-    expect(defaultTabForSection('mehr', { unitSubTab: 'training', moreSubTab: 'export' })).toBe('export')
-    expect(defaultTabForSection('spieler', { unitSubTab: 'training', moreSubTab: 'export' })).toBe('spieler')
+  it('parses canonical coach hashes', () => {
+    expect(parseHashRoute('#/unit/training')).toMatchObject({
+      kind: 'coach',
+      route: routes.unitTraining,
+      canonicalHash: '#/unit/training',
+      source: 'canonical',
+    })
+    expect(parseHashRoute('#/more/settings')).toMatchObject({
+      kind: 'coach',
+      route: routes.moreSettings,
+      canonicalHash: '#/more/settings',
+      source: 'canonical',
+    })
+  })
+
+  it('normalizes legacy coach hashes to canonical routes', () => {
+    expect(parseHashRoute('#/nachbereitung')).toMatchObject({
+      kind: 'coach',
+      route: routes.unitPostSession,
+      canonicalHash: '#/unit/post-session',
+      source: 'legacy',
+    })
+    expect(parseHashRoute('#/bibliothek')).toMatchObject({
+      kind: 'coach',
+      route: routes.moreLibrary,
+      canonicalHash: '#/more/library',
+      source: 'legacy',
+    })
+    expect(parseHashRoute('#/einstellungen')).toMatchObject({
+      kind: 'coach',
+      route: routes.moreSettings,
+      canonicalHash: '#/more/settings',
+      source: 'legacy',
+    })
+  })
+
+  it('keeps public check-in hashes outside the coach route model', () => {
+    expect(parseHashRoute('#/checkin/player-token-1')).toEqual({
+      kind: 'public-check-in',
+      token: 'player-token-1',
+    })
+  })
+
+  it('falls back unknown coach hashes to Today', () => {
+    expect(parseHashRoute('#/unknown')).toMatchObject({
+      kind: 'coach',
+      route: routes.today,
+      canonicalHash: '#/today',
+      source: 'fallback',
+    })
+  })
+
+  it('keeps remembered unit and more routes when changing top-level sections', () => {
+    expect(defaultRouteForSection('unit', { unitRoute: 'training', moreRoute: 'export' })).toBe(routes.unitTraining)
+    expect(defaultRouteForSection('more', { unitRoute: 'training', moreRoute: 'export' })).toBe(routes.moreExport)
+    expect(defaultRouteForSection('players', { unitRoute: 'training', moreRoute: 'export' })).toBe(routes.players)
+  })
+
+  it('maps legacy domain navigation targets at the app boundary', () => {
+    expect(legacyTargetToRoute('nachbereitung')).toBe(routes.unitPostSession)
+    expect(legacyTargetToRoute('returner')).toBe(routes.moreReturners)
+    expect(legacyTargetToRoute('spieler')).toBe(routes.players)
   })
 })

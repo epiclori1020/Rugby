@@ -24,7 +24,7 @@ const hiddenSubsectionLabels = [
 describe('MainNavigation accessibility contract', () => {
   it('renders the five top-level app sections as named navigation buttons', () => {
     const markup = renderToStaticMarkup(
-      createElement(MainNavigation, { activeSection: 'heute', onSectionChange: () => undefined }),
+      createElement(MainNavigation, { activeSection: 'today', onSectionChange: () => undefined }),
     )
 
     for (const label of tabLabels) {

@@ -1,6 +1,6 @@
 import { AlertTriangle, HeartPulse, History, RefreshCw, ShieldAlert, UserCheck } from 'lucide-react'
 import { useRef, useState } from 'react'
-import type { HubTab } from '../navigation'
+import { routes, type AppRoute } from '../navigation'
 import type { SessionDefinition } from '../content/types'
 import {
   canConsiderReturnerProgression,
@@ -24,7 +24,7 @@ type ReturnerActions = ReturnType<typeof useReturners>
 
 type ReturnerViewProps = {
   authState: AuthSessionState
-  onNavigate: (tab: HubTab) => void
+  onNavigate: (route: AppRoute) => void
   onSessionChange: (sessionId: string) => void
   returnerActions: ReturnerActions
   selectedSession: SessionDefinition
@@ -360,7 +360,7 @@ export function ReturnerView({
               <span>{isLoading ? 'Sync laeuft...' : 'Retry'}</span>
             </button>
           ) : null}
-          <button className="secondary-action" type="button" onClick={() => onNavigate('training')}>
+          <button className="secondary-action" type="button" onClick={() => onNavigate(routes.unitTraining)}>
             <UserCheck className="nav-icon" aria-hidden />
             <span>Training</span>
           </button>

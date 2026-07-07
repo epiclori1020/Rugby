@@ -11,7 +11,7 @@ import {
 } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { positionGroupOptions } from '../config/labels'
-import type { HubTab } from '../navigation'
+import { routes, type AppRoute } from '../navigation'
 import { libraryItems } from '../content/library'
 import { exerciseMappings, variantCards } from '../content/trainingReference'
 import type { SessionBlock, SessionBlockExercise, SessionDefinition } from '../content/types'
@@ -50,7 +50,7 @@ type TrainingViewProps = {
   exposureActions: ExposureActions
   metricActions?: MetricActions
   onOpenLibraryItem: (itemId: string) => void
-  onNavigate: (tab: HubTab) => void
+  onNavigate: (route: AppRoute) => void
   onSessionChange: (sessionId: string) => void
   returnerCaps: ReturnerCapSummary[]
   selectedSession: SessionDefinition
@@ -734,7 +734,7 @@ export function TrainingView({
               <span>{isLoading ? 'Sync laeuft...' : 'Retry'}</span>
             </button>
           ) : null}
-          <button className="secondary-action" type="button" onClick={() => onNavigate('check-in')}>
+          <button className="secondary-action" type="button" onClick={() => onNavigate(routes.unitCheckIn)}>
             <UserCheck className="nav-icon" aria-hidden />
             <span>Check-in</span>
           </button>

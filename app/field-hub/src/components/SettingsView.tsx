@@ -1,5 +1,5 @@
 import { Cloud, CloudOff, Download, RefreshCw, ShieldCheck, Smartphone } from 'lucide-react'
-import type { HubTab } from '../navigation'
+import { routes, type AppRoute } from '../navigation'
 import type { SessionLog } from '../domain/checkIn'
 import type { PlayerSyncOverview } from '../domain/sync'
 import type { StoragePersistenceState } from '../hooks/useStoragePersistence'
@@ -18,7 +18,7 @@ type SettingsViewProps = {
   needsAppRefresh: boolean
   pwaDisplayMode: 'browser' | 'standalone'
   onManualSync: () => void
-  onNavigate: (tab: HubTab) => void
+  onNavigate: (route: AppRoute) => void
   onReloadApp: () => void
   storagePersistence: StoragePersistenceState
   syncFeedback: ManualSyncFeedback | null
@@ -190,7 +190,7 @@ export function SettingsView({
             {latestCompletedSession ? ` Letzte abgeschlossene Einheit: ${latestCompletedSession.date}.` : ''}
           </span>
         </div>
-        <button className="secondary-action" type="button" onClick={() => onNavigate('export')}>
+        <button className="secondary-action" type="button" onClick={() => onNavigate(routes.moreExport)}>
           <Download className="nav-icon" aria-hidden />
           <span>Export & Backup oeffnen</span>
         </button>

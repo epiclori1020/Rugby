@@ -1,6 +1,6 @@
 import { ClipboardCheck, FileText, Link2, Plus, RefreshCw, Settings, ShieldAlert, UserCheck, X } from 'lucide-react'
 import { useEffect, useRef, useState, type FormEvent } from 'react'
-import type { HubTab } from '../navigation'
+import { routes, type AppRoute } from '../navigation'
 import type { SessionDefinition } from '../content/types'
 import type {
   CheckInEntryPatch,
@@ -53,7 +53,7 @@ type CheckInViewProps = {
   checkInActions: CheckInActions
   playerActions: PlayerActions
   returnerCaps: ReturnerCapSummary[]
-  onNavigate: (tab: HubTab) => void
+  onNavigate: (route: AppRoute) => void
   onSessionChange: (sessionId: string) => void
   onStartKiosk: () => void
   selectedSession: SessionDefinition
@@ -1422,7 +1422,7 @@ export function CheckInView({
               <span>{isLoading ? 'Sync laeuft...' : 'Retry'}</span>
             </button>
           ) : null}
-          <button className="secondary-action" type="button" onClick={() => onNavigate('spieler')}>
+          <button className="secondary-action" type="button" onClick={() => onNavigate(routes.players)}>
             <UserCheck className="nav-icon" aria-hidden />
             <span>Spieler verwalten</span>
           </button>

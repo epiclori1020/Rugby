@@ -10,6 +10,7 @@ import type { Player } from '../domain/players'
 import type { LatestRelevantPostSessionWork } from '../domain/postSessionCompletion'
 import type { PlayerSyncOverview } from '../domain/sync'
 import type { useCheckIns } from '../hooks/useCheckIns'
+import { routes } from '../navigation'
 import { TodayDashboard } from './TodayDashboard'
 
 const syncOverview: PlayerSyncOverview = {
@@ -432,9 +433,9 @@ describe('TodayDashboard', () => {
     container.querySelector<HTMLButtonElement>('[data-testid="today-followup-action"]')?.click()
     container.querySelector<HTMLButtonElement>('[data-testid="today-pending-action"]')?.click()
 
-    expect(onNavigate).toHaveBeenCalledWith('check-in')
-    expect(onNavigate).toHaveBeenCalledWith('nachbereitung')
-    expect(onNavigate).toHaveBeenCalledWith('einstellungen')
+    expect(onNavigate).toHaveBeenCalledWith(routes.unitCheckIn)
+    expect(onNavigate).toHaveBeenCalledWith(routes.unitPostSession)
+    expect(onNavigate).toHaveBeenCalledWith(routes.moreSettings)
     expect(onActionFeedback).toHaveBeenCalledWith('Check-in geöffnet.')
     expect(onActionFeedback).toHaveBeenCalledWith('Nachbereitung geöffnet.')
     expect(onActionFeedback).toHaveBeenCalledWith('Einstellungen geöffnet.')
@@ -484,7 +485,7 @@ describe('TodayDashboard', () => {
       sessionSelect.dispatchEvent(new Event('change', { bubbles: true }))
     }
 
-    expect(onNavigate).toHaveBeenCalledWith('check-in')
+    expect(onNavigate).toHaveBeenCalledWith(routes.unitCheckIn)
     expect(onSessionChange).toHaveBeenCalledWith(featuredSession.id)
     expect(onActionFeedback).toHaveBeenCalledWith('Check-in geöffnet.')
     expect(onActionFeedback).toHaveBeenCalledWith('Einheit gewechselt.')

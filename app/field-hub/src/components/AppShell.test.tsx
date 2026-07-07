@@ -2,6 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import type { PlayerSyncOverview } from '../domain/sync'
 import type { AuthSessionState } from '../lib/auth'
+import { routes } from '../navigation'
 import { AppShell } from './AppShell'
 
 const signedOutAuthState: AuthSessionState = {
@@ -23,11 +24,10 @@ describe('AppShell page title', () => {
   it('renders a tab-specific title for the active tab', () => {
     const markup = renderToStaticMarkup(
       <AppShell
-        activeSection="mehr"
-        activeTab="export"
+        activeRoute={routes.moreExport}
         authState={signedOutAuthState}
         onSectionChange={() => undefined}
-        onTabChange={() => undefined}
+        onNavigate={() => undefined}
         playerSync={syncedOverview}
       >
         <p>Export content</p>
@@ -41,11 +41,10 @@ describe('AppShell page title', () => {
   it('uses a five-item app shell navigation without a hamburger-only contract', () => {
     const markup = renderToStaticMarkup(
       <AppShell
-        activeSection="spieler"
-        activeTab="spieler"
+        activeRoute={routes.players}
         authState={signedOutAuthState}
         onSectionChange={() => undefined}
-        onTabChange={() => undefined}
+        onNavigate={() => undefined}
         playerSync={syncedOverview}
       >
         <p>Spieler content</p>
@@ -63,11 +62,10 @@ describe('AppShell page title', () => {
   it('renders the settings title without a permanent sync button when data is synced', () => {
     const markup = renderToStaticMarkup(
       <AppShell
-        activeSection="mehr"
-        activeTab="einstellungen"
+        activeRoute={routes.moreSettings}
         authState={signedOutAuthState}
         onSectionChange={() => undefined}
-        onTabChange={() => undefined}
+        onNavigate={() => undefined}
         playerSync={syncedOverview}
       >
         <p>Settings content</p>
@@ -81,11 +79,10 @@ describe('AppShell page title', () => {
   it('renders analysis metadata for the team analysis tab', () => {
     const markup = renderToStaticMarkup(
       <AppShell
-        activeSection="analysis"
-        activeTab="analysis"
+        activeRoute={routes.analysis}
         authState={signedOutAuthState}
         onSectionChange={() => undefined}
-        onTabChange={() => undefined}
+        onNavigate={() => undefined}
         playerSync={syncedOverview}
       >
         <p>Analysis content</p>
@@ -99,11 +96,10 @@ describe('AppShell page title', () => {
   it('renders app-level transient notices as polite status feedback', () => {
     const markup = renderToStaticMarkup(
       <AppShell
-        activeSection="heute"
-        activeTab="heute"
+        activeRoute={routes.today}
         authState={signedOutAuthState}
         onSectionChange={() => undefined}
-        onTabChange={() => undefined}
+        onNavigate={() => undefined}
         playerSync={syncedOverview}
         transientNotice="Check-in geöffnet."
       >
@@ -120,11 +116,10 @@ describe('AppShell page title', () => {
   it('leaves unit subnavigation to the Einheit workspace', () => {
     const markup = renderToStaticMarkup(
       <AppShell
-        activeSection="einheit"
-        activeTab="training"
+        activeRoute={routes.unitTraining}
         authState={signedOutAuthState}
         onSectionChange={() => undefined}
-        onTabChange={() => undefined}
+        onNavigate={() => undefined}
         playerSync={syncedOverview}
       >
         <p>Training content</p>
@@ -139,11 +134,10 @@ describe('AppShell page title', () => {
   it('renders more subnavigation with Returner as a utility, not a top-level tab', () => {
     const markup = renderToStaticMarkup(
       <AppShell
-        activeSection="mehr"
-        activeTab="returner"
+        activeRoute={routes.moreReturners}
         authState={signedOutAuthState}
         onSectionChange={() => undefined}
-        onTabChange={() => undefined}
+        onNavigate={() => undefined}
         playerSync={syncedOverview}
       >
         <p>Returner content</p>

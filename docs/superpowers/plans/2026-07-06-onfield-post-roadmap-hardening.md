@@ -309,7 +309,7 @@ Keine Edge Functions einfuehren. Kein Realtime-Ausbau. Kein Storage-Ausbau. Kein
 
 ## Sprint 24 - Coach-Routing & Navigation Refactor
 
-Status: Geplant.
+Status: Abgeschlossen am 2026-07-07.
 Phase: B, Qualitaets- und Struktur-Hardening.
 
 ### Was genau machen wir?

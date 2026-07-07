@@ -4,21 +4,22 @@ import type { PlayerSyncOverview, SyncDetailSummary } from '../domain/sync'
 import type { AuthSessionState } from '../lib/auth'
 import type { ManualSyncFeedback } from '../lib/syncRepository'
 import {
-  isMoreSubTab,
+  routeForMore,
+  routeKey,
+  routes,
+  type AppRoute,
   type AppSection,
-  type HubTab,
-  type MoreSubTab,
+  type MoreRoute,
 } from '../navigation'
 import { MainNavigation } from './MainNavigation'
 import { SyncStatusBadge } from './SyncStatusBadge'
 import { SegmentedControl, type SegmentedControlOption } from './ui'
 
 type AppShellProps = {
-  activeSection: AppSection
-  activeTab: HubTab
+  activeRoute: AppRoute
   children: ReactNode
   onSectionChange: (section: AppSection) => void
-  onTabChange: (tab: HubTab) => void
+  onNavigate: (route: AppRoute) => void
   authState: AuthSessionState
   backupRecommended?: boolean
   isManualSyncing?: boolean
@@ -30,33 +31,33 @@ type AppShellProps = {
   transientNotice?: string | null
 }
 
-const tabMeta: Record<HubTab, { eyebrow: string; title: string; description: string }> = {
-  heute: {
+const routeMeta: Record<ReturnType<typeof routeKey>, { eyebrow: string; title: string; description: string }> = {
+  today: {
     eyebrow: 'Heute',
     title: 'Heute',
     description: 'Tageslage, offene Aufgaben und schnelle Einstiege.',
   },
-  spieler: {
+  players: {
     eyebrow: 'Spieler',
     title: 'Spieler',
     description: 'Stammdaten, Status, Consent und lokale Testwerte im Blick.',
   },
-  'check-in': {
+  'unit/check-in': {
     eyebrow: 'Einheit / Check-in',
     title: 'Einheit',
     description: 'Anwesenheit, Belastbarkeit, Schmerz, Returner und Ampel schnell erfassen.',
   },
-  training: {
+  'unit/training': {
     eyebrow: 'Einheit / Training',
     title: 'Einheit',
     description: 'Timeline, Varianten, Quick Actions und Coach-Beobachtungen.',
   },
-  nachbereitung: {
+  'unit/post-session': {
     eyebrow: 'Einheit / Nachbereitung',
     title: 'Einheit',
     description: 'sRPE, Pain, E2, Progression und Follow-ups sichern.',
   },
-  returner: {
+  'more/returners': {
     eyebrow: 'Mehr / Returner',
     title: 'Mehr',
     description: 'Caps fuer Speed, COD/Decel, Conditioning und Kontakt getrennt fuehren.',
@@ -66,36 +67,35 @@ const tabMeta: Record<HubTab, { eyebrow: string; title: string; description: str
     title: 'Analyse',
     description: 'Rueckblick, Trends und Quellen getrennt vom Live-Flow auswerten.',
   },
-  bibliothek: {
+  'more/library': {
     eyebrow: 'Mehr / Bibliothek',
     title: 'Mehr',
     description: 'Coach-Skripte, Varianten, Briefings und PDF-Fallbacks schnell finden.',
   },
-  export: {
+  'more/export': {
     eyebrow: 'Mehr / Export & Backup',
     title: 'Mehr',
     description: 'JSON-Backup, CSV-Dateien und Import-Vorschau fuer sichere Ablage.',
   },
-  einstellungen: {
+  'more/settings': {
     eyebrow: 'Mehr / Einstellungen',
     title: 'Mehr',
     description: 'Account, Sync, Backup, Geraet und App-Version an einem Ort.',
   },
 }
 
-const moreOptions: SegmentedControlOption<MoreSubTab>[] = [
-  { value: 'bibliothek', label: 'Bibliothek', icon: <Archive aria-hidden /> },
+const moreOptions: SegmentedControlOption<MoreRoute>[] = [
+  { value: 'library', label: 'Bibliothek', icon: <Archive aria-hidden /> },
   { value: 'export', label: 'Export & Backup', icon: <FileDown aria-hidden /> },
-  { value: 'einstellungen', label: 'Einstellungen', icon: <Settings aria-hidden /> },
-  { value: 'returner', label: 'Returner', icon: <HeartPulse aria-hidden /> },
+  { value: 'settings', label: 'Einstellungen', icon: <Settings aria-hidden /> },
+  { value: 'returners', label: 'Returner', icon: <HeartPulse aria-hidden /> },
 ]
 
 export function AppShell({
-  activeSection,
-  activeTab,
+  activeRoute,
   children,
   onSectionChange,
-  onTabChange,
+  onNavigate,
   authState,
   backupRecommended = false,
   isManualSyncing = false,
@@ -106,8 +106,9 @@ export function AppShell({
   syncFeedback = null,
   transientNotice = null,
 }: AppShellProps) {
-  const meta = tabMeta[activeTab]
-  const activeMoreSubTab = isMoreSubTab(activeTab) ? activeTab : 'bibliothek'
+  const meta = routeMeta[routeKey(activeRoute)]
+  const activeSection = activeRoute.section
+  const activeMoreRoute = activeRoute.section === 'more' ? activeRoute.moreRoute : routes.moreLibrary.moreRoute
 
   return (
     <div className="app-shell">
@@ -143,13 +144,13 @@ export function AppShell({
             {transientNotice}
           </p>
         ) : null}
-        {activeSection === 'mehr' ? (
+        {activeSection === 'more' ? (
           <div className="section-subnav">
             <SegmentedControl
               label="Mehr Unterbereiche"
-              onChange={onTabChange}
+              onChange={(moreRoute) => onNavigate(routeForMore(moreRoute))}
               options={moreOptions}
-              value={activeMoreSubTab}
+              value={activeMoreRoute}
             />
           </div>
         ) : null}

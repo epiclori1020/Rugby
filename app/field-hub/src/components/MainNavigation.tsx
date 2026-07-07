@@ -15,11 +15,11 @@ type NavigationItem = {
 }
 
 const navigationItems: NavigationItem[] = [
-  { id: 'heute', label: 'Heute', Icon: CalendarDays },
-  { id: 'einheit', label: 'Einheit', Icon: ClipboardCheck },
-  { id: 'spieler', label: 'Spieler', Icon: Users },
+  { id: 'today', label: 'Heute', Icon: CalendarDays },
+  { id: 'unit', label: 'Einheit', Icon: ClipboardCheck },
+  { id: 'players', label: 'Spieler', Icon: Users },
   { id: 'analysis', label: 'Analyse', Icon: LineChart },
-  { id: 'mehr', label: 'Mehr', Icon: MoreHorizontal },
+  { id: 'more', label: 'Mehr', Icon: MoreHorizontal },
 ]
 
 type MainNavigationProps = {
