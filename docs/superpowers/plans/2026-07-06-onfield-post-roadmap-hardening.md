@@ -381,7 +381,7 @@ Public/Kiosk-Check-in darf nicht brechen.
 
 ## Sprint 25 - Designsystem, A11y & Responsive Hardening
 
-Status: Geplant.
+Status: Abgeschlossen am 2026-07-07.
 Phase: B, Qualitaets- und Struktur-Hardening.
 
 ### Was genau machen wir?
