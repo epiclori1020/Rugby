@@ -14,7 +14,7 @@ Es ist keine juristische Datenschutzfreigabe, keine medizinische Freigabe und ke
 |---|---|---|
 | Phase A, Sprint 21-23 | Implementiert; externe Beta bleibt von frischem `qa:beta`-Pass abhaengig. | QA-Gates, Runtime-Memory-Hardening und Supabase/Auth/RLS-Audit sind dokumentiert und in den Gate-Kommandos verankert. |
 | Phase B, Sprint 24-26 | Dokumentarisch und organisatorisch abgeschlossen. | Routing/PWA, A11y/Responsive und Sprint-26-Closeout-Doku sind auf den aktuellen Stand gebracht; frische Checks sind unten dokumentiert. |
-| Externe Beta | Technisches Repo-Gate bestanden; noch nicht automatisch organisatorisch freigegeben. | `qa:beta` lief real mit signed-in QA und Remote-Kiosk-Mutation. Remote-Dashboard-Handcheck, Credential-Rotation und Beta-Kommunikation bleiben Pflicht vor externer Nutzung. |
+| Externe Beta | Technisches Repo-Gate ist frisch bestanden; externe Beta ist organisatorisch noch nicht automatisch freigegeben. | Der Nachlauf am 2026-07-07 pruefte `qa:beta` vollstaendig mit Supabase-Audit, signed-in Visual-QA und Remote-Kiosk-Mutation. Remote-Dashboard-Handcheck, Credential-Rotation und Beta-Kommunikation bleiben Pflicht vor externer Nutzung. |
 | Native/SaaS | Bewusst nicht vorgezogen. | OnField bleibt PWA-first; Native/SaaS wird erst nach Beta-Evidence neu bewertet. |
 
 ## LUVI-Wiederverwendungsurteil
@@ -30,6 +30,29 @@ Es ist keine juristische Datenschutzfreigabe, keine medizinische Freigabe und ke
 | Flutter-Code, Riverpod, GoRouter, Native Storage, SQLCipher, LUVI-Branding, Consumer-Health-Assets | nicht uebernehmen | Widerspricht Sprint-26-Scope, OnField PWA-first oder Field-Graphite-Designsystem. |
 
 ## Verification Log
+
+## Nachlauf 2026-07-07
+
+Dieser Nachlauf hat nach dem Abschluss-Audit zusaetzliche Guardrails umgesetzt:
+
+- Supabase-Child-Write-Policies fuer `player_session_entries`, `progress_entries`, `baseline_entries` und `returner_entries` pruefen Parent-Ownership gegen `players` und `session_logs`.
+- `npm run supabase:audit` erkennt jetzt bekannte Child-Policies ohne Parent-Ownership nicht mehr als ausreichend.
+- `qa:local` schreibt redigierte maschinenlesbare Reports unter `.tmp/onfield-qa/`, PWA-Smoke bricht bei Browser-Errors ab, und Sprint-19-Visual-QA umfasst `Mehr / Returner`.
+- Kiosk-E2E kann fuer Beta-nahe Runs mit `FIELD_HUB_E2E_REQUIRE_PREVIEW=1` nicht mehr auf den Vite-Dev-Server zurueckfallen.
+- Runtime-Memory-Tests nutzen temporaere `ONFIELD_MEMORY_DIR`-Wurzeln und loeschen nicht mehr die echte lokale Runtime.
+- Focus-Ring-Kontrast und ausgewaehlte Disabled-State-Semantik in Nachbereitung/Returner wurden gehaertet.
+- Backup-Importe halten historische `progressEntries`, `baselineEntries` und `returnerEntries` mit `playerId: null` lokal und verhindern Remote-Pending-Writes fuer diese Records.
+
+Aktuelle Evidence aus diesem Nachlauf:
+
+| Check | Ergebnis | Hinweis |
+|---|---|---|
+| `npm run qa:local` | passed | Erster Sandbox-Lauf blockierte am lokalen Preview-Server; eskalierter Lauf passierte Supabase-Audit, Typecheck, Lint, 592 Tests, Build, PWA-Smoke und Sprint-19-Visual-QA. |
+| `npm run qa:beta` | passed | Frischer Lauf nach Remote-Migration und Backup-Import-Fix pruefte Supabase-Audit, Typecheck, Lint, 593 Tests, Build, PWA-Smoke, signed-in Visual-QA und Remote-Kiosk-Mutation. |
+| Remote-Supabase-Migration `20260707143000` | applied | `supabase db push` hat `20260707143000_harden_child_parent_ownership.sql` auf die verlinkte Remote-Datenbank angewendet; `supabase migration list` und `pg_policies`-Abfrage bestaetigten die aktiven Child-Write-Policies. |
+| Backup-Import Null-Parent-Regel | passed | Historische Progress-/Baseline-/Returner-Records mit `playerId: null` bleiben lokal, werden als nicht pending behandelt und erzeugen keinen Remote-Sync-Write. |
+| Signed-in Sprint-19-Visual-QA | passed | Temporäre Laufzeit-Credentials wurden via verdeckter STDIN-Eingabe genutzt, nicht in Dateien oder Reports geschrieben. |
+| Runtime-Memory-Lint | passed with warning | `ok: true`; vorhandene Warnung `compile_pending` bleibt sichtbar und blockiert nicht. |
 
 | Check | Kommando / Evidence | Ergebnis | Hinweis |
 |---|---|---|---|

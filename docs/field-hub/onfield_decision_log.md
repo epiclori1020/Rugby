@@ -55,6 +55,10 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | 2026-07-06 | `qa:beta` wird das harte technische Freigabe-Gate fuer externe Beta. | Beta-QA darf keine stillen Skips bei Signed-in-, Public/Kiosk- oder Remote-Testpfaden als gruen ausgeben. | Aktiv |
 | 2026-07-06 | Runtime-Memory-Lint muss gruen sein, bevor generated Runtime Memory als hilfreicher Kontext gilt. | Runtime Memory ist nur lokales Roh-/Hilfsmaterial; Leak-Findings oder Lint-Fehler duerfen nicht als vertrauenswuerdiger Kontext behandelt werden. | Aktiv |
 | 2026-07-06 | `npm run supabase:audit` ist Teil von `qa:local` und `qa:beta`. | Supabase/Auth/RLS-Drift, unerwartete `anon`-Oberflaechen und `service_role`-Risiken sollen Beta-Gates blockieren, bevor externe Coaches testen. | Aktiv |
+| 2026-07-07 | Supabase-Child-Writes muessen bekannte Parent-Ownership pruefen. | `auth.uid() = user_id` allein verhindert nicht, dass ein Child-Record auf fremde `players` oder `session_logs` zeigt; bekannte Child-Insert-/Update-Policies und der statische Audit pruefen diese Beziehungen jetzt explizit. | Aktiv |
+| 2026-07-07 | Historische Backup-Child-Records ohne Spielerzuordnung bleiben lokal und werden nicht remote gesynct. | `progressEntries`, `baselineEntries` und `returnerEntries` mit `playerId: null` koennen aus alten/anonymisierten Backups stammen; Remote-RLS braucht aber gueltige Parent-Ownership. Die MVP-Regel erhaelt diese Daten lokal, verhindert aber neue Pending-Writes. | Aktiv |
+| 2026-07-07 | Beta-/Local-QA-Evidence wird maschinenlesbar und redigiert unter `.tmp/onfield-qa/` geschrieben. | Freigabeentscheidungen sollen nicht von Konsolen-Gefuehl abhaengen; Reports bleiben ignored, enthalten keine Credential-Werte und dokumentieren checked/failed/blocked Steps. | Aktiv |
+| 2026-07-07 | Runtime-Memory-Tests nutzen temporaere `ONFIELD_MEMORY_DIR`-Wurzeln. | Tests duerfen die echte lokale `.onfield-memory`-Runtime nicht loeschen oder verfaelschen; die Produkt-Runtime bleibt der Default, isolierte Testwurzeln sind explizit. | Aktiv |
 
 ## Markenarchitektur
 
