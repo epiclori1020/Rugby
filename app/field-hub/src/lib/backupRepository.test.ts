@@ -1,11 +1,13 @@
 import 'fake-indexeddb/auto'
 import { beforeEach, describe, expect, it } from 'vitest'
+import type { BaselineEntry } from '../domain/baseline'
 import { emptyCheckInDraft } from '../domain/checkIn'
 import type { ExerciseResult } from '../domain/exercises'
 import type { PlayerExposureSummary } from '../domain/exposures'
 import type { MetricResult } from '../domain/metrics'
 import type { Player } from '../domain/players'
 import type { ProgressEntry } from '../domain/postSession'
+import type { ReturnerEntry } from '../domain/returners'
 import type { SessionBlockLog } from '../domain/sessionBlocks'
 import {
   createFieldHubBackup,
@@ -52,6 +54,49 @@ const progressEntry: ProgressEntry = {
   powerOrSprint: '',
   conditioning: '',
   note: '',
+  createdAt: '2026-06-18T19:00:00.000Z',
+  updatedAt: '2026-06-18T19:05:00.000Z',
+  deletedAt: null,
+  clientUpdatedAt: '2026-06-18T19:05:00.000Z',
+  syncStatus: 'synced',
+  syncError: null,
+}
+
+const baselineEntry: BaselineEntry = {
+  id: 'baseline-1',
+  userId,
+  playerId: 'player-1',
+  sessionLogId: 'session-log-1',
+  broadJumpCm: 240,
+  medBallChestPassM: null,
+  medBallWeightKg: null,
+  sprint30m: null,
+  note: '',
+  createdAt: '2026-06-18T19:00:00.000Z',
+  updatedAt: '2026-06-18T19:05:00.000Z',
+  deletedAt: null,
+  clientUpdatedAt: '2026-06-18T19:05:00.000Z',
+  syncStatus: 'synced',
+  syncError: null,
+}
+
+const returnerEntry: ReturnerEntry = {
+  id: 'returner-1',
+  userId,
+  playerId: 'player-1',
+  sessionLogId: 'session-log-1',
+  medicalContactNote: '',
+  currentStage: 'gelb',
+  speedCap: 'submax',
+  codDecelCap: 'kontrolliert',
+  conditioningCap: 'moderat',
+  contactCap: 'none',
+  allowedToday: 'angepasst',
+  plannedCaps: 'keine Kontakte',
+  completed: 'ja',
+  symptomsDuring: 'keine',
+  nextMorning: '',
+  decision: 'bleiben',
   createdAt: '2026-06-18T19:00:00.000Z',
   updatedAt: '2026-06-18T19:05:00.000Z',
   deletedAt: null,
@@ -418,6 +463,36 @@ describe('backupRepository', () => {
 
     expect(preview.valid).toBe(true)
     expect(preview.errors).toEqual([])
+  })
+
+  it('imports historical child records without player ids locally without queuing remote sync', async () => {
+    const backup = await createFieldHubBackup(userId)
+    backup.data.progressEntries = [{ ...progressEntry, playerId: null }]
+    backup.data.baselineEntries = [{ ...baselineEntry, playerId: null }]
+    backup.data.returnerEntries = [{ ...returnerEntry, playerId: null }]
+
+    const preview = await previewFieldHubBackupImport(userId, backup)
+    const result = await importFieldHubBackup(userId, backup, { confirmOverwrite: true })
+
+    expect(preview.valid).toBe(true)
+    expect(preview.totals.localOnlyRecords).toBe(3)
+    expect(result.importedRecords).toBe(3)
+    await expect(localDb.pendingWrites.count()).resolves.toBe(0)
+    await expect(localDb.progressEntries.get('progress-1')).resolves.toMatchObject({
+      playerId: null,
+      syncStatus: 'synced',
+      syncError: null,
+    })
+    await expect(localDb.baselineEntries.get('baseline-1')).resolves.toMatchObject({
+      playerId: null,
+      syncStatus: 'synced',
+      syncError: null,
+    })
+    await expect(localDb.returnerEntries.get('returner-1')).resolves.toMatchObject({
+      playerId: null,
+      syncStatus: 'synced',
+      syncError: null,
+    })
   })
 
   it('stores last export metadata locally per user', async () => {

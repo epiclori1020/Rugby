@@ -45,6 +45,7 @@ export type ImportPreview = {
     newRecords: number
     overwriteCandidates: number
     skippedOlderRecords: number
+    localOnlyRecords: number
     totalRecords: number
   }
 }
@@ -92,6 +93,22 @@ const publicCheckInCollections = new Set<BackupCollectionKey>([
   'publicCheckInLinkPlayers',
   'publicCheckInSubmissions',
 ])
+
+const playerParentRequiredForRemoteSync = new Set<BackupCollectionKey>([
+  'progressEntries',
+  'baselineEntries',
+  'returnerEntries',
+])
+
+function isLocalOnlyHistoricalRecord(collectionKey: BackupCollectionKey, record: FieldHubBackupV1['data'][BackupCollectionKey][number]) {
+  return (
+    playerParentRequiredForRemoteSync.has(collectionKey) &&
+    typeof record === 'object' &&
+    record !== null &&
+    'playerId' in record &&
+    record.playerId === null
+  )
+}
 
 async function putImportedRecord(collectionKey: BackupCollectionKey, record: FieldHubBackupV1['data'][BackupCollectionKey][number]) {
   if (collectionKey === 'players') {
@@ -531,7 +548,7 @@ export async function previewFieldHubBackupImport(
     return {
       valid: false,
       errors: ['Backup-Datei hat kein unterstuetztes Field-Hub-Format.'],
-      totals: { newRecords: 0, overwriteCandidates: 0, skippedOlderRecords: 0, totalRecords: 0 },
+      totals: { newRecords: 0, overwriteCandidates: 0, skippedOlderRecords: 0, localOnlyRecords: 0, totalRecords: 0 },
     }
   }
 
@@ -539,6 +556,7 @@ export async function previewFieldHubBackupImport(
   let newRecords = 0
   let overwriteCandidates = 0
   let skippedOlderRecords = 0
+  let localOnlyRecords = 0
   let totalRecords = 0
 
   for (const collectionKey of Object.keys(collectionToTable) as BackupCollectionKey[]) {
@@ -555,6 +573,10 @@ export async function previewFieldHubBackupImport(
       if (record.userId !== userId) {
         errors.push('Backup enthaelt Daten eines anderen Coach-Users.')
         continue
+      }
+
+      if (isLocalOnlyHistoricalRecord(collectionKey, record)) {
+        localOnlyRecords += 1
       }
 
       const existing = await table.get(record.id)
@@ -575,6 +597,7 @@ export async function previewFieldHubBackupImport(
       newRecords,
       overwriteCandidates,
       skippedOlderRecords,
+      localOnlyRecords,
       totalRecords,
     },
   }
@@ -610,12 +633,15 @@ export async function importFieldHubBackup(
 
       const importedRecord = {
         ...record,
-        syncStatus: publicCheckInCollections.has(collectionKey) ? ('synced' as const) : ('pending' as const),
+        syncStatus:
+          publicCheckInCollections.has(collectionKey) || isLocalOnlyHistoricalRecord(collectionKey, record)
+            ? ('synced' as const)
+            : ('pending' as const),
         syncError: null,
       }
 
       await putImportedRecord(collectionKey, importedRecord)
-      if (!publicCheckInCollections.has(collectionKey)) {
+      if (!publicCheckInCollections.has(collectionKey) && !isLocalOnlyHistoricalRecord(collectionKey, record)) {
         await queueImportedWrite(pendingTable, record.id, userId)
       }
       importedRecords += 1

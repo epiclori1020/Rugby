@@ -240,7 +240,12 @@ export function ExportView({
 
     try {
       const result = await importFieldHubBackup(userId, importPayload, { confirmOverwrite: true })
-      setImportResult(`${result.importedRecords} Datensaetze lokal importiert. Aenderungen warten auf Sync.`)
+      const localOnlyRecords = result.preview?.totals.localOnlyRecords ?? importPreview.totals.localOnlyRecords
+      setImportResult(
+        localOnlyRecords > 0
+          ? `${result.importedRecords} Datensaetze lokal importiert. ${localOnlyRecords} historische Eintraege bleiben nur lokal; andere Aenderungen warten auf Sync.`
+          : `${result.importedRecords} Datensaetze lokal importiert. Aenderungen warten auf Sync.`,
+      )
       setImportPayload(null)
       setImportPreview(null)
       setSummary(summaryFromBackup(await createFieldHubBackup(userId)))
@@ -359,7 +364,10 @@ export function ExportView({
             <p>
               {importPreview.totals.totalRecords} Datensaetze in Datei · {importPreview.totals.newRecords} neu ·{' '}
               {importPreview.totals.overwriteCandidates} moegliche Ueberschreibungen ·{' '}
-              {importPreview.totals.skippedOlderRecords} lokale neuere Datensaetze bleiben erhalten.
+              {importPreview.totals.skippedOlderRecords} lokale neuere Datensaetze bleiben erhalten
+              {importPreview.totals.localOnlyRecords > 0
+                ? ` · ${importPreview.totals.localOnlyRecords} historische Eintraege bleiben nur lokal`
+                : ''}
             </p>
             {importPreview.errors.length > 0 ? (
               <ul className="compact-list">
