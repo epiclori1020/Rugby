@@ -57,3 +57,20 @@ Sprint 20 uebernimmt keine Flutter-Komponenten und portiert keinen Code. OnField
 ## Konsequenz fuer Sprint 20
 
 LUVI verbessert Sprint 20 vor allem als Qualitaets- und Audit-Vorbild. Die OnField-Umsetzung bleibt bewusst schlank: drei Beta-/Entscheidungsdokumente, minimale README-Verlinkung, keine neue App-Architektur und keine neuen Runtime-Features.
+
+## Sprint-25-Addendum: Designsystem, A11y & Responsive Hardening
+
+Stand: 2026-07-07
+
+Sprint 25 nutzt LUVI erneut nur lesend als Musterabgleich. Die Uebernahme bleibt auf robuste UI-/QA-Prinzipien begrenzt; OnField bleibt Vite + React + TypeScript, PWA-first und Field-Graphite-basiert.
+
+| LUVI-Quelle | OnField-Entscheidung | Umsetzung in Sprint 25 | Begruendung |
+|---|---|---|---|
+| `lib/features/auth/widgets/rebrand/auth_button_base.dart` | anpassen | OnField-Buttons nutzen Loading-Copy, `aria-busy` und sichtbare Disabled-Gruende ueber bestehende `PrimaryButton`/`SecondaryButton`. | Das Semantik-Prinzip ist technologieuebergreifend; Flutter-Widget und LUVI-Visuals werden nicht portiert. |
+| `test/features/auth/widgets/auth_button_base_test.dart` | uebernehmen als Testidee | Existing Core-Button-Tests bleiben Grundlage; Sprint 25 erweitert betroffene UI-Stellen statt neue Button-Architektur zu bauen. | LUVI bestaetigt, dass Loading/Disabled nicht nur visuell, sondern semantisch verifiziert werden muss. |
+| `lib/core/design_tokens/breakpoints.dart` | anpassen | `744px` wird als Medium-QA-Viewport ergaenzt; OnField-SSOT bleibt `compact <600`, `medium 600-839`, `expanded >=840`. | LUVI `tabletSmall` ist als Split-/Tablet-kleine Breite praktisch, ersetzt aber nicht die OnField-Breakpoints. |
+| `lib/core/design_tokens/sizes.dart` | uebernehmen als Guardrail | Touch Targets bleiben mindestens 44px; field-kritische Actions bleiben 48-56px. | Passt zu OnField PWA/A11y-SSOT und iPhone/iPad-Paritaet. |
+| `lib/core/widgets/bottom_nav_layout_constants.dart` | anpassen | Bottom-Nav-/Safe-Area-Clearance wird in CSS und PWA-QA fuer Medium/iPhone weitergeprueft. | Prinzip passt; Flutter-Konstanten werden nicht uebernommen. |
+| `test/dev/audit/ui_guard_audit_test.dart` | anpassen | Sprint 25 nutzt fokussierte CSS-/PWA-/Copy-Tests statt breitem, brittle Source-Scan. | OnField hat noch Legacy-Migration; ein zu breiter Gate wuerde alte bekannte Stellen blockieren statt Sprint-25-Risiken zu pruefen. |
+| LUVI Palette, Glass/Hero/Lottie/Video Assets | nicht uebernehmen | Keine neuen Bild-KI- oder LUVI-Assets; maskable Icons werden deterministisch aus bestehendem OnField-Icon abgeleitet. | OnField Live-Flows muessen ruhig, operativ und reproduzierbar bleiben. |
+| Riverpod/GoRouter/native Architektur | nicht uebernehmen | Keine Routing- oder Native-Architektur aus LUVI in Sprint 25. | Sprint 24 hat OnField-Routing bereits abgeschlossen; Sprint 25 ist UI-/A11y-/Responsive-Hardening. |

@@ -248,7 +248,7 @@ Keine SSOTs automatisch aus Runtime Memory schreiben. Current State, Decision Lo
 
 ## Sprint 23 - Supabase/Auth/RLS Beta Guardrails
 
-Status: Geplant.
+Status: Abgeschlossen.
 Phase: A, beta-blockierend.
 
 ### Was genau machen wir?

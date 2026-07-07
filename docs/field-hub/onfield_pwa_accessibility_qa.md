@@ -1,6 +1,6 @@
 # OnField PWA Accessibility QA
 
-Stand: 2026-07-06
+Stand: 2026-07-07
 
 ## Zweck
 
@@ -14,6 +14,15 @@ Sprint 18 fuegt eine automatisierte PWA-Smoke-Pruefung fuer den gebauten Preview
 - Viewports: 375 x 667, 393 x 852, 834 x 1194, 1194 x 834.
 - Pruefungen: App-Shell rendert, kein horizontales Overflow, Bottom Navigation bleibt im Viewport, Tastaturfokus ist sichtbar, lazy geladene Screens `Analyse`, `Bibliothek`, `Export & Backup`, `Einstellungen` und `Returner` laden auf iPhone klein und iPad Landscape, Offline-Navigation faellt auf die App-Shell zurueck.
 - Voraussetzung: lokaler Chromium/Chrome oder `PUPPETEER_EXECUTABLE_PATH`.
+
+## Sprint 25 Medium QA
+
+Sprint 25 erweitert PWA- und Visual-QA um die mittlere Fensterbreite:
+
+- zusaetzlicher Viewport: 744 x 1133.
+- `npm run test:e2e:pwa` prueft App-Shell, Bottom Navigation, Lazy Screens, Deep Links und Browser History zusaetzlich in Medium.
+- `npm run test:e2e:sprint19` prueft die Hauptscreen-Matrix zusaetzlich in Medium.
+- Medium folgt der OnField-Breakpoint-Logik `600-839px`: kompakte Shell ohne permanente Sidebar, aber mit voller Funktion.
 
 ## Verbindliche Regeln
 
@@ -34,6 +43,7 @@ Pruefe bei UI-Sprints, sofern praktisch:
 |---|---|
 | iPhone klein | enge Breite, Bottom Bar, Home Indicator, einspaltige Forms |
 | iPhone gross | typische mobile Feldnutzung |
+| Medium 744 | iPad Split View / kleines Tabletfenster ohne permanente Sidebar |
 | iPad Portrait | Tablet im Stehen, Sidebar/Content-Verhalten |
 | iPad Landscape | Primaere Coach-Arbeitsflaeche mit optionalem Detailpane |
 | iPad Split View | Layout nach Fensterbreite, nicht nur Geraetelabel |
