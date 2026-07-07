@@ -9,6 +9,19 @@ Die externe Beta-Readiness und die spaetere Plattform-Entscheidungsvorbereitung 
 - `../../docs/field-hub/onfield_beta_readiness.md`
 - `../../docs/field-hub/onfield_native_saas_decision_criteria.md`
 - `../../docs/field-hub/onfield_luvi_reuse_audit.md`
+- `../../docs/field-hub/2026-07-07_onfield_post_roadmap_hardening_evidence.md`
+
+## Aktueller Stand nach Post-Roadmap-Hardening
+
+OnField Coach bleibt PWA-first. OnField Rugby ist der erste Sport-Preset, aber nicht die generische Produktarchitektur. Die aktive Coach-IA ist:
+
+- `Heute`
+- `Einheit`
+- `Spieler`
+- `Analyse`
+- `Mehr`
+
+Externe Beta-Vorbereitung darf erst nach echter Gate-Evidence erfolgen. Ein Skip, fehlende Credentials oder ein blockierter Remote-Pfad zaehlen nicht als erfolgreiches Beta-Gate.
 
 Sprint 21 ergaenzt zwei QA-Gates:
 
@@ -63,6 +76,10 @@ FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1 npm run test:e2e:kiosk
 ```
 
 Dabei muessen `FIELD_HUB_E2E_EMAIL` und `FIELD_HUB_E2E_PASSWORD` sicher zur Laufzeit gesetzt sein. Keine echten Werte in Commits, Markdown, Screenshots, Shell-History oder Memory uebernehmen; ein im Chat geteiltes Passwort nach dem QA-Lauf rotieren.
+
+## Historische Sprint-Notizen
+
+Die folgenden Sprint-Abschnitte sind historische Implementierungsnotizen. Alte Tab-Namen wie `Check-in`, `Training`, `Nachbereitung`, `Returner`, `Bibliothek` oder `Export` beschreiben damalige Zwischenstaende und ersetzen nicht die aktuelle 5er-IA.
 
 ## Sprint-1-Scope
 
@@ -304,9 +321,9 @@ Vor neuen Datenmodell-Sprints beachten:
 - Metric- und Exercise-Definitionen bleiben zunaechst statischer TypeScript-Content;
   dynamisch gesynct werden nur Ergebnisse
 
-## Release-Hardening Sprint 12-24
+## Historische Release-Hardening-Notizen bis Sprint 24
 
-Nach Sprint 24 ist der Field Hub weiterhin ein browserseitiger Offline-first-Coach-MVP:
+Nach Sprint 24 blieb OnField Coach ein browserseitiger Offline-first-Coach-MVP:
 
 - Keine Edge Functions, keine Player Accounts, keine OpenAI/API-Integration und keine neuen Backends.
 - Kein `service_role` Key im Client; die App nutzt nur URL und Publishable Key.

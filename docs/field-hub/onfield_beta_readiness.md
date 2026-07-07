@@ -1,6 +1,6 @@
 # OnField Beta Readiness
 
-Stand: 2026-07-06
+Stand: 2026-07-07
 
 ## Zweck
 
@@ -36,6 +36,39 @@ Ein groesserer Rollout, oeffentliche Registrierung, Organisationen, Rollen, Bill
 | Remote-Mutation | Kiosk-E2E erzeugt nur temporaere Testdaten und raeumt sie wieder auf. |
 | Prozess-Cleanup | Nach E2E bleiben keine haengenden Vite-/Preview-/Browser-Prozesse. |
 | Secret-Hygiene | Keine Passwoerter, Tokens, `service_role` Keys oder privaten Keys in Code, Markdown, `.env`, Logs, Screenshots oder Memory. |
+
+## Post-Roadmap-Hardening Abschluss
+
+Sprint 21-26 schliessen die Post-Roadmap-Hardening-Roadmap als Beta-Vorbereitung ab. Phase A war beta-blockierend; externe Beta-Vorbereitung bleibt trotzdem erst erlaubt, wenn die echten Gate-Kommandos frisch erfolgreich gelaufen sind.
+
+| Bereich | Abschlussstand | Beta-Bedeutung |
+|---|---|---|
+| Sprint 21 `qa:local` / `qa:beta` | Lokaler Arbeitscheck und hartes Beta-Gate sind getrennt. `qa:beta` darf fehlende Credentials, Remote-Opt-in oder Skips nicht als Erfolg werten. | Externe Beta braucht ein echtes `qa:beta`-Pass, keinen Dry Run. |
+| Sprint 22 Runtime Memory | Runtime-Memory-Redaction, Setup, Compile und Lint sind als lokales Agenten-Gate nutzbar. Sprint 26 entfernt einen False Positive fuer generierte `sha256`-Integritaetsfelder, ohne Payload-Secret-Erkennung zu schwaechen. | Memory darf keine Secrets oder medizinische Freigabe-Sprache konservieren. |
+| Sprint 23 Supabase/Auth/RLS | `npm run supabase:audit` ist Teil der Gates und prueft Beta-kritische Auth-/RLS-Drift statisch. | Kein `service_role`, keine unerwartete `anon`-Oberflaeche und keine Self-Signup-Drift im Client-Scope. |
+| Sprint 24 Routing/PWA | Kanonische Coach-Routen, Back/Forward-Verhalten und Public/Kiosk-Trennung sind dokumentiert und getestet. | iPhone/iPad-Paritaet darf nicht an Navigation oder Deep Links scheitern. |
+| Sprint 25 Designsystem/A11y/Responsive | Medium-Viewport, Touch Targets, maskable Icons und betroffene A11y-Zustaende wurden hardening-orientiert geprueft. | Feldnutzung bleibt PWA-first und darf nicht nur Desktop-fit sein. |
+| Sprint 26 Evidence/Memory | README, Beta-Doku, LUVI-Audit und Memory-Closeout verweisen auf den aktuellen Stand und die Pflicht-Gates. | Kuenftige Agenten- und Beta-Sessions sehen den echten Abschlussstand statt alter Sprint-Zwischenstaende. |
+
+### Echte Freigabechecks
+
+| Check | Pflicht vor externer Beta? | Hinweis |
+|---|---|---|
+| `npm run qa:local` | ja | Arbeitscheck fuer Build, Tests, Supabase-Audit und lokale PWA-/Kiosk-Smokes. |
+| `npm run qa:beta` | ja | Muss mit temporaeren Laufzeit-Credentials und `FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1` laufen. Ein Skip oder Blocker zaehlt nicht als Erfolg. |
+| `npm run supabase:audit` | ja | Laeuft auch innerhalb der QA-Gates; ein separater Lauf macht Fehlerursachen sichtbarer. |
+| Runtime-Memory Setup/Compile/Lint | ja fuer Agenten-Closeout | Stellt sicher, dass Memory-Artefakte redigiert, kompiliert und frei von blockierenden Lint-Fehlern sind. |
+| Git-Artifact-Check | ja | Keine generierten Runtime-Memory-Artefakte oder Secrets duerfen getrackt werden. |
+
+### Bewusst spaeter
+
+| Risiko / Thema | Warum nicht Sprint 26? | Naechster Umgang |
+|---|---|---|
+| Remote-Supabase-Dashboard-Handcheck | Kann nicht vollstaendig aus dem Repo heraus bewiesen werden. | Vor externer Beta manuell gegen Dashboard-Einstellungen pruefen und Ergebnis ausserhalb sensibler Daten dokumentieren. |
+| Juristische Datenschutz-Endfreigabe | Sprint 26 ist technischer und organisatorischer Closeout, keine Legal-Freigabe. | Vor breiterer Nutzung separat klaeren. |
+| Support-/Incident-Prozess fuer groessere Beta | Kontrollierte Beta bleibt klein; kein neues Ticketsystem im Scope. | Erst nach echten Coach-Rueckmeldungen skalieren. |
+| Native App, App Store, MDM, SaaS-Plattform | OnField bleibt PWA-first, bis Beta-Evidence eine andere Entscheidung begruendet. | Ueber `onfield_native_saas_decision_criteria.md` nach Beta auswerten. |
+| Zweite Sportart | Rugby bleibt erster Preset; keine generische Sportarchitektur im Sprint 26 erweitern. | Spaeter nur evidence-basiert und nach OnField-Produktentscheidung. |
 
 ### Produkt und Scope
 

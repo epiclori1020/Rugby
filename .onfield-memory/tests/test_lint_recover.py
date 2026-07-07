@@ -97,8 +97,78 @@ def test_lint_reports_pattern_counts_without_raw_secret_values() -> None:
     assert fake_secret not in json.dumps(report_payload)
 
 
+def test_lint_ignores_capture_sha256_but_scans_payload() -> None:
+    reset_runtime()
+    capture = ROOT / "captures" / "2026-07-07" / "capture.json"
+    capture.parent.mkdir(parents=True, exist_ok=True)
+    capture.write_text(
+        json.dumps(
+            {
+                "capture_id": "cap_20260707T100000Z",
+                "kind": "note",
+                "source": "test",
+                "redacted_payload": "neutral OnField runtime note",
+                "sha256": "a" * 64,
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    lint = subprocess.run([sys.executable, str(SCRIPTS / "lint.py"), "--json"], text=True, capture_output=True, check=False)
+    assert lint.returncode == 0, lint.stdout + lint.stderr
+
+    fake_secret = "sk" + "-proj-" + "abcdefghijklmnopqrstuvwxyz123456"
+    capture.write_text(
+        json.dumps(
+            {
+                "capture_id": "cap_20260707T100001Z",
+                "kind": "note",
+                "source": "test",
+                "redacted_payload": f"failed request value {fake_secret}",
+                "sha256": "b" * 64,
+            },
+            sort_keys=True,
+        )
+        + "\n",
+        encoding="utf-8",
+    )
+    lint = subprocess.run([sys.executable, str(SCRIPTS / "lint.py"), "--json"], text=True, capture_output=True, check=False)
+    assert lint.returncode == 1
+    assert fake_secret not in lint.stdout
+    payload = json.loads(lint.stdout)
+    assert payload["ok"] is False
+    assert payload["issue_count"] == 1
+    assert payload["issues"][0] == {
+        "count": 1,
+        "path": str(capture),
+        "pattern_type": "openai_project_key",
+        "severity": "error",
+    }
+
+
+def test_lint_scans_sha256_fields_outside_captures() -> None:
+    reset_runtime()
+    report = ROOT / "reports" / "external.json"
+    report.parent.mkdir(parents=True, exist_ok=True)
+    report.write_text(json.dumps({"sha256": "c" * 64}, sort_keys=True) + "\n", encoding="utf-8")
+    lint = subprocess.run([sys.executable, str(SCRIPTS / "lint.py"), "--json"], text=True, capture_output=True, check=False)
+    assert lint.returncode == 1
+    payload = json.loads(lint.stdout)
+    assert payload["ok"] is False
+    assert payload["issue_count"] == 1
+    assert payload["issues"][0] == {
+        "count": 1,
+        "path": str(report),
+        "pattern_type": "long_opaque",
+        "severity": "error",
+    }
+
+
 if __name__ == "__main__":
     test_lint_and_recovery()
     test_compile_clears_pending_without_daily_logs()
     test_lint_reports_pattern_counts_without_raw_secret_values()
+    test_lint_ignores_capture_sha256_but_scans_payload()
+    test_lint_scans_sha256_fields_outside_captures()
     print("test_lint_recover.py PASS")

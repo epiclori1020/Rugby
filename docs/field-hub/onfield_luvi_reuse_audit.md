@@ -1,6 +1,6 @@
 # OnField LUVI Reuse Audit
 
-Stand: 2026-07-06
+Stand: 2026-07-07
 
 ## Zweck
 
@@ -74,3 +74,23 @@ Sprint 25 nutzt LUVI erneut nur lesend als Musterabgleich. Die Uebernahme bleibt
 | `test/dev/audit/ui_guard_audit_test.dart` | anpassen | Sprint 25 nutzt fokussierte CSS-/PWA-/Copy-Tests statt breitem, brittle Source-Scan. | OnField hat noch Legacy-Migration; ein zu breiter Gate wuerde alte bekannte Stellen blockieren statt Sprint-25-Risiken zu pruefen. |
 | LUVI Palette, Glass/Hero/Lottie/Video Assets | nicht uebernehmen | Keine neuen Bild-KI- oder LUVI-Assets; maskable Icons werden deterministisch aus bestehendem OnField-Icon abgeleitet. | OnField Live-Flows muessen ruhig, operativ und reproduzierbar bleiben. |
 | Riverpod/GoRouter/native Architektur | nicht uebernehmen | Keine Routing- oder Native-Architektur aus LUVI in Sprint 25. | Sprint 24 hat OnField-Routing bereits abgeschlossen; Sprint 25 ist UI-/A11y-/Responsive-Hardening. |
+
+## Sprint-26-Addendum: Final Cleanup, Evidence & Memory Closeout
+
+Stand: 2026-07-07
+
+Sprint 26 nutzt LUVI final als Audit- und Evidence-Referenz. Es werden keine Flutter-Komponenten, keine LUVI-Visuals und keine Native-Architektur in OnField portiert.
+
+| LUVI-Quelle | Entscheidung | Umsetzung in Sprint 26 | Begruendung |
+|---|---|---|---|
+| `docs/audits/dashboard_reuse_inventory.md` | uebernehmen | Das neue Post-Roadmap-Evidence-Dokument nutzt eine explizite Matrix aus Quelle, Entscheidung, OnField-Umsetzung und Folge. | Die Struktur macht nachvollziehbar, warum etwas wiederverwendet oder verworfen wurde. |
+| `docs/audits/AUTH_CONSENT_AUDIT.md` | anpassen | `onfield_beta_readiness.md` trennt echte Freigabechecks von Dokumentationsstatus; `qa:beta` bleibt nur mit realem Auth-/Remote-Pfad gueltig. | OnField braucht keine neue Consent-/Auth-Architektur, aber klare Evidence fuer signed-in QA. |
+| `docs/audits/WORKOUT_PERSISTENCE_AUDIT.md` | uebernehmen | Evidence wird nach Soll/Ist, Check, Ergebnis und bewusst spaeteren Risiken dokumentiert. | Das passt zu OnField Offline-/Sync-/Backup-Risiken ohne neue Features zu bauen. |
+| `docs/definition-of-done.md` | anpassen | Sprint 26 verwendet OnField-Gates: `qa:local`, `qa:beta`, `supabase:audit`, Runtime-Memory-Setup/Compile/Lint und Git-Artifact-Check. | Flutter-Analyse passt nicht; die Gate-Schichtung ist trotzdem wiederverwendbar. |
+| `docs/engineering/skill-references/a11y-audit.md` | uebernehmen als QA-Muster | A11y bleibt Teil der Beta-Evidence und der PWA-/Responsive-Gates, nicht nur visuelle Kontrolle. | Labels, Status, Touch Targets und Fokus sind technologieuebergreifende Pruefkriterien. |
+| `lib/features/auth/widgets/rebrand/auth_button_base.dart`, `lib/features/gym/widgets/gym_cta_button.dart`, zugehoerige Tests | uebernehmen als Testdisziplin | Keine Button-Portierung; OnField uebernimmt die Pruefidee fuer Loading, Disabled, stabile Labels und echte Touch-Zielgroessen. | Die UX-Regel ist relevant, der Flutter-Code und LUVI-Stil sind es nicht. |
+| `lib/core/widgets/bottom_nav_layout_constants.dart`, `lib/core/widgets/sheet_layout_constants.dart`, Keyboard-/Scroll-Tests | anpassen | OnField haelt Safe-Area-, Bottom-Nav- und Keyboard-Clearance als QA- und Evidence-Thema fest. | Prinzip passt zur PWA-Feldnutzung; zentrale Flutter-Konstanten werden nicht importiert. |
+| `docs/engineering/checklists/privacy.md`, `docs/runbooks/incident-response.md`, `docs/runbooks/key-rotation-runbook.md` | anpassen | Credential-Hygiene wird in der Beta-Doku und Evidence festgehalten: keine Secrets speichern, im Chat geteiltes Passwort nach QA rotieren. | OnField braucht Beta-taugliche Hygiene, keine Enterprise-Runbook-Automation im Sprint 26. |
+| Flutter Widgets, Riverpod, GoRouter, Native Storage, SQLCipher, LUVI Palette, Lottie/Video/Hero-Assets, Subscription-/Onboarding-/Gym-Featurelogik | nicht uebernehmen | Keine Umsetzung in Sprint 26. | Wuerde PWA-first, Coach-MVP und Sprint-Scope aufblaehen oder visuell vom OnField-System abweichen. |
+
+Konsequenz: LUVI bleibt ein hochwertiges Vergleichsprojekt fuer QA-Disziplin, Evidence-Formate und Produktgrenzen. Die OnField-Codebasis bleibt React/Vite/PWA-first und nutzt keine LUVI-Komponenten direkt.

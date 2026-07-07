@@ -1,6 +1,6 @@
 # OnField Memory Index
 
-Stand: 2026-07-06
+Stand: 2026-07-07
 
 ## Zweck
 
@@ -73,8 +73,9 @@ Die komplette Roadmap wird nur gelesen, wenn Sprint-/Roadmap-Arbeit stattfindet.
 Roadmap-Status:
 
 - `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md` ist die abgeschlossene Haupt-Roadmap fuer Sprint 0A bis Sprint 20.
-- `docs/superpowers/plans/2026-07-06-onfield-post-roadmap-hardening.md` ist die aktive Anschluss-Roadmap fuer Sprint 21 bis Sprint 26.
-- Phase A der Anschluss-Roadmap ist beta-blockierend. Externe Beta erst nach Sprint 21 bis Sprint 23 vorbereiten.
+- `docs/superpowers/plans/2026-07-06-onfield-post-roadmap-hardening.md` ist die abgeschlossene Anschluss-Roadmap fuer Sprint 21 bis Sprint 26.
+- `docs/field-hub/2026-07-07_onfield_post_roadmap_hardening_evidence.md` ist das Closeout-/Evidence-Dokument fuer Sprint 21 bis Sprint 26.
+- Phase A der Anschluss-Roadmap war beta-blockierend. Externe Beta bleibt von frischer echter `qa:beta`-Evidence, Supabase/Auth/RLS-Gate und Credential-Hygiene abhaengig.
 
 ## Closeout-Regel
 

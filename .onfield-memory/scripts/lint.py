@@ -11,6 +11,7 @@ from redact import MEDICAL_CLEARANCE_PATTERN, SECRET_PATTERNS
 
 
 LINK_RE = re.compile(r"\[[^\]]+\]\(([^)]+)\)")
+SHA256_HEX_RE = re.compile(r"^[a-fA-F0-9]{64}$")
 
 
 def add_issue(issues: dict[tuple[str, str, str], dict], severity: str, path: str, pattern_type: str, count: int = 1) -> None:
@@ -34,6 +35,46 @@ def secret_pattern_counts(text: str) -> dict[str, int]:
     return counts
 
 
+def lint_text_segments(path: Path, text: str) -> list[str]:
+    if path.suffix.lower() != ".json":
+        return [text]
+
+    try:
+        value = json.loads(text)
+    except json.JSONDecodeError:
+        return [text]
+
+    segments: list[str] = []
+
+    def walk(node: object, field_path: tuple[str, ...]) -> None:
+        if isinstance(node, dict):
+            for key, child in node.items():
+                walk(child, (*field_path, str(key)))
+            return
+        if isinstance(node, list):
+            for child in node:
+                walk(child, field_path)
+            return
+        if not isinstance(node, str):
+            return
+        if is_capture_sha256_field(path, field_path, node):
+            return
+        segments.append(node)
+
+    walk(value, ())
+    return segments or [text]
+
+
+def is_capture_sha256_field(path: Path, field_path: tuple[str, ...], value: str) -> bool:
+    if not field_path or field_path[-1] != "sha256" or not SHA256_HEX_RE.fullmatch(value):
+        return False
+    try:
+        path.resolve().relative_to(runtime_path("captures").resolve())
+    except ValueError:
+        return False
+    return True
+
+
 def lint_memory() -> dict:
     grouped_issues: dict[tuple[str, str, str], dict] = {}
     knowledge_dir = runtime_path("knowledge")
@@ -51,11 +92,12 @@ def lint_memory() -> dict:
             if not path.is_file():
                 continue
             text = path.read_text(encoding="utf-8", errors="ignore")
-            for pattern_type, count in secret_pattern_counts(text).items():
-                add_issue(grouped_issues, "error", str(path), pattern_type, count)
-            medical_count = len(MEDICAL_CLEARANCE_PATTERN.findall(text))
-            if medical_count:
-                add_issue(grouped_issues, "warning", str(path), "medical_clearance_wording", medical_count)
+            for segment in lint_text_segments(path, text):
+                for pattern_type, count in secret_pattern_counts(segment).items():
+                    add_issue(grouped_issues, "error", str(path), pattern_type, count)
+                medical_count = len(MEDICAL_CLEARANCE_PATTERN.findall(segment))
+                if medical_count:
+                    add_issue(grouped_issues, "warning", str(path), "medical_clearance_wording", medical_count)
 
     if hot_path.exists():
         text = hot_path.read_text(encoding="utf-8")

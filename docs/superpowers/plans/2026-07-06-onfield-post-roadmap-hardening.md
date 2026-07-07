@@ -458,8 +458,10 @@ Designsystem-Migration ja, aber keine grosse externe UI-Library einfuehren.
 
 ## Sprint 26 - Final Cleanup, Evidence & Memory Closeout
 
-Status: Geplant.
+Status: Abgeschlossen (2026-07-07).
 Phase: B, Qualitaets- und Struktur-Hardening.
+
+Abschluss-Evidence: `docs/field-hub/2026-07-07_onfield_post_roadmap_hardening_evidence.md`.
 
 ### Was genau machen wir?
 
