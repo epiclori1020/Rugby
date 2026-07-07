@@ -3706,7 +3706,7 @@ code {
   padding: 12px;
 }
 
-@media (max-width: 560px) {
+@media (max-width: 599px) {
   .public-checkin-page,
   .kiosk-checkin-page {
     gap: var(--of-space-md);
@@ -3803,7 +3803,7 @@ code {
   }
 }
 
-@media (max-width: 760px) {
+@media (max-width: 839px) {
   .app-shell {
     display: block;
     width: 100%;
@@ -3944,7 +3944,7 @@ code {
   }
 }
 
-@media (max-width: 560px) {
+@media (max-width: 599px) {
   .shell-main {
     padding: 14px;
   }

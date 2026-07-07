@@ -223,7 +223,7 @@ function deriveOpenIssues(entry: PlayerSessionEntry | null): PlayerProfileOpenIs
 
   if (entry.postPainScore !== null && entry.postPainScore >= 3) {
     const location = entry.postPainLocation.trim()
-    items.push(`Post-Pain ${entry.postPainScore}/10${location ? ` ${location}` : ''}`)
+    items.push(`Beschwerden nach Training ${entry.postPainScore}/10${location ? ` ${location}` : ''}`)
   }
 
   if (entry.e2Decision && entry.e2Decision !== 'normal') {

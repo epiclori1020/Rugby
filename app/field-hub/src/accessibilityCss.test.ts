@@ -33,4 +33,13 @@ describe('Sprint 18 accessibility CSS contracts', () => {
     expect(css).toContain('bottom: calc(16px + env(safe-area-inset-bottom))')
     expect(css).toContain('padding-bottom: calc(88px + env(safe-area-inset-bottom))')
   })
+
+  it('keeps Sprint 25 responsive shell breakpoints aligned with the SSOT', () => {
+    const css = readAppCss()
+
+    expect(css).toContain('@media (max-width: 839px)')
+    expect(css).toContain('@media (max-width: 599px)')
+    expect(css).not.toContain('@media (max-width: 760px)')
+    expect(css).not.toContain('@media (max-width: 560px)')
+  })
 })

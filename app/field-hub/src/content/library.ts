@@ -97,7 +97,7 @@ export const libraryItems: LibraryItem[] = [
       {
         title: 'App-Fokus',
         body: [
-          'App-Dokumentation fuer Ampel, Reaktion auf Dienstag, Schmerz, Returner, Anpassungen, sRPE und Pain/Issue.',
+          'App-Dokumentation fuer Ampel, Reaktion auf Dienstag, Schmerz, Returner, Anpassungen, sRPE und Beschwerden/Issue.',
           'Keine Diagnosen und keine medizinischen Entscheidungen dokumentieren.',
         ],
       },
@@ -296,7 +296,7 @@ export const libraryItems: LibraryItem[] = [
       {
         title: 'Donnerstag-Fallback',
         body: [
-          'Check-in, Warm-up, 4x10 m Speed, Mini-Baseline nur wenn ruhig, Krafttechnik-Pods, Microdose und sRPE/Pain-Abschluss.',
+          'Check-in, Warm-up, 4x10 m Speed, Mini-Baseline nur wenn ruhig, Krafttechnik-Pods, Microdose und sRPE/Beschwerden-Abschluss.',
           'Wenn Ablauf, Sicherheit oder Gruppe nicht passen, fallen Werte weg und die Einheit bleibt technisch.',
         ],
       },

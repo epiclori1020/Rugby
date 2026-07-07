@@ -204,7 +204,7 @@ describe('buildCheckInGuidance', () => {
       expect.arrayContaining([
         expect.objectContaining({ source: 'carryover', title: 'Vorwarnung aus letzter Einheit' }),
         expect.objectContaining({ source: 'carryover', title: 'E2 aus letzter Einheit' }),
-        expect.objectContaining({ source: 'carryover', title: 'Post-Pain aus letzter Einheit' }),
+        expect.objectContaining({ source: 'carryover', title: 'Beschwerden nach letzter Einheit' }),
         expect.objectContaining({ source: 'carryover', title: 'Alte Limits prüfen' }),
       ]),
     )

@@ -19,6 +19,7 @@ import { measureInteraction } from '../lib/performanceTrace'
 import { returnerEntryKeyBase } from '../lib/returnerEntryKey'
 import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
 import { SessionPicker } from './SessionPicker'
+import { SecondaryButton } from './ui'
 
 type ReturnerActions = ReturnType<typeof useReturners>
 
@@ -155,7 +156,7 @@ function ReturnerPlayerCard({
             defaultValue={displayEntry.medicalContactNote}
             disabled={isSavingDisabled}
             key={`${keyBase}::medical`}
-            placeholder="z. B. Physio: non-contact"
+            placeholder="z. B. Physio: kein Kontakt"
             onBlur={(event) => void savePatch({ medicalContactNote: event.currentTarget.value })}
           />
         </label>
@@ -199,7 +200,7 @@ function ReturnerPlayerCard({
             defaultValue={displayEntry.contactCap}
             disabled={isSavingDisabled}
             key={`${keyBase}::contact`}
-            placeholder="kein Kontakt / Bags / controlled"
+            placeholder="kein Kontakt / Bags / kontrolliert"
             onBlur={(event) => void savePatch({ contactCap: event.currentTarget.value })}
           />
         </label>
@@ -223,7 +224,7 @@ function ReturnerPlayerCard({
             disabled={isSavingDisabled}
             key={`${keyBase}::planned`}
             rows={2}
-            placeholder="z. B. Speed submax, kein Contact Prep"
+            placeholder="z. B. Speed submax, keine Kontaktvorbereitung"
             onBlur={(event) => void savePatch({ plannedCaps: event.currentTarget.value })}
           />
         </label>
@@ -278,6 +279,7 @@ function ReturnerPlayerCard({
             ))}
             <button
               className={isConservative ? 'segmented danger' : 'segmented'}
+              aria-busy={savingActionKey === `decision:${suggestedDecision}` || undefined}
               disabled={isSavingDisabled || savingActionKey === `decision:${suggestedDecision}`}
               type="button"
               onClick={() => void savePatch({ decision: suggestedDecision }, `decision:${suggestedDecision}`)}
@@ -355,10 +357,9 @@ export function ReturnerView({
             sessions={sessions}
           />
           {syncOverview.status === 'error' ? (
-            <button className="secondary-action" type="button" onClick={runSync} disabled={isLoading}>
-              <RefreshCw className="nav-icon" aria-hidden />
-              <span>{isLoading ? 'Sync laeuft...' : 'Retry'}</span>
-            </button>
+            <SecondaryButton icon={<RefreshCw className="nav-icon" aria-hidden />} isLoading={isLoading} loadingLabel="Sync laeuft" onClick={runSync}>
+              Erneut synchronisieren
+            </SecondaryButton>
           ) : null}
           <button className="secondary-action" type="button" onClick={() => onNavigate(routes.unitTraining)}>
             <UserCheck className="nav-icon" aria-hidden />

@@ -20,6 +20,7 @@ import {
   buildSessionBlocksCsv,
   downloadTextFile,
 } from '../lib/csvExport'
+import { PrimaryButton } from './ui'
 
 type CsvExportKind = 'players' | 'checkIns' | 'progress' | 'baseline' | 'sessionBlocks' | 'exposures' | 'exercises' | 'metrics'
 
@@ -367,14 +368,13 @@ export function ExportView({
                 ))}
               </ul>
             ) : null}
-            <button
-              className="primary-action"
+            <PrimaryButton
               disabled={!importPreview.valid}
-              type="button"
+              disabledReason={!importPreview.valid ? 'Behebe zuerst die Fehler in der Import-Vorschau.' : undefined}
               onClick={() => void confirmImport()}
             >
               Import bestaetigen
-            </button>
+            </PrimaryButton>
           </div>
         ) : null}
       </section>

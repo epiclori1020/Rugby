@@ -3,6 +3,7 @@ import { useState, type FormEvent } from 'react'
 import type { AuthSessionState } from '../lib/auth'
 import { signInWithEmailPassword, signOutCoach } from '../lib/auth'
 import { BrandSurface } from './onfield'
+import { PrimaryButton, SecondaryButton } from './ui'
 
 type AuthPanelProps = {
   authState: AuthSessionState
@@ -73,10 +74,9 @@ export function AuthPanel({ authState }: AuthPanelProps) {
         variant="compact"
       >
         <p>Eingeloggt als {authState.user.email ?? authState.user.id}.</p>
-        <button className="secondary-action" type="button" onClick={handleLogout} disabled={isSubmitting}>
-          <LogOut className="nav-icon" aria-hidden />
-          <span>Logout</span>
-        </button>
+        <SecondaryButton icon={<LogOut className="nav-icon" aria-hidden />} isLoading={isSubmitting} loadingLabel="Logout laeuft" onClick={handleLogout}>
+          Logout
+        </SecondaryButton>
         {error ? <p className="form-error">{error}</p> : null}
       </BrandSurface>
     )
@@ -110,10 +110,9 @@ export function AuthPanel({ authState }: AuthPanelProps) {
             required
           />
         </label>
-        <button className="primary-action" type="submit" disabled={isSubmitting}>
-          <LogIn className="nav-icon" aria-hidden />
-          <span>{isSubmitting ? 'Login laeuft...' : 'Einloggen'}</span>
-        </button>
+        <PrimaryButton icon={<LogIn className="nav-icon" aria-hidden />} isLoading={isSubmitting} loadingLabel="Login laeuft" type="submit">
+          Einloggen
+        </PrimaryButton>
         {authState.error || error ? <p className="form-error">{error ?? authState.error}</p> : null}
       </form>
     </BrandSurface>

@@ -36,6 +36,7 @@ import {
   TrainingAnalysis,
 } from './PlayerAnalysisCharts'
 import { PlayerEditorForm } from './PlayerEditorForm'
+import { SecondaryButton } from './ui'
 
 type PlayerActions = ReturnType<typeof usePlayers>
 type MetricActions = ReturnType<typeof useMetrics>
@@ -113,7 +114,7 @@ function exerciseResultText(result: ExerciseResult) {
   const tags = [
     result.variant !== 'custom' ? `Variante ${result.variant === 'A_plus' ? 'A+' : result.variant}` : null,
     result.techniqueQuality !== 'not_recorded' ? `Technik ${result.techniqueQuality}` : null,
-    result.painResponse !== 'unclear' ? `Pain ${result.painResponse}` : null,
+    result.painResponse !== 'unclear' ? `Beschwerden ${result.painResponse}` : null,
   ].filter(Boolean)
 
   return `${details} · ${definition.pattern}${tags.length > 0 ? ` · ${tags.join(' · ')}` : ''}`
@@ -519,7 +520,7 @@ function PlayerDetailView({
                 <MetricCard label="Datum" value={profile.latestSession.sessionDate} />
                 <MetricCard label="Anwesenheit" value={attendanceLabels[profile.latestSession.attendanceStatus]} />
                 <MetricCard label="Readiness" value={displayValue(profile.latestSession.readiness)} />
-                <MetricCard label="Pain" value={profile.latestSession.painScore !== null ? `${profile.latestSession.painScore}/10` : '-'} />
+                <MetricCard label="Beschwerden" value={profile.latestSession.painScore !== null ? `${profile.latestSession.painScore}/10` : '-'} />
               </div>
             ) : null}
           </ProfileSection>
@@ -594,14 +595,14 @@ function PlayerDetailView({
                         onChange={(event) => onMetricDraftChange(definition.key, event.target.value)}
                       />
                     </label>
-                    <button
-                      className="secondary-action compact-action"
-                      type="button"
+                    <SecondaryButton
+                      compact
                       disabled={!metricActions || !(metricDrafts[definition.key] ?? '').trim()}
+                      disabledReason={!metricActions ? 'Metrik-Speicher ist nicht verfuegbar.' : !(metricDrafts[definition.key] ?? '').trim() ? 'Trage zuerst einen Wert ein.' : undefined}
                       onClick={() => onMetricSave(definition)}
                     >
                       {definition.name} speichern
-                    </button>
+                    </SecondaryButton>
                   </div>
                 )
               })}
@@ -1171,10 +1172,9 @@ export function PlayersView({
             <span>Neu</span>
           </button>
           {syncOverview.status === 'error' ? (
-            <button className="secondary-action" type="button" onClick={runSync} disabled={isLoading}>
-              <RefreshCw className="nav-icon" aria-hidden />
-              <span>Retry</span>
-            </button>
+            <SecondaryButton icon={<RefreshCw className="nav-icon" aria-hidden />} isLoading={isLoading} loadingLabel="Sync laeuft" onClick={runSync}>
+              Erneut synchronisieren
+            </SecondaryButton>
           ) : null}
         </div>
 

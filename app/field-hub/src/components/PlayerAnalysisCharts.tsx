@@ -220,9 +220,9 @@ export function IssuesAnalysis({ analysis, canOpenSourceSession, onOpenSourceSes
         />
       </CompactSection>
       <CompactSection
-        title="Pain Score History"
+        title="Beschwerden-Verlauf"
         isEmpty={analysis.painScores.length === 0}
-        emptyText="Keine Pain Scores lokal sichtbar. Werte entstehen im Check-in."
+        emptyText="Keine Beschwerden-Werte lokal sichtbar. Werte entstehen im Check-in."
       >
         <NumericBars
           canOpenSourceSession={canOpenSourceSession}
@@ -233,9 +233,9 @@ export function IssuesAnalysis({ analysis, canOpenSourceSession, onOpenSourceSes
         />
       </CompactSection>
       <CompactSection
-        title="Pain Location Text History"
+        title="Beschwerden-Ort Verlauf"
         isEmpty={analysis.painLocations.length === 0}
-        emptyText="Keine Pain-Location-Texte lokal sichtbar. Body-Region-Charts sind bewusst noch nicht Teil dieses Sprints."
+        emptyText="Keine Beschwerden-Ort-Texte lokal sichtbar. Body-Region-Charts sind bewusst noch nicht Teil dieses Sprints."
       >
         <SourceList
           canOpenSourceSession={canOpenSourceSession}

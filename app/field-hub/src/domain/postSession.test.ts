@@ -114,7 +114,7 @@ describe('derivePostSessionFollowUps', () => {
       ),
     ).toEqual([
       'E2: kein_sprint fuer naechste Einheit beachten.',
-      'Pain/Issue nach Training: 4/10 Wade rechts.',
+      'Beschwerden/Issue nach Training: 4/10 Wade rechts.',
       'Schmerz ist im Training gestiegen.',
       'Ampel Gelb in naechster Einheit vorladen.',
       'Physio/Medical Ruecksprache offen.',

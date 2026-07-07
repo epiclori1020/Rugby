@@ -1534,7 +1534,7 @@ describe('TrainingView session block status controls', () => {
 
     await act(async () => {
       Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Retry')
+        .find((button) => button.textContent === 'Erneut synchronisieren')
         ?.click()
     })
 

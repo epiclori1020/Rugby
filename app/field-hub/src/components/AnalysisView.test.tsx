@@ -48,8 +48,8 @@ const insight: CoachInsight = {
   id: 'coach-insight:post_pain_missing_next_step:entry-1',
   rule: 'post_pain_missing_next_step',
   severity: 'high',
-  title: 'Post-Pain ohne naechsten Schritt',
-  reason: 'Max hat Post-Pain 4/10, aber E2 oder Next Step fehlt.',
+  title: 'Beschwerden nach Training ohne naechsten Schritt',
+  reason: 'Max hat Beschwerden nach Training 4/10, aber E2 oder Next Step fehlt.',
   targetTab: 'nachbereitung',
   correctionHint: 'In Nachbereitung E2 oder Next Step setzen.',
   sources: [
@@ -90,7 +90,7 @@ describe('AnalysisView', () => {
     expect(markup).toContain('Position: Alle Positionen')
     expect(markup).toContain('Exposure: Alle Exposures')
     expect(markup).toContain('Coach Insights')
-    expect(markup).toContain('Post-Pain ohne naechsten Schritt')
+    expect(markup).toContain('Beschwerden nach Training ohne naechsten Schritt')
     expect(markup).toContain('Max')
   })
 

@@ -36,6 +36,7 @@ import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../
 import { LiveSessionStepper } from './LiveSessionStepper'
 import { ExposureReviewPanel } from './ExposureReviewPanel'
 import { SessionPicker } from './SessionPicker'
+import { PrimaryButton, SecondaryButton } from './ui'
 
 type TrainingActions = ReturnType<typeof useCheckIns>
 type SessionBlockActions = ReturnType<typeof useSessionBlocks>
@@ -244,7 +245,7 @@ function WarningNote({ warning }: { warning: PlayerWarning | undefined }) {
   const followUps = [
     warning.e2Decision && warning.e2Decision !== 'normal' ? `E2 ${warning.e2Decision}` : null,
     warning.nextStep ? `Next ${warning.nextStep}` : null,
-    warning.postPainScore !== null ? `Post-Pain ${warning.postPainScore}/10` : null,
+    warning.postPainScore !== null ? `Beschwerden nach Training ${warning.postPainScore}/10` : null,
   ].filter(Boolean)
 
   return (
@@ -704,15 +705,14 @@ export function TrainingView({
               sessions={sessions}
             />
           ) : null}
-          <button
-            className="primary-action"
-            type="button"
+          <PrimaryButton
             onClick={handleStartOrResumeTraining}
             disabled={showLiveControls}
+            disabledReason={showLiveControls ? 'Live-Steuerung ist bereits aktiv.' : undefined}
+            icon={<Play className="nav-icon" aria-hidden />}
           >
-            <Play className="nav-icon" aria-hidden />
-            <span>{trainingActionLabel}</span>
-          </button>
+            {trainingActionLabel}
+          </PrimaryButton>
           {showLiveControls ? (
             <>
               <button className="secondary-action" type="button" onClick={handleAbortTraining}>
@@ -729,15 +729,13 @@ export function TrainingView({
             </button>
           ) : null}
           {syncOverview.status === 'error' ? (
-            <button className="secondary-action" type="button" onClick={runSync} disabled={isLoading}>
-              <RefreshCw className="nav-icon" aria-hidden />
-              <span>{isLoading ? 'Sync laeuft...' : 'Retry'}</span>
-            </button>
+            <SecondaryButton icon={<RefreshCw className="nav-icon" aria-hidden />} isLoading={isLoading} loadingLabel="Sync laeuft" onClick={runSync}>
+              Erneut synchronisieren
+            </SecondaryButton>
           ) : null}
-          <button className="secondary-action" type="button" onClick={() => onNavigate(routes.unitCheckIn)}>
-            <UserCheck className="nav-icon" aria-hidden />
-            <span>Check-in</span>
-          </button>
+          <SecondaryButton icon={<UserCheck className="nav-icon" aria-hidden />} onClick={() => onNavigate(routes.unitCheckIn)}>
+            Check-in
+          </SecondaryButton>
         </div>
       </div>
 
@@ -755,17 +753,16 @@ export function TrainingView({
         <div className="panel error-panel" role="alert">
           <strong>Blockstatus nicht vollstaendig synchronisiert</strong>
           <span>{sessionBlockActions.errorMessage}</span>
-          <button
-            className="secondary-action"
-            type="button"
+          <SecondaryButton
             onClick={() => {
               void sessionBlockActions.runSync()
             }}
-            disabled={sessionBlockActions.isLoading}
+            icon={<RefreshCw className="nav-icon" aria-hidden />}
+            isLoading={sessionBlockActions.isLoading}
+            loadingLabel="Sync laeuft"
           >
-            <RefreshCw className="nav-icon" aria-hidden />
-            <span>{sessionBlockActions.isLoading ? 'Sync laeuft...' : 'Retry'}</span>
-          </button>
+            Erneut synchronisieren
+          </SecondaryButton>
           <button className="secondary-action" type="button" onClick={sessionBlockActions.clearError}>
             Schliessen
           </button>
@@ -788,17 +785,17 @@ export function TrainingView({
           <span>{pendingCountLabel(sessionBlockActions.syncOverview.pendingCount, 'Blockstatus-Aenderungen')}</span>
           {sessionBlockActions.syncOverview.errorMessage ? <span>{sessionBlockActions.syncOverview.errorMessage}</span> : null}
           {sessionBlockActions.syncOverview.status === 'error' ? (
-            <button
-              className="secondary-action compact-action"
-              type="button"
+            <SecondaryButton
+              compact
               onClick={() => {
                 void sessionBlockActions.runSync()
               }}
-              disabled={sessionBlockActions.isLoading}
+              icon={<RefreshCw className="nav-icon" aria-hidden />}
+              isLoading={sessionBlockActions.isLoading}
+              loadingLabel="Sync laeuft"
             >
-              <RefreshCw className="nav-icon" aria-hidden />
-              <span>{sessionBlockActions.isLoading ? 'Sync laeuft...' : 'Retry'}</span>
-            </button>
+              Erneut synchronisieren
+            </SecondaryButton>
           ) : null}
         </div>
       ) : null}
@@ -829,7 +826,7 @@ export function TrainingView({
             Es werden {sessionBlockActions.blockLogs.length} Blockstatus und {activeExposureSummaryCount} Exposure-Summary
             {activeExposureSummaryCount === 1 ? '' : 's'} fuer diese Session zurueckgesetzt.
           </span>
-          <span>Check-ins bleiben erhalten. sRPE/Pain/E2, Metrics, Exercise-Results, Progression und Baselines bleiben erhalten.</span>
+          <span>Check-ins bleiben erhalten. sRPE/Beschwerden/E2, Metrics, Exercise-Results, Progression und Baselines bleiben erhalten.</span>
           <div className="button-row training-actions">
             <button
               className="segmented danger"
@@ -983,9 +980,20 @@ export function TrainingView({
               onChange={(event) => setLiveObservationText(event.target.value)}
             />
           </label>
-          <button className="primary-action" type="submit" disabled={isLoading || liveObservationText.trim().length === 0}>
+          <button
+            className="primary-action"
+            type="submit"
+            aria-busy={isLoading || undefined}
+            aria-describedby={liveObservationText.trim().length === 0 ? 'live-observation-disabled-reason' : undefined}
+            disabled={isLoading || liveObservationText.trim().length === 0}
+          >
             Speichern
           </button>
+          {liveObservationText.trim().length === 0 ? (
+            <p className="disabled-action-reason" id="live-observation-disabled-reason">
+              Schreibe zuerst eine kurze Beobachtung.
+            </p>
+          ) : null}
         </form>
               <p className={liveObservationFeedback ? 'action-feedback visible' : 'action-feedback'} aria-live="polite">
                 {liveObservationFeedback ?? ''}

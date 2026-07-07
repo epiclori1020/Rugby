@@ -147,7 +147,7 @@ function WarningSummary({ warning }: { warning: PlayerWarning | undefined }) {
     warning.trafficLight ? `Ampel ${warning.trafficLight}` : null,
     warning.e2Decision && warning.e2Decision !== 'normal' ? `E2 ${warning.e2Decision}` : null,
     warning.nextStep ? `Next ${warning.nextStep}` : null,
-    warning.postPainScore !== null ? `Post-Pain ${warning.postPainScore}/10` : null,
+    warning.postPainScore !== null ? `Beschwerden nach Training ${warning.postPainScore}/10` : null,
   ].filter(Boolean)
 
   if (parts.length === 0) {
@@ -273,7 +273,7 @@ function MissingValuesPanel({
   function renderAction(item: MissingPostSessionValue) {
     if (item.kind === 'missing_duration') {
       return (
-        <SecondaryButton compact disabled={isPostSavingDisabled} onClick={focusDurationInput}>
+        <SecondaryButton compact disabled={isPostSavingDisabled} disabledReason={isPostSavingDisabled ? 'Speichern laeuft gerade.' : undefined} onClick={focusDurationInput}>
           Dauerfeld fokussieren
         </SecondaryButton>
       )
@@ -281,7 +281,7 @@ function MissingValuesPanel({
 
     if (item.kind === 'session_status') {
       return (
-        <PrimaryButton compact disabled={isPostSavingDisabled} onClick={() => void onSessionSave({ status: 'completed' })}>
+        <PrimaryButton compact disabled={isPostSavingDisabled} disabledReason={isPostSavingDisabled ? 'Speichern laeuft gerade.' : undefined} onClick={() => void onSessionSave({ status: 'completed' })}>
           Einheit abschliessen
         </PrimaryButton>
       )
@@ -526,8 +526,8 @@ function PostSessionPlayerRow({
           </div>
         </div>
 
-        <div className="control-group" aria-label={`Pain nach Training ${player.name}`}>
-          <span>Post-Pain</span>
+        <div className="control-group" aria-label={`Beschwerden nach Training ${player.name}`}>
+          <span>Beschwerden nach Training</span>
           <div className="button-row compact pain-scale">
             {[0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10].map((value) => (
               <button
@@ -544,7 +544,7 @@ function PostSessionPlayerRow({
         </div>
 
         <label className="inline-field">
-          <span>Post-Pain Ort/Issue</span>
+          <span>Ort/Issue nach Training</span>
           <input
             defaultValue={entry.postPainLocation}
             disabled={isSavingDisabled}
@@ -1147,7 +1147,7 @@ function ExercisePlayerRow({
         </label>
 
         <label className="inline-field">
-          <span>Pain-Reaktion</span>
+          <span>Beschwerden-Reaktion</span>
           <select
             defaultValue={exercise.painResponse}
             disabled={isSavingDisabled}
@@ -1322,7 +1322,7 @@ export function PostSessionView({
         <div className="library-heading">
           <p className="eyebrow">Nach dem Training</p>
           <h3 id="post-session-heading">Nachbereitung</h3>
-          <p>{selectedSession.title}: sRPE, Pain/Issue, E2, Progression und Follow-ups sichern.</p>
+          <p>{selectedSession.title}: sRPE, Beschwerden/Issue, E2, Progression und Follow-ups sichern.</p>
         </div>
         <div className="player-toolbar">
           {showSessionPicker ? (
@@ -1335,15 +1335,14 @@ export function PostSessionView({
           {syncOverview.status === 'error' ||
           baselineActions.syncOverview.status === 'error' ||
           metricActions.syncOverview.status === 'error' ? (
-            <button
-              className="secondary-action"
-              type="button"
+            <SecondaryButton
+              icon={<RefreshCw className="nav-icon" aria-hidden />}
+              isLoading={isLoading || baselineActions.isLoading || metricActions.isLoading}
+              loadingLabel="Sync laeuft"
               onClick={() => void handleRunSync()}
-              disabled={isLoading || baselineActions.isLoading || metricActions.isLoading}
             >
-              <RefreshCw className="nav-icon" aria-hidden />
-              <span>{isLoading || baselineActions.isLoading || metricActions.isLoading ? 'Sync laeuft...' : 'Retry'}</span>
-            </button>
+              Erneut synchronisieren
+            </SecondaryButton>
           ) : null}
           <button className="secondary-action" type="button" onClick={() => onNavigate(routes.unitTraining)}>
             <UserCheck className="nav-icon" aria-hidden />

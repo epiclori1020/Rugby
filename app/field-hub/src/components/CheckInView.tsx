@@ -44,6 +44,7 @@ import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../
 import { PublicCheckInSharePanel } from './PublicCheckInSharePanel'
 import { PlayerEditorForm } from './PlayerEditorForm'
 import { SessionPicker } from './SessionPicker'
+import { PrimaryButton, SecondaryButton } from './ui'
 
 type CheckInActions = ReturnType<typeof useCheckIns>
 type PlayerActions = ReturnType<typeof usePlayers>
@@ -977,21 +978,23 @@ function CheckInRosterRow({
           className={attendance === 'present' ? 'checkin-row-action active' : 'checkin-row-action'}
           data-testid={`checkin-roster-present-${player.id}`}
           type="button"
+          aria-busy={isQuickSaving || undefined}
           aria-pressed={attendance === 'present'}
           onClick={() => onQuickAttendance(true)}
           disabled={isQuickSaving}
         >
-          Da
+          {isQuickSaving ? 'Speichert...' : 'Da'}
         </button>
         <button
           className={attendance === 'absent' ? 'checkin-row-action active' : 'checkin-row-action'}
           data-testid={`checkin-roster-absent-${player.id}`}
           type="button"
+          aria-busy={isQuickSaving || undefined}
           aria-pressed={attendance === 'absent'}
           onClick={() => onQuickAttendance(false)}
           disabled={isQuickSaving}
         >
-          Nicht da
+          {isQuickSaving ? 'Speichert...' : 'Nicht da'}
         </button>
       </div>
     </article>
@@ -1417,19 +1420,21 @@ export function CheckInView({
             />
           ) : null}
           {syncOverview.status === 'error' ? (
-            <button className="secondary-action" type="button" onClick={runSync} disabled={isLoading}>
-              <RefreshCw className="nav-icon" aria-hidden />
-              <span>{isLoading ? 'Sync laeuft...' : 'Retry'}</span>
-            </button>
+            <SecondaryButton icon={<RefreshCw className="nav-icon" aria-hidden />} isLoading={isLoading} loadingLabel="Sync laeuft" onClick={runSync}>
+              Erneut synchronisieren
+            </SecondaryButton>
           ) : null}
-          <button className="secondary-action" type="button" onClick={() => onNavigate(routes.players)}>
-            <UserCheck className="nav-icon" aria-hidden />
-            <span>Spieler verwalten</span>
-          </button>
-          <button className="secondary-action" type="button" onClick={onStartKiosk} disabled={activePlayers.length === 0}>
-            <ClipboardCheck className="nav-icon" aria-hidden />
-            <span>Kiosk starten</span>
-          </button>
+          <SecondaryButton icon={<UserCheck className="nav-icon" aria-hidden />} onClick={() => onNavigate(routes.players)}>
+            Spieler verwalten
+          </SecondaryButton>
+          <SecondaryButton
+            disabled={activePlayers.length === 0}
+            disabledReason={activePlayers.length === 0 ? 'Lege zuerst mindestens einen aktiven Spieler an.' : undefined}
+            icon={<ClipboardCheck className="nav-icon" aria-hidden />}
+            onClick={onStartKiosk}
+          >
+            Kiosk starten
+          </SecondaryButton>
         </div>
       </div>
 
@@ -1563,26 +1568,23 @@ export function CheckInView({
           </summary>
           <div className="checkin-secondary-body" aria-label="Check-in-Link teilen">
             <div className="button-row">
-              <button
-                className="primary-action"
+              <PrimaryButton
                 data-testid="public-checkin-create-link"
-                type="button"
                 onClick={() => void handleCreatePublicLink()}
-                disabled={isLoading}
+                icon={<Plus className="nav-icon" aria-hidden />}
+                isLoading={isLoading}
+                loadingLabel="Link wird erstellt"
               >
-                <Plus className="nav-icon" aria-hidden />
-                <span>{activePublicLink ? 'Neuen Link erstellen' : 'Link erstellen'}</span>
-              </button>
+                {activePublicLink ? 'Neuen Link erstellen' : 'Link erstellen'}
+              </PrimaryButton>
               {activePublicLink ? (
-                <button
-                  className="secondary-action"
+                <SecondaryButton
                   data-testid="public-checkin-close-link"
-                  type="button"
                   onClick={() => void handleClosePublicLink()}
+                  icon={<X className="nav-icon" aria-hidden />}
                 >
-                  <X className="nav-icon" aria-hidden />
-                  <span>Link schliessen</span>
-                </button>
+                  Link schliessen
+                </SecondaryButton>
               ) : null}
             </div>
             {selectedSessionSharePayload ? (
@@ -1627,11 +1629,17 @@ export function CheckInView({
               ref={resetButtonRef}
               className="secondary-action"
               type="button"
-              onClick={() => setIsResetConfirmOpen(true)}
+              aria-describedby={!canResetSessionCheckIns ? 'reset-open-disabled-reason' : undefined}
               disabled={!canResetSessionCheckIns}
+              onClick={() => setIsResetConfirmOpen(true)}
             >
               Alle Check-ins zurücksetzen
             </button>
+            {!canResetSessionCheckIns ? (
+              <p className="disabled-action-reason" id="reset-open-disabled-reason">
+                Es gibt fuer diese Einheit keine Check-ins zum Zuruecksetzen.
+              </p>
+            ) : null}
             {resetFeedback ? <p className="action-feedback visible">{resetFeedback}</p> : null}
           </div>
         </details>
@@ -1835,11 +1843,17 @@ export function CheckInView({
                 className="secondary-action danger"
                 type="button"
                 onClick={() => void handleConfirmResetAllCheckIns()}
+                aria-describedby={resetPreviewEntryCount + resetPreviewPublicSubmissionCount === 0 ? 'reset-confirm-disabled-reason' : undefined}
                 disabled={resetPreviewEntryCount + resetPreviewPublicSubmissionCount === 0}
               >
                 Alle Check-ins zurücksetzen
               </button>
             </div>
+            {resetPreviewEntryCount + resetPreviewPublicSubmissionCount === 0 ? (
+              <p className="disabled-action-reason" id="reset-confirm-disabled-reason">
+                Keine Coach-, Link- oder Kiosk-Check-ins fuer diese Einheit vorhanden.
+              </p>
+            ) : null}
           </div>
         </section>
       ) : null}

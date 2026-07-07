@@ -99,7 +99,7 @@ function groupTone(group: SyncDetailGroup) {
 function groupMeta(group: SyncDetailGroup) {
   return [
     group.pendingCount > 0 ? `${group.pendingCount} wartet auf Sync` : null,
-    group.errorCount > 0 ? `${group.errorCount} Retry` : null,
+    group.errorCount > 0 ? `${group.errorCount} erneut versuchen` : null,
     group.conflictCount > 0 ? `${group.conflictCount} Konflikt pruefen` : null,
   ].filter((item): item is string => Boolean(item))
 }

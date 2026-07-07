@@ -122,7 +122,7 @@ function groupDetail({
   }
 
   if (errorCount > 0) {
-    return errorCount === 1 ? '1 Datensatz braucht Retry.' : `${errorCount} Datensaetze brauchen Retry.`
+    return errorCount === 1 ? '1 Datensatz braucht einen erneuten Versuch.' : `${errorCount} Datensaetze brauchen einen erneuten Versuch.`
   }
 
   if (pendingCount > 0) {

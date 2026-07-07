@@ -90,7 +90,7 @@ export function derivePostSessionFollowUps(entry: PlayerSessionEntry, progressEn
 
   if (entry.postPainScore !== null && entry.postPainScore >= 3) {
     const location = entry.postPainLocation.trim()
-    followUps.push(`Pain/Issue nach Training: ${entry.postPainScore}/10${location ? ` ${location}` : ''}.`)
+    followUps.push(`Beschwerden/Issue nach Training: ${entry.postPainScore}/10${location ? ` ${location}` : ''}.`)
   }
 
   if (painIncreased) {

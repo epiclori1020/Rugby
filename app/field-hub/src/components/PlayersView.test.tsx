@@ -519,7 +519,7 @@ describe('PlayersView default layout', () => {
       issuesTab?.click()
     })
 
-    expect(container.textContent).toContain('Pain Location Text History')
+    expect(container.textContent).toContain('Beschwerden-Ort Verlauf')
     expect(container.textContent).toContain('Schulter')
     expect(container.textContent).not.toContain('Body Region')
 

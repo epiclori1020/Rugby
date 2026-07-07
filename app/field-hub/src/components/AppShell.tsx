@@ -55,7 +55,7 @@ const routeMeta: Record<ReturnType<typeof routeKey>, { eyebrow: string; title: s
   'unit/post-session': {
     eyebrow: 'Einheit / Nachbereitung',
     title: 'Einheit',
-    description: 'sRPE, Pain, E2, Progression und Follow-ups sichern.',
+    description: 'sRPE, Beschwerden, E2, Progression und Follow-ups sichern.',
   },
   'more/returners': {
     eyebrow: 'Mehr / Returner',

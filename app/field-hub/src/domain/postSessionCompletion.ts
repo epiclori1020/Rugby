@@ -240,7 +240,7 @@ export function derivePostSessionCompletion({
   }
 
   if (missingPostPainNames.length > 0) {
-    blockers.push(item('missing_post_pain', 'Post-Pain fehlt bei auffaelligen Spielern.', missingPostPainNames))
+    blockers.push(item('missing_post_pain', 'Beschwerden nach Training fehlen bei auffaelligen Spielern.', missingPostPainNames))
   }
 
   if (missingE2NextStepNames.length > 0) {

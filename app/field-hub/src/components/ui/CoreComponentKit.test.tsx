@@ -105,7 +105,7 @@ describe('Sprint 5 Core Component Kit', () => {
         </Sheet>
         <EmptyState title="Keine offenen Aufgaben" body="Heute ist nichts nachzutragen." action={<SecondaryButton>Zurueck</SecondaryButton>} />
         <Skeleton variant="row" />
-        <ErrorState title="Speichern nicht moeglich" body="Erneut versuchen." action={<SecondaryButton>Retry</SecondaryButton>} />
+        <ErrorState title="Speichern nicht moeglich" body="Erneut versuchen." action={<SecondaryButton>Erneut versuchen</SecondaryButton>} />
       </>,
     )
 

@@ -422,7 +422,7 @@ describe('buildPlayerProfileSummary', () => {
         'Red Flag: Kopf/Nacken/neurologisch oder Instabilitaet',
         'Movement Concern',
         'Limits: physio, klaeren',
-        'Post-Pain 5/10',
+        'Beschwerden nach Training 5/10',
         'E2: physio',
         'Next Step: klaeren',
       ]),

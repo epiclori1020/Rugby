@@ -24,6 +24,7 @@ class QaBlockedError extends Error {
 const viewports = [
   { name: 'iphone-small', label: 'iPhone small', width: 375, height: 667, isMobile: true },
   { name: 'iphone-large', label: 'iPhone large', width: 393, height: 852, isMobile: true },
+  { name: 'medium-744', label: 'Medium 744', width: 744, height: 1133, isMobile: true },
   { name: 'ipad-portrait', label: 'iPad portrait', width: 834, height: 1194, isMobile: true },
   { name: 'ipad-landscape', label: 'iPad landscape', width: 1194, height: 834, isMobile: false },
 ]
@@ -56,7 +57,7 @@ const screenChecks = [
       await clickButtonByLabelOrText(page, 'Einheit', 'Einheit / Nachbereitung')
       await clickButtonByLabelOrText(page, 'Nachbereitung', 'Einheit / Nachbereitung')
     },
-    expectedTexts: ['Einheit / Nachbereitung', 'sRPE, Pain, E2'],
+    expectedTexts: ['Einheit / Nachbereitung', 'sRPE, Beschwerden, E2'],
   },
   {
     name: 'Spieler',
@@ -102,6 +103,7 @@ const forbiddenVisibleTexts = [
   'Copy previous player',
   'Apply to present',
   'Structured Exercise Result',
+  'Retry',
   'medizinische Freigabe',
   'RTP',
   'Return-to-Play',

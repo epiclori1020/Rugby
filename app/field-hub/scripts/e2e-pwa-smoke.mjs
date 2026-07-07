@@ -12,12 +12,14 @@ const smokeRouteUrl = new URL('/pwa-offline-smoke', baseUrl).toString()
 const viewports = [
   { name: 'iPhone small', width: 375, height: 667, isMobile: true },
   { name: 'iPhone large', width: 393, height: 852, isMobile: true },
+  { name: 'Medium 744', width: 744, height: 1133, isMobile: true },
   { name: 'iPad portrait', width: 834, height: 1194, isMobile: true },
   { name: 'iPad landscape', width: 1194, height: 834, isMobile: false },
 ]
 
 const lazyScreenViewports = [
   { name: 'iPhone small lazy screens', width: 375, height: 667, isMobile: true },
+  { name: 'Medium 744 lazy screens', width: 744, height: 1133, isMobile: true },
   { name: 'iPad landscape lazy screens', width: 1194, height: 834, isMobile: false },
 ]
 
@@ -162,6 +164,35 @@ async function stopChild(child) {
       resolveTimer()
     })
   })
+
+  child.stdout?.destroy()
+  child.stderr?.destroy()
+  child.unref()
+}
+
+async function closeBrowser(browser) {
+  if (!browser) {
+    return
+  }
+
+  let closed = false
+  try {
+    await Promise.race([
+      browser.close().then(() => {
+        closed = true
+      }),
+      new Promise((resolveTimer) => setTimeout(resolveTimer, 2_000)),
+    ])
+  } finally {
+    if (!closed) {
+      browser.process()?.kill('SIGKILL')
+    }
+  }
+}
+
+async function cleanupResources(browser, child) {
+  await closeBrowser(browser)
+  await stopChild(child)
 }
 
 async function waitForAppShell(page) {
@@ -470,14 +501,15 @@ async function main() {
         .join(', ')}.`,
     )
   } finally {
-    if (browser) {
-      await browser.close()
-    }
-    await stopChild(previewServer)
+    await Promise.race([cleanupResources(browser, previewServer), new Promise((resolveTimer) => setTimeout(resolveTimer, 3_000))])
   }
 }
 
-main().catch((error) => {
-  console.error(error)
-  process.exitCode = 1
-})
+main()
+  .then(() => {
+    process.exit(0)
+  })
+  .catch((error) => {
+    console.error(error)
+    process.exit(1)
+  })

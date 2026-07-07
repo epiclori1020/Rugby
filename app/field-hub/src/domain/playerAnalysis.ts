@@ -194,7 +194,7 @@ export function buildPlayerAnalysisSummary({
     .map((entry) => ({
       ...sourceFor(sessionLogById, entry, 'player_session_entries', 'check-in'),
       value: entry.painScore ?? 0,
-      label: 'Pain',
+      label: 'Beschwerden',
     }))
   const painLocations = playerEntries
     .flatMap((entry) => {
@@ -203,14 +203,14 @@ export function buildPlayerAnalysisSummary({
         sources.push({
           ...sourceFor(sessionLogById, entry, 'player_session_entries', 'nachbereitung'),
           value: entry.postPainLocation.trim(),
-          label: 'Post Pain Location',
+          label: 'Beschwerden-Ort nach Training',
         })
       }
       if (entry.painLocation.trim()) {
         sources.push({
           ...sourceFor(sessionLogById, entry, 'player_session_entries', 'check-in'),
           value: entry.painLocation.trim(),
-          label: 'Pain Location',
+          label: 'Beschwerden-Ort',
         })
       }
 
