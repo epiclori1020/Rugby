@@ -97,6 +97,14 @@ const screenChecks = [
     },
     expectedTexts: ['Mehr / Einstellungen', 'Account, Sync, Backup'],
   },
+  {
+    name: 'Mehr / Returner',
+    navigate: async (page) => {
+      await clickButtonByLabelOrText(page, 'Mehr', 'Mehr / Returner')
+      await clickButtonByLabelOrText(page, 'Returner', 'Mehr / Returner')
+    },
+    expectedTexts: ['Mehr / Returner', 'Returner-Caps und Verlauf'],
+  },
 ]
 
 const forbiddenVisibleTexts = [

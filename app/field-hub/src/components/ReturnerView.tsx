@@ -85,6 +85,7 @@ function ReturnerPlayerCard({
   const suggestedDecision = suggestReturnerDecision(displayEntry)
   const canProgress = canConsiderReturnerProgression(displayEntry)
   const isConservative = suggestedDecision === 'rueckmelden' || displayEntry.decision === 'rueckmelden'
+  const savingReasonId = `${keyBase}-saving-reason`
 
   async function savePatch(patch: ReturnerEntryPatch, actionKey = 'field') {
     if (isSavingDisabled || savingActionRef.current === actionKey) {
@@ -133,7 +134,17 @@ function ReturnerPlayerCard({
         </span>
       </div>
 
-      <div className="checkin-controls post-session-controls">
+      {isSavingDisabled ? (
+        <p className="disabled-action-reason" id={savingReasonId}>
+          Speichern laeuft gerade.
+        </p>
+      ) : null}
+
+      <div
+        aria-busy={isSavingDisabled || undefined}
+        aria-describedby={isSavingDisabled ? savingReasonId : undefined}
+        className="checkin-controls post-session-controls"
+      >
         <label className="inline-field">
           <span>Aktuelle Stufe</span>
           <select

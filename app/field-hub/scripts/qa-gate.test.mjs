@@ -39,7 +39,10 @@ describe('qa-gate', () => {
     expect(betaPlan.at(0)?.name).toBe('supabase-audit')
     expect(betaPlan.at(-2)?.env).toMatchObject({ FIELD_HUB_SPRINT19_REQUIRE_AUTH: '1' })
     expect(betaPlan.at(-1)?.name).toBe('kiosk-e2e')
-    expect(betaPlan.at(-1)?.env).toMatchObject({ FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION: '1' })
+    expect(betaPlan.at(-1)?.env).toMatchObject({
+      FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION: '1',
+      FIELD_HUB_E2E_REQUIRE_PREVIEW: '1',
+    })
   })
 
   it('does not print secret env values in command logs', () => {

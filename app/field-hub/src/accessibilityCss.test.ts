@@ -19,7 +19,7 @@ describe('Sprint 18 accessibility CSS contracts', () => {
     expect(css).toContain('.icon-button:focus-visible')
     expect(css).toContain('.pdf-link:focus-visible')
     expect(css).toContain('.kiosk-exit-button:focus-visible')
-    expect(css).toContain('outline: 3px solid var(--of-color-focus-ring-soft)')
+    expect(css).toContain('outline: 3px solid var(--of-color-focus-ring)')
     expect(css).toContain('outline-offset: 2px')
   })
 

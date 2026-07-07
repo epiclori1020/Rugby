@@ -12,6 +12,7 @@ const baseUrl = process.env.FIELD_HUB_E2E_BASE_URL ?? `http://127.0.0.1:${defaul
 const email = process.env.FIELD_HUB_E2E_EMAIL
 const password = process.env.FIELD_HUB_E2E_PASSWORD
 const allowRemoteMutation = process.env.FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION === '1'
+const requirePreviewServer = process.env.FIELD_HUB_E2E_REQUIRE_PREVIEW === '1'
 
 class QaBlockedError extends Error {
   constructor(message) {
@@ -76,12 +77,15 @@ async function waitForServer(url, timeoutMs = 30_000) {
     await new Promise((resolveTimer) => setTimeout(resolveTimer, 250))
   }
 
-  throw new Error(`Dev-Server nicht erreichbar: ${url}`)
+  throw new Error(`${requirePreviewServer ? 'Preview' : 'Dev'}-Server nicht erreichbar: ${url}`)
 }
 
-function startDevServerIfNeeded() {
+function startAppServerIfNeeded() {
   if (process.env.FIELD_HUB_E2E_BASE_URL) {
     return null
+  }
+  if (requirePreviewServer && !existsSync(resolve(rootDir, 'dist/index.html'))) {
+    throw new QaBlockedError('FIELD_HUB_E2E_REQUIRE_PREVIEW=1 gesetzt, aber dist/index.html fehlt. Fuehre zuerst npm run build aus.')
   }
 
   const childEnv = { ...process.env }
@@ -89,7 +93,8 @@ function startDevServerIfNeeded() {
   delete childEnv.FIELD_HUB_E2E_PASSWORD
 
   const useProcessGroup = process.platform !== 'win32'
-  const child = spawn('npm', ['run', 'dev', '--', '--host', '127.0.0.1', '--port', defaultPort], {
+  const scriptName = requirePreviewServer ? 'preview' : 'dev'
+  const child = spawn('npm', ['run', scriptName, '--', '--host', '127.0.0.1', '--port', defaultPort], {
     cwd: rootDir,
     detached: useProcessGroup,
     env: childEnv,
@@ -235,7 +240,7 @@ async function main() {
     auth: { autoRefreshToken: false, persistSession: false },
   })
 
-  const devServer = startDevServerIfNeeded()
+  const appServer = startAppServerIfNeeded()
   let browser
   let playerId = null
   let playerName = null
@@ -377,7 +382,7 @@ async function main() {
     if (signedIn) {
       await supabase.auth.signOut()
     }
-    await stopDevServer(devServer)
+    await stopDevServer(appServer)
   }
 }
 

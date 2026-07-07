@@ -489,6 +489,14 @@ async function main() {
 
     await assertOfflineFallback(page)
 
+    const browserErrors = consoleMessages.filter(
+      (message) =>
+        message.startsWith('pageerror:') ||
+        (message.startsWith('error:') && !message.includes('Download the React DevTools')),
+    )
+    if (browserErrors.length > 0) {
+      throw new Error(`Browser-Konsole enthaelt Fehler: ${browserErrors.join('\n')}`)
+    }
     if (consoleMessages.length > 0 && process.env.FIELD_HUB_E2E_VERBOSE === '1') {
       console.warn(consoleMessages.join('\n'))
     }

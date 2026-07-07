@@ -126,7 +126,7 @@ button {
 
 .nav-button:focus-visible,
 .quick-action:focus-visible {
-  outline: 3px solid var(--of-color-focus-ring-soft);
+  outline: 3px solid var(--of-color-focus-ring);
   outline-offset: 2px;
 }
 
@@ -198,7 +198,7 @@ button {
   border: 1px solid var(--line);
   border-radius: var(--of-radius-sm);
   background: var(--surface);
-  color: var(--text);
+  color: var(--ink);
   cursor: pointer;
   display: grid;
   gap: 6px;
@@ -207,7 +207,7 @@ button {
 }
 
 .sync-status-trigger:focus-visible {
-  outline: 3px solid var(--of-color-focus-ring-soft);
+  outline: 3px solid var(--of-color-focus-ring);
   outline-offset: 2px;
 }
 
@@ -260,7 +260,7 @@ button {
 .sync-detail-summary {
   border: 1px solid var(--line);
   border-radius: var(--of-radius-sm);
-  background: var(--surface-2);
+  background: var(--surface-strong);
   display: flex;
   flex-wrap: wrap;
   gap: 10px;
@@ -1064,7 +1064,7 @@ button {
 }
 
 .search-box:focus-within {
-  outline: 3px solid var(--of-color-focus-ring-soft);
+  outline: 3px solid var(--of-color-focus-ring);
   outline-offset: 2px;
 }
 
@@ -1219,7 +1219,7 @@ button {
 }
 
 .player-list-item:focus-visible {
-  outline: 3px solid var(--of-color-focus-ring-soft);
+  outline: 3px solid var(--of-color-focus-ring);
   outline-offset: 2px;
 }
 
@@ -1524,7 +1524,7 @@ button {
   background: var(--surface-strong);
   border: 1px solid var(--line);
   border-radius: var(--of-radius-xs);
-  color: var(--text);
+  color: var(--ink);
   cursor: pointer;
   display: inline-flex;
   font-weight: 800;
@@ -2826,7 +2826,7 @@ button {
 }
 
 .training-player-scan-row:focus-visible {
-  outline: 3px solid var(--of-color-focus-ring-soft);
+  outline: 3px solid var(--of-color-focus-ring);
   outline-offset: 2px;
 }
 
@@ -2912,7 +2912,7 @@ button {
 .segmented:focus-visible,
 .number-chip:focus-visible,
 .traffic-chip:focus-visible {
-  outline: 3px solid var(--of-color-focus-ring-soft);
+  outline: 3px solid var(--of-color-focus-ring);
   outline-offset: 2px;
 }
 
@@ -3002,7 +3002,7 @@ button {
 
 .icon-button:focus-visible,
 .file-upload-control:focus-within {
-  outline: 3px solid var(--of-color-focus-ring-soft);
+  outline: 3px solid var(--of-color-focus-ring);
   outline-offset: 2px;
 }
 

@@ -2,7 +2,13 @@ import { dirname, resolve } from 'node:path'
 import { fileURLToPath } from 'node:url'
 import { describe, expect, it } from 'vitest'
 
-import { auditConfigText, auditMigrations, auditServiceRoleReferences, runStaticAudit } from './supabase-audit.mjs'
+import {
+  auditConfigText,
+  auditMigrations,
+  auditParentOwnershipCoverage,
+  auditServiceRoleReferences,
+  runStaticAudit,
+} from './supabase-audit.mjs'
 
 const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), '../../..')
 
@@ -54,6 +60,53 @@ enable_signup = true
 
     expect(result.ok).toBe(false)
     expect(failureIds(result)).toContain('supabase.rls.players')
+  })
+
+  it('rejects child insert policies that only check auth uid and user id', () => {
+    const result = auditParentOwnershipCoverage(
+      `
+        create policy "Users can insert own player_session_entries"
+        on public.player_session_entries for insert to authenticated
+        with check ((select auth.uid()) = user_id);
+      `,
+      'player_session_entries',
+      'insert',
+    )
+
+    expect(result.status).toBe('failed')
+    expect(result.message).toContain('player_id')
+    expect(result.message).toContain('session_log_id')
+  })
+
+  it('accepts child insert policies that verify player and session parents', () => {
+    const result = auditParentOwnershipCoverage(
+      `
+        create policy "Users can insert own player_session_entries"
+        on public.player_session_entries for insert to authenticated
+        with check (
+          (select auth.uid()) = user_id
+          and exists (
+            select 1
+            from public.players
+            where players.id = player_session_entries.player_id
+              and players.user_id = player_session_entries.user_id
+          )
+          and (
+            session_log_id is null
+            or exists (
+              select 1
+              from public.session_logs
+              where session_logs.id = player_session_entries.session_log_id
+                and session_logs.user_id = player_session_entries.user_id
+            )
+          )
+        );
+      `,
+      'player_session_entries',
+      'insert',
+    )
+
+    expect(result.status).toBe('passed')
   })
 
   it('allows only Public/Kiosk anon access and rejects service role drift', () => {

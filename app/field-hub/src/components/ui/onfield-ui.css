@@ -48,7 +48,7 @@
 .of-segmented-option:focus-visible,
 .of-number-scale-option:focus-visible,
 .of-sheet-close:focus-visible {
-  outline: 3px solid var(--of-color-focus-ring-soft);
+  outline: 3px solid var(--of-color-focus-ring);
   outline-offset: 2px;
 }
 

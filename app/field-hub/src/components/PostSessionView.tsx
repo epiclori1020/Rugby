@@ -480,6 +480,7 @@ function PostSessionPlayerRow({
   const followUps = derivePostSessionFollowUps(entry, progressEntry)
   const suggestedNextStep = suggestNextStep(entry, progress)
   const isStop = entry.e2Decision === 'D' || entry.e2Decision === 'physio' || entry.nextStep === 'klaeren'
+  const savingReasonId = `${entry.id}-post-session-saving-reason`
 
   function handleProgressBlur(field: keyof Pick<ProgressEntry, 'mainExercise' | 'load' | 'reps' | 'rpe' | 'powerOrSprint' | 'conditioning' | 'note'>) {
     return (event: FormEvent<HTMLInputElement | HTMLTextAreaElement>) => {
@@ -503,7 +504,17 @@ function PostSessionPlayerRow({
 
       <WarningSummary warning={warning} />
 
-      <div className="checkin-controls post-session-controls">
+      {isSavingDisabled ? (
+        <p className="disabled-action-reason" id={savingReasonId}>
+          Speichern laeuft gerade.
+        </p>
+      ) : null}
+
+      <div
+        aria-busy={isSavingDisabled || undefined}
+        aria-describedby={isSavingDisabled ? savingReasonId : undefined}
+        className="checkin-controls post-session-controls"
+      >
         <div className="control-group" aria-label={`sRPE ${player.name}`}>
           <span>sRPE</span>
           <div className="button-row compact pain-scale">

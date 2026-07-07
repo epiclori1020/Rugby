@@ -42,6 +42,40 @@ const allowedAnonFunctionFragments = [
   'private.is_active_public_checkin_link',
   'private.is_active_public_checkin_link_player',
 ]
+const parentOwnershipRequirements = {
+  player_session_entries: {
+    insert: ['player_id', 'session_log_id'],
+    update: ['player_id', 'session_log_id'],
+  },
+  progress_entries: {
+    insert: ['player_id', 'session_log_id'],
+    update: ['player_id', 'session_log_id'],
+  },
+  baseline_entries: {
+    insert: ['player_id', 'session_log_id'],
+    update: ['player_id', 'session_log_id'],
+  },
+  returner_entries: {
+    insert: ['player_id', 'session_log_id'],
+    update: ['player_id', 'session_log_id'],
+  },
+  session_block_logs: {
+    insert: ['session_log_id'],
+    update: ['session_log_id'],
+  },
+  metric_results: {
+    insert: ['player_id', 'session_log_id'],
+    update: ['player_id', 'session_log_id'],
+  },
+  exercise_results: {
+    insert: ['player_id', 'session_log_id'],
+    update: ['player_id', 'session_log_id'],
+  },
+  player_exposure_summaries: {
+    insert: ['player_id', 'session_log_id'],
+    update: ['player_id', 'session_log_id'],
+  },
+}
 
 function stripInlineTomlComment(value) {
   let inString = false
@@ -181,6 +215,34 @@ function hasAuthenticatedOwnerPolicy(normalizedSql, tableName, action) {
   )
 }
 
+function hasParentOwnershipCheck(policyBlock, tableName, parentColumn) {
+  const parentTable = parentColumn === 'player_id' ? 'players' : 'session_logs'
+  return (
+    policyBlock.includes(`from public.${parentTable}`) &&
+    policyBlock.includes(`${parentTable}.id = ${tableName}.${parentColumn}`) &&
+    policyBlock.includes(`${parentTable}.user_id = ${tableName}.user_id`)
+  )
+}
+
+export function auditParentOwnershipCoverage(sqlText, tableName, action) {
+  const normalizedSql = normalizeSql(sqlText)
+  const requiredParents = parentOwnershipRequirements[tableName]?.[action] ?? []
+  const blocks = policyBlocksFor(normalizedSql, tableName, action, 'authenticated')
+  const missingParents = requiredParents.filter(
+    (parentColumn) => !blocks.some((block) => hasParentOwnershipCheck(block, tableName, parentColumn)),
+  )
+
+  return missingParents.length === 0
+    ? passed(
+        `supabase.rls.${tableName}.${action}.parent_ownership`,
+        `${tableName} ${action} validates parent ownership.`,
+      )
+    : failed(
+        `supabase.rls.${tableName}.${action}.parent_ownership`,
+        `${tableName} ${action} is missing parent ownership checks: ${missingParents.join(', ')}.`,
+      )
+}
+
 function hasAnonPolicy(normalizedSql, tableName, action) {
   return policyBlocksFor(normalizedSql, tableName, action, 'anon').length > 0
 }
@@ -195,6 +257,10 @@ function auditTableCoverage(normalizedSql, tableName, authenticatedActions, anon
   for (const action of authenticatedActions) {
     if (!hasAuthenticatedOwnerPolicy(normalizedSql, tableName, action)) {
       missing.push(`authenticated ${action}`)
+    }
+    const parentResult = auditParentOwnershipCoverage(normalizedSql, tableName, action)
+    if (parentResult.status === 'failed') {
+      missing.push(`authenticated ${action} parent ownership`)
     }
   }
 
