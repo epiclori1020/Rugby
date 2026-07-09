@@ -199,6 +199,8 @@ Impact:
 
 ### R2 - Typo-/Weight-/Numeric-Refactor
 
+Status: Abgeschlossen am 2026-07-09.
+
 Ziel: Den Execution-Drift bei Typografie beheben: hart kodierte Groessen und 800/900-Gewichtswand auf Tokens und klare Hierarchie zurueckfuehren.
 
 Scope drin:
@@ -223,17 +225,20 @@ Deliverables und Dateien:
 - Modify: `app/field-hub/src/components/onfield/OnFieldComponents.test.tsx`
 - Modify: `app/field-hub/src/accessibilityCss.test.ts`
 
+Umsetzungshinweis:
+- Tatsaechlich geaendert wurden die screen-weiten CSS-Dateien, `Scales.tsx`, `SessionHeader.tsx` und die relevanten Token-/Komponententests. `Button.tsx`, `Status.tsx`, `States.tsx`, `Rows.tsx` und `accessibilityCss.test.ts` brauchten keine Codeaenderung, weil dort keine R2-relevanten rohen Fontgroessen/-gewichte gefunden wurden.
+
 Abhaengigkeiten:
 - R1A. R1B kann parallel laufen, solange R2 keine Toggle-UI voraussetzt.
 
 Definition of Done:
-- [ ] Geaenderte Komponenten nutzen Typo-/Weight-Tokens statt roher `font-size`.
-- [ ] Keine neuen 850/900-Deklarationen.
-- [ ] Sichtbare Screens bleiben bei max. 3 Textgewichten.
-- [ ] `of-num` ist fuer KPI-/Score-/Tabellenzahlen verfuegbar.
-- [ ] Body-Text ist 400/500, Labels 600, Hauptzahlen/Titel 700/800.
-- [ ] Status-Chips behalten Text plus Farbe/Glyph.
-- [ ] iPhone/iPad-Layouts verlieren keine Funktion.
+- [x] Geaenderte Komponenten nutzen Typo-/Weight-Tokens statt roher `font-size`.
+- [x] Keine neuen 850/900-Deklarationen.
+- [x] Sichtbare Screens bleiben bei max. 3 Textgewichten.
+- [x] `of-num` ist fuer KPI-/Score-/Tabellenzahlen verfuegbar.
+- [x] Body-Text ist 400/500, Labels 600, Hauptzahlen/Titel 700/800.
+- [x] Status-Chips behalten Text plus Farbe/Glyph.
+- [x] iPhone/iPad-Layouts verlieren keine Funktion.
 
 Aufwand/Risiko/QA:
 - Aufwand: L.

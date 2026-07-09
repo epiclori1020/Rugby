@@ -10,6 +10,13 @@ function readSource(path: string) {
   return readFileSync(join(projectRoot, path), 'utf8')
 }
 
+function readRedesignCssSources() {
+  return [
+    ['src/index.css', readSource('src/index.css')],
+    ['src/components/ui/onfield-ui.css', readSource('src/components/ui/onfield-ui.css')],
+  ] as const
+}
+
 function extractToken(source: string, tokenName: string) {
   const match = source.match(new RegExp(`${tokenName}:\\s*([^;]+);`))
 
@@ -167,5 +174,23 @@ describe('OnField design tokens', () => {
     const indexCss = readSource('src/index.css')
 
     expect(indexCss.match(/#[0-9A-Fa-f]{3,8}|rgba?\(/g)).toBeNull()
+  })
+
+  it('keeps Redesign v2 screen typography routed through tokens', () => {
+    const rawFontSizePattern = /font-size:\s*(?:clamp\(|[0-9.]+(?:rem|px))/g
+
+    for (const [path, source] of readRedesignCssSources()) {
+      expect(source.match(rawFontSizePattern), `${path} contains raw font-size values`).toBeNull()
+    }
+  })
+
+  it('keeps Redesign v2 screen font weights routed through tokens', () => {
+    const rawFontWeightPattern = /font-weight:\s*(?:[0-9]{3}|bold|normal)\b/g
+    const overweightPattern = /font-weight:\s*(?:850|900)\b/g
+
+    for (const [path, source] of readRedesignCssSources()) {
+      expect(source.match(overweightPattern), `${path} contains forbidden 850/900 weights`).toBeNull()
+      expect(source.match(rawFontWeightPattern), `${path} contains raw font-weight values`).toBeNull()
+    }
   })
 })

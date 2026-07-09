@@ -10,7 +10,7 @@
   padding: 10px 14px;
   text-decoration: none;
   font: inherit;
-  font-weight: 850;
+  font-weight: var(--of-font-weight-semibold);
   transition:
     background-color var(--of-motion-duration-tap) var(--of-motion-ease-standard),
     border-color var(--of-motion-duration-tap) var(--of-motion-ease-standard),
@@ -76,7 +76,7 @@
   display: block;
   margin-top: var(--of-space-xs);
   color: var(--of-color-text-secondary);
-  font-size: 0.82rem;
+  font-size: var(--of-font-size-caption);
   line-height: 1.35;
 }
 
@@ -96,7 +96,7 @@
   color: var(--of-color-brand-primary);
   cursor: pointer;
   font: inherit;
-  font-weight: 850;
+  font-weight: var(--of-font-weight-semibold);
   padding: 10px 12px;
   transition:
     background-color var(--of-motion-duration-tap) var(--of-motion-ease-standard),
@@ -120,6 +120,8 @@
 
 .of-number-scale-option {
   min-width: 44px;
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 .of-pain-scale .of-number-scale-option {
@@ -135,8 +137,8 @@
   align-items: center;
   gap: var(--of-space-xs);
   padding: 5px 10px;
-  font-size: 0.82rem;
-  font-weight: 850;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
   line-height: 1.2;
 }
 
@@ -195,7 +197,7 @@
 .of-empty-state h3 {
   margin: 0;
   color: var(--of-color-text-primary);
-  font-size: 1rem;
+  font-size: var(--of-font-size-body);
 }
 
 .of-safety-body,
@@ -239,7 +241,7 @@
   display: flex;
   align-items: center;
   gap: var(--of-space-sm);
-  font-weight: 850;
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .of-status-dot {
@@ -305,7 +307,7 @@
 .of-sheet-header h2 {
   margin: 0;
   color: var(--of-color-text-primary);
-  font-size: 1.15rem;
+  font-size: var(--of-font-size-section);
 }
 
 .of-sheet-header p {
@@ -380,15 +382,15 @@
 
 .of-topbar-eyebrow {
   color: var(--of-color-text-secondary);
-  font-size: 0.85rem;
-  font-weight: 800;
+  font-size: var(--of-font-size-secondary);
+  font-weight: var(--of-font-weight-semibold);
   margin: 0;
   text-transform: uppercase;
 }
 
 .of-topbar-title {
   color: var(--of-color-text-primary);
-  font-size: 2rem;
+  font-size: var(--of-font-size-display);
   letter-spacing: 0;
   line-height: 1.12;
   margin: 0;
@@ -457,8 +459,8 @@
 .of-athlete-row-meta span,
 .of-task-queue-row-meta span {
   color: var(--of-color-text-secondary);
-  font-size: 0.86rem;
-  font-weight: 800;
+  font-size: var(--of-font-size-secondary);
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .of-session-header-metric {
@@ -473,13 +475,13 @@
 
 .of-session-header-metric strong {
   color: var(--of-color-text-primary);
-  font-size: 1.12rem;
+  font-size: var(--of-font-size-metric-m);
 }
 
 .of-session-header-metric span {
   color: var(--of-color-text-secondary);
-  font-size: 0.78rem;
-  font-weight: 800;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
   text-transform: uppercase;
 }
 

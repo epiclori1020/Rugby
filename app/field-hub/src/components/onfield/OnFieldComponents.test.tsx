@@ -36,6 +36,7 @@ describe('Sprint 5 OnField component compositions', () => {
 
     expect(markup).toContain('KW28 Dienstag')
     expect(markup).toContain('Anwesend')
+    expect(markup).toContain('class="of-num"')
     expect(markup).not.toContain('chart')
   })
 

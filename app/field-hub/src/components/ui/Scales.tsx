@@ -14,7 +14,7 @@ export function NumberScale({ label, max, min = 1, onChange, value }: NumberScal
       {values.map((option) => (
         <button
           aria-pressed={value === option}
-          className="of-number-scale-option"
+          className="of-number-scale-option of-num"
           key={option}
           type="button"
           onClick={() => onChange(option)}

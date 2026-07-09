@@ -59,8 +59,8 @@ button {
 
 .eyebrow {
   color: var(--muted);
-  font-size: 0.85rem;
-  font-weight: 700;
+  font-size: var(--of-font-size-secondary);
+  font-weight: var(--of-font-weight-bold);
   margin: 0;
   text-transform: uppercase;
 }
@@ -75,7 +75,7 @@ button {
 }
 
 .brand-block h1 {
-  font-size: 1.55rem;
+  font-size: var(--of-font-size-display);
   line-height: 1.12;
 }
 
@@ -180,7 +180,7 @@ button {
 }
 
 .page-title h2 {
-  font-size: 2rem;
+  font-size: var(--of-font-size-display);
 }
 
 .sync-status {
@@ -194,7 +194,7 @@ button {
 }
 
 .sync-notice {
-  font-weight: 800;
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .sync-status-trigger {
@@ -220,12 +220,12 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 850;
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .sync-status-trigger > span:last-child {
   color: var(--muted);
-  font-size: 0.86rem;
+  font-size: var(--of-font-size-secondary);
   line-height: 1.35;
 }
 
@@ -291,8 +291,8 @@ button {
   border-radius: var(--of-radius-sm);
   background: var(--of-color-brand-primary-soft);
   color: var(--brand);
-  font-size: 0.9rem;
-  font-weight: 850;
+  font-size: var(--of-font-size-secondary);
+  font-weight: var(--of-font-weight-semibold);
   margin: -8px 0 18px;
   padding: 10px 12px;
 }
@@ -322,8 +322,8 @@ button {
 
 .session-workspace-context-detail {
   color: var(--of-color-text-secondary);
-  font-size: 0.88rem;
-  font-weight: 800;
+  font-size: var(--of-font-size-secondary);
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .session-workspace-sync-status {
@@ -361,7 +361,7 @@ button {
   display: flex;
   align-items: center;
   gap: 8px;
-  font-weight: 800;
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .status-dot {
@@ -552,23 +552,23 @@ button {
 
 .brand-surface-kicker {
   color: var(--of-color-brand-secondary);
-  font-size: 0.82rem;
-  font-weight: 900;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
   text-transform: uppercase;
 }
 
 .brand-surface h2 {
   margin: 0;
   color: var(--ink);
-  font-size: clamp(1.45rem, 2.8vw, 2.15rem);
+  font-size: var(--of-font-size-display);
   line-height: 1.08;
   letter-spacing: 0;
 }
 
 .brand-surface-claim {
   color: var(--ink);
-  font-size: 1.02rem;
-  font-weight: 850;
+  font-size: var(--of-font-size-body);
+  font-weight: var(--of-font-weight-semibold);
   line-height: 1.35;
 }
 
@@ -618,7 +618,7 @@ button {
 .brand-product-mini span {
   background: var(--of-color-surface-muted);
   color: var(--muted);
-  font-weight: 800;
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .brand-product-mini strong {
@@ -632,7 +632,7 @@ button {
 }
 
 .panel h3 {
-  font-size: 1.2rem;
+  font-size: var(--of-font-size-section);
 }
 
 .metric-grid {
@@ -670,7 +670,9 @@ button {
 }
 
 .metric strong {
-  font-size: 1.45rem;
+  font-size: var(--of-font-size-metric-xl);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 .metric small {
@@ -689,7 +691,7 @@ button {
   border-radius: var(--of-radius-pill);
   background: var(--brand-soft);
   color: var(--brand);
-  font-weight: 800;
+  font-weight: var(--of-font-weight-semibold);
   padding: 8px 12px;
 }
 
@@ -699,7 +701,7 @@ button {
 }
 
 .tag.compact {
-  font-size: 0.76rem;
+  font-size: var(--of-font-size-caption);
   padding: 5px 8px;
 }
 
@@ -715,8 +717,8 @@ button {
   align-items: center;
   color: var(--muted);
   display: inline-flex;
-  font-size: 0.82rem;
-  font-weight: 700;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-bold);
   gap: 0.4rem;
   min-width: 0;
   text-transform: uppercase;
@@ -737,7 +739,7 @@ button {
 .quick-action {
   flex: 1 1 180px;
   justify-content: space-between;
-  font-weight: 800;
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .primary-quick-action {
@@ -774,8 +776,8 @@ button {
 .today-goals > span,
 .today-documents h4 {
   color: var(--muted);
-  font-size: 0.82rem;
-  font-weight: 850;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
   margin: 0;
   text-transform: uppercase;
 }
@@ -819,7 +821,7 @@ button {
 
 .timeline-row > span {
   color: var(--brand);
-  font-weight: 900;
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .timeline-row strong,
@@ -857,8 +859,8 @@ button {
 .library-list-item span,
 .source-box span {
   color: var(--muted);
-  font-size: 0.82rem;
-  font-weight: 800;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
   text-transform: uppercase;
 }
 
@@ -911,8 +913,8 @@ button {
   display: inline-flex;
   align-items: center;
   gap: 6px;
-  font-size: 0.82rem;
-  font-weight: 850;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
   line-height: 1.2;
   padding: 6px 10px;
 }
@@ -940,14 +942,14 @@ button {
 }
 
 .analysis-question-card h3 {
-  font-size: 1rem;
+  font-size: var(--of-font-size-body);
   line-height: 1.25;
   margin: 0;
 }
 
 .analysis-question-card > strong {
   color: var(--ink);
-  font-size: 1.55rem;
+  font-size: var(--of-font-size-display);
   font-variant-numeric: tabular-nums;
   line-height: 1.1;
 }
@@ -971,7 +973,9 @@ button {
   width: 100%;
   min-width: 720px;
   border-collapse: collapse;
-  font-size: 0.92rem;
+  font-size: var(--of-font-size-secondary);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
 }
 
 .analysis-table th,
@@ -984,8 +988,8 @@ button {
 
 .analysis-table th {
   color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 900;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
   text-transform: uppercase;
 }
 
@@ -1027,7 +1031,7 @@ button {
 
 .analysis-distribution-row span {
   color: var(--muted);
-  font-weight: 850;
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .analysis-distribution-row.traffic-green .analysis-bar-fill {
@@ -1111,7 +1115,7 @@ button {
   background: var(--of-color-surface-default);
   color: var(--brand);
   cursor: pointer;
-  font-weight: 850;
+  font-weight: var(--of-font-weight-semibold);
   padding: 8px 12px;
   transition:
     background-color var(--of-motion-duration-tap) var(--of-motion-ease-standard),
@@ -1269,7 +1273,7 @@ button {
   color: var(--brand);
   display: inline-grid;
   place-items: center;
-  font-weight: 900;
+  font-weight: var(--of-font-weight-bold);
   object-fit: cover;
 }
 
@@ -1439,8 +1443,8 @@ button {
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 800;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
   padding: 3px 8px;
 }
 
@@ -1458,8 +1462,8 @@ button {
   align-items: center;
   cursor: pointer;
   display: flex;
-  font-size: 0.9rem;
-  font-weight: 850;
+  font-size: var(--of-font-size-secondary);
+  font-weight: var(--of-font-weight-semibold);
   justify-content: space-between;
   min-height: 44px;
 }
@@ -1467,8 +1471,8 @@ button {
 .post-session-secondary-section > summary::after {
   color: var(--muted);
   content: '+';
-  font-size: 1.1rem;
-  font-weight: 900;
+  font-size: var(--of-font-size-section);
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .post-session-secondary-section[open] > summary::after {
@@ -1510,8 +1514,8 @@ button {
   border: 1px solid var(--line);
   border-radius: 999px;
   color: var(--muted);
-  font-size: 0.72rem;
-  font-weight: 850;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
   padding: 3px 7px;
 }
 
@@ -1547,7 +1551,9 @@ button {
   color: var(--ink);
   cursor: pointer;
   display: inline-flex;
-  font-weight: 800;
+  font-weight: var(--of-font-weight-semibold);
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
   justify-content: center;
   min-height: 44px;
   min-width: 44px;
@@ -1595,8 +1601,8 @@ button {
 
 .profile-test-card span {
   color: var(--muted);
-  font-size: 0.88rem;
-  font-weight: 750;
+  font-size: var(--of-font-size-secondary);
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .profile-test-card input {
@@ -1623,7 +1629,7 @@ button {
 
 .player-analysis-card h5 {
   margin: 0;
-  font-size: 0.92rem;
+  font-size: var(--of-font-size-secondary);
 }
 
 .player-analysis-metrics .metric {
@@ -1662,7 +1668,7 @@ button {
 .player-analysis-source,
 .compact-empty {
   color: var(--muted);
-  font-size: 0.85rem;
+  font-size: var(--of-font-size-secondary);
 }
 
 .player-analysis-source {
@@ -1724,7 +1730,7 @@ button {
   background: transparent;
   color: var(--brand);
   font: inherit;
-  font-weight: 850;
+  font-weight: var(--of-font-weight-semibold);
   padding: 0;
   text-decoration: underline;
   text-underline-offset: 3px;
@@ -1770,7 +1776,7 @@ button {
 
 .checkin-player-group h4 {
   color: var(--muted);
-  font-size: 0.88rem;
+  font-size: var(--of-font-size-secondary);
   letter-spacing: 0;
   margin: 0;
 }
@@ -1849,7 +1855,7 @@ button {
 }
 
 .checkin-roster-counts .metric strong {
-  font-size: 1.25rem;
+  font-size: var(--of-font-size-section);
 }
 
 .checkin-roster-groups,
@@ -1861,7 +1867,7 @@ button {
 
 .checkin-roster-group h4 {
   color: var(--muted);
-  font-size: 0.88rem;
+  font-size: var(--of-font-size-secondary);
   letter-spacing: 0;
   margin: 0;
 }
@@ -1931,8 +1937,8 @@ button {
   display: inline-flex;
   align-items: center;
   padding: 3px 10px;
-  font-size: 0.78rem;
-  font-weight: 900;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .roster-traffic-chip.traffic-green {
@@ -1966,7 +1972,7 @@ button {
   color: var(--brand);
   cursor: pointer;
   font: inherit;
-  font-weight: 850;
+  font-weight: var(--of-font-weight-semibold);
   padding: 8px 10px;
 }
 
@@ -2184,7 +2190,7 @@ button {
   display: grid;
   gap: 7px;
   color: var(--muted);
-  font-weight: 800;
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .inline-field input,
@@ -2230,7 +2236,7 @@ button {
   color: var(--brand);
   cursor: pointer;
   font: inherit;
-  font-weight: 850;
+  font-weight: var(--of-font-weight-semibold);
   padding: 10px 12px;
   transition:
     background-color var(--of-motion-duration-tap) var(--of-motion-ease-standard),
@@ -2296,8 +2302,8 @@ button {
 .action-feedback {
   min-height: 22px;
   color: var(--muted);
-  font-size: 0.84rem;
-  font-weight: 850;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
   margin: 10px 0 0;
 }
 
@@ -2313,8 +2319,8 @@ button {
   color: var(--of-color-status-warning-text);
   display: flex;
   flex-wrap: wrap;
-  font-size: 0.9rem;
-  font-weight: 850;
+  font-size: var(--of-font-size-secondary);
+  font-weight: var(--of-font-weight-semibold);
   gap: 10px;
   justify-content: space-between;
   padding: 10px 12px;
@@ -2324,8 +2330,8 @@ button {
   border-radius: var(--of-radius-pill);
   background: var(--brand-soft);
   color: var(--brand);
-  font-size: 0.78rem;
-  font-weight: 900;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
   padding: 6px 9px;
 }
 
@@ -2378,7 +2384,7 @@ button {
 .guidance-section h4,
 .guidance-legend summary {
   margin: 0;
-  font-size: 0.98rem;
+  font-size: var(--of-font-size-body);
 }
 
 .guidance-list {
@@ -2432,8 +2438,8 @@ button {
 
 .guidance-summary-main small {
   color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 850;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .guidance-summary-tags {
@@ -2451,8 +2457,8 @@ button {
   border-radius: var(--of-radius-pill);
   background: var(--surface-strong);
   color: var(--ink);
-  font-size: 0.76rem;
-  font-weight: 850;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
   line-height: 1.2;
   max-width: 100%;
   overflow-wrap: anywhere;
@@ -2523,8 +2529,8 @@ button {
   border-radius: var(--of-radius-pill);
   background: var(--surface-strong);
   color: var(--ink);
-  font-size: 0.78rem;
-  font-weight: 850;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
   padding: 4px 8px;
 }
 
@@ -2560,8 +2566,8 @@ button {
 
 .guidance-copy dt {
   color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 850;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .guidance-copy dd {
@@ -2576,7 +2582,7 @@ button {
 
 .guidance-legend summary {
   cursor: pointer;
-  font-weight: 850;
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .guidance-legend-grid {
@@ -2706,8 +2712,8 @@ button {
 }
 
 .live-step-work p {
-  font-size: 1.08rem;
-  font-weight: 850;
+  font-size: var(--of-font-size-body);
+  font-weight: var(--of-font-weight-semibold);
   line-height: 1.45;
 }
 
@@ -2804,7 +2810,7 @@ button {
 .mapping-detail summary {
   color: var(--brand);
   cursor: pointer;
-  font-weight: 900;
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .mapping-detail p {
@@ -2900,7 +2906,7 @@ button {
   display: grid;
   gap: 6px;
   color: var(--muted);
-  font-weight: 800;
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .field-form input,
@@ -2968,7 +2974,7 @@ button {
   padding: 10px 14px;
   text-decoration: none;
   font: inherit;
-  font-weight: 850;
+  font-weight: var(--of-font-weight-semibold);
   transition:
     background-color var(--of-motion-duration-tap) var(--of-motion-ease-standard),
     border-color var(--of-motion-duration-tap) var(--of-motion-ease-standard),
@@ -3062,7 +3068,7 @@ button {
   display: grid;
   gap: 8px;
   padding: 14px;
-  font-weight: 850;
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .file-upload-control input {
@@ -3196,11 +3202,11 @@ code {
 .library-section h4,
 .pdf-list h4 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--of-font-size-body);
 }
 
 .pdf-note {
-  font-size: 0.92rem;
+  font-size: var(--of-font-size-secondary);
 }
 
 .library-section ul {
@@ -3249,8 +3255,8 @@ code {
 
 .pdf-link small {
   color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 800;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .pdf-viewer-backdrop,
@@ -3315,8 +3321,8 @@ code {
 
 .pdf-viewer-toolbar span {
   color: var(--muted);
-  font-size: 0.78rem;
-  font-weight: 800;
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
   text-transform: uppercase;
 }
 
@@ -3348,8 +3354,8 @@ code {
   color: var(--muted);
   display: flex;
   flex-wrap: wrap;
-  font-size: 0.88rem;
-  font-weight: 800;
+  font-size: var(--of-font-size-secondary);
+  font-weight: var(--of-font-weight-semibold);
   gap: 10px;
   justify-content: space-between;
   padding: 12px;
@@ -3428,7 +3434,7 @@ code {
 .public-checkin-panel h2,
 .kiosk-checkin-panel h2 {
   margin: 0;
-  font-size: 1.85rem;
+  font-size: var(--of-font-size-display);
   letter-spacing: 0;
 }
 
@@ -3475,14 +3481,14 @@ code {
 
 .self-checkin-progress-copy span {
   color: var(--muted);
-  font-size: 0.86rem;
-  font-weight: 850;
+  font-size: var(--of-font-size-secondary);
+  font-weight: var(--of-font-weight-semibold);
   text-transform: uppercase;
 }
 
 .self-checkin-progress-copy strong {
   color: var(--ink);
-  font-size: 1rem;
+  font-size: var(--of-font-size-body);
 }
 
 .self-checkin-progress-track {
@@ -3510,7 +3516,7 @@ code {
 .self-checkin-complete h3 {
   margin: 0;
   color: var(--ink);
-  font-size: 1.25rem;
+  font-size: var(--of-font-size-section);
   line-height: 1.2;
   letter-spacing: 0;
 }
@@ -3567,12 +3573,12 @@ code {
 
 .self-checkin-review dt {
   color: var(--muted);
-  font-weight: 850;
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .self-checkin-review dd {
   color: var(--ink);
-  font-weight: 750;
+  font-weight: var(--of-font-weight-semibold);
 }
 
 .self-checkin-complete {
@@ -3616,7 +3622,7 @@ code {
   align-items: center;
   gap: 8px;
   font: inherit;
-  font-weight: 850;
+  font-weight: var(--of-font-weight-semibold);
   padding: 10px 14px;
 }
 
@@ -3655,7 +3661,7 @@ code {
 
 .public-checkin-share-panel h4 {
   margin: 0;
-  font-size: 1rem;
+  font-size: var(--of-font-size-body);
   letter-spacing: 0;
 }
 
@@ -3673,7 +3679,7 @@ code {
 .public-checkin-share-warning {
   margin: 2px 0 0;
   color: var(--muted);
-  font-size: 0.92rem;
+  font-size: var(--of-font-size-secondary);
   line-height: 1.4;
 }
 
@@ -3709,12 +3715,12 @@ code {
 }
 
 .disabled-action-reason {
-  font-size: 0.92rem;
+  font-size: var(--of-font-size-secondary);
   line-height: 1.45;
 }
 
 .privacy-note {
-  font-size: 0.92rem;
+  font-size: var(--of-font-size-secondary);
   line-height: 1.45;
 }
 
@@ -3882,8 +3888,8 @@ code {
 
   .nav-button span {
     display: inline;
-    font-size: 0.76rem;
-    font-weight: 850;
+    font-size: var(--of-font-size-caption);
+    font-weight: var(--of-font-weight-semibold);
     line-height: 1.05;
   }
 
@@ -3982,7 +3988,7 @@ code {
   }
 
   .page-title h2 {
-    font-size: 1.55rem;
+    font-size: var(--of-font-size-display);
   }
 
   .page-title {

@@ -34,7 +34,7 @@ export function SessionHeader({ action, meta = [], metrics = [], subtitle, title
         <div className="of-session-header-metrics">
           {metrics.map((metric) => (
             <div className="of-session-header-metric" key={metric.label}>
-              <strong>{metric.value}</strong>
+              <strong className="of-num">{metric.value}</strong>
               <span>{metric.label}</span>
             </div>
           ))}
