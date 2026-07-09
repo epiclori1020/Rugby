@@ -401,16 +401,16 @@ Abhaengigkeiten:
 - R3 und R4 sollten vor externer Beta gemerged sein; R5 kann lokal nach R1A/R1B/R2 gebaut werden, darf aber nicht als launch-ready gelten, wenn P0 offen ist.
 
 Definition of Done:
-- [ ] `Heute` zeigt keine neue Card-Wall.
-- [ ] First View hat eine dominante Zahl und genau eine dominante Primaeraktion.
-- [ ] Athleten-/Warnobjekte sind Rows mit Readiness-Dot, Name, Position, Sparkline/Trend oder kompakter Ersatz, Status-Chip.
-- [ ] Severity-Sortierung: Rot, Gelb, Returner, offen.
-- [ ] `of-num` fuer Scoreboard-Zahlen.
-- [ ] Geaenderte Komponenten nutzen Typo-Tokens und max. 3 Gewichte.
-- [ ] iPhone gestapelt mit Progressive Disclosure; iPad 2-Spalten ohne Funktionsverlust.
-- [ ] Dark Mode rendert ohne unlesbare Flaechen.
-- [ ] Keine Oxblood-/Hero-/Neon-Flaeche in Live-Screen.
-- [ ] App-Screenshots sind gegen Figma-Frames abgeglichen; relevante Abweichungen sind behoben oder dokumentiert.
+- [x] `Heute` zeigt keine neue Card-Wall.
+- [x] First View hat eine dominante Zahl und genau eine dominante Primaeraktion.
+- [x] Athleten-/Warnobjekte sind Rows mit Readiness-Dot, Name, Position, Sparkline/Trend oder kompakter Ersatz, Status-Chip.
+- [x] Severity-Sortierung: Rot, Gelb, Returner, offen.
+- [x] `of-num` fuer Scoreboard-Zahlen.
+- [x] Geaenderte Komponenten nutzen Typo-Tokens und max. 3 Gewichte.
+- [x] iPhone gestapelt mit Progressive Disclosure; iPad 2-Spalten ohne Funktionsverlust.
+- [x] Dark Mode rendert ohne unlesbare Flaechen.
+- [x] Keine Oxblood-/Hero-/Neon-Flaeche in Live-Screen.
+- [x] App-Screenshots sind gegen Figma-Frames abgeglichen; relevante Abweichungen sind behoben oder dokumentiert.
 
 Aufwand/Risiko/QA:
 - Aufwand: L.
