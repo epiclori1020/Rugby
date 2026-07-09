@@ -1,7 +1,8 @@
 import { useCallback } from 'react'
-import { ArrowRight, CalendarDays, ClipboardCheck, Dumbbell, FileText, ShieldAlert, Users } from 'lucide-react'
-import { routeKey, routes, type AppRoute } from '../navigation'
+import { ArrowRight, CalendarDays, ClipboardCheck, Dumbbell, FileText, ShieldAlert } from 'lucide-react'
+import { routes, type AppRoute } from '../navigation'
 import type { PdfRef, SessionDefinition, SessionType } from '../content/types'
+import type { PlayerWarning, TrafficLight } from '../domain/checkIn'
 import type { CoachInsight, CoachInsightSource } from '../domain/coachInsights'
 import type { Player } from '../domain/players'
 import type { LatestRelevantPostSessionWork } from '../domain/postSessionCompletion'
@@ -10,7 +11,8 @@ import type { StoragePersistenceState } from '../hooks/useStoragePersistence'
 import { hasPlayerId } from '../lib/playerId'
 import { pendingCountLabel } from '../lib/syncLabels'
 import { CoachInsightsPanel } from './CoachInsightsPanel'
-import { BrandSurface } from './onfield'
+import { AthleteRow, ScoreboardStrip, type ReadinessTone, type ScoreboardMetric } from './onfield'
+import { EmptyState, PrimaryButton, SecondaryButton, StatusChip, type StatusTone } from './ui'
 import { SessionPicker } from './SessionPicker'
 
 type TodayDashboardProps = {
@@ -35,12 +37,18 @@ type TodayDashboardProps = {
   upcomingSessions: SessionDefinition[]
 }
 
-const quickActions: Array<{ label: string; route: AppRoute; feedback: string; testId: string }> = [
-  { label: 'Check-in öffnen', route: routes.unitCheckIn, feedback: 'Check-in geöffnet.', testId: 'today-quick-action-check-in' },
-  { label: 'Training anzeigen', route: routes.unitTraining, feedback: 'Training geöffnet.', testId: 'today-quick-action-training' },
-  { label: 'Nachbereitung', route: routes.unitPostSession, feedback: 'Nachbereitung geöffnet.', testId: 'today-quick-action-post' },
-  { label: 'Bibliothek', route: routes.moreLibrary, feedback: 'Bibliothek geöffnet.', testId: 'today-quick-action-library' },
-]
+type AttentionRow = {
+  id: string
+  name: string
+  position: string
+  detail: string
+  trendLabel: string
+  chipLabel: string
+  chipTone: StatusTone
+  readinessTone: ReadinessTone
+  readinessLabel: string
+  sortRank: number
+}
 
 const sessionTypeLabels: Record<SessionType, string> = {
   training: 'Training',
@@ -49,12 +57,32 @@ const sessionTypeLabels: Record<SessionType, string> = {
   transition: 'Übergang',
 }
 
+const trafficLabels: Record<TrafficLight, string> = {
+  green: 'Grün',
+  yellow: 'Gelb',
+  red: 'Rot',
+}
+
+const syncTone: Record<ReturnType<typeof useCheckIns>['syncOverview']['status'], StatusTone> = {
+  error: 'danger',
+  pending: 'warning',
+  synced: 'success',
+}
+
 function formatSessionDate(date: string) {
   return new Intl.DateTimeFormat('de-AT', {
     weekday: 'short',
     day: '2-digit',
     month: '2-digit',
   }).format(new Date(`${date}T12:00:00`))
+}
+
+function formatContextDate(date: Date) {
+  return new Intl.DateTimeFormat('de-AT', {
+    weekday: 'long',
+    day: '2-digit',
+    month: '2-digit',
+  }).format(date)
 }
 
 function relativeSessionLabel(date: string, todayDate: Date) {
@@ -74,6 +102,112 @@ function relativeSessionLabel(date: string, todayDate: Date) {
   }
 
   return 'vergangen'
+}
+
+function formatReturnerFlag(flag: PlayerWarning['returnerFlag']) {
+  if (flag === 'ja') {
+    return 'Returner'
+  }
+
+  if (flag === 'offen') {
+    return 'Returner offen'
+  }
+
+  return null
+}
+
+function warningTone(warning: PlayerWarning): ReadinessTone {
+  if (warning.trafficLight === 'red' || warning.nextStep === 'klaeren') {
+    return 'red'
+  }
+
+  if (warning.trafficLight === 'yellow' || warning.nextStep === 'reduzieren' || (warning.postPainScore ?? 0) >= 3) {
+    return 'yellow'
+  }
+
+  if (warning.returnerFlag !== 'nein') {
+    return 'returner'
+  }
+
+  return 'open'
+}
+
+function rowRank(tone: ReadinessTone) {
+  if (tone === 'red') {
+    return 0
+  }
+
+  if (tone === 'yellow') {
+    return 1
+  }
+
+  if (tone === 'returner') {
+    return 2
+  }
+
+  return 3
+}
+
+function rowChipTone(tone: ReadinessTone): StatusTone {
+  if (tone === 'red') {
+    return 'danger'
+  }
+
+  if (tone === 'yellow') {
+    return 'warning'
+  }
+
+  if (tone === 'returner') {
+    return 'info'
+  }
+
+  return 'neutral'
+}
+
+function warningDetail(warning: PlayerWarning) {
+  const parts = [
+    warning.trafficLight ? `Ampel ${trafficLabels[warning.trafficLight]}` : null,
+    formatReturnerFlag(warning.returnerFlag),
+    warning.nextStep ? `Nächster Schritt: ${warning.nextStep}` : null,
+    warning.observation.trim() ? warning.observation.trim() : null,
+  ].filter(Boolean)
+
+  return parts.join(' · ') || 'Offene Klärung aus letzter Einheit.'
+}
+
+function chipLabelForTone(tone: ReadinessTone) {
+  if (tone === 'red') {
+    return 'Rot'
+  }
+
+  if (tone === 'yellow') {
+    return 'Gelb'
+  }
+
+  if (tone === 'returner') {
+    return 'Returner'
+  }
+
+  return 'Offen'
+}
+
+function upsertAttentionRow(rows: Map<string, AttentionRow>, row: AttentionRow) {
+  const existing = rows.get(row.id)
+  if (!existing || row.sortRank < existing.sortRank) {
+    rows.set(row.id, row)
+  }
+}
+
+function insightTone(insight: CoachInsight): ReadinessTone {
+  if (insight.severity === 'high') {
+    return 'red'
+  }
+
+  if (insight.severity === 'medium') {
+    return 'yellow'
+  }
+
+  return 'open'
 }
 
 export function TodayDashboard({
@@ -100,6 +234,10 @@ export function TodayDashboard({
   const isPreview = selectedSession.id !== featuredSession.id
   const activePlayers = players.filter((player) => player.active)
   const activePlayerIds = new Set(activePlayers.map((player) => player.id))
+  const playerById = new Map(activePlayers.map((player) => [player.id, player]))
+  const activeEntries = checkInActions.entries.filter(
+    (entry) => hasPlayerId(entry) && activePlayerIds.has(entry.playerId),
+  )
   const activeWarnings = checkInActions.warnings.filter(
     (warning) => hasPlayerId(warning) && activePlayerIds.has(warning.playerId),
   )
@@ -109,41 +247,154 @@ export function TodayDashboard({
   const expectedPlayerSet = new Set(checkInActions.expectedPlayerIds)
   const expectedCount =
     expectedPlayerSet.size > 0 ? activePlayers.filter((player) => expectedPlayerSet.has(player.id)).length : activePlayers.length
-  const expectedMetricLabel = expectedPlayerSet.size > 0 ? 'Zuletzt dabei' : 'Aktiv'
-  const presentCount = checkInActions.entries.filter(
-    (entry) => hasPlayerId(entry) && activePlayerIds.has(entry.playerId) && entry.present,
-  ).length
-  const warningCount = activeWarnings.length
-  const postSessionFollowUpCount = activeWarnings.filter(
-    (warning) =>
-      (warning.e2Decision !== null && warning.e2Decision !== 'normal') ||
-      warning.nextStep === 'reduzieren' ||
-      warning.nextStep === 'klaeren' ||
-      (warning.postPainScore !== null && warning.postPainScore >= 3),
-  ).length
-  const pendingCount = checkInActions.syncOverview.pendingCount
-  const timelinePreview = selectedSession.timeline.slice(0, 6)
-  const timelineLabel =
-    selectedSession.timeline.length > timelinePreview.length
-      ? `${timelinePreview.length} von ${selectedSession.timeline.length} Blöcken`
-      : `alle ${selectedSession.timeline.length} Blöcke`
-  const showStorageWarning = !['checking', 'persisted'].includes(storagePersistence.status)
-  const playerStatusText = !isSignedIn
-    ? 'Nach Login werden Spieler, Warnungen und Anwesenheit geladen.'
-    : activePlayers.length === 0
-      ? 'Noch keine aktiven Spieler angelegt.'
-      : null
+  const presentCount = activeEntries.filter((entry) => entry.present).length
+  const redPlayerIds = new Set<string>()
+  const yellowPlayerIds = new Set<string>()
+  const returnerPlayerIds = new Set<string>()
+
+  activePlayers.forEach((player) => {
+    if (player.returnerStatus !== 'nein') {
+      returnerPlayerIds.add(player.id)
+    }
+  })
+
+  activeEntries.forEach((entry) => {
+    if (!entry.playerId) {
+      return
+    }
+    const playerId = entry.playerId
+    const trafficLight = entry.trafficLight ?? entry.trafficLightSuggestion
+    if (trafficLight === 'red') {
+      redPlayerIds.add(playerId)
+    } else if (trafficLight === 'yellow') {
+      yellowPlayerIds.add(playerId)
+    }
+
+    if (entry.returnerFlag !== 'nein') {
+      returnerPlayerIds.add(playerId)
+    }
+  })
+
+  activeWarnings.forEach((warning) => {
+    if (!warning.playerId) {
+      return
+    }
+    const playerId = warning.playerId
+    if (warning.trafficLight === 'red') {
+      redPlayerIds.add(playerId)
+    } else if (warning.trafficLight === 'yellow') {
+      yellowPlayerIds.add(playerId)
+    }
+
+    if (warning.returnerFlag !== 'nein') {
+      returnerPlayerIds.add(playerId)
+    }
+  })
+
+  redPlayerIds.forEach((playerId) => yellowPlayerIds.delete(playerId))
+
+  const scoreboardMetrics: ScoreboardMetric[] = [
+    { id: 'squad', label: 'Kader', value: expectedCount, tone: 'open', assistiveLabel: `${expectedCount} im Kader` },
+    {
+      id: 'present',
+      label: 'Anwesend',
+      value: presentCount,
+      tone: 'green',
+      assistiveLabel: `${presentCount} anwesend`,
+    },
+    { id: 'yellow', label: 'Gelb', value: yellowPlayerIds.size, tone: 'yellow' },
+    { id: 'red', label: 'Rot', value: redPlayerIds.size, tone: 'red' },
+    { id: 'returner', label: 'Returner', value: returnerPlayerIds.size, tone: 'returner' },
+  ]
+
   const postSessionDefinition = postSessionWork
     ? sessions.find((session) => session.id === postSessionWork.sessionLog.sessionDefinitionId)
     : null
   const postSessionMissingCount = postSessionWork
     ? postSessionWork.completion.blockers.reduce((sum, blocker) => sum + Math.max(1, blocker.count), 0)
     : 0
+  const pendingCount = checkInActions.syncOverview.pendingCount
+  const showStorageWarning = !['checking', 'persisted'].includes(storagePersistence.status)
   const showWelcomeSurface = !isSignedIn || activePlayers.length === 0
   const welcomeTitle = !isSignedIn ? 'Trainingstag vorbereiten' : 'Squad für OnField anlegen'
   const welcomeBody = !isSignedIn
     ? 'Nach dem Login werden Spielerstatus, Anwesenheit und offene Aufgaben auf iPhone und iPad verfügbar.'
     : 'Lege aktive Spieler an, damit Check-in, Session Flow und Wrap-up mit demselben Funktionsumfang starten.'
+  const syncLabel = !checkInActions.syncOverview.isOnline
+    ? 'offline'
+    : pendingCount > 0
+      ? pendingCountLabel(pendingCount)
+      : checkInActions.syncOverview.status === 'synced'
+        ? 'synchronisiert'
+        : 'Sync läuft'
+  const syncChipTone = checkInActions.syncOverview.isOnline ? syncTone[checkInActions.syncOverview.status] : 'warning'
+
+  const attentionRowMap = new Map<string, AttentionRow>()
+
+  activeWarnings.forEach((warning) => {
+    if (!warning.playerId) {
+      return
+    }
+    const playerId = warning.playerId
+    const player = playerById.get(playerId)
+    const tone = warningTone(warning)
+    upsertAttentionRow(attentionRowMap, {
+      id: `warning:${playerId}`,
+      name: player?.name ?? 'Spieler',
+      position: player?.position ?? 'Position offen',
+      detail: warningDetail(warning),
+      trendLabel: `Letzte Einheit ${formatSessionDate(warning.sessionDate)}`,
+      chipLabel: chipLabelForTone(tone),
+      chipTone: rowChipTone(tone),
+      readinessTone: tone,
+      readinessLabel: `Status ${chipLabelForTone(tone)}`,
+      sortRank: rowRank(tone),
+    })
+  })
+
+  coachInsights.forEach((insight) => {
+    const tone = insightTone(insight)
+    insight.sources.filter(hasPlayerId).forEach((source) => {
+      if (!activePlayerIds.has(source.playerId)) {
+        return
+      }
+      const player = playerById.get(source.playerId)
+      upsertAttentionRow(attentionRowMap, {
+        id: `insight:${source.playerId}:${insight.id}`,
+        name: player?.name ?? source.playerName ?? 'Spieler',
+        position: player?.position ?? targetLabel(source.correctionTarget),
+        detail: insight.reason,
+        trendLabel: `Coach Insight · ${targetLabel(source.correctionTarget)}`,
+        chipLabel: chipLabelForTone(tone),
+        chipTone: rowChipTone(tone),
+        readinessTone: tone,
+        readinessLabel: `Coach Insight ${chipLabelForTone(tone)}`,
+        sortRank: rowRank(tone),
+      })
+    })
+  })
+
+  activePlayers.forEach((player) => {
+    if (player.returnerStatus === 'nein') {
+      return
+    }
+    upsertAttentionRow(attentionRowMap, {
+      id: `returner:${player.id}`,
+      name: player.name,
+      position: player.position,
+      detail: `Returner ${player.returnerStatus}`,
+      trendLabel: 'Belastungsplan prüfen',
+      chipLabel: 'Returner',
+      chipTone: 'info',
+      readinessTone: 'returner',
+      readinessLabel: 'Returner-Kontext',
+      sortRank: rowRank('returner'),
+    })
+  })
+
+  const attentionRows = [...attentionRowMap.values()].sort(
+    (a, b) => a.sortRank - b.sortRank || a.name.localeCompare(b.name, 'de-AT'),
+  )
 
   const navigateWithFeedback = useCallback(
     (route: AppRoute, message: string) => {
@@ -186,327 +437,289 @@ export function TodayDashboard({
     navigateWithFeedback(routes.unitPostSession, 'Nachbereitung geöffnet.')
   }, [navigateWithFeedback, onSessionChange, postSessionWork])
 
+  if (showWelcomeSurface) {
+    return (
+      <section className="dashboard-grid today-squad-screen today-squad-empty" aria-labelledby="today-heading">
+        <header className="today-squad-header">
+          <div className="today-squad-brandline">
+            <span className="today-wordmark">OnField<span aria-hidden>•</span></span>
+            <span>{formatContextDate(todayDate)} · {selectedSession.kw}</span>
+            <StatusChip label={`Sync: ${syncLabel}`} tone={syncChipTone} />
+          </div>
+          <div className="today-squad-title">
+            <div>
+              <p className="eyebrow">Squad heute</p>
+              <h2 id="today-heading">Squad heute</h2>
+              <p>
+                {selectedSession.title} · {relativeSessionLabel(selectedSession.date, todayDate)} ·{' '}
+                {sessionTypeLabels[selectedSession.type]}
+              </p>
+            </div>
+          </div>
+        </header>
+        <main className="today-squad-main" aria-label="Squad heute Empty State">
+          <section className="today-attention-section today-empty-state-panel">
+            <EmptyState
+              action={
+                <PrimaryButton
+                  data-testid="today-welcome-action"
+                  icon={<ArrowRight aria-hidden />}
+                  onClick={() =>
+                    !isSignedIn
+                      ? navigateWithFeedback(routes.moreSettings, 'Einstellungen geöffnet.')
+                      : navigateWithFeedback(routes.players, 'Spieler geöffnet.')
+                  }
+                >
+                  {!isSignedIn ? 'Login öffnen' : 'Spieler anlegen'}
+                </PrimaryButton>
+              }
+              body={welcomeBody}
+              title={welcomeTitle}
+            />
+          </section>
+        </main>
+      </section>
+    )
+  }
+
   return (
-    <section className="dashboard-grid" aria-labelledby="today-heading">
-        {showWelcomeSurface ? (
-          <BrandSurface
-            body={welcomeBody}
-            className="today-welcome-surface"
-            meta={<span>Field-ready coach operations for the training day.</span>}
-            primaryAction={
-              <button
-                className="primary-action"
-                data-testid="today-welcome-action"
-                type="button"
-                onClick={() =>
-                  !isSignedIn
-                    ? navigateWithFeedback(routes.moreSettings, 'Einstellungen geöffnet.')
-                    : navigateWithFeedback(routes.players, 'Spieler geöffnet.')
-                }
-              >
-                <span>{!isSignedIn ? 'Login öffnen' : 'Spieler anlegen'}</span>
-                <ArrowRight className="nav-icon" aria-hidden />
-              </button>
-            }
-            productFrame={
-              <div className="brand-product-mini" aria-label="OnField Trainingstag Vorschau">
-                <span>Heute</span>
-                <strong>Check-in</strong>
-                <span>Einheit führen</span>
-                <span>Wrap-up</span>
-              </div>
-            }
-            title={welcomeTitle}
-            variant="welcome"
-          />
-        ) : null}
-
-        <article className="panel today-command-card">
-          <p className="eyebrow">Heute zählt</p>
-          <h3 id="today-heading">{selectedSession.title}</h3>
-          <p>{selectedSession.summary}</p>
-          <div className="tag-row" aria-label="Session Status">
-            <span className="tag">{selectedSession.kw}</span>
-            <span className="tag">{relativeSessionLabel(selectedSession.date, todayDate)}</span>
-            <span className="tag">{sessionTypeLabels[selectedSession.type]}</span>
-            {isPreview ? <span className="tag warning-tag">Vorschau</span> : null}
+    <section className="dashboard-grid today-squad-screen" aria-labelledby="today-heading">
+      <header className="today-squad-header">
+        <div className="today-squad-brandline">
+          <span className="today-wordmark">OnField<span aria-hidden>•</span></span>
+          <span>{formatContextDate(todayDate)} · {selectedSession.kw}</span>
+          {isPreview ? <StatusChip label="Vorschau" tone="warning" /> : null}
+          <StatusChip label={`Sync: ${syncLabel}`} tone={syncChipTone} />
+        </div>
+        <div className="today-squad-title">
+          <div>
+            <p className="eyebrow">Squad heute</p>
+            <h2 id="today-heading">Squad heute</h2>
+            <p>
+              {selectedSession.title} · {relativeSessionLabel(selectedSession.date, todayDate)} ·{' '}
+              {sessionTypeLabels[selectedSession.type]}
+            </p>
           </div>
-          <SessionPicker
-            onSessionChange={handleSessionChange}
-            selectedSessionId={selectedSessionId}
-            sessions={sessions}
-          />
-          {isPreview ? (
-            <button
-              className="secondary-action compact-action"
-              data-testid="today-reset-button"
-              type="button"
-              onClick={handleResetToTodaySession}
-            >
-              Zur heutigen Einheit zurück
-            </button>
-          ) : null}
-          <div className="today-goals">
-            <span>Ziele</span>
-            <ul className="compact-list">
-              {selectedSession.goals.map((goal) => (
-                <li key={goal}>{goal}</li>
+          <div className="today-session-tools">
+            <SessionPicker
+              onSessionChange={handleSessionChange}
+              selectedSessionId={selectedSessionId}
+              sessions={sessions}
+            />
+            {isPreview ? (
+              <SecondaryButton compact data-testid="today-reset-button" onClick={handleResetToTodaySession}>
+                Zur heutigen Einheit zurück
+              </SecondaryButton>
+            ) : null}
+          </div>
+        </div>
+      </header>
+
+      <main className="today-squad-main" aria-label="Squad heute Leitbereich">
+        <section className="today-scoreboard-panel" aria-label="Squad Überblick">
+          <ScoreboardStrip metrics={scoreboardMetrics} primaryMetricId="present" />
+          <PrimaryButton
+            className="today-primary-checkin"
+            data-testid="today-quick-action-check-in"
+            icon={<ArrowRight aria-hidden />}
+            onClick={() => navigateWithFeedback(routes.unitCheckIn, 'Check-in geöffnet.')}
+          >
+            Check-in öffnen
+          </PrimaryButton>
+        </section>
+
+        <section className="today-attention-section" aria-labelledby="today-attention-heading">
+          <div className="today-section-heading">
+            <ShieldAlert className="nav-icon" aria-hidden />
+            <div>
+              <h3 id="today-attention-heading">Aufpassen zuerst</h3>
+              <p>Rot, Gelb, Returner und offene Klärungen zuerst.</p>
+            </div>
+          </div>
+          {attentionRows.length > 0 ? (
+            <div className="today-attention-list">
+              {attentionRows.map((row) => (
+                <AthleteRow
+                  key={row.id}
+                  meta={[row.position]}
+                  name={row.name}
+                  note={row.detail}
+                  readinessLabel={row.readinessLabel}
+                  readinessTone={row.readinessTone}
+                  status={<StatusChip label={row.chipLabel} tone={row.chipTone} />}
+                  trendLabel={row.trendLabel}
+                />
               ))}
-            </ul>
-          </div>
-        </article>
+            </div>
+          ) : (
+            <EmptyState
+              action={
+                <SecondaryButton compact onClick={() => navigateWithFeedback(routes.unitCheckIn, 'Check-in geöffnet.')}>
+                  Check-in prüfen
+                </SecondaryButton>
+              }
+              body="Keine offenen Warnungen, Returner-Hinweise oder Coach Insights für aktive Spieler."
+              title="Keine offenen Punkte"
+            />
+          )}
+        </section>
+      </main>
 
-        <article className="panel quick-action-panel">
-          <h3>Schnell handeln</h3>
-          <div className="quick-actions today-actions">
-            {quickActions.map((action, index) => (
-              <button
-                className={index === 0 ? 'quick-action primary-quick-action' : 'quick-action'}
-                data-testid={action.testId}
-                key={routeKey(action.route)}
-                type="button"
-                onClick={() =>
-                  action.route.section === 'more' && action.route.moreRoute === 'library'
-                    ? handleOpenLibrary()
-                    : navigateWithFeedback(action.route, action.feedback)
-                }
-              >
-                <span>{action.label}</span>
-                <ArrowRight className="nav-icon" aria-hidden />
-              </button>
-            ))}
-          </div>
-          {selectedSession.pdfRefs.length > 0 ? (
-            <div className="today-documents">
-              <h4>Unterlagen</h4>
-              <div className="pdf-link-grid">
-                {selectedSession.pdfRefs.map((pdf, index) => (
+      <aside className="today-context-column" aria-label="Sekundärer Kontext">
+        <details className="today-context-panel">
+          <summary>
+            <span>Kontext</span>
+            <small>Material, Ablauf, Notizen und offene Nachbereitung</small>
+          </summary>
+          <div className="today-context-stack">
+            <section className="today-context-block" aria-labelledby="today-session-context-heading">
+              <div className="status-line">
+                <CalendarDays className="nav-icon" aria-hidden />
+                <h3 id="today-session-context-heading">Einheit</h3>
+              </div>
+              <ul className="compact-list">
+                {selectedSession.goals.map((goal) => (
+                  <li key={goal}>{goal}</li>
+                ))}
+              </ul>
+            </section>
+
+            <section className="today-context-block" aria-labelledby="today-material-heading">
+              <div className="status-line">
+                <Dumbbell className="nav-icon" aria-hidden />
+                <h3 id="today-material-heading">Material</h3>
+              </div>
+              {selectedSession.materials.length > 0 ? (
+                <ul className="compact-list">
+                  {selectedSession.materials.map((material) => (
+                    <li key={material}>{material}</li>
+                  ))}
+                </ul>
+              ) : (
+                <p className="compact-empty">Kein Material hinterlegt.</p>
+              )}
+            </section>
+
+            <section className="today-context-block" aria-labelledby="today-documents-heading">
+              <div className="status-line">
+                <FileText className="nav-icon" aria-hidden />
+                <h3 id="today-documents-heading">Unterlagen</h3>
+              </div>
+              {selectedSession.pdfRefs.length > 0 ? (
+                <div className="today-secondary-actions">
+                  {selectedSession.pdfRefs.map((pdf, index) => (
+                    <SecondaryButton
+                      compact
+                      data-testid={`today-pdf-button-${index}`}
+                      key={pdf.href}
+                      onClick={() => handleOpenPdf(pdf)}
+                    >
+                      PDF öffnen: {pdf.label}
+                    </SecondaryButton>
+                  ))}
+                </div>
+              ) : (
+                <p className="compact-empty">Keine PDF-Unterlagen für diese Einheit.</p>
+              )}
+              <SecondaryButton compact data-testid="today-quick-action-library" onClick={handleOpenLibrary}>
+                Bibliothek öffnen
+              </SecondaryButton>
+            </section>
+
+            {postSessionWork ? (
+              <section className="today-context-block" aria-labelledby="today-post-session-heading">
+                <div className="status-line">
+                  <ClipboardCheck className="nav-icon" aria-hidden />
+                  <h3 id="today-post-session-heading">Nachbereitung</h3>
+                </div>
+                <p>
+                  {postSessionDefinition?.title ?? postSessionWork.sessionLog.date}: {' '}
+                  {postSessionWork.completion.status === 'abgeschlossen'
+                    ? 'Abgeschlossen, Export prüfen.'
+                    : `${postSessionMissingCount} Pflichtpunkt(e) offen.`}
+                </p>
+                <SecondaryButton compact data-testid="today-post-session-work-action" onClick={handleOpenPostSessionWork}>
+                  Nachbereitung öffnen
+                </SecondaryButton>
+              </section>
+            ) : null}
+
+            {activeObservations.length > 0 ? (
+              <section className="today-context-block" aria-labelledby="today-observations-heading">
+                <div className="status-line">
+                  <FileText className="nav-icon" aria-hidden />
+                  <h3 id="today-observations-heading">Notizen aus letzter Einheit</h3>
+                </div>
+                <ul className="compact-list">
+                  {activeObservations.map((observation) => {
+                    const player = observation.playerId ? playerById.get(observation.playerId) : null
+                    return (
+                      <li key={`${observation.playerId}-${observation.sessionDate}`}>
+                        <strong>{player?.name ?? 'Spieler'}:</strong> {observation.observation}
+                      </li>
+                    )
+                  })}
+                </ul>
+              </section>
+            ) : null}
+
+            <section className="today-context-block" aria-labelledby="today-upcoming-heading">
+              <div className="status-line">
+                <ClipboardCheck className="nav-icon" aria-hidden />
+                <h3 id="today-upcoming-heading">Ab heute</h3>
+              </div>
+              <div className="upcoming-list">
+                {upcomingSessions.map((session) => (
                   <button
-                    className="pdf-link"
-                    data-testid={`today-pdf-button-${index}`}
-                    key={pdf.href}
+                    className="upcoming-session"
+                    key={session.id}
                     type="button"
-                    onClick={() => handleOpenPdf(pdf)}
+                    onClick={() => handleSessionChange(session.id)}
                   >
-                    <span>PDF öffnen: {pdf.label}</span>
-                    <FileText className="nav-icon" aria-hidden />
+                    <span>{formatSessionDate(session.date)}</span>
+                    <strong>{session.title}</strong>
                   </button>
                 ))}
               </div>
-            </div>
-          ) : null}
-        </article>
+            </section>
 
-        <article className="panel timeline-preview-panel">
-          <div className="status-line">
-            <CalendarDays className="nav-icon" aria-hidden />
-            <h3>Ablauf-Vorschau</h3>
-          </div>
-          <p>{timelineLabel}</p>
-          <div className="session-timeline">
-            {timelinePreview.map((block) => (
-              <div className="timeline-row" key={block.key}>
-                <span>{block.time}</span>
-                <div>
-                  <strong>{block.title}</strong>
-                  <p>{block.work}</p>
-                  {block.dose || block.note ? (
-                    <div className="timeline-tags">
-                      {block.dose ? <span className="tag compact">{block.dose}</span> : null}
-                      {block.note ? <span className="tag compact">{block.note}</span> : null}
-                    </div>
-                  ) : null}
+            <CoachInsightsPanel
+              dismissKey={`today:${selectedSession.id}`}
+              emptyText="Keine offenen Coach Insights."
+              insights={coachInsights}
+              limit={3}
+              onOpenSource={onOpenCoachInsightSource}
+              variant="embedded"
+            />
+
+            {showStorageWarning ? (
+              <section className="today-context-block today-storage-warning" aria-labelledby="today-storage-heading">
+                <div className="status-line">
+                  <FileText className="nav-icon" aria-hidden />
+                  <h3 id="today-storage-heading">Offline-Speicher prüfen</h3>
                 </div>
-              </div>
-            ))}
+                <p>Gerätespeicher ist nicht dauerhaft gesichert. In Einstellungen prüfen.</p>
+                <SecondaryButton compact onClick={() => navigateWithFeedback(routes.moreSettings, 'Einstellungen geöffnet.')}>
+                  Zu Einstellungen
+                </SecondaryButton>
+              </section>
+            ) : null}
           </div>
-          <button
-            className="quick-action"
-            type="button"
-            onClick={() => navigateWithFeedback(routes.unitTraining, 'Training geöffnet.')}
-          >
-            <span>Vollständigen Ablauf öffnen</span>
-            <ArrowRight className="nav-icon" aria-hidden />
-          </button>
-        </article>
-
-      <aside className="content-stack" aria-label="Vorbereitungsstatus">
-        <article className={warningCount > 0 ? 'panel warning-panel attention-panel' : 'panel attention-panel'}>
-          <div className="status-line">
-            <ShieldAlert className="nav-icon" aria-hidden />
-            <h3>Aufpassen</h3>
-          </div>
-          {warningCount > 0 ? (
-            <button
-              className="quick-action compact-status-action"
-              data-testid="today-warning-action"
-              type="button"
-              onClick={() => navigateWithFeedback(routes.unitCheckIn, 'Check-in geöffnet.')}
-            >
-              <span>{warningCount} Warnung(en) prüfen</span>
-              <ArrowRight className="nav-icon" aria-hidden />
-            </button>
-          ) : (
-            <p>Keine offenen Warnungen aus vorherigen Einheiten.</p>
-          )}
-          {postSessionFollowUpCount > 0 ? (
-            <button
-              className="quick-action compact-status-action"
-              data-testid="today-followup-action"
-              type="button"
-              onClick={() => navigateWithFeedback(routes.unitPostSession, 'Nachbereitung geöffnet.')}
-            >
-              <span>{postSessionFollowUpCount} Follow-up(s) prüfen</span>
-              <ArrowRight className="nav-icon" aria-hidden />
-            </button>
-          ) : (
-            <p>Keine lokalen E2-/Progressions-Follow-ups aus der Nachbereitung.</p>
-          )}
-          {pendingCount > 0 ? (
-            <button
-              className="quick-action compact-status-action"
-              data-testid="today-pending-action"
-              type="button"
-              onClick={() => navigateWithFeedback(routes.moreSettings, 'Einstellungen geöffnet.')}
-            >
-              <span>{pendingCountLabel(pendingCount, 'Check-in-Änderungen')}</span>
-              <ArrowRight className="nav-icon" aria-hidden />
-            </button>
-          ) : null}
-          <ul className="compact-list">
-            {selectedSession.safetyNotes.map((note) => (
-              <li key={note}>{note}</li>
-            ))}
-          </ul>
-        </article>
-
-        {postSessionWork ? (
-          <article className={postSessionWork.completion.status === 'abgeschlossen' ? 'panel attention-panel' : 'panel warning-panel attention-panel'}>
-            <div className="status-line">
-              <ClipboardCheck className="nav-icon" aria-hidden />
-              <h3>Nachbereitung</h3>
-            </div>
-            <p>
-              {postSessionDefinition?.title ?? postSessionWork.sessionLog.date}: {' '}
-              {postSessionWork.completion.status === 'abgeschlossen'
-                ? 'Abgeschlossen, Export prüfen.'
-                : `${postSessionMissingCount} Pflichtpunkt(e) offen.`}
-            </p>
-            <button
-              className="quick-action compact-status-action"
-              data-testid="today-post-session-work-action"
-              type="button"
-              onClick={handleOpenPostSessionWork}
-            >
-              <span>Nachbereitung öffnen</span>
-              <ArrowRight className="nav-icon" aria-hidden />
-            </button>
-          </article>
-        ) : null}
-
-        <CoachInsightsPanel
-          dismissKey={`today:${selectedSession.id}`}
-          emptyText="Keine offenen Coach Insights."
-          insights={coachInsights}
-          limit={3}
-          onOpenSource={onOpenCoachInsightSource}
-        />
-
-        <article className="panel material-panel">
-          <div className="status-line">
-            <Dumbbell className="nav-icon" aria-hidden />
-            <h3>Material</h3>
-          </div>
-          <ul className="compact-list">
-            {selectedSession.materials.map((material) => (
-              <li key={material}>{material}</li>
-            ))}
-          </ul>
-        </article>
-
-        <article className="panel upcoming-panel">
-          <div className="status-line">
-            <ClipboardCheck className="nav-icon" aria-hidden />
-            <h3>Ab heute</h3>
-          </div>
-          <div className="upcoming-list">
-            {upcomingSessions.map((session) => (
-              <button
-                className="upcoming-session"
-                key={session.id}
-                type="button"
-                onClick={() => handleSessionChange(session.id)}
-              >
-                <span>{formatSessionDate(session.date)}</span>
-                <strong>{session.title}</strong>
-              </button>
-            ))}
-          </div>
-        </article>
-
-        <article className="panel players-panel">
-          <div className="status-line">
-            <Users className="nav-icon" aria-hidden />
-            <h3>Spieler</h3>
-          </div>
-          <div className="metric-grid mini">
-            <div className="metric">
-              <span>{expectedMetricLabel}</span>
-              <strong>{expectedCount}</strong>
-            </div>
-            <div className="metric">
-              <span>Anwesend</span>
-              <strong>{presentCount}</strong>
-            </div>
-          </div>
-          <button
-            className="quick-action"
-            type="button"
-            onClick={() => navigateWithFeedback(routes.unitCheckIn, 'Check-in geöffnet.')}
-          >
-            <span>Zum Check-in</span>
-            <ArrowRight className="nav-icon" aria-hidden />
-          </button>
-          {playerStatusText ? <p>{playerStatusText}</p> : null}
-        </article>
-
-        {activeObservations.length > 0 ? (
-          <article className="panel observations-panel">
-            <div className="status-line">
-              <FileText className="nav-icon" aria-hidden />
-              <h3>Notizen aus letzter Einheit</h3>
-            </div>
-            <ul className="compact-list">
-              {activeObservations.map((observation) => {
-                const player = activePlayers.find((item) => item.id === observation.playerId)
-                return (
-                  <li key={`${observation.playerId}-${observation.sessionDate}`}>
-                    <strong>{player?.name ?? 'Spieler'}:</strong> {observation.observation}
-                  </li>
-                )
-              })}
-            </ul>
-          </article>
-        ) : null}
-
-        {showStorageWarning ? (
-          <article className="panel warning-panel storage-warning-panel">
-            <div className="status-line">
-              <FileText className="nav-icon" aria-hidden />
-              <h3>Offline-Speicher prüfen</h3>
-            </div>
-            <p>Gerätespeicher ist nicht dauerhaft gesichert. In Einstellungen prüfen.</p>
-            <button
-              className="quick-action"
-              type="button"
-              onClick={() => navigateWithFeedback(routes.moreSettings, 'Einstellungen geöffnet.')}
-            >
-              <span>Zu Einstellungen</span>
-              <ArrowRight className="nav-icon" aria-hidden />
-            </button>
-          </article>
-        ) : null}
+        </details>
       </aside>
     </section>
   )
+}
+
+function targetLabel(target: CoachInsightSource['correctionTarget']) {
+  const targetLabels: Record<CoachInsightSource['correctionTarget'], string> = {
+    analysis: 'Analyse',
+    'check-in': 'Check-in',
+    nachbereitung: 'Nachbereitung',
+    returner: 'Returner',
+    spieler: 'Spieler',
+    training: 'Training',
+  }
+
+  return targetLabels[target]
 }

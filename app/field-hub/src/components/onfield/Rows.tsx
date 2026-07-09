@@ -1,4 +1,5 @@
 import type { ReactNode } from 'react'
+import { ReadinessDot, type ReadinessTone } from './ReadinessDot'
 
 type AthleteRowProps = {
   name: string
@@ -7,11 +8,44 @@ type AthleteRowProps = {
   traffic?: ReactNode
   action?: ReactNode
   note?: string
+  readinessTone?: ReadinessTone
+  readinessLabel?: string
+  trendLabel?: string
+  compact?: boolean
+  className?: string
 }
 
-export function AthleteRow({ action, meta = [], name, note, status, traffic }: AthleteRowProps) {
+export function AthleteRow({
+  action,
+  className,
+  compact,
+  meta = [],
+  name,
+  note,
+  readinessLabel,
+  readinessTone,
+  status,
+  traffic,
+  trendLabel,
+}: AthleteRowProps) {
+  const rowClassName = [
+    'of-athlete-row',
+    readinessTone ? `of-athlete-row-${readinessTone}` : null,
+    compact ? 'of-athlete-row-compact' : null,
+    className,
+  ]
+    .filter(Boolean)
+    .join(' ')
+
   return (
-    <article className="of-athlete-row">
+    <article className={rowClassName}>
+      {readinessTone ? (
+        <ReadinessDot
+          label={readinessLabel ?? `Status ${readinessTone}`}
+          size={compact ? 'sm' : 'md'}
+          tone={readinessTone}
+        />
+      ) : null}
       <div className="of-athlete-row-main">
         <div>
           <h3>{name}</h3>
@@ -24,6 +58,7 @@ export function AthleteRow({ action, meta = [], name, note, status, traffic }: A
             ))}
           </div>
         ) : null}
+        {trendLabel ? <span className="of-athlete-row-trend">{trendLabel}</span> : null}
         {status || traffic ? (
           <div className="of-athlete-row-status">
             {traffic}

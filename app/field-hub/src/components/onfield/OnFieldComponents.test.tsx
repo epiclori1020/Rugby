@@ -1,7 +1,7 @@
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { PrimaryButton, StatusChip, TrafficLightChip } from '../ui'
-import { AthleteRow, OnFieldTopbar, SessionHeader, TaskQueueRow } from './index'
+import { AthleteRow, OnFieldTopbar, ScoreboardStrip, SessionHeader, TaskQueueRow } from './index'
 
 describe('Sprint 5 OnField component compositions', () => {
   it('renders a topbar with one action area and optional sync slot', () => {
@@ -45,6 +45,9 @@ describe('Sprint 5 OnField component compositions', () => {
       <AthleteRow
         name="Alex Beispiel"
         meta={['Back row', 'Returner']}
+        readinessLabel="Status Gelb"
+        readinessTone="yellow"
+        trendLabel="Letzte Einheit"
         traffic={<TrafficLightChip tone="yellow" label="Gelb" reason="modifizieren" />}
         status={<StatusChip tone="info" label="Notiz offen" />}
         action={<PrimaryButton compact>Oeffnen</PrimaryButton>}
@@ -55,8 +58,32 @@ describe('Sprint 5 OnField component compositions', () => {
     expect(markup).toContain('Back row')
     expect(markup).toContain('Gelb')
     expect(markup).toContain('modifizieren')
+    expect(markup).toContain('Status Gelb')
+    expect(markup).toContain('Letzte Einheit')
     expect(markup).toContain('Oeffnen')
     expect(markup).toContain('of-athlete-row')
+    expect(markup).toContain('of-readiness-dot-yellow')
+  })
+
+  it('renders a scoreboard strip with tabular primary metric semantics', () => {
+    const markup = renderToStaticMarkup(
+      <ScoreboardStrip
+        primaryMetricId="present"
+        metrics={[
+          { id: 'squad', label: 'Kader', value: 20, tone: 'open' },
+          { id: 'present', label: 'Anwesend', value: 14, tone: 'green' },
+          { id: 'yellow', label: 'Gelb', value: 3, tone: 'yellow' },
+          { id: 'red', label: 'Rot', value: 1, tone: 'red' },
+          { id: 'returner', label: 'Returner', value: 2, tone: 'returner' },
+        ]}
+      />,
+    )
+
+    expect(markup).toContain('of-scoreboard-strip')
+    expect(markup).toContain('of-scoreboard-cell-primary')
+    expect(markup).toContain('of-num')
+    expect(markup).toContain('Anwesend')
+    expect(markup).toContain('Returner')
   })
 
   it('renders queue rows with visible tone and recovery action', () => {

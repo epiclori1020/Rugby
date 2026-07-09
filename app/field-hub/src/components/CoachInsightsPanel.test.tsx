@@ -98,7 +98,7 @@ describe('CoachInsightsPanel', () => {
     })
 
     const sourceButton = Array.from(container.querySelectorAll('button')).find((button) =>
-      button.textContent?.includes('Quelle oeffnen'),
+      button.textContent?.includes('Quelle öffnen'),
     )
     await act(async () => {
       sourceButton?.click()

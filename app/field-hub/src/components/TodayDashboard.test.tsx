@@ -285,7 +285,8 @@ describe('TodayDashboard', () => {
   it('does not count pure observations as open warnings', () => {
     const markup = renderDashboardMarkup()
 
-    expect(markup).toContain('Keine offenen Warnungen aus vorherigen Einheiten.')
+    expect(markup).toContain('Keine offenen Punkte')
+    expect(markup).toContain('Keine offenen Warnungen, Returner-Hinweise oder Coach Insights')
     expect(markup).toContain('Notizen aus letzter Einheit')
     expect(markup).toContain('Landing im Warm-up beobachten')
   })
@@ -299,23 +300,29 @@ describe('TodayDashboard', () => {
     expect(markup).not.toContain('sRPE fehlt bei anwesenden Spielern.')
   })
 
-  it('shows goals, timeline metadata, and actionable documents without passive plan metrics', () => {
+  it('renders the R5 scoreboard, one primary action, and secondary context', () => {
     const markup = renderDashboardMarkup()
 
-    expect(markup).toContain('Heute zählt')
-    expect(markup).toContain('Ziele')
+    expect(markup).toContain('Squad heute')
+    expect(markup).toContain('Kader')
+    expect(markup).toContain('Anwesend')
+    expect(markup).toContain('Gelb')
+    expect(markup).toContain('Rot')
+    expect(markup).toContain('Returner')
+    expect(markup).toContain('Check-in öffnen')
+    expect(markup).toContain('Kontext')
     expect(markup).toContain('Reaktion prüfen')
     expect(markup).toContain('Grundmuster sauber trainieren')
-    expect(markup).toContain('6 von 8 Blöcken')
-    expect(markup).toContain('RPE 2-3')
-    expect(markup).toContain('Laufbild')
     expect(markup).toContain('Unterlagen')
     expect(markup).toContain('PDF öffnen: Dienstag Trainingsplan')
-    expect(markup).toContain('Training')
+    expect(markup).toContain('of-scoreboard-strip')
+    expect(markup).toContain('of-scoreboard-cell-primary')
     expect(markup).not.toContain('App-UI aus aktiver Quelle')
     expect(markup).not.toContain('Planueberblick')
     expect(markup).not.toContain('Bloecke')
     expect(markup).not.toContain('PDFs')
+    expect(markup).not.toContain('Schnell handeln')
+    expect(markup).not.toContain('Ablauf-Vorschau')
   })
 
   it('marks a manually selected non-featured session as preview and exposes reset action', () => {
@@ -385,7 +392,7 @@ describe('TodayDashboard', () => {
     })
   })
 
-  it('turns important attention counts into actions with feedback', async () => {
+  it('shows severity rows and keeps Check-in as the primary action', async () => {
     const container = document.createElement('div')
     const root = createRoot(container)
     const onNavigate = vi.fn()
@@ -429,16 +436,16 @@ describe('TodayDashboard', () => {
       )
     })
 
-    container.querySelector<HTMLButtonElement>('[data-testid="today-warning-action"]')?.click()
-    container.querySelector<HTMLButtonElement>('[data-testid="today-followup-action"]')?.click()
-    container.querySelector<HTMLButtonElement>('[data-testid="today-pending-action"]')?.click()
+    expect(container.textContent).toContain('Aufpassen zuerst')
+    expect(container.textContent).toContain('Max')
+    expect(container.textContent).toContain('Gelb')
+    expect(container.textContent).toContain('Nächster Schritt: reduzieren')
+    expect(container.textContent).toContain('Sync: 2 Aenderungen warten auf Sync')
+
+    container.querySelector<HTMLButtonElement>('[data-testid="today-quick-action-check-in"]')?.click()
 
     expect(onNavigate).toHaveBeenCalledWith(routes.unitCheckIn)
-    expect(onNavigate).toHaveBeenCalledWith(routes.unitPostSession)
-    expect(onNavigate).toHaveBeenCalledWith(routes.moreSettings)
     expect(onActionFeedback).toHaveBeenCalledWith('Check-in geöffnet.')
-    expect(onActionFeedback).toHaveBeenCalledWith('Nachbereitung geöffnet.')
-    expect(onActionFeedback).toHaveBeenCalledWith('Einstellungen geöffnet.')
 
     await act(async () => {
       root.unmount()
@@ -501,10 +508,11 @@ describe('TodayDashboard', () => {
     const activeMarkup = renderDashboardMarkup({ isSignedIn: true, players: [player] })
 
     expect(signedOutMarkup).toContain('Trainingstag vorbereiten')
-    expect(signedOutMarkup).toContain('Field-ready coach operations for the training day.')
-    expect(signedOutMarkup).toContain('Nach Login werden Spieler, Warnungen und Anwesenheit geladen.')
+    expect(signedOutMarkup).toContain('Nach dem Login werden Spielerstatus, Anwesenheit und offene Aufgaben')
+    expect(signedOutMarkup).toContain('Login öffnen')
     expect(signedInMarkup).toContain('Squad für OnField anlegen')
-    expect(signedInMarkup).toContain('Noch keine aktiven Spieler angelegt.')
+    expect(signedInMarkup).toContain('Lege aktive Spieler an')
+    expect(signedInMarkup).toContain('Spieler anlegen')
     expect(activeMarkup).not.toContain('Trainingstag vorbereiten')
     expect(activeMarkup).not.toContain('Squad für OnField anlegen')
   })

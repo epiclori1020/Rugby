@@ -8,6 +8,7 @@ type CoachInsightsPanelProps = {
   insights: CoachInsight[]
   limit?: number
   onOpenSource?: (source: CoachInsightSource) => void
+  variant?: 'panel' | 'embedded'
 }
 
 type InsightPresentation = {
@@ -54,7 +55,14 @@ function insightPresentation(insight: CoachInsight): InsightPresentation {
   }
 }
 
-export function CoachInsightsPanel({ dismissKey, emptyText, insights, limit, onOpenSource }: CoachInsightsPanelProps) {
+export function CoachInsightsPanel({
+  dismissKey,
+  emptyText,
+  insights,
+  limit,
+  onOpenSource,
+  variant = 'panel',
+}: CoachInsightsPanelProps) {
   const [dismissState, setDismissState] = useState<{ key?: string; ids: Set<string> }>(() => ({
     key: dismissKey,
     ids: new Set(),
@@ -77,7 +85,10 @@ export function CoachInsightsPanel({ dismissKey, emptyText, insights, limit, onO
   }
 
   return (
-    <article className="panel coach-insights-panel" aria-label="Coach Insights">
+    <article
+      className={variant === 'panel' ? 'panel coach-insights-panel' : 'coach-insights-panel coach-insights-panel-embedded'}
+      aria-label="Coach Insights"
+    >
       <div className="status-line">
         <Lightbulb className="nav-icon" aria-hidden />
         <h3>Coach Insights</h3>
@@ -115,7 +126,7 @@ export function CoachInsightsPanel({ dismissKey, emptyText, insights, limit, onO
                         <span>Quelle: {sourceLabel(source)}</span>
                         {onOpenSource && source.sessionDefinitionId ? (
                           <button className="text-action" type="button" onClick={() => onOpenSource(source)}>
-                            Quelle oeffnen
+                            Quelle öffnen
                           </button>
                         ) : (
                           <span>{source.sessionDefinitionId ? 'Quelle lokal sichtbar.' : 'Kein Session-Link.'}</span>

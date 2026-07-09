@@ -1,4 +1,6 @@
 export { OnFieldTopbar } from './OnFieldTopbar'
 export { BrandSurface } from './BrandSurface'
 export { AthleteRow, TaskQueueRow } from './Rows'
+export { ReadinessDot, type ReadinessTone } from './ReadinessDot'
+export { ScoreboardStrip, type ScoreboardMetric } from './ScoreboardStrip'
 export { SessionHeader, type SessionHeaderMetric } from './SessionHeader'
