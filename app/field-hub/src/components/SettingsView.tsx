@@ -6,8 +6,10 @@ import type { StoragePersistenceState } from '../hooks/useStoragePersistence'
 import type { AuthSessionState } from '../lib/auth'
 import type { ManualSyncFeedback } from '../lib/syncRepository'
 import { pendingCountLabel, syncStatusLabel } from '../lib/syncLabels'
+import type { ThemePreference } from '../lib/themePreference'
 import { AuthPanel } from './AuthPanel'
 import { BrandSurface } from './onfield'
+import { SegmentedControl, type SegmentedControlOption } from './ui'
 
 type SettingsViewProps = {
   authState: AuthSessionState
@@ -20,10 +22,18 @@ type SettingsViewProps = {
   onManualSync: () => void
   onNavigate: (route: AppRoute) => void
   onReloadApp: () => void
+  onThemePreferenceChange: (preference: ThemePreference) => void
   storagePersistence: StoragePersistenceState
   syncFeedback: ManualSyncFeedback | null
   syncOverview: PlayerSyncOverview
+  themePreference: ThemePreference
 }
+
+const themePreferenceOptions: SegmentedControlOption<ThemePreference>[] = [
+  { value: 'system', label: 'System' },
+  { value: 'light', label: 'Hell' },
+  { value: 'dark', label: 'Field Mode' },
+]
 
 function formatTimestamp(timestamp: string | null) {
   return timestamp ? new Date(timestamp).toLocaleString('de-AT') : 'noch nicht vorhanden'
@@ -100,9 +110,11 @@ export function SettingsView({
   onManualSync,
   onNavigate,
   onReloadApp,
+  onThemePreferenceChange,
   storagePersistence,
   syncFeedback,
   syncOverview,
+  themePreference,
 }: SettingsViewProps) {
   const syncDisabledReason = manualSyncDisabledReason({
     authState,
@@ -213,6 +225,18 @@ export function SettingsView({
           <span className={pwaDisplayMode === 'standalone' ? 'status-dot online' : 'status-dot'} aria-hidden />
           <strong>{pwaModeLabel}</strong>
           <span>{pwaModeDescription}</span>
+        </div>
+        <div className="settings-theme-control">
+          <div>
+            <strong>Darstellung</strong>
+            <span>System folgt dem Geraet. Field Mode nutzt die dunkle Sideline-Darstellung.</span>
+          </div>
+          <SegmentedControl
+            label="Darstellung"
+            onChange={onThemePreferenceChange}
+            options={themePreferenceOptions}
+            value={themePreference}
+          />
         </div>
       </section>
 

@@ -179,11 +179,11 @@ Abhaengigkeiten:
 - R1B kann parallel zu R2 laufen, muss aber vor R8/R9 abgeschlossen sein.
 
 Definition of Done:
-- [ ] System, Light und Dark/Field koennen technisch unterschieden werden.
-- [ ] Manuelle Auswahl ueberschreibt `prefers-color-scheme` und bleibt nach Reload erhalten.
-- [ ] Default bleibt `system`, damit bestehende Nutzer nicht ueberraschend umgestellt werden.
-- [ ] Toggle/Control ist keyboard- und screenreader-bedienbar.
-- [ ] Keine Layoutverschiebung in Settings oder Shell auf iPhone/iPad.
+- [x] System, Light und Dark/Field koennen technisch unterschieden werden.
+- [x] Manuelle Auswahl ueberschreibt `prefers-color-scheme` und bleibt nach Reload erhalten.
+- [x] Default bleibt `system`, damit bestehende Nutzer nicht ueberraschend umgestellt werden.
+- [x] Toggle/Control ist keyboard- und screenreader-bedienbar.
+- [x] Keine Layoutverschiebung in Settings oder Shell auf iPhone/iPad.
 
 Aufwand/Risiko/QA:
 - Aufwand: S/M.

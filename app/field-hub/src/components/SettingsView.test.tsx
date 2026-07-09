@@ -1,10 +1,15 @@
+// @vitest-environment jsdom
+
 import { createElement } from 'react'
+import { createRoot } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { act } from 'react'
+import { describe, expect, it, vi } from 'vitest'
 import type { SessionLog } from '../domain/checkIn'
 import type { PlayerSyncOverview } from '../domain/sync'
 import type { StoragePersistenceState } from '../hooks/useStoragePersistence'
 import type { AuthSessionState } from '../lib/auth'
+import type { ThemePreference } from '../lib/themePreference'
 import { SettingsView } from './SettingsView'
 
 const signedInAuthState = {
@@ -69,9 +74,11 @@ function renderSettings(
       onManualSync: () => undefined,
       onNavigate: () => undefined,
       onReloadApp: () => undefined,
+      onThemePreferenceChange: () => undefined,
       storagePersistence,
       syncFeedback: null,
       syncOverview: syncedOverview,
+      themePreference: 'system',
       ...overrides,
     }),
   )
@@ -87,6 +94,10 @@ describe('SettingsView', () => {
     expect(markup).toContain('Backup empfohlen')
     expect(markup).toContain('Export &amp; Backup oeffnen')
     expect(markup).toContain('Speicherstatus')
+    expect(markup).toContain('Darstellung')
+    expect(markup).toContain('System')
+    expect(markup).toContain('Hell')
+    expect(markup).toContain('Field Mode')
     expect(markup).toContain('Browser-Modus')
     expect(markup).toContain('Installiere OnField Coach fuer mehr Platz am Spielfeldrand.')
     expect(markup).toContain('OnField als PWA nutzen')
@@ -151,5 +162,53 @@ describe('SettingsView', () => {
     expect(markup).toContain('OnField Coach laeuft im Home-Screen-Modus.')
     expect(markup).toContain('iPadOS: dieselbe PWA, derselbe Funktionsumfang, nur mehr Flaeche.')
     expect(markup).not.toContain('beforeinstallprompt')
+  })
+
+  it('keeps the current theme preference pressed and reports changes from the segmented control', async () => {
+    const onThemePreferenceChange = vi.fn<(preference: ThemePreference) => void>()
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    try {
+      await act(async () => {
+        root.render(
+          createElement(SettingsView, {
+            authState: signedInAuthState,
+            backupRecommended: true,
+            isManualSyncing: false,
+            lastExportAt: null,
+            latestCompletedSession: completedSession,
+            needsAppRefresh: true,
+            pwaDisplayMode: 'browser',
+            onManualSync: () => undefined,
+            onNavigate: () => undefined,
+            onReloadApp: () => undefined,
+            onThemePreferenceChange,
+            storagePersistence,
+            syncFeedback: null,
+            syncOverview: syncedOverview,
+            themePreference: 'light',
+          }),
+        )
+      })
+
+      const lightButton = [...container.querySelectorAll('button')].find((button) => button.textContent === 'Hell')
+      const fieldModeButton = [...container.querySelectorAll('button')].find(
+        (button) => button.textContent === 'Field Mode',
+      )
+
+      expect(lightButton?.getAttribute('aria-pressed')).toBe('true')
+      expect(fieldModeButton?.getAttribute('aria-pressed')).toBe('false')
+
+      await act(async () => {
+        fieldModeButton?.click()
+      })
+
+      expect(onThemePreferenceChange).toHaveBeenCalledWith('dark')
+    } finally {
+      await act(async () => {
+        root.unmount()
+      })
+    }
   })
 })

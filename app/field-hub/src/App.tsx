@@ -54,6 +54,14 @@ import {
   type ManualSyncFeedback,
 } from './lib/syncRepository'
 import {
+  applyThemePreference,
+  getStoredThemePreference,
+  setStoredThemePreference,
+  subscribeToSystemThemePreferenceChanges,
+  themePreferenceStorageKey,
+  type ThemePreference,
+} from './lib/themePreference'
+import {
   defaultRouteForSection,
   legacyTargetToRoute,
   parseHashRoute,
@@ -257,6 +265,7 @@ function getInitialSessionState(fallbackSessionId: string, todayKey = toLocalDat
 
 function CoachApp() {
   const [activeRoute, setActiveRoute] = useState<AppRoute>(getInitialCoachRoute)
+  const [themePreference, setThemePreference] = useState<ThemePreference>(getStoredThemePreference)
   const [rememberedUnitRoute, setRememberedUnitRoute] = useState<UnitRoute>(() => {
     const initialRoute = getInitialCoachRoute()
     return initialRoute.section === 'unit' ? initialRoute.unitRoute : 'check-in'
@@ -684,6 +693,42 @@ function CoachApp() {
     }
   }, [refreshAllLocalData, selectedSession, userId])
 
+  const handleThemePreferenceChange = useCallback((nextThemePreference: ThemePreference) => {
+    setThemePreference(nextThemePreference)
+    setStoredThemePreference(nextThemePreference)
+    applyThemePreference(nextThemePreference)
+  }, [])
+
+  useEffect(() => {
+    applyThemePreference(themePreference)
+  }, [themePreference])
+
+  useEffect(() => {
+    if (themePreference !== 'system') {
+      return undefined
+    }
+
+    return subscribeToSystemThemePreferenceChanges(() => {
+      applyThemePreference('system')
+    })
+  }, [themePreference])
+
+  useEffect(() => {
+    function handleStorageChange(event: StorageEvent) {
+      if (event.key !== themePreferenceStorageKey) {
+        return
+      }
+
+      const nextThemePreference = getStoredThemePreference()
+      setThemePreference(nextThemePreference)
+      applyThemePreference(nextThemePreference)
+    }
+
+    window.addEventListener('storage', handleStorageChange)
+
+    return () => window.removeEventListener('storage', handleStorageChange)
+  }, [])
+
   useEffect(() => {
     window.localStorage.setItem(selectedSessionStorageKey, selectedSession.id)
   }, [selectedSession.id])
@@ -1006,9 +1051,11 @@ function CoachApp() {
             onManualSync={runManualSync}
             onNavigate={navigateToRoute}
             onReloadApp={() => void updateServiceWorker(true)}
+            onThemePreferenceChange={handleThemePreferenceChange}
             storagePersistence={storagePersistence}
             syncFeedback={manualSyncFeedback}
             syncOverview={syncOverview}
+            themePreference={themePreference}
           />
         </LazyScreen>
       ) : (

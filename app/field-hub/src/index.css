@@ -466,6 +466,21 @@ button {
   justify-self: start;
 }
 
+.settings-theme-control {
+  display: grid;
+  gap: var(--of-space-sm);
+}
+
+.settings-theme-control > div {
+  display: grid;
+  gap: var(--of-space-xs);
+}
+
+.settings-theme-control > div span {
+  color: var(--muted);
+  line-height: var(--of-line-height-secondary);
+}
+
 .panel,
 .placeholder {
   border: 1px solid var(--line);
