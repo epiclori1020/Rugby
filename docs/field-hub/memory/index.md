@@ -1,6 +1,6 @@
 # OnField Memory Index
 
-Stand: 2026-07-07
+Stand: 2026-07-08
 
 ## Zweck
 
@@ -31,6 +31,18 @@ Danach nur die fuer die Aufgabe relevanten Dateien laden.
 | Codearbeit in `app/field-hub` | `.agents/skills/rugby-field-hub-implementation/SKILL.md`, betroffene Code- und Testdateien, relevante OnField-SSOTs | Roadmap nur relevanter Sprint-Abschnitt |
 | Supabase/Auth/Sync | Supabase Skill, relevante Setup-/Code-Dateien, Current State | Supabase Docs/MCP, wenn Schema/RLS/Auth geaendert wird |
 | Rugby-Content/Training | relevante `plans/`, `templates/`, `research/` und Coaching-Dokumente | OnField-App-SSOTs nur, wenn App-Verhalten betroffen ist |
+
+## Design-Audit / Redesign-Kontext (2026-07-08)
+
+Fuer Redesign-, UX-, UI- oder Branding-Arbeit zusaetzlich lesen:
+
+- **Bauen/Umsetzen:** `docs/field-hub/onfield_redesign_spec_v2.md` — konkrete, buildbare Spec (Route A): Farb-Tokens Light+Dark „Field Mode", Typo-Tokens + Gewicht-Disziplin, Komponenten (row-first Athleten-Row, Scoreboard, Readiness-Dot), Screen-Spec „Squad heute", Build-Reihenfolge + Definition of Done. **Primaere Quelle fuer Redesign-Code.**
+- **Diagnose/Kontext:** `docs/field-hub/2026-07-08_onfield_design_audit_live.md` — Audit-Grundlage (Execution-Drift, Live-Durchgang, iPhone/iPad-Paritaet, Backlog P0–P2).
+- **Redesign-v2-Sprintplanung:** `docs/superpowers/plans/2026-07-08-onfield-redesign-v2-heritage-field-instrument.md` — aktive Sprint-Roadmap R1-R10 fuer Route A "Heritage Field Instrument"; vor Umsetzung eines Redesign-Sprints den konkreten Sprintabschnitt daraus lesen.
+- Visuelle Referenz (nur Menschen/Abgleich): `docs/field-hub/2026-07-08_onfield_redesign_concept.html` (CSS enthaelt dieselben Werte; die Spec-MD ist die verbindliche Textquelle).
+- Menschen-Report (ausfuehrlich): `app/field-hub/DESIGN_AUDIT_2026-07-08.md`.
+
+Kernregel: **kein neues Designsystem bauen — das dokumentierte umsetzen** (Typo-Skala, max. 3 Gewichte, tabular numerals, row-first, eine Primaerhandlung/View) und erlaubte Premium-Hebel aktivieren (Dark/Field-Mode, Scoreboard-Numerals, Oxblood nur Brand-Surfaces). Werte in `onfield_redesign_spec_v2.md`.
 
 ## Research-Regel
 
@@ -74,6 +86,7 @@ Roadmap-Status:
 
 - `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md` ist die abgeschlossene Haupt-Roadmap fuer Sprint 0A bis Sprint 20.
 - `docs/superpowers/plans/2026-07-06-onfield-post-roadmap-hardening.md` ist die abgeschlossene Anschluss-Roadmap fuer Sprint 21 bis Sprint 26.
+- `docs/superpowers/plans/2026-07-08-onfield-redesign-v2-heritage-field-instrument.md` ist die aktive Redesign-v2-Roadmap fuer R1 bis R10 (Route A "Heritage Field Instrument").
 - `docs/field-hub/2026-07-07_onfield_post_roadmap_hardening_evidence.md` ist das Closeout-/Evidence-Dokument fuer Sprint 21 bis Sprint 26.
 - Phase A der Anschluss-Roadmap war beta-blockierend. Externe Beta bleibt von frischer echter `qa:beta`-Evidence, Supabase/Auth/RLS-Gate und Credential-Hygiene abhaengig.
 

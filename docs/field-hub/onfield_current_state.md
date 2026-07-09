@@ -1,6 +1,6 @@
 # OnField Current State
 
-Letztes Update: 2026-07-07
+Letztes Update: 2026-07-09
 
 ## Aktueller Produktname
 
@@ -28,7 +28,7 @@ Letztes Update: 2026-07-07
 | Bereich | Stand |
 |---|---|
 | Navigation | Sprint 6 hat die App-Shell im Code auf `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` umgestellt. Sprint 8 hat `Einheit` als echten Arbeitscontainer mit Session Header, Session-Auswahl, Check-in/Training/Nachbereitung-Subnavigation und gemeinsamen Kontextstatus umgesetzt. Sprint 14 hat `Mehr` als ruhige Utility-Zone fuer `Bibliothek`, `Export & Backup`, `Einstellungen` und `Returner` geschaerft. Sprint 24 hat das alte interne Tab-Modell durch kanonische Coach-Routen (`#/today`, `#/unit/...`, `#/more/...`) mit Legacy-Hash-Normalisierung und Back/Forward-Sync ersetzt. |
-| Designsystem | Sprint 5 hat das erste Core Component Kit in Code, Repo-Dokumentation und Figma-Sheet angelegt. Sprint 25 hat priorisierte Action-Stellen auf bessere Disabled-/Loading-Semantik und `--of-*`-nahe Patterns gehaertet; screen-weite Migrationen folgen weiter gezielt. |
+| Designsystem | Sprint 5 hat das erste Core Component Kit in Code, Repo-Dokumentation und Figma-Sheet angelegt. Sprint 25 hat priorisierte Action-Stellen auf bessere Disabled-/Loading-Semantik und `--of-*`-nahe Patterns gehaertet. Redesign-v2 R1A hat `tokens.css` um Field-Mode-Dark-Tokens, Typografie-/Weight-/Numeric-Tokens, `--of-color-on-brand`, `.of-num`, Token-Tests, Token-Sheet-Doku und ein Figma-Token/Type-Board erweitert; screen-weite Migrationen folgen weiter gezielt. |
 | PWA/Install | Sprint 7 hat Manifest-/Install-Metadaten, Brand-Surfaces und das eigene OnField Coach SVG/PNG-Icon-Set fuer PWA/iOS aktualisiert. Sprint 18 hat Offline-Navigation per App-Shell-Fallback, Settings-Display-Mode-Hinweise, sichtbare Disabled-Gruende und automatisierten PWA-Smoke fuer iPhone/iPad-Viewports ergaenzt. Sprint 19 hat eine Screen-by-Screen-QA-Matrix plus automatisierten Sprint-19-Visual-QA-Smoke fuer iPhone/iPad-Viewports ergaenzt. Sprint 20 hat die kontrollierte externe Beta-Readiness, PWA-Install-/QA-Kriterien und Native/SaaS-Entscheidungskriterien dokumentiert. Sprint 21 hat `qa:local` und `qa:beta` als harte QA-Gates ergaenzt; post-roadmap ist `qa:local` um maschinenlesbare Reports, Browser-Error-Fails und Returner in der Visual-Matrix gehaertet. Sprint 23 hat `npm run supabase:audit` als Supabase/Auth/RLS-Gate in beide QA-Gates eingebunden. Sprint 25 hat Medium-Viewport-QA (`744px`) und maskable PWA-Icons ergaenzt. Sprint 26 hat den finalen Beta-/Evidence-Closeout und die README-/Memory-Verweise aktualisiert. |
 | iPhone | Hat in Sprint 6 die neue 5er-Bottom-Tab-Bar mit Safe-Area-Abstand erhalten; Unterbereiche bleiben erreichbar. |
 | iPad | Hat in Sprint 6 die neue 5er-Sidebar plus Content-Struktur erhalten; Unterbereiche bleiben erreichbar. |
@@ -47,6 +47,9 @@ Letztes Update: 2026-07-07
 
 - Abgeschlossene Haupt-Roadmap 0A-20: `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md`
 - Anschluss-Roadmap nach Abschluss-Audit: `docs/superpowers/plans/2026-07-06-onfield-post-roadmap-hardening.md`
+- Aktive Redesign-v2-Roadmap: `docs/superpowers/plans/2026-07-08-onfield-redesign-v2-heritage-field-instrument.md`
+- Redesign-v2-Spec: `docs/field-hub/onfield_redesign_spec_v2.md`
+- Redesign Live-Audit: `docs/field-hub/2026-07-08_onfield_design_audit_live.md`
 - Product Brief: `docs/field-hub/onfield_product_brief.md`
 - Brand Kit: `docs/field-hub/onfield_brand_kit.md`
 - Tone of Voice: `docs/field-hub/onfield_tone_of_voice.md`
@@ -130,12 +133,13 @@ Letztes Update: 2026-07-07
   - Sprint 24: Coach-Routing & Navigation Refactor ist abgeschlossen.
   - Sprint 25: Designsystem, A11y & Responsive Hardening ist abgeschlossen.
   - Sprint 26: Final Cleanup, Evidence & Memory Closeout ist abgeschlossen.
+- Redesign-v2 ist gestartet: R1A Tokens v2 & Field-Mode Token-Fundament ist abgeschlossen. `docs/superpowers/plans/2026-07-08-onfield-redesign-v2-heritage-field-instrument.md` bleibt die aktive Roadmap fuer Route A "Heritage Field Instrument". R1B Theme-Persistenz & Field-Mode Toggle folgt separat oder parallel zu R2, aber war nicht Teil des R1A-Scopes.
 
 ## Naechste empfohlene Schritte
 
-1. Kontrollierte externe Beta nach `docs/field-hub/onfield_beta_readiness.md` vorbereiten; der frische echte `qa:beta` vom 2026-07-07 ist gruen, muss aber bei weiteren Beta-relevanten Code-/DB-Aenderungen erneut laufen.
-2. Vor dem ersten externen Test Remote-Supabase-Dashboard-Settings manuell pruefen und Credential-Hygiene sicherstellen; im Chat oder Terminal sichtbar gewordene Passwoerter rotieren.
-3. Native/SaaS-Fragen erst anhand der Sprint-20-Entscheidungskriterien und echter Beta-Evidence neu bewerten.
+1. Redesign-v2 mit dem naechsten freigegebenen Slice fortsetzen: R1B Theme-Persistenz & Field-Mode Toggle oder R2 Typo-/Weight-/Numeric-Refactor; keine spaeteren Redesign-Sprints nebenbei umsetzen.
+2. Bei sichtbaren Redesign-Sprints das Redesign Integrity Gate mit Vorher/Nachher-Evidence, Token-/Typo-Audit und iPhone/iPad-QA anwenden.
+3. Externe Beta bleibt von frischer echter `qa:beta`-Evidence, Supabase/Auth/RLS-Gate und Credential-Hygiene abhaengig; bei Redesign-Codeaenderungen die passenden Gates erneut laufen lassen.
 
 ## Offene Risiken
 

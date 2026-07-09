@@ -17,6 +17,11 @@ body {
   overflow-x: hidden;
 }
 
+.of-num {
+  font-variant-numeric: tabular-nums;
+  font-feature-settings: "tnum" 1;
+}
+
 button {
   font: inherit;
 }
@@ -131,9 +136,9 @@ button {
 }
 
 .nav-button.active {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: var(--of-color-surface-default);
+  background: var(--of-color-brand-primary);
+  border-color: var(--of-color-brand-primary);
+  color: var(--of-color-on-brand);
 }
 
 .nav-button:active,
@@ -602,8 +607,8 @@ button {
 }
 
 .brand-product-mini strong {
-  background: var(--brand);
-  color: var(--of-color-text-inverse);
+  background: var(--of-color-brand-primary);
+  color: var(--of-color-on-brand);
 }
 
 .panel.soft {
@@ -721,9 +726,9 @@ button {
 }
 
 .primary-quick-action {
-  background: var(--brand);
-  border-color: var(--brand);
-  color: var(--of-color-surface-default);
+  background: var(--of-color-brand-primary);
+  border-color: var(--of-color-brand-primary);
+  color: var(--of-color-on-brand);
 }
 
 .primary-quick-action:hover {
@@ -1102,9 +1107,9 @@ button {
 
 .filter-chip.active,
 .filter-chip:hover {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: var(--of-color-surface-default);
+  border-color: var(--of-color-brand-primary);
+  background: var(--of-color-brand-primary);
+  color: var(--of-color-on-brand);
 }
 
 .library-list {
@@ -1952,9 +1957,9 @@ button {
 
 .checkin-row-action.active,
 .checkin-row-action:hover {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: var(--of-color-text-inverse);
+  border-color: var(--of-color-brand-primary);
+  background: var(--of-color-brand-primary);
+  color: var(--of-color-on-brand);
 }
 
 .checkin-row-action:disabled {
@@ -2227,9 +2232,9 @@ button {
 
 .segmented.active,
 .number-chip.active {
-  border-color: var(--brand);
-  background: var(--brand);
-  color: var(--of-color-surface-default);
+  border-color: var(--of-color-brand-primary);
+  background: var(--of-color-brand-primary);
+  color: var(--of-color-on-brand);
 }
 
 .segmented.danger.active {
@@ -2957,8 +2962,8 @@ button {
 }
 
 .primary-action {
-  background: var(--brand);
-  color: var(--of-color-surface-default);
+  background: var(--of-color-brand-primary);
+  color: var(--of-color-on-brand);
 }
 
 .secondary-action {

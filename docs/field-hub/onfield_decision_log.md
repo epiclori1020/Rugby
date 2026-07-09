@@ -1,6 +1,6 @@
 # OnField Decision Log
 
-Stand: 2026-07-07
+Stand: 2026-07-08
 
 ## Zweck
 
@@ -59,6 +59,12 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | 2026-07-07 | Historische Backup-Child-Records ohne Spielerzuordnung bleiben lokal und werden nicht remote gesynct. | `progressEntries`, `baselineEntries` und `returnerEntries` mit `playerId: null` koennen aus alten/anonymisierten Backups stammen; Remote-RLS braucht aber gueltige Parent-Ownership. Die MVP-Regel erhaelt diese Daten lokal, verhindert aber neue Pending-Writes. | Aktiv |
 | 2026-07-07 | Beta-/Local-QA-Evidence wird maschinenlesbar und redigiert unter `.tmp/onfield-qa/` geschrieben. | Freigabeentscheidungen sollen nicht von Konsolen-Gefuehl abhaengen; Reports bleiben ignored, enthalten keine Credential-Werte und dokumentieren checked/failed/blocked Steps. | Aktiv |
 | 2026-07-07 | Runtime-Memory-Tests nutzen temporaere `ONFIELD_MEMORY_DIR`-Wurzeln. | Tests duerfen die echte lokale `.onfield-memory`-Runtime nicht loeschen oder verfaelschen; die Produkt-Runtime bleibt der Default, isolierte Testwurzeln sind explizit. | Aktiv |
+| 2026-07-08 | OnField geht in einen echten Design-/Branding-Redesign-Zyklus, nicht weitere CSS-Einzel-Anpassung. | Nutzer ist mit dem inkrementell angepassten Ist-Zustand unzufrieden; der Live-Audit (`2026-07-08_onfield_design_audit_live.md`) zeigt Execution-Drift (Code implementiert das eigene Designsystem nicht: keine Typo-Tokens, ~55/59 Weights 800–900, Card-Walls statt row-first, mehrere konkurrierende Primaeraktionen) plus fehlende Signature-Craft. | Aktiv |
+| 2026-07-08 | Redesign-Leitlinie: Route A "Execute + Elevate Field Graphite" / "Heritage Field Instrument" ist die aktive Redesign-Richtung. Das dokumentierte Designsystem wird umgesetzt statt neu erfunden, plus erlaubte Premium-Hebel (Typo-Skala + max. 3 Gewichte, tabular „Scoreboard"-Numerals, Display-Headline-Font nach Test, Dark/Field-Mode, Oxblood-Signature auf Brand-Surfaces, Field-as-layout, row-first). | Nutzer bestaetigt explizit echten Redesign-/UX-/UI-Qualitaetsanspruch statt MVP-like Weiterarbeit. Strategie/Spec (Field Graphite, Calm Intensity, operations-first) bleiben gut; Differenzierung entsteht aus Craft + Signature, nicht aus Neon. Live-Screens bleiben ruhig. | Aktiv |
+| 2026-07-08 | Dark/Field-Mode wird als Teil des Redesign-Zyklus vorgezogen. | Die zurueckgestellte Dark-Mode-Entscheidung nannte „nach Kernflow-Redesign" als Trigger; der beginnt jetzt. Sonnenlicht-Feldtauglichkeit macht ihn produktrelevant. | Aktiv (Umsetzung an Redesign-Route gekoppelt) |
+| 2026-07-08 | Die Redesign-v2-Serie wird als eigene Roadmap R1-R10 geplant. | Die abgeschlossenen Sprints 0A-26 werden nicht wiedereroeffnet; `docs/superpowers/plans/2026-07-08-onfield-redesign-v2-heritage-field-instrument.md` schneidet das Redesign in mergebare Sprints mit Fundament zuerst, P0-Sicherheit frueh und "Squad heute" als erstem sichtbaren Leit-Screen. | Aktiv |
+| 2026-07-08 | Sichtbare Redesign-Sprints brauchen ein Redesign Integrity Gate. | Damit die Umsetzung nicht wieder bei leichten UI-/CSS-Anpassungen stehen bleibt, muessen sichtbare Redesign-PRs Vorher/Nachher-Screenshots, UX-Intent, Pattern-Audit, Token-/Typo-Audit, Copy-/Trust-Audit und passende QA-Gates liefern. R7 wird in R7A-R7D umgesetzt, nicht als Big-Bang-Kernflow-PR. | Aktiv |
+| 2026-07-08 | Figma ist die primaere visuelle Referenz fuer Redesign-v2; Bild-KI ist nur fuer Brand-/Rasterassets erlaubt. | Codex kann Figma ueber MCP fuer Frames, Prototypen, Design-to-Code-Kontext, Screenshots und Evidence nutzen. Codex hat eine eingebaute `image_gen`-Faehigkeit; ein dediziertes Nano-Banana-Plugin ist in der aktuellen Umgebung nicht verfuegbar. Externe Nano-Banana/Gemini-Image-Outputs koennen als importierte Brand-Assets dienen, aber operative UI wird in Figma/Code mit Tokens und Komponenten gebaut. | Aktiv |
 
 ## Markenarchitektur
 
@@ -95,7 +101,7 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | Thema | Warum zurueckgestellt | Wann neu bewerten |
 |---|---|---|
 | Native App / Flutter / React Native | Ein Rewrite loest IA, UX und Designsystem nicht automatisch. | Nach externer Beta und stabiler PWA-UX. |
-| Dark Mode | Erhoeht QA-Aufwand, bevor Light Mode und Tokens stabil sind. | Nach Kernflow-Redesign und QA. |
+| Dark Mode | Nicht mehr zurueckgestellt; durch die Entscheidung vom 2026-07-08 als Dark "Field Mode" in den Redesign-Zyklus vorgezogen. | Umsetzung in Redesign-v2 R1/R8/R9 nach `docs/superpowers/plans/2026-07-08-onfield-redesign-v2-heritage-field-instrument.md`. |
 | Multi-Tenant SaaS, Billing, Organisationen | Nicht Teil des Coach-Operations-MVP. | In eigener OnField Performance Plattform-Roadmap. |
 | Player Accounts / Player Portal | Erhoeht Auth-, Datenschutz- und Support-Komplexitaet. | Wenn Public/Kiosk-Flow validiert ist und Player-Modul klar definiert wurde. |
 | Leaderboards, Feed, Social Features | Nicht Teil des aktuellen Coach-Operations-Kerns. | Spaeter als eigenes Engagement-Modul pruefen. |

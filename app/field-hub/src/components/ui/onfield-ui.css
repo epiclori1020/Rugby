@@ -20,7 +20,7 @@
 
 .of-button-primary {
   background: var(--of-color-brand-primary);
-  color: var(--of-color-text-inverse);
+  color: var(--of-color-on-brand);
 }
 
 .of-button-secondary {
@@ -115,7 +115,7 @@
 .of-number-scale-option[aria-pressed="true"] {
   border-color: var(--of-color-brand-primary);
   background: var(--of-color-brand-primary);
-  color: var(--of-color-text-inverse);
+  color: var(--of-color-on-brand);
 }
 
 .of-number-scale-option {
