@@ -292,6 +292,10 @@ Definition of Done:
 - [x] Keine medizinische Freigabesprache.
 - [ ] `qa:beta` deckt Kiosk/Public-Pfade echt ab, nicht als Skip.
 
+Statusnotiz 2026-07-09:
+- R3-Code, lokale QA und PWA-/Responsive-Smokes sind umgesetzt.
+- `qa:beta` bleibt bewusst offen, weil Laufzeit-Credentials und `FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1` in der aktuellen Umgebung fehlen. Dieser Skip gilt nicht als Beta-Freigabe.
+
 Aufwand/Risiko/QA:
 - Aufwand: M.
 - Risiko: H, weil Datenschutz/Sicherheit und Public/Kiosk betroffen sind.
