@@ -520,6 +520,7 @@ describe('TrainingView session block status controls', () => {
       limits: ['kein_sprint', 'kein_cond'],
       previousWarning: false,
     })
+    expect(container.textContent).toContain('gespeichert')
   })
 
   it('refreshes exercise capture defaults when the selected player changes', async () => {

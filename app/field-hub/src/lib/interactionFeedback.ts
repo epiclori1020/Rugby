@@ -1,4 +1,14 @@
 export type HapticFeedbackKind = 'selection' | 'success' | 'warning'
+export type ActionFeedbackTone = 'success' | 'pending' | 'offline' | 'error'
+
+export type ActionFeedbackState = {
+  tone: ActionFeedbackTone
+  message: string
+}
+
+export type SaveActionResult<T = unknown> =
+  | { ok: true; syncStatus?: 'synced' | 'pending' | 'error'; value?: T }
+  | { ok: false; errorMessage: string }
 
 type HapticTarget = {
   vibrate?: (pattern: VibratePattern) => boolean
@@ -19,4 +29,37 @@ export function triggerHapticFeedback(
   }
 
   return target.vibrate(hapticPatterns[kind])
+}
+
+export function actionFeedbackForSave({
+  syncStatus = 'synced',
+  isOnline = typeof navigator === 'undefined' ? true : navigator.onLine,
+}: {
+  syncStatus?: 'synced' | 'pending' | 'error'
+  isOnline?: boolean
+}): ActionFeedbackState {
+  if (!isOnline) {
+    return { tone: 'offline', message: 'offline lokal gespeichert' }
+  }
+
+  if (syncStatus === 'pending') {
+    return { tone: 'pending', message: 'wartet auf Sync' }
+  }
+
+  if (syncStatus === 'error') {
+    return actionFeedbackForFailure()
+  }
+
+  return { tone: 'success', message: 'gespeichert' }
+}
+
+export function actionFeedbackForFailure(message = 'nicht gespeichert - erneut versuchen'): ActionFeedbackState {
+  return { tone: 'error', message }
+}
+
+export function triggerActionFeedback(
+  feedback: ActionFeedbackState,
+  target: HapticTarget | undefined = typeof navigator === 'undefined' ? undefined : navigator,
+) {
+  return triggerHapticFeedback(feedback.tone === 'error' ? 'warning' : 'success', target)
 }

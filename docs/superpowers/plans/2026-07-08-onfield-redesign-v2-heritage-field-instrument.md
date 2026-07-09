@@ -344,13 +344,13 @@ Abhaengigkeiten:
 - R1A, R2 empfohlen. R1B ist fuer R4 nicht blockierend. R3 unabhaengig, aber beide sind P0.
 
 Definition of Done:
-- [ ] OnBlur-/Quick-Actions in Training, Nachbereitung und Returner quittieren Speicherung sichtbar.
-- [ ] Feedback ist mit `aria-live` erreichbar und funktioniert offline/pending-sync.
-- [ ] Haptik nutzt `triggerHapticFeedback` ohne harte Browser-Abhaengigkeit.
-- [ ] Keine sichtbare Copy mit `VITE_SUPABASE_URL`, `.env`, rohen Supabase-Fehlern oder hartkodiertem Personennamen.
-- [ ] Geaenderte UI-Copy ist deutsch, coachnah und ohne Diagnose-/Freigabesprache.
-- [ ] Status bleibt Farbe + Text + Glyph/Form.
-- [ ] Genau eine dominante Primaeraktion pro betroffener View bleibt erhalten.
+- [x] OnBlur-/Quick-Actions in Training, Nachbereitung und Returner quittieren Speicherung sichtbar.
+- [x] Feedback ist mit `aria-live` erreichbar und funktioniert offline/pending-sync.
+- [x] Haptik nutzt `triggerHapticFeedback` ohne harte Browser-Abhaengigkeit.
+- [x] Keine sichtbare Copy mit `VITE_SUPABASE_URL`, `.env`, rohen Supabase-Fehlern oder hartkodiertem Personennamen.
+- [x] Geaenderte UI-Copy ist deutsch, coachnah und ohne Diagnose-/Freigabesprache.
+- [x] Status bleibt Farbe + Text + Glyph/Form.
+- [x] Genau eine dominante Primaeraktion pro betroffener View bleibt erhalten.
 
 Aufwand/Risiko/QA:
 - Aufwand: L.

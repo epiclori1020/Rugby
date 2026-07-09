@@ -38,6 +38,7 @@ import {
   resetPublicCheckInSubmissionsForSession,
   type CreatedPublicCheckInLink,
 } from '../lib/publicCheckInRepository'
+import type { SaveActionResult } from '../lib/interactionFeedback'
 
 const REMOTE_PULL_THROTTLE_MS = 30_000
 
@@ -537,7 +538,7 @@ export function useCheckIns(
     }
   }
 
-  async function saveSessionPatch(patch: SessionLogPatch) {
+  async function saveSessionPatch(patch: SessionLogPatch): Promise<SaveActionResult | void> {
     if (!userId) {
       throw new Error('Login erforderlich.')
     }
@@ -551,9 +552,11 @@ export function useCheckIns(
       if (typeof navigator === 'undefined' || navigator.onLine) {
         scheduleBackgroundSync(userId, 'check-ins', runBackgroundSync)
       }
+      return { ok: true, syncStatus: savedSessionLog.syncStatus }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Training-Notiz konnte nicht gespeichert werden.'
       setErrorMessage(message)
+      return { ok: false, errorMessage: message }
     }
   }
 

@@ -1,7 +1,7 @@
 import { LogIn, LogOut, ShieldCheck } from 'lucide-react'
 import { useState, type FormEvent } from 'react'
 import type { AuthSessionState } from '../lib/auth'
-import { signInWithEmailPassword, signOutCoach } from '../lib/auth'
+import { authErrorMessage, signInWithEmailPassword, signOutCoach } from '../lib/auth'
 import { BrandSurface } from './onfield'
 import { PrimaryButton, SecondaryButton } from './ui'
 
@@ -14,6 +14,7 @@ export function AuthPanel({ authState }: AuthPanelProps) {
   const [password, setPassword] = useState('')
   const [error, setError] = useState<string | null>(null)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const displayedError = error ?? (authState.error ? authErrorMessage(new Error(authState.error)) : null)
 
   async function handleSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
@@ -24,7 +25,7 @@ export function AuthPanel({ authState }: AuthPanelProps) {
       await signInWithEmailPassword(email, password)
       setPassword('')
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Login fehlgeschlagen.')
+      setError(authErrorMessage(caughtError))
     } finally {
       setIsSubmitting(false)
     }
@@ -37,7 +38,7 @@ export function AuthPanel({ authState }: AuthPanelProps) {
     try {
       await signOutCoach()
     } catch (caughtError) {
-      setError(caughtError instanceof Error ? caughtError.message : 'Logout fehlgeschlagen.')
+      setError(authErrorMessage(caughtError))
     } finally {
       setIsSubmitting(false)
     }
@@ -46,12 +47,11 @@ export function AuthPanel({ authState }: AuthPanelProps) {
   if (authState.status === 'missing-config') {
     return (
       <BrandSurface
-        body="Setze lokal nur die browser-sicheren Supabase-Werte. Danach kann der Coach-Login genutzt werden."
+        body="Coach-Login ist noch nicht eingerichtet. Bitte Setup prüfen."
         className="auth-panel"
         meta={
           <p>
-            <code>VITE_SUPABASE_URL</code> und <code>VITE_SUPABASE_PUBLISHABLE_KEY</code> in{' '}
-            <code>app/field-hub/.env</code>.
+            Login bleibt gesperrt, bis die browser-sichere Konfiguration lokal vorhanden ist.
           </p>
         }
         title="OnField Coach vorbereiten"
@@ -113,7 +113,7 @@ export function AuthPanel({ authState }: AuthPanelProps) {
         <PrimaryButton icon={<LogIn className="nav-icon" aria-hidden />} isLoading={isSubmitting} loadingLabel="Login laeuft" type="submit">
           Einloggen
         </PrimaryButton>
-        {authState.error || error ? <p className="form-error">{error ?? authState.error}</p> : null}
+        {displayedError ? <p className="form-error">{displayedError}</p> : null}
       </form>
     </BrandSurface>
   )

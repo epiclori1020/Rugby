@@ -35,12 +35,14 @@ import type { useExposures } from '../hooks/useExposures'
 import type { useExercises } from '../hooks/useExercises'
 import type { useMetrics } from '../hooks/useMetrics'
 import type { usePostSession } from '../hooks/usePostSession'
+import { useActionFeedback } from '../hooks/useActionFeedback'
 import type { AuthSessionState } from '../lib/auth'
 import { hasPlayerId } from '../lib/playerId'
 import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
 import { TaskQueueRow } from './onfield'
 import { ExposureReviewPanel } from './ExposureReviewPanel'
 import { SessionPicker } from './SessionPicker'
+import { ActionFeedback } from './ui/ActionFeedback'
 import { PainScale, PrimaryButton, SecondaryButton } from './ui'
 
 type PostSessionActions = ReturnType<typeof usePostSession>
@@ -48,6 +50,7 @@ type BaselineActions = ReturnType<typeof useBaselines>
 type ExposureActions = ReturnType<typeof useExposures>
 type ExerciseActions = ReturnType<typeof useExercises>
 type MetricActions = ReturnType<typeof useMetrics>
+type SaveSyncStatus = 'synced' | 'pending' | 'error'
 
 type PostSessionViewProps = {
   authState: AuthSessionState
@@ -82,6 +85,44 @@ const nextStepOptions: Array<{ value: NextStep; label: string }> = [
   { value: 'reduzieren', label: 'Reduzieren' },
   { value: 'klaeren', label: 'Klaeren' },
 ]
+
+function syncStatusFromSaveResult(result: unknown): SaveSyncStatus | undefined {
+  if (!result || typeof result !== 'object') {
+    return undefined
+  }
+
+  if ('syncStatus' in result && typeof result.syncStatus === 'string') {
+    return result.syncStatus as SaveSyncStatus
+  }
+
+  if ('entry' in result && result.entry && typeof result.entry === 'object' && 'syncStatus' in result.entry) {
+    const syncStatus = result.entry.syncStatus
+    return typeof syncStatus === 'string' ? (syncStatus as SaveSyncStatus) : undefined
+  }
+
+  if ('value' in result && result.value && typeof result.value === 'object' && 'syncStatus' in result.value) {
+    const syncStatus = result.value.syncStatus
+    return typeof syncStatus === 'string' ? (syncStatus as SaveSyncStatus) : undefined
+  }
+
+  return undefined
+}
+
+function errorMessageFromSaveResult(result: unknown) {
+  if (!result || typeof result !== 'object') {
+    return undefined
+  }
+
+  if ('errorMessage' in result && typeof result.errorMessage === 'string') {
+    return result.errorMessage
+  }
+
+  if ('error' in result && typeof result.error === 'string') {
+    return result.error
+  }
+
+  return undefined
+}
 
 const exerciseVariantLabels: Record<ExerciseVariant, string> = {
   A_plus: 'A+',
@@ -1225,6 +1266,7 @@ export function PostSessionView({
   const [exerciseDefaultVersion, setExerciseDefaultVersion] = useState(0)
   const [exerciseFormError, setExerciseFormError] = useState<string | null>(null)
   const [metricFormError, setMetricFormError] = useState<string | null>(null)
+  const actionFeedback = useActionFeedback()
   const {
     activePlayers,
     entries,
@@ -1304,9 +1346,47 @@ export function PostSessionView({
         return
       }
 
-      void saveSessionPatch({ [field]: parsed })
+      void saveWithFeedback(() => saveSessionPatch({ [field]: parsed }))
     }
   }
+
+  function applySaveFeedback(result: unknown) {
+    if (result && typeof result === 'object' && 'ok' in result && result.ok === false) {
+      actionFeedback.showError(errorMessageFromSaveResult(result))
+      return
+    }
+
+    actionFeedback.showSaved(syncStatusFromSaveResult(result))
+  }
+
+  async function saveWithFeedback<T>(saveOperation: () => Promise<T>) {
+    try {
+      const result = await saveOperation()
+      applySaveFeedback(result)
+      return result
+    } catch (caughtError) {
+      actionFeedback.showError(caughtError instanceof Error ? caughtError.message : undefined)
+      throw caughtError
+    }
+  }
+
+  const savePlayerPostSessionWithFeedback: PostSessionActions['savePlayerPostSession'] = (player, patch) =>
+    saveWithFeedback(() => savePlayerPostSession(player, patch))
+
+  const savePlayerProgressWithFeedback: PostSessionActions['savePlayerProgress'] = (player, patch) =>
+    saveWithFeedback(() => savePlayerProgress(player, patch))
+
+  const saveSessionPatchWithFeedback: PostSessionActions['saveSessionPatch'] = (patch) =>
+    saveWithFeedback(() => saveSessionPatch(patch))
+
+  const savePlayerBaselineWithFeedback: BaselineActions['savePlayerBaseline'] = (player, patch) =>
+    saveWithFeedback(() => baselineActions.savePlayerBaseline(player, patch))
+
+  const savePlayerMetricWithFeedback: MetricActions['savePlayerMetric'] = (player, patch) =>
+    saveWithFeedback(() => metricActions.savePlayerMetric(player, patch))
+
+  const savePlayerExerciseResultWithFeedback: ExerciseActions['savePlayerExerciseResult'] = (player, patch) =>
+    saveWithFeedback(() => exerciseActions.savePlayerExerciseResult(player, patch))
 
   async function handleRunSync() {
     await runSync()
@@ -1421,11 +1501,11 @@ export function PostSessionView({
         isPostSavingDisabled={isLoading}
         items={missingValues}
         onMetricParseError={setMetricFormError}
-        onMetricSave={metricActions.savePlayerMetric}
+        onMetricSave={savePlayerMetricWithFeedback}
         onNavigate={onNavigate}
-        onPostSave={savePlayerPostSession}
-        onProgressSave={savePlayerProgress}
-        onSessionSave={saveSessionPatch}
+        onPostSave={savePlayerPostSessionWithFeedback}
+        onProgressSave={savePlayerProgressWithFeedback}
+        onSessionSave={saveSessionPatchWithFeedback}
         playersById={playersById}
       />
 
@@ -1438,6 +1518,8 @@ export function PostSessionView({
           </button>
         </div>
       ) : null}
+
+      <ActionFeedback feedback={actionFeedback.feedback} />
 
       {showSyncAttention ? (
         <div className="panel checkin-sync-strip">
@@ -1473,15 +1555,17 @@ export function PostSessionView({
           entries={entries}
           isSavingDisabled={isLoading || exposureActions.isLoading}
           onGenerate={() => {
-            void exposureActions.generateExposureSummaries({
-              sessionLog,
-              blockLogs: exposureBlockLogs,
-              entries,
-              returnerCaps,
-            })
+            void saveWithFeedback(() =>
+              exposureActions.generateExposureSummaries({
+                sessionLog,
+                blockLogs: exposureBlockLogs,
+                entries,
+                returnerCaps,
+              }),
+            )
           }}
           onManualOverride={(summary, type, override) => {
-            void exposureActions.saveManualOverride(summary, type, override)
+            void saveWithFeedback(() => exposureActions.saveManualOverride(summary, type, override))
           }}
           players={activePlayers}
           sessionLog={sessionLog}
@@ -1511,7 +1595,7 @@ export function PostSessionView({
               key={`${selectedSessionId}-${sessionLog?.id ?? 'new'}-review`}
               rows={3}
               placeholder="Follow-ups, gekuerzte Inhalte, organisatorische Probleme"
-              onBlur={(event) => void saveSessionPatch({ coachReview: event.currentTarget.value.trim() })}
+              onBlur={(event) => void saveSessionPatchWithFeedback({ coachReview: event.currentTarget.value.trim() })}
             />
           </label>
         </div>
@@ -1559,7 +1643,7 @@ export function PostSessionView({
               isSavingDisabled={metricActions.isLoading}
               key={player.id}
               onParseError={setMetricFormError}
-              onSave={metricActions.savePlayerMetric}
+              onSave={savePlayerMetricWithFeedback}
               player={player}
             />
           ))}
@@ -1657,7 +1741,7 @@ export function PostSessionView({
                 isSavingDisabled={exerciseActions.isLoading}
                 key={`${player.id}-${exerciseDefaultVersion}`}
                 onCopyPrevious={(selectedPlayer, previous) => {
-                  void exerciseActions.savePlayerExerciseResult(selectedPlayer, {
+                  void savePlayerExerciseResultWithFeedback(selectedPlayer, {
                     exerciseKey: previous.exerciseKey,
                     variant: previous.variant,
                     sets: previous.sets,
@@ -1675,7 +1759,7 @@ export function PostSessionView({
                     )
                   })
                 }}
-                onSave={exerciseActions.savePlayerExerciseResult}
+                onSave={savePlayerExerciseResultWithFeedback}
                 player={player}
                 previousResult={previousResult}
               />
@@ -1726,7 +1810,7 @@ export function PostSessionView({
               isSavingDisabled={baselineActions.isLoading}
               key={player.id}
               onParseError={setBaselineFormError}
-              onSave={baselineActions.savePlayerBaseline}
+              onSave={savePlayerBaselineWithFeedback}
               player={player}
             />
           ))}
@@ -1741,8 +1825,8 @@ export function PostSessionView({
               entry={getEntryForPlayer(player)}
               isSavingDisabled={isLoading}
               key={player.id}
-              onPostSave={savePlayerPostSession}
-              onProgressSave={savePlayerProgress}
+              onPostSave={savePlayerPostSessionWithFeedback}
+              onProgressSave={savePlayerProgressWithFeedback}
               player={player}
               progressEntry={getProgressForPlayer(player)}
               sessionDuration={sessionLog?.durationMinutes ?? null}

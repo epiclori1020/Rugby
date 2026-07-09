@@ -30,12 +30,14 @@ import type { useExercises } from '../hooks/useExercises'
 import type { useExposures } from '../hooks/useExposures'
 import type { useMetrics } from '../hooks/useMetrics'
 import type { useSessionBlocks } from '../hooks/useSessionBlocks'
+import { useActionFeedback } from '../hooks/useActionFeedback'
 import type { AuthSessionState } from '../lib/auth'
 import { hasPlayerId } from '../lib/playerId'
 import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
 import { LiveSessionStepper } from './LiveSessionStepper'
 import { ExposureReviewPanel } from './ExposureReviewPanel'
 import { SessionPicker } from './SessionPicker'
+import { ActionFeedback } from './ui/ActionFeedback'
 import { PrimaryButton, SecondaryButton } from './ui'
 
 type TrainingActions = ReturnType<typeof useCheckIns>
@@ -43,6 +45,7 @@ type SessionBlockActions = ReturnType<typeof useSessionBlocks>
 type ExposureActions = ReturnType<typeof useExposures>
 type MetricActions = ReturnType<typeof useMetrics>
 type ExerciseActions = ReturnType<typeof useExercises>
+type SaveSyncStatus = 'synced' | 'pending' | 'error'
 
 type TrainingViewProps = {
   authState: AuthSessionState
@@ -105,6 +108,44 @@ const playerFilterOptions: Array<{ value: TrainingPlayerFilter; label: string }>
   { value: 'cluster', label: 'Cluster' },
   { value: 'all', label: 'Alle' },
 ]
+
+function syncStatusFromSaveResult(result: unknown): SaveSyncStatus | undefined {
+  if (!result || typeof result !== 'object') {
+    return undefined
+  }
+
+  if ('syncStatus' in result && typeof result.syncStatus === 'string') {
+    return result.syncStatus as SaveSyncStatus
+  }
+
+  if ('entry' in result && result.entry && typeof result.entry === 'object' && 'syncStatus' in result.entry) {
+    const syncStatus = result.entry.syncStatus
+    return typeof syncStatus === 'string' ? (syncStatus as SaveSyncStatus) : undefined
+  }
+
+  if ('value' in result && result.value && typeof result.value === 'object' && 'syncStatus' in result.value) {
+    const syncStatus = result.value.syncStatus
+    return typeof syncStatus === 'string' ? (syncStatus as SaveSyncStatus) : undefined
+  }
+
+  return undefined
+}
+
+function errorMessageFromSaveResult(result: unknown) {
+  if (!result || typeof result !== 'object') {
+    return undefined
+  }
+
+  if ('errorMessage' in result && typeof result.errorMessage === 'string') {
+    return result.errorMessage
+  }
+
+  if ('error' in result && typeof result.error === 'string') {
+    return result.error
+  }
+
+  return undefined
+}
 
 function trainingCollapsedStorageKey(userId: string, sessionId: string) {
   return `fieldHub:trainingLiveCollapsed:${userId}:${sessionId}`
@@ -504,6 +545,7 @@ export function TrainingView({
   const [trainingClusterFilter, setTrainingClusterFilter] = useState('offen')
   const [selectedTrainingPlayerId, setSelectedTrainingPlayerId] = useState<string | null>(null)
   const selectedTrainingPlayerSheetRef = useRef<HTMLDivElement | null>(null)
+  const actionFeedback = useActionFeedback()
   const hasTrainingProgress = sessionBlockActions.blockLogs.length > 0
   const isLiveModeForSession = liveModeState.sessionId === selectedSession.id
   const isLiveModeStarted = isLiveModeForSession && liveModeState.started
@@ -540,11 +582,33 @@ export function TrainingView({
         return
       }
 
-      void saveSessionPatch({
-        [field]: value,
-        planChanged: true,
-        status: 'in_progress',
-      })
+      void saveWithFeedback(() =>
+        saveSessionPatch({
+          [field]: value,
+          planChanged: true,
+          status: 'in_progress',
+        }),
+      )
+    }
+  }
+
+  function applySaveFeedback(result: unknown) {
+    if (result && typeof result === 'object' && 'ok' in result && result.ok === false) {
+      actionFeedback.showError(errorMessageFromSaveResult(result))
+      return
+    }
+
+    actionFeedback.showSaved(syncStatusFromSaveResult(result))
+  }
+
+  async function saveWithFeedback<T>(saveOperation: () => Promise<T>) {
+    try {
+      const result = await saveOperation()
+      applySaveFeedback(result)
+      return result
+    } catch (caughtError) {
+      actionFeedback.showError(caughtError instanceof Error ? caughtError.message : undefined)
+      throw caughtError
     }
   }
 
@@ -608,11 +672,13 @@ export function TrainingView({
     }
 
     if (liveObservationTarget === 'group') {
-      void saveSessionPatch({
-        coachReview: appendLiveObservation(sessionLog?.coachReview ?? '', liveObservationCategory, note),
-        planChanged: true,
-        status: 'in_progress',
-      })
+      void saveWithFeedback(() =>
+        saveSessionPatch({
+          coachReview: appendLiveObservation(sessionLog?.coachReview ?? '', liveObservationCategory, note),
+          planChanged: true,
+          status: 'in_progress',
+        }),
+      )
       setLiveObservationFeedback('Gruppen-Notiz gespeichert.')
     } else {
       const player = orderedPlayers.find((item) => item.id === liveObservationTarget)
@@ -621,9 +687,11 @@ export function TrainingView({
       }
 
       const entry = getEntryForPlayer(player)
-      void saveEntry(player, {
-        observation: appendLiveObservation(entry.observation, liveObservationCategory, note),
-      })
+      void saveWithFeedback(() =>
+        saveEntry(player, {
+          observation: appendLiveObservation(entry.observation, liveObservationCategory, note),
+        }),
+      )
       setLiveObservationFeedback(`Notiz fuer ${player.name} gespeichert.`)
     }
 
@@ -749,6 +817,8 @@ export function TrainingView({
         </div>
       ) : null}
 
+      <ActionFeedback feedback={actionFeedback.feedback} />
+
       {sessionBlockActions.errorMessage ? (
         <div className="panel error-panel" role="alert">
           <strong>Blockstatus nicht vollstaendig synchronisiert</strong>
@@ -854,7 +924,7 @@ export function TrainingView({
         metricActions={metricActions}
         onCurrentBlockKeyChange={handleCurrentBlockChange}
         onSaveBlockLog={(blockKey, patch) => {
-          void sessionBlockActions.saveBlockLog(blockKey, patch)
+          void saveWithFeedback(() => sessionBlockActions.saveBlockLog(blockKey, patch))
         }}
         players={orderedPlayers}
         session={selectedSession}
@@ -1015,15 +1085,17 @@ export function TrainingView({
               entries={checkInActions.entries}
               isSavingDisabled={isLoading || exposureActions.isLoading}
               onGenerate={() => {
-                void exposureActions.generateExposureSummaries({
-                  sessionLog,
-                  blockLogs: sessionBlockActions.blockLogs,
-                  entries: checkInActions.entries,
-                  returnerCaps,
-                })
+                void saveWithFeedback(() =>
+                  exposureActions.generateExposureSummaries({
+                    sessionLog,
+                    blockLogs: sessionBlockActions.blockLogs,
+                    entries: checkInActions.entries,
+                    returnerCaps,
+                  }),
+                )
               }}
               onManualOverride={(summary, type, override) => {
-                void exposureActions.saveManualOverride(summary, type, override)
+                void saveWithFeedback(() => exposureActions.saveManualOverride(summary, type, override))
               }}
               players={activePlayers}
               sessionLog={sessionLog}
@@ -1184,7 +1256,7 @@ export function TrainingView({
               entry={getEntryForPlayer(selectedTrainingPlayer)}
               isSavingDisabled={isLoading}
               onSave={(selectedPlayer, patch) => {
-                void saveEntry(selectedPlayer, patch)
+                void saveWithFeedback(() => saveEntry(selectedPlayer, patch))
               }}
               player={selectedTrainingPlayer}
               returnerCap={returnerCapByPlayerId.get(selectedTrainingPlayer.id)}

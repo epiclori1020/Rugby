@@ -51,6 +51,7 @@ import {
   writeKioskLock,
 } from './lib/kioskLock'
 import { getPublicCheckInSyncOverview } from './lib/publicCheckInRepository'
+import { publicSubmissionErrorMessage } from './lib/publicCheckInErrors'
 import {
   buildManualSyncFeedback,
   combineSyncOverviews,
@@ -834,7 +835,7 @@ function CoachApp() {
     const result = await checkInActions.saveKioskEntry(player, patch)
 
     if (!result.ok) {
-      throw new Error(result.error)
+      throw new Error(publicSubmissionErrorMessage(new Error(result.error)))
     }
   }
 

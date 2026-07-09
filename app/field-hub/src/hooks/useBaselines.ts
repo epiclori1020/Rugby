@@ -12,6 +12,7 @@ import {
   saveBaselineEntry,
   type LatestBaselineEntry,
 } from '../lib/baselineRepository'
+import type { SaveActionResult } from '../lib/interactionFeedback'
 
 export function useBaselines(userId: string | null, sessionDefinition: SessionDefinition, players: Player[]) {
   const [entries, setEntries] = useState<BaselineEntry[]>([])
@@ -102,7 +103,7 @@ export function useBaselines(userId: string | null, sessionDefinition: SessionDe
       .catch(() => undefined)
   }, [refreshBaselines])
 
-  async function savePlayerBaseline(player: Player, patch: BaselineEntryPatch) {
+  async function savePlayerBaseline(player: Player, patch: BaselineEntryPatch): Promise<SaveActionResult | void> {
     if (!userId) {
       throw new Error('Login erforderlich.')
     }
@@ -116,9 +117,11 @@ export function useBaselines(userId: string | null, sessionDefinition: SessionDe
       if (typeof navigator === 'undefined' || navigator.onLine) {
         scheduleBackgroundSync(userId, 'baselines', runBackgroundSync)
       }
+      return { ok: true, syncStatus: 'pending' }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Baseline-Wert konnte nicht gespeichert werden.'
       setErrorMessage(message)
+      return { ok: false, errorMessage: message }
     }
   }
 

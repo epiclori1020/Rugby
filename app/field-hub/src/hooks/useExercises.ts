@@ -6,6 +6,7 @@ import { defaultPlayerSyncOverview, type PlayerSyncOverview } from '../domain/sy
 import { scheduleBackgroundSync } from '../lib/backgroundSync'
 import { ensureSessionLog, findSessionLog, pushPendingCheckIns, syncCheckIns } from '../lib/checkInRepository'
 import { getExerciseSyncOverview, listExerciseResultsForSession, saveExerciseResult } from '../lib/exerciseRepository'
+import type { SaveActionResult } from '../lib/interactionFeedback'
 
 export function useExercises(userId: string | null, sessionDefinition: SessionDefinition, players: Player[]) {
   const [results, setResults] = useState<ExerciseResult[]>([])
@@ -92,7 +93,7 @@ export function useExercises(userId: string | null, sessionDefinition: SessionDe
       .catch(() => undefined)
   }, [refreshExercises])
 
-  async function savePlayerExerciseResult(player: Player, patch: ExerciseResultPatch) {
+  async function savePlayerExerciseResult(player: Player, patch: ExerciseResultPatch): Promise<SaveActionResult | void> {
     if (!userId) {
       throw new Error('Login erforderlich.')
     }
@@ -106,9 +107,11 @@ export function useExercises(userId: string | null, sessionDefinition: SessionDe
       if (typeof navigator === 'undefined' || navigator.onLine) {
         scheduleBackgroundSync(userId, 'exercises', runBackgroundSync)
       }
+      return { ok: true, syncStatus: 'pending' }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Exercise-Result konnte nicht gespeichert werden.'
       setErrorMessage(message)
+      return { ok: false, errorMessage: message }
     }
   }
 

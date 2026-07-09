@@ -12,6 +12,7 @@ import {
   type ReturnerEntryPatch,
 } from '../domain/returners'
 import type { Player } from '../domain/players'
+import { useActionFeedback } from '../hooks/useActionFeedback'
 import type { useReturners } from '../hooks/useReturners'
 import type { AuthSessionState } from '../lib/auth'
 import { applyOptimisticReturnerPatch } from '../lib/optimisticUpdates'
@@ -19,6 +20,7 @@ import { measureInteraction } from '../lib/performanceTrace'
 import { returnerEntryKeyBase } from '../lib/returnerEntryKey'
 import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
 import { SessionPicker } from './SessionPicker'
+import { ActionFeedback } from './ui/ActionFeedback'
 import { SecondaryButton } from './ui'
 
 type ReturnerActions = ReturnType<typeof useReturners>
@@ -79,6 +81,7 @@ function ReturnerPlayerCard({
   const keyBase = returnerEntryKeyBase(player.id, selectedSessionId)
   const [localEntryOverride, setLocalEntryOverride] = useState<{ baseKey: string; entry: ReturnerEntry } | null>(null)
   const [savingActionKey, setSavingActionKey] = useState<string | null>(null)
+  const actionFeedback = useActionFeedback()
   const savingActionRef = useRef<string | null>(null)
   const sourceEntryKey = returnerEntryRenderKey(entry)
   const displayEntry = localEntryOverride?.baseKey === sourceEntryKey ? localEntryOverride.entry : entry
@@ -102,11 +105,14 @@ function ReturnerPlayerCard({
       const result = await measureInteraction(`returner:${actionKey}`, () => onSave(player, patch))
       if (result.ok) {
         setLocalEntryOverride({ baseKey: sourceEntryKey, entry: result.entry })
+        actionFeedback.showSaved(result.entry.syncStatus)
       } else {
         setLocalEntryOverride({ baseKey: sourceEntryKey, entry: previousEntry })
+        actionFeedback.showError(result.error)
       }
-    } catch {
+    } catch (caughtError) {
       setLocalEntryOverride({ baseKey: sourceEntryKey, entry: previousEntry })
+      actionFeedback.showError(caughtError instanceof Error ? caughtError.message : undefined)
     } finally {
       savingActionRef.current = null
       setSavingActionKey(null)
@@ -139,6 +145,8 @@ function ReturnerPlayerCard({
           Speichern laeuft gerade.
         </p>
       ) : null}
+
+      <ActionFeedback feedback={actionFeedback.feedback} />
 
       <div
         aria-busy={isSavingDisabled || undefined}

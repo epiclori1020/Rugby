@@ -23,6 +23,7 @@ import {
   saveProgressEntry,
   type ProgressEntryPatch,
 } from '../lib/postSessionRepository'
+import type { SaveActionResult } from '../lib/interactionFeedback'
 
 export function usePostSession(userId: string | null, sessionDefinition: SessionDefinition, players: Player[]) {
   const [entries, setEntries] = useState<PlayerSessionEntry[]>([])
@@ -120,7 +121,7 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
       .catch(() => undefined)
   }, [refreshPostSession])
 
-  async function saveSessionPatch(patch: SessionLogPatch) {
+  async function saveSessionPatch(patch: SessionLogPatch): Promise<SaveActionResult | void> {
     if (!userId) {
       throw new Error('Login erforderlich.')
     }
@@ -134,13 +135,15 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
       if (typeof navigator === 'undefined' || navigator.onLine) {
         scheduleBackgroundSync(userId, 'post-session', runBackgroundSync)
       }
+      return { ok: true, syncStatus: savedSessionLog.syncStatus }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Nachbereitung konnte nicht gespeichert werden.'
       setErrorMessage(message)
+      return { ok: false, errorMessage: message }
     }
   }
 
-  async function savePlayerPostSession(player: Player, patch: PostSessionEntryPatch) {
+  async function savePlayerPostSession(player: Player, patch: PostSessionEntryPatch): Promise<SaveActionResult | void> {
     if (!userId) {
       throw new Error('Login erforderlich.')
     }
@@ -156,13 +159,18 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
       if (typeof navigator === 'undefined' || navigator.onLine) {
         scheduleBackgroundSync(userId, 'post-session', runBackgroundSync)
       }
+      return { ok: true, syncStatus: 'pending' }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Spieler-Nachbereitung konnte nicht gespeichert werden.'
       setErrorMessage(message)
+      return { ok: false, errorMessage: message }
     }
   }
 
-  async function savePlayerProgress(player: Player, patch: ProgressEntryPatch & { nextStep?: NextStep | null }) {
+  async function savePlayerProgress(
+    player: Player,
+    patch: ProgressEntryPatch & { nextStep?: NextStep | null },
+  ): Promise<SaveActionResult | void> {
     if (!userId) {
       throw new Error('Login erforderlich.')
     }
@@ -182,9 +190,11 @@ export function usePostSession(userId: string | null, sessionDefinition: Session
       if (typeof navigator === 'undefined' || navigator.onLine) {
         scheduleBackgroundSync(userId, 'post-session', runBackgroundSync)
       }
+      return { ok: true, syncStatus: 'pending' }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Progression konnte nicht gespeichert werden.'
       setErrorMessage(message)
+      return { ok: false, errorMessage: message }
     }
   }
 

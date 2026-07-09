@@ -26,7 +26,7 @@ export function PublicCheckInView({ token }: PublicCheckInViewProps) {
         setStatus('ready')
       })
       .catch((caughtError) => {
-        setMessage(caughtError instanceof Error ? caughtError.message : 'Check-in-Link konnte nicht geladen werden.')
+        setMessage(publicSubmissionErrorMessage(caughtError))
         setStatus('error')
       })
   }, [token])

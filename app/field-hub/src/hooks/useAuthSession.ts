@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react'
-import { type AuthSessionState, loadCurrentSession } from '../lib/auth'
+import { authErrorMessage, type AuthSessionState, loadCurrentSession } from '../lib/auth'
 import { hasSupabaseConfig, supabase } from '../lib/supabaseClient'
 
 const initialAuthState: AuthSessionState = hasSupabaseConfig
@@ -25,7 +25,7 @@ export function useAuthSession() {
             status: 'signed-out',
             session: null,
             user: null,
-            error: caughtError instanceof Error ? caughtError.message : 'Auth-Status konnte nicht geladen werden.',
+            error: authErrorMessage(caughtError),
           })
         }
       })

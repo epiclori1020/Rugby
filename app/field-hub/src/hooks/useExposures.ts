@@ -14,6 +14,7 @@ import {
   saveManualExposureOverride,
   savePlayerExposureSummaries,
 } from '../lib/exposureRepository'
+import type { SaveActionResult } from '../lib/interactionFeedback'
 import { mergeRecordIntoList } from '../lib/optimisticUpdates'
 
 export function useExposures(userId: string | null, sessionDefinition: SessionDefinition) {
@@ -81,14 +82,15 @@ export function useExposures(userId: string | null, sessionDefinition: SessionDe
     blockLogs: SessionBlockLog[]
     entries: PlayerSessionEntry[]
     returnerCaps: ReturnerCapSummary[]
-  }) {
+  }): Promise<SaveActionResult<PlayerExposureSummary[]> | PlayerExposureSummary[]> {
     if (!userId) {
       throw new Error('Login erforderlich.')
     }
 
     if (!input.sessionLog) {
-      setErrorMessage('Erst Check-in, Blockstatus oder Nachbereitung speichern, dann Exposures erzeugen.')
-      return []
+      const message = 'Erst Check-in, Blockstatus oder Nachbereitung speichern, dann Exposures erzeugen.'
+      setErrorMessage(message)
+      return { ok: false, errorMessage: message }
     }
 
     setIsLoading(true)
@@ -106,11 +108,11 @@ export function useExposures(userId: string | null, sessionDefinition: SessionDe
       if (typeof navigator === 'undefined' || navigator.onLine) {
         scheduleBackgroundSync(userId, 'exposures', runBackgroundSync)
       }
-      return savedSummaries
+      return { ok: true, syncStatus: 'pending', value: savedSummaries }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Exposures konnten nicht gespeichert werden.'
       setErrorMessage(message)
-      return []
+      return { ok: false, errorMessage: message }
     } finally {
       setIsLoading(false)
     }
@@ -120,7 +122,7 @@ export function useExposures(userId: string | null, sessionDefinition: SessionDe
     summary: PlayerExposureSummary,
     type: ExposureType,
     override: { status: Exclude<ExposureStatus, 'none'>; note: string },
-  ) {
+  ): Promise<SaveActionResult<PlayerExposureSummary> | void> {
     if (!userId) {
       throw new Error('Login erforderlich.')
     }
@@ -134,9 +136,11 @@ export function useExposures(userId: string | null, sessionDefinition: SessionDe
       if (typeof navigator === 'undefined' || navigator.onLine) {
         scheduleBackgroundSync(userId, 'exposures', runBackgroundSync)
       }
+      return { ok: true, syncStatus: updated.syncStatus, value: updated }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Exposure-Override konnte nicht gespeichert werden.'
       setErrorMessage(message)
+      return { ok: false, errorMessage: message }
     } finally {
       setIsLoading(false)
     }

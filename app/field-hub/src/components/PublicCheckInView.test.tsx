@@ -129,7 +129,19 @@ describe('PublicCheckInView', () => {
 describe('PublicCheckInView error mapping', () => {
   it('shows a friendly message when the submission limit is reached', () => {
     expect(publicSubmissionErrorMessage(new Error('public check-in submission limit reached'))).toBe(
-      'Check-in wurde bereits mehrfach abgeschickt. Sag Arwin bitte direkt Bescheid.',
+      'Check-in wurde bereits mehrfach abgeschickt. Bitte Coach direkt informieren.',
+    )
+  })
+
+  it('does not expose raw public check-in backend errors', () => {
+    expect(publicSubmissionErrorMessage(new Error('new row violates row-level security policy'))).toBe(
+      'Check-in konnte gerade nicht gespeichert werden. Bitte erneut versuchen oder Coach informieren.',
+    )
+    expect(publicSubmissionErrorMessage(new Error('database timeout on public_checkin_submissions insert'))).toBe(
+      'Check-in konnte gerade nicht gespeichert werden. Bitte erneut versuchen oder Coach informieren.',
+    )
+    expect(publicSubmissionErrorMessage(new Error('Check-in-Link ist ungueltig oder abgelaufen.'))).toBe(
+      'Check-in-Link ist ungültig oder abgelaufen. Bitte Coach informieren.',
     )
   })
 })

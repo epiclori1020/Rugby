@@ -2311,6 +2311,15 @@ button {
   color: var(--brand);
 }
 
+.action-feedback-error {
+  color: var(--of-color-status-danger-text);
+}
+
+.action-feedback-offline,
+.action-feedback-pending {
+  color: var(--of-color-status-warning-text);
+}
+
 .pwa-update-notice {
   align-items: center;
   background: var(--of-color-status-warning-bg-soft);

@@ -11,6 +11,7 @@ import {
   resetSessionBlockLogsForSession,
   saveSessionBlockLog,
 } from '../lib/sessionBlockRepository'
+import type { SaveActionResult } from '../lib/interactionFeedback'
 
 export function useSessionBlocks(userId: string | null, sessionDefinition: SessionDefinition) {
   const [blockLogs, setBlockLogs] = useState<SessionBlockLog[]>([])
@@ -95,7 +96,7 @@ export function useSessionBlocks(userId: string | null, sessionDefinition: Sessi
       .catch(() => undefined)
   }, [refreshSessionBlocks])
 
-  async function saveBlockLog(blockKey: string, patch: SessionBlockLogPatch) {
+  async function saveBlockLog(blockKey: string, patch: SessionBlockLogPatch): Promise<SaveActionResult | void> {
     if (!userId) {
       throw new Error('Login erforderlich.')
     }
@@ -112,9 +113,11 @@ export function useSessionBlocks(userId: string | null, sessionDefinition: Sessi
       if (typeof navigator === 'undefined' || navigator.onLine) {
         scheduleBackgroundSync(userId, 'session-blocks', runBackgroundSync)
       }
+      return { ok: true, syncStatus: savedBlockLog.syncStatus }
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Blockstatus konnte nicht gespeichert werden.'
       setErrorMessage(message)
+      return { ok: false, errorMessage: message }
     }
   }
 

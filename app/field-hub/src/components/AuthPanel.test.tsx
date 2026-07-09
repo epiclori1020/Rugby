@@ -31,9 +31,20 @@ describe('AuthPanel', () => {
     const markup = renderToStaticMarkup(<AuthPanel authState={missingConfigAuthState} />)
 
     expect(markup).toContain('OnField Coach vorbereiten')
-    expect(markup).toContain('VITE_SUPABASE_URL')
-    expect(markup).toContain('VITE_SUPABASE_PUBLISHABLE_KEY')
+    expect(markup).toContain('Coach-Login ist noch nicht eingerichtet. Bitte Setup prüfen.')
+    expect(markup).not.toContain('VITE_SUPABASE_URL')
+    expect(markup).not.toContain('VITE_SUPABASE_PUBLISHABLE_KEY')
+    expect(markup).not.toContain('.env')
     expect(markup).toContain('Keine Service-Role-Keys')
+  })
+
+  it('maps raw auth errors to safe coach-facing copy', () => {
+    const markup = renderToStaticMarkup(
+      <AuthPanel authState={{ ...signedOutAuthState, error: 'Invalid login credentials' }} />,
+    )
+
+    expect(markup).toContain('Login nicht möglich. Email oder Passwort prüfen.')
+    expect(markup).not.toContain('Invalid login credentials')
   })
 
   it('keeps controlled beta auth login-only', () => {
