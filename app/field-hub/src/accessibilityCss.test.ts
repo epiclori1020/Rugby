@@ -19,6 +19,7 @@ describe('Sprint 18 accessibility CSS contracts', () => {
     expect(css).toContain('.icon-button:focus-visible')
     expect(css).toContain('.pdf-link:focus-visible')
     expect(css).toContain('.kiosk-exit-button:focus-visible')
+    expect(css).toContain('.kiosk-hold-exit-button:focus-visible')
     expect(css).toContain('outline: 3px solid var(--of-color-focus-ring)')
     expect(css).toContain('outline-offset: 2px')
   })
@@ -30,7 +31,8 @@ describe('Sprint 18 accessibility CSS contracts', () => {
     expect(css).toContain('min-height: 48px')
     expect(css).toContain('width: 44px')
     expect(css).toContain('height: 44px')
-    expect(css).toContain('bottom: calc(16px + env(safe-area-inset-bottom))')
+    expect(css).toContain('bottom: calc(var(--of-space-lg) + env(safe-area-inset-bottom))')
+    expect(css).toContain('bottom: calc(var(--of-space-sm) + env(safe-area-inset-bottom))')
     expect(css).toContain('padding-bottom: calc(88px + env(safe-area-inset-bottom))')
   })
 

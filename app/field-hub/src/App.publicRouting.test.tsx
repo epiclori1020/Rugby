@@ -8,6 +8,8 @@ const publicRouteState = vi.hoisted(() => ({
   nextMountId: 0,
   authState: { status: 'signed-out' as 'signed-out' | 'signed-in', user: { id: 'user-1' } },
   lastKioskProps: null as null | {
+    disabledReason?: string
+    isCheckInDisabled?: boolean
     players: Array<Record<string, unknown>>
     onSubmitKioskEntry?: (input: {
       playerId: string
@@ -110,6 +112,8 @@ vi.mock('./components/KioskCheckInView', async () => {
   const React = await import('react')
   return {
     KioskCheckInView: (props: {
+      disabledReason?: string
+      isCheckInDisabled?: boolean
       players: Array<Record<string, unknown>>
       onSubmitKioskEntry?: (input: {
         playerId: string
@@ -127,6 +131,7 @@ vi.mock('./components/KioskCheckInView', async () => {
         'div',
         { 'data-testid': 'kiosk-view' },
         'Training Check-in',
+        props.isCheckInDisabled ? React.createElement('p', { 'data-testid': 'kiosk-disabled-reason' }, props.disabledReason) : null,
         React.createElement('button', { type: 'button', onClick: () => props.onExit?.() }, 'Kiosk beenden'),
       )
     },
@@ -514,6 +519,43 @@ describe('App public check-in routing', () => {
 
     expect(rendered.container.querySelector('[data-testid="coach-app"]')).toBeNull()
     expect(rendered.container.textContent).toContain('Training Check-in')
+  })
+
+  it('keeps coach routes locked behind kiosk mode while the lock is active', async () => {
+    publicRouteState.authState.status = 'signed-in'
+    window.history.replaceState(null, '', '/#/more/export')
+    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-current')
+
+    const rendered = await renderApp()
+    root = rendered.root
+
+    expect(rendered.container.querySelector('[data-testid="kiosk-view"]')).not.toBeNull()
+    expect(rendered.container.querySelector('[data-testid="coach-app"]')).toBeNull()
+
+    await dispatchHashChange('#/analysis')
+    await flushLazyScreens()
+
+    expect(rendered.container.querySelector('[data-testid="kiosk-view"]')).not.toBeNull()
+    expect(rendered.container.querySelector('[data-testid="coach-app"]')).toBeNull()
+
+    await dispatchPopState('/#/more/settings')
+    await flushLazyScreens()
+
+    expect(rendered.container.querySelector('[data-testid="kiosk-view"]')).not.toBeNull()
+    expect(rendered.container.querySelector('[data-testid="coach-app"]')).toBeNull()
+  })
+
+  it('keeps a restored kiosk lock fail-closed when the coach session is not signed in', async () => {
+    publicRouteState.authState.status = 'signed-out'
+    window.localStorage.setItem('fieldHub:kioskSessionId', 'session-current')
+
+    const rendered = await renderApp()
+    root = rendered.root
+
+    expect(rendered.container.querySelector('[data-testid="kiosk-view"]')).not.toBeNull()
+    expect(rendered.container.querySelector('[data-testid="coach-app"]')).toBeNull()
+    expect(publicRouteState.lastKioskProps?.isCheckInDisabled).toBe(true)
+    expect(rendered.container.textContent).toContain('Coach-Session prüfen')
   })
 
   it('does not restore an old kiosk session and removes the kiosk key', async () => {

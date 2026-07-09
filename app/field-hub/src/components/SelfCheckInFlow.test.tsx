@@ -221,6 +221,16 @@ describe('SelfCheckInFlow', () => {
     expect(container.textContent).toContain('Check-in ist gerade nicht verfügbar.')
   })
 
+  it('uses kiosk privacy copy without coach admin areas', async () => {
+    const container = await renderFlow(undefined, { mode: 'kiosk' })
+
+    expect(container.textContent).toContain('Nur Angaben für die heutige Einheit')
+    expect(container.textContent).not.toContain('Coach-Notizen')
+    expect(container.textContent).not.toContain('Historie')
+    expect(container.textContent).not.toContain('Analyse')
+    expect(container.textContent).not.toContain('Einstellungen')
+  })
+
   it('resets automatically after kiosk completion when configured', async () => {
     vi.useFakeTimers()
     const container = await renderFlow(vi.fn(async () => undefined), {

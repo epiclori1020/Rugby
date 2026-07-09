@@ -1,6 +1,6 @@
 # OnField Decision Log
 
-Stand: 2026-07-08
+Stand: 2026-07-09
 
 ## Zweck
 
@@ -65,6 +65,7 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | 2026-07-08 | Die Redesign-v2-Serie wird als eigene Roadmap R1-R10 geplant. | Die abgeschlossenen Sprints 0A-26 werden nicht wiedereroeffnet; `docs/superpowers/plans/2026-07-08-onfield-redesign-v2-heritage-field-instrument.md` schneidet das Redesign in mergebare Sprints mit Fundament zuerst, P0-Sicherheit frueh und "Squad heute" als erstem sichtbaren Leit-Screen. | Aktiv |
 | 2026-07-08 | Sichtbare Redesign-Sprints brauchen ein Redesign Integrity Gate. | Damit die Umsetzung nicht wieder bei leichten UI-/CSS-Anpassungen stehen bleibt, muessen sichtbare Redesign-PRs Vorher/Nachher-Screenshots, UX-Intent, Pattern-Audit, Token-/Typo-Audit, Copy-/Trust-Audit und passende QA-Gates liefern. R7 wird in R7A-R7D umgesetzt, nicht als Big-Bang-Kernflow-PR. | Aktiv |
 | 2026-07-08 | Figma ist die primaere visuelle Referenz fuer Redesign-v2; Bild-KI ist nur fuer Brand-/Rasterassets erlaubt. | Codex kann Figma ueber MCP fuer Frames, Prototypen, Design-to-Code-Kontext, Screenshots und Evidence nutzen. Codex hat eine eingebaute `image_gen`-Faehigkeit; ein dediziertes Nano-Banana-Plugin ist in der aktuellen Umgebung nicht verfuegbar. Externe Nano-Banana/Gemini-Image-Outputs koennen als importierte Brand-Assets dienen, aber operative UI wird in Figma/Code mit Tokens und Komponenten gebaut. | Aktiv |
+| 2026-07-09 | Redesign-v2 R3 nutzt ein Hold-only Kiosk-Schloss ohne PIN/Reauth. | Der Sprint schuetzt gegen versehentliches oder simples Verlassen des Kiosk im Feld, ohne Player-Accounts, Secrets oder Remote-Auth-Komplexitaet einzufuehren. Das ist keine Auth-Garantie gegen bewusst technische Umgehung; deshalb bleiben Coach-Routen bei aktivem Kiosk-Lock fail-closed gesperrt und die UI darf den Schutz nicht ueberclaimen. | Aktiv |
 
 ## Markenarchitektur
 

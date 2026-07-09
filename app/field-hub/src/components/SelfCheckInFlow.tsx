@@ -31,6 +31,7 @@ type SelfCheckInFlowProps = {
   completionBody?: string
   completionTitle?: string
   disabled?: boolean
+  disabledReason?: string
   helperText?: string
   mode?: SelfCheckInMode
   onSubmit: (input: SelfCheckInSubmissionInput) => Promise<void>
@@ -101,6 +102,7 @@ export function SelfCheckInFlow({
   completionBody = 'Deine Angaben sind angekommen.',
   completionTitle = 'Check-in gespeichert',
   disabled = false,
+  disabledReason,
   helperText,
   mode = 'public',
   onSubmit,
@@ -265,8 +267,11 @@ export function SelfCheckInFlow({
   const lifeStepIsValid = true
   const painStepIsValid = painScore !== null && (!needsPainLocation || submittedPainLocation.length > 0)
   const reactionStepIsValid = sessionReaction !== null
+  const effectiveHelperText =
+    helperText ??
+    (mode === 'kiosk' ? 'Nur Angaben für die heutige Einheit. Coach-Bereiche bleiben gesperrt.' : undefined)
   const unavailableReason = disabled
-    ? 'Check-in ist gerade nicht verfügbar.'
+    ? disabledReason ?? 'Check-in ist gerade nicht verfügbar.'
     : isSubmitting
       ? 'Check-in wird gerade gesendet.'
       : null
@@ -306,7 +311,7 @@ export function SelfCheckInFlow({
         </div>
       ) : null}
 
-      {helperText && step !== 'complete' ? <p className="privacy-note">{helperText}</p> : null}
+      {effectiveHelperText && step !== 'complete' ? <p className="privacy-note">{effectiveHelperText}</p> : null}
 
       {step === 'player' ? (
         <section className="self-checkin-step" aria-labelledby="self-checkin-player-title">

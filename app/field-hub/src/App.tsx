@@ -45,6 +45,11 @@ import { useSessionBlocks } from './hooks/useSessionBlocks'
 import { useStoragePersistence } from './hooks/useStoragePersistence'
 import { getLastExportAt, getLatestCompletedSession } from './lib/backupRepository'
 import { flushBackgroundSyncs } from './lib/backgroundSync'
+import {
+  clearKioskLock,
+  readKioskLock,
+  writeKioskLock,
+} from './lib/kioskLock'
 import { getPublicCheckInSyncOverview } from './lib/publicCheckInRepository'
 import {
   buildManualSyncFeedback,
@@ -91,7 +96,6 @@ const SettingsView = lazy(() =>
 )
 
 const selectedSessionStorageKey = 'fieldHub:selectedSessionId'
-const kioskSessionStorageKey = 'fieldHub:kioskSessionId'
 type PwaDisplayMode = 'browser' | 'standalone'
 
 type LazyScreenBoundaryProps = {
@@ -238,7 +242,7 @@ function getInitialSessionState(fallbackSessionId: string, todayKey = toLocalDat
     return { selectedSessionId: fallbackSessionId, kioskSessionId: null }
   }
 
-  const storedKioskSessionId = window.localStorage.getItem(kioskSessionStorageKey)
+  const storedKioskSessionId = readKioskLock()?.sessionId ?? null
   const storedSelectedSessionId = window.localStorage.getItem(selectedSessionStorageKey)
   const storedKioskSession = findSessionById(storedKioskSessionId)
   const storedSelectedSession = findSessionById(storedSelectedSessionId)
@@ -247,7 +251,7 @@ function getInitialSessionState(fallbackSessionId: string, todayKey = toLocalDat
     Boolean(storedKioskSessionId) && !kioskSessionIsCurrent && storedSelectedSessionId === storedKioskSessionId
 
   if (storedKioskSessionId && !kioskSessionIsCurrent) {
-    window.localStorage.removeItem(kioskSessionStorageKey)
+    clearKioskLock()
   }
 
   if (kioskSessionIsCurrent && storedKioskSessionId) {
@@ -624,14 +628,14 @@ function CoachApp() {
   )
 
   const handleStartKiosk = useCallback(() => {
-    window.localStorage.setItem(kioskSessionStorageKey, selectedSession.id)
+    writeKioskLock(selectedSession.id)
     window.localStorage.setItem(selectedSessionStorageKey, selectedSession.id)
     setSelectedSessionId(selectedSession.id)
     setActiveKioskSessionId(selectedSession.id)
   }, [selectedSession.id])
 
   const handleExitKiosk = useCallback(() => {
-    window.localStorage.removeItem(kioskSessionStorageKey)
+    clearKioskLock()
     setActiveKioskSessionId(null)
   }, [])
 
@@ -834,12 +838,22 @@ function CoachApp() {
     }
   }
 
-  if (authState.status === 'signed-in' && activeKioskSessionId === selectedSession.id) {
+  if (activeKioskSessionId === selectedSession.id) {
+    const kioskIsSignedOut = authState.status !== 'signed-in'
+    const kioskHasNoPlayers = authState.status === 'signed-in' && kioskPlayerOptions.length === 0
+    const kioskDisabledReason = kioskIsSignedOut
+      ? 'Coach-Session prüfen. Der Kiosk bleibt gesperrt.'
+      : kioskHasNoPlayers
+        ? 'Keine aktiven Spieler verfügbar. Coach-Modus öffnen und Roster prüfen.'
+        : undefined
+
     return (
       <>
         {needsAppRefresh ? <PwaUpdateNotice onReload={() => void updateServiceWorker(true)} /> : null}
         <KioskCheckInView
+          disabledReason={kioskDisabledReason}
           errorMessage={checkInActions.errorMessage}
+          isCheckInDisabled={Boolean(kioskDisabledReason)}
           onExit={handleExitKiosk}
           onSubmitKioskEntry={handleSubmitKioskEntry}
           players={kioskPlayerOptions}

@@ -2929,6 +2929,7 @@ button {
 .secondary-action:focus-visible,
 .pdf-link:focus-visible,
 .kiosk-exit-button:focus-visible,
+.kiosk-hold-exit-button:focus-visible,
 .field-form input:focus,
 .field-form select:focus,
 .field-form textarea:focus,
@@ -3608,22 +3609,74 @@ code {
   min-height: 52px;
 }
 
-.kiosk-exit-button {
+.kiosk-exit-lock {
   position: fixed;
-  right: calc(16px + env(safe-area-inset-right));
-  bottom: calc(16px + env(safe-area-inset-bottom));
+  right: calc(var(--of-space-lg) + env(safe-area-inset-right));
+  bottom: calc(var(--of-space-lg) + env(safe-area-inset-bottom));
+  z-index: var(--z-floating);
+  width: min(360px, calc(100vw - (2 * var(--of-space-lg))));
+  display: grid;
+  justify-items: end;
+  gap: var(--of-space-sm);
+}
+
+.kiosk-exit-button,
+.kiosk-hold-exit-button {
   min-height: 48px;
-  border: 1px solid var(--line);
+  border: 1px solid var(--of-color-border-default);
   border-radius: var(--of-radius-sm);
   background: var(--of-color-surface-default);
-  color: var(--muted);
+  color: var(--of-color-text-secondary);
   cursor: pointer;
   display: inline-flex;
   align-items: center;
-  gap: 8px;
+  justify-content: center;
+  gap: var(--of-space-sm);
   font: inherit;
   font-weight: var(--of-font-weight-semibold);
-  padding: 10px 14px;
+  padding: 10px var(--of-space-md);
+}
+
+.kiosk-exit-panel {
+  width: 100%;
+  border: 1px solid var(--of-color-border-default);
+  border-radius: var(--of-radius-md);
+  background: var(--of-color-surface-default);
+  box-shadow: var(--of-shadow-sheet);
+  display: grid;
+  gap: var(--of-space-sm);
+  padding: var(--of-space-md);
+}
+
+.kiosk-exit-panel small {
+  display: block;
+  color: var(--of-color-text-secondary);
+  font-size: var(--of-font-size-caption);
+  line-height: 1.35;
+}
+
+.kiosk-hold-exit-button {
+  position: relative;
+  width: 100%;
+  overflow: hidden;
+  color: var(--of-color-brand-primary);
+}
+
+.kiosk-hold-exit-button > *:not(.kiosk-hold-progress) {
+  position: relative;
+  z-index: 1;
+}
+
+.kiosk-hold-progress {
+  position: absolute;
+  inset: 0;
+  width: 0;
+  background: var(--of-color-brand-primary-soft);
+}
+
+.kiosk-hold-exit-button.is-holding .kiosk-hold-progress {
+  width: 100%;
+  transition: width var(--kiosk-exit-hold-duration) linear;
 }
 
 .public-checkin-form,
@@ -3772,9 +3825,10 @@ code {
     gap: var(--of-space-xs);
   }
 
-  .kiosk-exit-button {
+  .kiosk-exit-lock {
     right: calc(var(--of-space-sm) + env(safe-area-inset-right));
     bottom: calc(var(--of-space-sm) + env(safe-area-inset-bottom));
+    width: calc(100vw - (2 * var(--of-space-sm)));
   }
 }
 

@@ -283,13 +283,13 @@ Abhaengigkeiten:
 - R1A empfohlen, R2 empfohlen. R1B ist fuer R3 nicht blockierend. R3 darf parallel zu R2 vorbereitet werden, muss aber separat gemerged werden.
 
 Definition of Done:
-- [ ] Kiosk-Exit ist nicht mehr per einfachem Browser-Confirm erreichbar.
-- [ ] Ein Athlet kann aus dem Kiosk nicht in Coach-Daten, Export, Analyse oder Einstellungen springen.
-- [ ] Lock funktioniert unabhaengig vom aktuellen `authState`.
-- [ ] Kiosk-Flow hat Auto-Reset und klare Datenschutz-Copy.
-- [ ] Touch-Ziele mindestens 44 px, feldkritische Controls 48 px.
-- [ ] iPhone/iPad-Paritaet bleibt: Kiosk ist auf beiden Geraeten nutzbar.
-- [ ] Keine medizinische Freigabesprache.
+- [x] Kiosk-Exit ist nicht mehr per einfachem Browser-Confirm erreichbar.
+- [x] Ein Athlet kann aus dem Kiosk nicht in Coach-Daten, Export, Analyse oder Einstellungen springen.
+- [x] Lock funktioniert unabhaengig vom aktuellen `authState`.
+- [x] Kiosk-Flow hat Auto-Reset und klare Datenschutz-Copy.
+- [x] Touch-Ziele mindestens 44 px, feldkritische Controls 48 px.
+- [x] iPhone/iPad-Paritaet bleibt: Kiosk ist auf beiden Geraeten nutzbar.
+- [x] Keine medizinische Freigabesprache.
 - [ ] `qa:beta` deckt Kiosk/Public-Pfade echt ab, nicht als Skip.
 
 Aufwand/Risiko/QA:
