@@ -1,6 +1,6 @@
 # OnField Gotchas
 
-Stand: 2026-07-09
+Stand: 2026-07-10
 
 Dieses Dokument speichert wiederkehrende Fehler, Fallen und konkrete Vermeidungsregeln fuer OnField-Agenten. Ein Gotcha gehoert nur hierher, wenn es zukuenftige Arbeit wahrscheinlich verbessert.
 
@@ -37,6 +37,7 @@ Dieses Dokument speichert wiederkehrende Fehler, Fallen und konkrete Vermeidungs
 | active | Code-Splitting kann feldkritische Flows versehentlich verlangsamen. | Bei Bundle-Arbeit zuerst nicht-feldkritische Bereiche wie Analyse, Bibliothek, Export, Einstellungen und Returner splitten. Check-in, Training, Nachbereitung, App-Shell, Sync und Public/Kiosk nur mit eigener PWA-/Offline-Risikoentscheidung anfassen. |
 | active | OnField-Worktrees koennen parallele Content- oder PDF-Aenderungen enthalten. | Vor Abschluss `git status --short --untracked-files=all` und sprintbezogene `git diff -- ...` pruefen; fremde Content-/PDF-Aenderungen klar aus dem Sprint-Scope und aus spaeteren Commits heraushalten. |
 | active | Legacy-Brand-Aliases koennen Field-Mode-Pruefungen verschleiern. | Field-Mode-sensitive Primaerflaechen und -foregrounds direkt mit `--of-color-brand-primary` und `--of-color-on-brand` binden; Legacy-Aliases wie `--brand` nur als Kompatibilitaetsschicht behandeln und gebauten CSS-/Browser-Output pruefen. |
+| active | Tages-Scores und Warnlisten driften, wenn sie aus getrennten Rohquellen aufgebaut werden. | Fuer `Squad heute` eine gemeinsame Domain-Ableitung nutzen: nur eingecheckte Spieler fuer Ampel/Returner/Aufmerksamkeit, pro Spieler eine aggregierte Zeile und `offen` niemals automatisch als Returner zaehlen. |
 
 ## Wann Neue Gotchas Hinzukommen
 

@@ -21,6 +21,26 @@ const syncedOverview: PlayerSyncOverview = {
 }
 
 describe('AppShell page title', () => {
+  it('lets the Today screen own its header while preserving the shared interactive sync status', () => {
+    const markup = renderToStaticMarkup(
+      <AppShell
+        activeRoute={routes.today}
+        authState={signedOutAuthState}
+        onSectionChange={() => undefined}
+        onNavigate={() => undefined}
+        playerSync={syncedOverview}
+        syncStatusSlot={<button type="button">Gemeinsamer Sync</button>}
+        topbarMode="screen-owned"
+      >
+        <header>Squad heute · Gemeinsamer Sync</header>
+      </AppShell>,
+    )
+
+    expect(markup).not.toContain('Tageslage, offene Aufgaben und schnelle Einstiege.')
+    expect(markup.match(/Gemeinsamer Sync/g)).toHaveLength(1)
+    expect(markup).toContain('Squad heute')
+  })
+
   it('renders a tab-specific title for the active tab', () => {
     const markup = renderToStaticMarkup(
       <AppShell

@@ -53,6 +53,12 @@ export function buildQaPlan(mode, env = process.env) {
   return [
     ...baseSteps,
     {
+      name: 'r5-squad-today-e2e',
+      command: 'node',
+      args: ['scripts/e2e-r5-squad-today.mjs'],
+      env: { FIELD_HUB_R5_REQUIRE_AUTH: '1' },
+    },
+    {
       name: 'sprint19-visual-qa',
       command: 'node',
       args: ['scripts/e2e-sprint19-visual-qa.mjs'],
@@ -130,6 +136,18 @@ class QaStepError extends Error {
   }
 }
 
+export function classifyStepExit(code, signal) {
+  return {
+    status: code === 2 ? 'blocked' : 'failed',
+    exitCode: code,
+    signal,
+  }
+}
+
+export function gateExitCode(status) {
+  return status === 'checked' ? 0 : status === 'blocked' ? 2 : 1
+}
+
 async function runStep(step) {
   console.log(`\n[qa-gate] ${step.name}: ${maskCommandForLog(step)}`)
   const startedAt = Date.now()
@@ -149,9 +167,7 @@ async function runStep(step) {
       }
       const result = {
         name: step.name,
-        status: 'failed',
-        exitCode: code,
-        signal,
+        ...classifyStepExit(code, signal),
         durationMs: Date.now() - startedAt,
       }
       rejectPromise(new QaStepError(`${step.name} fehlgeschlagen (${signal ? `signal ${signal}` : `exit ${code}`}).`, result))
@@ -191,7 +207,7 @@ async function main() {
           2,
         ),
       )
-      process.exitCode = 1
+      process.exitCode = gateExitCode('blocked')
       return
     }
   }
@@ -206,7 +222,8 @@ async function main() {
     if (error instanceof QaStepError) {
       stepResults.push(error.result)
     }
-    writeQaReport({ mode, status: 'failed', steps, stepResults, preflight, error })
+    const status = error instanceof QaStepError && error.result.status === 'blocked' ? 'blocked' : 'failed'
+    writeQaReport({ mode, status, steps, stepResults, preflight, error })
     throw error
   }
   writeQaReport({ mode, status: 'checked', steps, stepResults, preflight })
@@ -228,6 +245,6 @@ async function main() {
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {
   main().catch((error) => {
     console.error(error instanceof Error ? error.message : error)
-    process.exitCode = 1
+    process.exitCode = error instanceof QaStepError ? gateExitCode(error.result.status) : gateExitCode('failed')
   })
 }

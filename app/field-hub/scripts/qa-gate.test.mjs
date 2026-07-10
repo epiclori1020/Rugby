@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { betaPreflight, buildQaPlan, maskCommandForLog } from './qa-gate.mjs'
+import { betaPreflight, buildQaPlan, classifyStepExit, gateExitCode, maskCommandForLog } from './qa-gate.mjs'
 
 describe('qa-gate', () => {
   it('blocks beta when required credentials or mutation opt-in are missing', () => {
@@ -37,6 +37,10 @@ describe('qa-gate', () => {
     expect(localPlan.at(-1)?.env ?? {}).not.toHaveProperty('FIELD_HUB_SPRINT19_REQUIRE_AUTH')
 
     expect(betaPlan.at(0)?.name).toBe('supabase-audit')
+    expect(betaPlan.map((step) => step.name)).toContain('r5-squad-today-e2e')
+    expect(betaPlan.find((step) => step.name === 'r5-squad-today-e2e')?.env).toMatchObject({
+      FIELD_HUB_R5_REQUIRE_AUTH: '1',
+    })
     expect(betaPlan.at(-2)?.env).toMatchObject({ FIELD_HUB_SPRINT19_REQUIRE_AUTH: '1' })
     expect(betaPlan.at(-1)?.name).toBe('kiosk-e2e')
     expect(betaPlan.at(-1)?.env).toMatchObject({
@@ -61,5 +65,12 @@ describe('qa-gate', () => {
     expect(command).toContain('FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1')
     expect(command).not.toContain('coach@example.test')
     expect(command).not.toContain('secret-value')
+  })
+
+  it('preserves a blocked child gate as blocked in the machine report', () => {
+    expect(classifyStepExit(2, null)).toEqual({ status: 'blocked', exitCode: 2, signal: null })
+    expect(classifyStepExit(1, null)).toEqual({ status: 'failed', exitCode: 1, signal: null })
+    expect(gateExitCode('blocked')).toBe(2)
+    expect(gateExitCode('failed')).toBe(1)
   })
 })

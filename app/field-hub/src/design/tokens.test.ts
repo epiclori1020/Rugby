@@ -170,6 +170,16 @@ describe('OnField design tokens', () => {
     expect(componentCss).not.toContain('.of-button-primary {\n  background: var(--of-color-brand-primary);\n  color: var(--of-color-text-inverse);')
   })
 
+  it('uses the accessible warning text token for scoreboard numerals in Light Mode', () => {
+    const componentCss = readSource('src/components/ui/onfield-ui.css')
+    const tokensCss = readSource('src/design/tokens.css')
+    const warningText = extractToken(tokensCss, '--of-color-status-warning-text')
+    const surface = extractToken(tokensCss, '--of-color-surface-default')
+
+    expect(componentCss).toContain('.of-scoreboard-cell-yellow dd {\n  color: var(--of-color-status-warning-text);')
+    expect(contrastRatio(warningText, surface)).toBeGreaterThanOrEqual(4.5)
+  })
+
   it('keeps screen CSS color values routed through tokens', () => {
     const indexCss = readSource('src/index.css')
 

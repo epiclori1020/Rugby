@@ -514,6 +514,12 @@
   margin: 0;
 }
 
+.of-scoreboard-detail {
+  color: var(--of-color-text-secondary);
+  font-size: var(--of-font-size-caption);
+  line-height: var(--of-line-height-normal);
+}
+
 .of-scoreboard-cell dt {
   color: var(--of-color-text-secondary);
   display: flex;
@@ -541,7 +547,7 @@
 }
 
 .of-scoreboard-cell-yellow dd {
-  color: var(--of-color-status-warning);
+  color: var(--of-color-status-warning-text);
 }
 
 .of-scoreboard-cell-red dd {
@@ -682,16 +688,48 @@
   }
 
   .of-scoreboard-strip {
-    grid-template-columns: repeat(2, minmax(0, 1fr));
+    grid-template-columns: 1.25fr repeat(2, minmax(0, 1fr));
+    grid-template-rows: repeat(2, minmax(72px, auto));
   }
 
   .of-scoreboard-cell {
-    border-right: 0;
+    padding: var(--of-space-sm);
+    border-right: var(--of-border-width-default) solid var(--of-color-border-default);
     border-bottom: var(--of-border-width-default) solid var(--of-color-border-default);
   }
 
-  .of-scoreboard-cell:last-child {
+  .of-scoreboard-cell-present {
+    grid-column: 1;
+    grid-row: 1 / span 2;
     border-bottom: 0;
+  }
+
+  .of-scoreboard-cell-squad {
+    grid-column: 2;
+    grid-row: 1;
+  }
+
+  .of-scoreboard-cell-yellow {
+    grid-column: 3;
+    grid-row: 1;
+    border-right: 0;
+  }
+
+  .of-scoreboard-cell-red {
+    grid-column: 2;
+    grid-row: 2;
+    border-bottom: 0;
+  }
+
+  .of-scoreboard-cell-returner {
+    grid-column: 3;
+    grid-row: 2;
+    border-right: 0;
+    border-bottom: 0;
+  }
+
+  .of-scoreboard-cell:not(.of-scoreboard-cell-present) dd {
+    font-size: var(--of-font-size-metric-m);
   }
 
   .of-topbar,

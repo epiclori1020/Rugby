@@ -31,6 +31,8 @@ Sprint 21 ergaenzt zwei QA-Gates:
 
 `qa:beta` darf nicht gruen werden, wenn Signed-in-, Public/Kiosk- oder Remote-Testpfade fehlen oder geskippt wurden. Zugangsdaten fuer optische QA werden nur temporaer zur Laufzeit genutzt und nicht in Dateien, Doku, Screenshots, Shell-Beispielen oder Memory gespeichert.
 
+Der authentifizierte R5-Check braucht einen bewusst vorbereiteten QA-Zustand mit mindestens einem Kaderspieler, einem Check-in und einer sichtbaren Aufmerksamkeitszeile. Remote-Ziele muessen HTTPS nutzen und ihre exakte Origin zusaetzlich ueber `FIELD_HUB_R5_E2E_AUTH_ORIGIN` freigeben; ohne diese Freigabe werden keine Login-Daten eingegeben.
+
 ## Lokale Kommandos
 
 ```bash
@@ -42,6 +44,7 @@ npm run supabase:audit
 npm run qa:local
 npm run qa:beta
 npm run test:e2e:kiosk
+npm run test:e2e:r5
 npm run build
 npm run preview
 ```
@@ -76,6 +79,8 @@ FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1 npm run test:e2e:kiosk
 ```
 
 Dabei muessen `FIELD_HUB_E2E_EMAIL` und `FIELD_HUB_E2E_PASSWORD` sicher zur Laufzeit gesetzt sein. Keine echten Werte in Commits, Markdown, Screenshots, Shell-History oder Memory uebernehmen; ein im Chat geteiltes Passwort nach dem QA-Lauf rotieren.
+
+`npm run test:e2e:r5` prueft den authentifizierten Leit-Screen `Squad heute` in 375/393/834/1194: einen Header, einen Sync-Status, plausible Kader-/Anwesenheitswerte, eindeutige Aufmerksamkeitszeilen und den responsiven Split. Der Test blockiert ohne dieselben Laufzeit-Credentials, statt den Signed-in-Pfad still zu ueberspringen.
 
 ## Historische Sprint-Notizen
 

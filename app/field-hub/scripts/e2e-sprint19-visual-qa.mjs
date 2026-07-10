@@ -33,7 +33,7 @@ const screenChecks = [
   {
     name: 'Heute',
     navigate: async () => undefined,
-    expectedTexts: ['Heute', 'Tageslage, offene Aufgaben und schnelle Einstiege.'],
+    expectedTexts: ['Squad heute', 'Trainingstag vorbereiten'],
   },
   {
     name: 'Einheit / Check-in',

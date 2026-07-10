@@ -1,24 +1,25 @@
-import { useCallback } from 'react'
+import { useCallback, type ReactNode } from 'react'
 import { ArrowRight, CalendarDays, ClipboardCheck, Dumbbell, FileText, ShieldAlert } from 'lucide-react'
 import { routes, type AppRoute } from '../navigation'
 import type { PdfRef, SessionDefinition, SessionType } from '../content/types'
-import type { PlayerWarning, TrafficLight } from '../domain/checkIn'
 import type { CoachInsight, CoachInsightSource } from '../domain/coachInsights'
 import type { Player } from '../domain/players'
 import type { LatestRelevantPostSessionWork } from '../domain/postSessionCompletion'
+import { buildTodaySquadSummary, type TodayAttentionTone } from '../domain/todaySquad'
 import type { useCheckIns } from '../hooks/useCheckIns'
 import type { StoragePersistenceState } from '../hooks/useStoragePersistence'
+import { triggerHapticFeedback } from '../lib/interactionFeedback'
 import { hasPlayerId } from '../lib/playerId'
-import { pendingCountLabel } from '../lib/syncLabels'
 import { CoachInsightsPanel } from './CoachInsightsPanel'
-import { AthleteRow, ScoreboardStrip, type ReadinessTone, type ScoreboardMetric } from './onfield'
-import { EmptyState, PrimaryButton, SecondaryButton, StatusChip, type StatusTone } from './ui'
+import { AthleteRow, ScoreboardStrip, type ScoreboardMetric } from './onfield'
+import { EmptyState, PrimaryButton, SecondaryButton, Skeleton, StatusChip, type StatusTone } from './ui'
 import { SessionPicker } from './SessionPicker'
 
 type TodayDashboardProps = {
   checkInActions: ReturnType<typeof useCheckIns>
   coachInsights: CoachInsight[]
   featuredSession: SessionDefinition
+  isLoading?: boolean
   isSignedIn: boolean
   onActionFeedback: (message: string) => void
   onOpenCoachInsightSource: (source: CoachInsightSource) => void
@@ -33,21 +34,9 @@ type TodayDashboardProps = {
   selectedSessionId: string
   sessions: SessionDefinition[]
   storagePersistence: StoragePersistenceState
+  syncStatusSlot?: ReactNode
   todayDate: Date
   upcomingSessions: SessionDefinition[]
-}
-
-type AttentionRow = {
-  id: string
-  name: string
-  position: string
-  detail: string
-  trendLabel: string
-  chipLabel: string
-  chipTone: StatusTone
-  readinessTone: ReadinessTone
-  readinessLabel: string
-  sortRank: number
 }
 
 const sessionTypeLabels: Record<SessionType, string> = {
@@ -55,18 +44,6 @@ const sessionTypeLabels: Record<SessionType, string> = {
   baseline: 'Baseline',
   recheck: 'Re-Check',
   transition: 'Übergang',
-}
-
-const trafficLabels: Record<TrafficLight, string> = {
-  green: 'Grün',
-  yellow: 'Gelb',
-  red: 'Rot',
-}
-
-const syncTone: Record<ReturnType<typeof useCheckIns>['syncOverview']['status'], StatusTone> = {
-  error: 'danger',
-  pending: 'warning',
-  synced: 'success',
 }
 
 function formatSessionDate(date: string) {
@@ -104,51 +81,7 @@ function relativeSessionLabel(date: string, todayDate: Date) {
   return 'vergangen'
 }
 
-function formatReturnerFlag(flag: PlayerWarning['returnerFlag']) {
-  if (flag === 'ja') {
-    return 'Returner'
-  }
-
-  if (flag === 'offen') {
-    return 'Returner offen'
-  }
-
-  return null
-}
-
-function warningTone(warning: PlayerWarning): ReadinessTone {
-  if (warning.trafficLight === 'red' || warning.nextStep === 'klaeren') {
-    return 'red'
-  }
-
-  if (warning.trafficLight === 'yellow' || warning.nextStep === 'reduzieren' || (warning.postPainScore ?? 0) >= 3) {
-    return 'yellow'
-  }
-
-  if (warning.returnerFlag !== 'nein') {
-    return 'returner'
-  }
-
-  return 'open'
-}
-
-function rowRank(tone: ReadinessTone) {
-  if (tone === 'red') {
-    return 0
-  }
-
-  if (tone === 'yellow') {
-    return 1
-  }
-
-  if (tone === 'returner') {
-    return 2
-  }
-
-  return 3
-}
-
-function rowChipTone(tone: ReadinessTone): StatusTone {
+function rowChipTone(tone: TodayAttentionTone): StatusTone {
   if (tone === 'red') {
     return 'danger'
   }
@@ -164,18 +97,7 @@ function rowChipTone(tone: ReadinessTone): StatusTone {
   return 'neutral'
 }
 
-function warningDetail(warning: PlayerWarning) {
-  const parts = [
-    warning.trafficLight ? `Ampel ${trafficLabels[warning.trafficLight]}` : null,
-    formatReturnerFlag(warning.returnerFlag),
-    warning.nextStep ? `Nächster Schritt: ${warning.nextStep}` : null,
-    warning.observation.trim() ? warning.observation.trim() : null,
-  ].filter(Boolean)
-
-  return parts.join(' · ') || 'Offene Klärung aus letzter Einheit.'
-}
-
-function chipLabelForTone(tone: ReadinessTone) {
+function chipLabelForTone(tone: TodayAttentionTone) {
   if (tone === 'red') {
     return 'Rot'
   }
@@ -188,32 +110,14 @@ function chipLabelForTone(tone: ReadinessTone) {
     return 'Returner'
   }
 
-  return 'Offen'
-}
-
-function upsertAttentionRow(rows: Map<string, AttentionRow>, row: AttentionRow) {
-  const existing = rows.get(row.id)
-  if (!existing || row.sortRank < existing.sortRank) {
-    rows.set(row.id, row)
-  }
-}
-
-function insightTone(insight: CoachInsight): ReadinessTone {
-  if (insight.severity === 'high') {
-    return 'red'
-  }
-
-  if (insight.severity === 'medium') {
-    return 'yellow'
-  }
-
-  return 'open'
+  return 'Klären'
 }
 
 export function TodayDashboard({
   checkInActions,
   coachInsights,
   featuredSession,
+  isLoading = false,
   isSignedIn,
   onActionFeedback,
   onOpenCoachInsightSource,
@@ -228,83 +132,44 @@ export function TodayDashboard({
   selectedSessionId,
   sessions,
   storagePersistence,
+  syncStatusSlot,
   todayDate,
   upcomingSessions,
 }: TodayDashboardProps) {
   const isPreview = selectedSession.id !== featuredSession.id
   const activePlayers = players.filter((player) => player.active)
-  const activePlayerIds = new Set(activePlayers.map((player) => player.id))
   const playerById = new Map(activePlayers.map((player) => [player.id, player]))
-  const activeEntries = checkInActions.entries.filter(
-    (entry) => hasPlayerId(entry) && activePlayerIds.has(entry.playerId),
-  )
-  const activeWarnings = checkInActions.warnings.filter(
-    (warning) => hasPlayerId(warning) && activePlayerIds.has(warning.playerId),
-  )
+  const todaySummary = buildTodaySquadSummary({
+    coachInsights,
+    entries: checkInActions.entries,
+    expectedPlayerIds: checkInActions.expectedPlayerIds,
+    players,
+    warnings: checkInActions.warnings,
+  })
+  const squadPlayerIds = new Set(todaySummary.squadPlayerIds)
   const activeObservations = checkInActions.observations.filter(
-    (observation) => hasPlayerId(observation) && activePlayerIds.has(observation.playerId),
+    (observation) => hasPlayerId(observation) && squadPlayerIds.has(observation.playerId),
   )
-  const expectedPlayerSet = new Set(checkInActions.expectedPlayerIds)
-  const expectedCount =
-    expectedPlayerSet.size > 0 ? activePlayers.filter((player) => expectedPlayerSet.has(player.id)).length : activePlayers.length
-  const presentCount = activeEntries.filter((entry) => entry.present).length
-  const redPlayerIds = new Set<string>()
-  const yellowPlayerIds = new Set<string>()
-  const returnerPlayerIds = new Set<string>()
-
-  activePlayers.forEach((player) => {
-    if (player.returnerStatus !== 'nein') {
-      returnerPlayerIds.add(player.id)
-    }
-  })
-
-  activeEntries.forEach((entry) => {
-    if (!entry.playerId) {
-      return
-    }
-    const playerId = entry.playerId
-    const trafficLight = entry.trafficLight ?? entry.trafficLightSuggestion
-    if (trafficLight === 'red') {
-      redPlayerIds.add(playerId)
-    } else if (trafficLight === 'yellow') {
-      yellowPlayerIds.add(playerId)
-    }
-
-    if (entry.returnerFlag !== 'nein') {
-      returnerPlayerIds.add(playerId)
-    }
-  })
-
-  activeWarnings.forEach((warning) => {
-    if (!warning.playerId) {
-      return
-    }
-    const playerId = warning.playerId
-    if (warning.trafficLight === 'red') {
-      redPlayerIds.add(playerId)
-    } else if (warning.trafficLight === 'yellow') {
-      yellowPlayerIds.add(playerId)
-    }
-
-    if (warning.returnerFlag !== 'nein') {
-      returnerPlayerIds.add(playerId)
-    }
-  })
-
-  redPlayerIds.forEach((playerId) => yellowPlayerIds.delete(playerId))
 
   const scoreboardMetrics: ScoreboardMetric[] = [
-    { id: 'squad', label: 'Kader', value: expectedCount, tone: 'open', assistiveLabel: `${expectedCount} im Kader` },
+    {
+      id: 'squad',
+      label: 'Kader',
+      value: todaySummary.squadCount,
+      tone: 'open',
+      assistiveLabel: `${todaySummary.squadCount} im operativen Kader`,
+    },
     {
       id: 'present',
       label: 'Anwesend',
-      value: presentCount,
+      value: todaySummary.presentCount,
+      detail: `von ${todaySummary.squadCount} eingecheckt`,
       tone: 'green',
-      assistiveLabel: `${presentCount} anwesend`,
+      assistiveLabel: `${todaySummary.presentCount} von ${todaySummary.squadCount} anwesend`,
     },
-    { id: 'yellow', label: 'Gelb', value: yellowPlayerIds.size, tone: 'yellow' },
-    { id: 'red', label: 'Rot', value: redPlayerIds.size, tone: 'red' },
-    { id: 'returner', label: 'Returner', value: returnerPlayerIds.size, tone: 'returner' },
+    { id: 'yellow', label: 'Gelb', value: todaySummary.yellowCount, tone: 'yellow' },
+    { id: 'red', label: 'Rot', value: todaySummary.redCount, tone: 'red' },
+    { id: 'returner', label: 'Returner', value: todaySummary.returnerCount, tone: 'returner' },
   ]
 
   const postSessionDefinition = postSessionWork
@@ -313,122 +178,52 @@ export function TodayDashboard({
   const postSessionMissingCount = postSessionWork
     ? postSessionWork.completion.blockers.reduce((sum, blocker) => sum + Math.max(1, blocker.count), 0)
     : 0
-  const pendingCount = checkInActions.syncOverview.pendingCount
   const showStorageWarning = !['checking', 'persisted'].includes(storagePersistence.status)
   const showWelcomeSurface = !isSignedIn || activePlayers.length === 0
   const welcomeTitle = !isSignedIn ? 'Trainingstag vorbereiten' : 'Squad für OnField anlegen'
   const welcomeBody = !isSignedIn
     ? 'Nach dem Login werden Spielerstatus, Anwesenheit und offene Aufgaben auf iPhone und iPad verfügbar.'
     : 'Lege aktive Spieler an, damit Check-in, Session Flow und Wrap-up mit demselben Funktionsumfang starten.'
-  const syncLabel = !checkInActions.syncOverview.isOnline
-    ? 'offline'
-    : pendingCount > 0
-      ? pendingCountLabel(pendingCount)
-      : checkInActions.syncOverview.status === 'synced'
-        ? 'synchronisiert'
-        : 'Sync läuft'
-  const syncChipTone = checkInActions.syncOverview.isOnline ? syncTone[checkInActions.syncOverview.status] : 'warning'
-
-  const attentionRowMap = new Map<string, AttentionRow>()
-
-  activeWarnings.forEach((warning) => {
-    if (!warning.playerId) {
-      return
-    }
-    const playerId = warning.playerId
-    const player = playerById.get(playerId)
-    const tone = warningTone(warning)
-    upsertAttentionRow(attentionRowMap, {
-      id: `warning:${playerId}`,
-      name: player?.name ?? 'Spieler',
-      position: player?.position ?? 'Position offen',
-      detail: warningDetail(warning),
-      trendLabel: `Letzte Einheit ${formatSessionDate(warning.sessionDate)}`,
-      chipLabel: chipLabelForTone(tone),
-      chipTone: rowChipTone(tone),
-      readinessTone: tone,
-      readinessLabel: `Status ${chipLabelForTone(tone)}`,
-      sortRank: rowRank(tone),
-    })
-  })
-
-  coachInsights.forEach((insight) => {
-    const tone = insightTone(insight)
-    insight.sources.filter(hasPlayerId).forEach((source) => {
-      if (!activePlayerIds.has(source.playerId)) {
-        return
-      }
-      const player = playerById.get(source.playerId)
-      upsertAttentionRow(attentionRowMap, {
-        id: `insight:${source.playerId}:${insight.id}`,
-        name: player?.name ?? source.playerName ?? 'Spieler',
-        position: player?.position ?? targetLabel(source.correctionTarget),
-        detail: insight.reason,
-        trendLabel: `Coach Insight · ${targetLabel(source.correctionTarget)}`,
-        chipLabel: chipLabelForTone(tone),
-        chipTone: rowChipTone(tone),
-        readinessTone: tone,
-        readinessLabel: `Coach Insight ${chipLabelForTone(tone)}`,
-        sortRank: rowRank(tone),
-      })
-    })
-  })
-
-  activePlayers.forEach((player) => {
-    if (player.returnerStatus === 'nein') {
-      return
-    }
-    upsertAttentionRow(attentionRowMap, {
-      id: `returner:${player.id}`,
-      name: player.name,
-      position: player.position,
-      detail: `Returner ${player.returnerStatus}`,
-      trendLabel: 'Belastungsplan prüfen',
-      chipLabel: 'Returner',
-      chipTone: 'info',
-      readinessTone: 'returner',
-      readinessLabel: 'Returner-Kontext',
-      sortRank: rowRank('returner'),
-    })
-  })
-
-  const attentionRows = [...attentionRowMap.values()].sort(
-    (a, b) => a.sortRank - b.sortRank || a.name.localeCompare(b.name, 'de-AT'),
+  const reportAction = useCallback(
+    (message: string) => {
+      triggerHapticFeedback('selection')
+      onActionFeedback(message)
+    },
+    [onActionFeedback],
   )
-
   const navigateWithFeedback = useCallback(
     (route: AppRoute, message: string) => {
-      onActionFeedback(message)
+      reportAction(message)
       onNavigate(route)
     },
-    [onActionFeedback, onNavigate],
+    [onNavigate, reportAction],
   )
 
   const handleSessionChange = useCallback(
     (sessionId: string) => {
       onSessionChange(sessionId)
-      onActionFeedback('Einheit gewechselt.')
+      reportAction('Einheit gewechselt.')
     },
-    [onActionFeedback, onSessionChange],
+    [onSessionChange, reportAction],
   )
 
   const handleResetToTodaySession = useCallback(() => {
     onResetToTodaySession()
-    onActionFeedback('Heute-Einheit wiederhergestellt.')
-  }, [onActionFeedback, onResetToTodaySession])
+    reportAction('Heute-Einheit wiederhergestellt.')
+  }, [onResetToTodaySession, reportAction])
 
   const handleOpenPdf = useCallback(
     (pdf: PdfRef) => {
       onOpenPdf(pdf)
-      onActionFeedback('PDF in Bibliothek geöffnet.')
+      reportAction('PDF in Bibliothek geöffnet.')
     },
-    [onActionFeedback, onOpenPdf],
+    [onOpenPdf, reportAction],
   )
 
   const handleOpenLibrary = useCallback(() => {
     onOpenLibrary(selectedSession)
-    onActionFeedback('Heutige Unterlagen geöffnet.')
-  }, [onActionFeedback, onOpenLibrary, selectedSession])
+    reportAction('Heutige Unterlagen geöffnet.')
+  }, [onOpenLibrary, reportAction, selectedSession])
 
   const handleOpenPostSessionWork = useCallback(() => {
     if (postSessionWork) {
@@ -444,7 +239,7 @@ export function TodayDashboard({
           <div className="today-squad-brandline">
             <span className="today-wordmark">OnField<span aria-hidden>•</span></span>
             <span>{formatContextDate(todayDate)} · {selectedSession.kw}</span>
-            <StatusChip label={`Sync: ${syncLabel}`} tone={syncChipTone} />
+            {syncStatusSlot ? <div className="today-sync-slot">{syncStatusSlot}</div> : null}
           </div>
           <div className="today-squad-title">
             <div>
@@ -458,24 +253,32 @@ export function TodayDashboard({
           </div>
         </header>
         <main className="today-squad-main" aria-label="Squad heute Empty State">
-          <section className="today-attention-section today-empty-state-panel">
-            <EmptyState
-              action={
-                <PrimaryButton
-                  data-testid="today-welcome-action"
-                  icon={<ArrowRight aria-hidden />}
-                  onClick={() =>
-                    !isSignedIn
-                      ? navigateWithFeedback(routes.moreSettings, 'Einstellungen geöffnet.')
-                      : navigateWithFeedback(routes.players, 'Spieler geöffnet.')
-                  }
-                >
-                  {!isSignedIn ? 'Login öffnen' : 'Spieler anlegen'}
-                </PrimaryButton>
-              }
-              body={welcomeBody}
-              title={welcomeTitle}
-            />
+          <section className="today-attention-section today-empty-state-panel" aria-busy={isLoading || undefined}>
+            {isSignedIn && isLoading ? (
+              <div className="today-loading-state">
+                <h3>Squad wird geladen</h3>
+                <Skeleton label="Squad wird geladen" variant="panel" />
+                <p>Lokale Spieler- und Check-in-Daten werden vorbereitet.</p>
+              </div>
+            ) : (
+              <EmptyState
+                action={
+                  <PrimaryButton
+                    data-testid="today-welcome-action"
+                    icon={<ArrowRight aria-hidden />}
+                    onClick={() =>
+                      !isSignedIn
+                        ? navigateWithFeedback(routes.moreSettings, 'Einstellungen geöffnet.')
+                        : navigateWithFeedback(routes.players, 'Spieler geöffnet.')
+                    }
+                  >
+                    {!isSignedIn ? 'Login öffnen' : 'Spieler anlegen'}
+                  </PrimaryButton>
+                }
+                body={welcomeBody}
+                title={welcomeTitle}
+              />
+            )}
           </section>
         </main>
       </section>
@@ -489,7 +292,7 @@ export function TodayDashboard({
           <span className="today-wordmark">OnField<span aria-hidden>•</span></span>
           <span>{formatContextDate(todayDate)} · {selectedSession.kw}</span>
           {isPreview ? <StatusChip label="Vorschau" tone="warning" /> : null}
-          <StatusChip label={`Sync: ${syncLabel}`} tone={syncChipTone} />
+          {syncStatusSlot ? <div className="today-sync-slot">{syncStatusSlot}</div> : null}
         </div>
         <div className="today-squad-title">
           <div>
@@ -536,30 +339,36 @@ export function TodayDashboard({
               <p>Rot, Gelb, Returner und offene Klärungen zuerst.</p>
             </div>
           </div>
-          {attentionRows.length > 0 ? (
+          {todaySummary.attentionRows.length > 0 ? (
             <div className="today-attention-list">
-              {attentionRows.map((row) => (
-                <AthleteRow
-                  key={row.id}
-                  meta={[row.position]}
-                  name={row.name}
-                  note={row.detail}
-                  readinessLabel={row.readinessLabel}
-                  readinessTone={row.readinessTone}
-                  status={<StatusChip label={row.chipLabel} tone={row.chipTone} />}
-                  trendLabel={row.trendLabel}
-                />
-              ))}
+              {todaySummary.attentionRows.map((row) => {
+                const primaryReason = row.reasons[0]
+                const reasonDetails = [...new Set(row.reasons.map((reason) => reason.detail))].join(' · ')
+
+                return (
+                  <AthleteRow
+                    key={row.playerId}
+                    meta={[row.position]}
+                    name={row.name}
+                    note={reasonDetails}
+                    playerId={row.playerId}
+                    readinessLabel={`Status ${chipLabelForTone(row.tone)}`}
+                    readinessTone={row.tone}
+                    status={<StatusChip label={chipLabelForTone(row.tone)} tone={rowChipTone(row.tone)} />}
+                    trendLabel={primaryReason.context}
+                  />
+                )
+              })}
             </div>
+          ) : todaySummary.presentCount === 0 ? (
+            <EmptyState
+              body="Öffne den Check-in, um Anwesenheit und aktuelle Hinweise für diese Einheit zu sehen. Nicht eingecheckte Spieler bleiben im Check-in."
+              title="Noch niemand eingecheckt"
+            />
           ) : (
             <EmptyState
-              action={
-                <SecondaryButton compact onClick={() => navigateWithFeedback(routes.unitCheckIn, 'Check-in geöffnet.')}>
-                  Check-in prüfen
-                </SecondaryButton>
-              }
-              body="Keine offenen Warnungen, Returner-Hinweise oder Coach Insights für aktive Spieler."
-              title="Keine offenen Punkte"
+              body="Für die anwesenden Spieler gibt es aktuell keine roten, gelben, Returner- oder Klärhinweise."
+              title="Keine aktuellen Hinweise"
             />
           )}
         </section>
@@ -686,7 +495,7 @@ export function TodayDashboard({
             <CoachInsightsPanel
               dismissKey={`today:${selectedSession.id}`}
               emptyText="Keine offenen Coach Insights."
-              insights={coachInsights}
+              insights={todaySummary.relevantCoachInsights}
               limit={3}
               onOpenSource={onOpenCoachInsightSource}
               variant="embedded"
@@ -709,17 +518,4 @@ export function TodayDashboard({
       </aside>
     </section>
   )
-}
-
-function targetLabel(target: CoachInsightSource['correctionTarget']) {
-  const targetLabels: Record<CoachInsightSource['correctionTarget'], string> = {
-    analysis: 'Analyse',
-    'check-in': 'Check-in',
-    nachbereitung: 'Nachbereitung',
-    returner: 'Returner',
-    spieler: 'Spieler',
-    training: 'Training',
-  }
-
-  return targetLabels[target]
 }

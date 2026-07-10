@@ -35,20 +35,26 @@ export function usePlayers(userId: string | null) {
   const [players, setPlayers] = useState<Player[]>([])
   const [syncOverview, setSyncOverview] = useState<PlayerSyncOverview>(defaultPlayerSyncOverview)
   const [isLoading, setIsLoading] = useState(false)
+  const [loadedUserId, setLoadedUserId] = useState<string | null>(null)
 
   const refreshLocalPlayers = useCallback(async () => {
     if (!userId) {
       setPlayers([])
       setSyncOverview(defaultPlayerSyncOverview)
+      setLoadedUserId(null)
       return
     }
 
-    const [localPlayers, overview] = await Promise.all([
-      listLocalPlayers(userId),
-      getPlayerSyncOverview(userId),
-    ])
-    setPlayers(localPlayers)
-    setSyncOverview(overview)
+    try {
+      const [localPlayers, overview] = await Promise.all([
+        listLocalPlayers(userId),
+        getPlayerSyncOverview(userId),
+      ])
+      setPlayers(localPlayers)
+      setSyncOverview(overview)
+    } finally {
+      setLoadedUserId(userId)
+    }
   }, [userId])
 
   const runSync = useCallback(async () => {
@@ -165,7 +171,7 @@ export function usePlayers(userId: string | null) {
   return {
     players,
     syncOverview,
-    isLoading,
+    isLoading: isLoading || Boolean(userId && loadedUserId !== userId),
     refreshLocalPlayers,
     runSync,
     savePlayer: save,

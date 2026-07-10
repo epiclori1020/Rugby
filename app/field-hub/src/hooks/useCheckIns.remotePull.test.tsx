@@ -95,6 +95,7 @@ const sessionDefinition: SessionDefinition = {
 let root: Root | null = null
 let container: HTMLDivElement | null = null
 let latestResult: ReturnType<typeof useCheckIns> | null = null
+let renderedLoadingStates: boolean[] = []
 
 async function flushAsyncWork() {
   await act(async () => {
@@ -109,6 +110,7 @@ async function renderUseCheckIns(userId = 'user-1', players: Player[] = []) {
 
   function Harness() {
     latestResult = useCheckInsHook(userId, sessionDefinition, players)
+    renderedLoadingStates.push(latestResult.isLoading)
     return null
   }
 
@@ -210,6 +212,7 @@ describe('useCheckIns remote freshness pull', () => {
     setOnlineState(true)
     setVisibilityState('visible')
     latestResult = null
+    renderedLoadingStates = []
 
     checkInRepositoryMocks.buildEmptyEntry.mockReturnValue({
       id: 'entry-preview',
@@ -279,6 +282,12 @@ describe('useCheckIns remote freshness pull', () => {
     expect(checkInRepositoryMocks.pullRemoteCheckIns).toHaveBeenCalledWith('user-1', {
       sessionDefinitionId: 'session-def-1',
     })
+  })
+
+  it('reports hydration loading on the first signed-in session render', async () => {
+    await renderUseCheckIns()
+
+    expect(renderedLoadingStates[0]).toBe(true)
   })
 
   it('keeps active entries filtered while exposing all loaded session entries', async () => {

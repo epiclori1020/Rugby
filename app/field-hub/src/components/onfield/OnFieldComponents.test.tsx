@@ -71,7 +71,7 @@ describe('Sprint 5 OnField component compositions', () => {
         primaryMetricId="present"
         metrics={[
           { id: 'squad', label: 'Kader', value: 20, tone: 'open' },
-          { id: 'present', label: 'Anwesend', value: 14, tone: 'green' },
+          { id: 'present', label: 'Anwesend', value: 14, detail: 'von 20 eingecheckt', tone: 'green' },
           { id: 'yellow', label: 'Gelb', value: 3, tone: 'yellow' },
           { id: 'red', label: 'Rot', value: 1, tone: 'red' },
           { id: 'returner', label: 'Returner', value: 2, tone: 'returner' },
@@ -81,9 +81,26 @@ describe('Sprint 5 OnField component compositions', () => {
 
     expect(markup).toContain('of-scoreboard-strip')
     expect(markup).toContain('of-scoreboard-cell-primary')
+    expect(markup).toContain('data-metric-id="present"')
+    expect(markup).toContain('<dd class="of-scoreboard-detail">von 20 eingecheckt</dd>')
     expect(markup).toContain('of-num')
     expect(markup).toContain('Anwesend')
     expect(markup).toContain('Returner')
+  })
+
+  it('exposes stable athlete identity for signed-in responsive QA', () => {
+    const markup = renderToStaticMarkup(
+      <AthleteRow
+        name="Max Muster"
+        playerId="player-1"
+        readinessLabel="Status offen"
+        readinessTone="open"
+        status={<StatusChip label="Klären" tone="neutral" />}
+      />,
+    )
+
+    expect(markup).toContain('data-player-id="player-1"')
+    expect(markup).toContain('Klären')
   })
 
   it('renders queue rows with visible tone and recovery action', () => {

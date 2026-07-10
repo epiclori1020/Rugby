@@ -408,14 +408,18 @@ Definition of Done:
 - [x] `of-num` fuer Scoreboard-Zahlen.
 - [x] Geaenderte Komponenten nutzen Typo-Tokens und max. 3 Gewichte.
 - [x] iPhone gestapelt mit Progressive Disclosure; iPad 2-Spalten ohne Funktionsverlust.
-- [x] Dark Mode rendert ohne unlesbare Flaechen.
+- [ ] Dark/Field Mode ist fuer den authentifizierten, befuellten R5-Zustand in allen Pflichtbreiten visuell und per Kontrast-Gate belegt.
 - [x] Keine Oxblood-/Hero-/Neon-Flaeche in Live-Screen.
-- [x] App-Screenshots sind gegen Figma-Frames abgeglichen; relevante Abweichungen sind behoben oder dokumentiert.
+- [ ] Reproduzierbare Vorher/Nachher-App-Screenshots in Light und Field Mode sind fuer 375/393/834/1194 gegen die Figma-Frames abgeglichen.
+- [x] R5-Hardening 2026-07-10: operativer Kader und Anwesenheit sind fachlich getrennt; Status/Aufmerksamkeit nutzt nur eingecheckte Spieler und aggregiert auf eine Zeile pro Spieler.
+- [x] R5-Hardening 2026-07-10: genau ein Screen-Header/Sync-Status, kompakte Mobile-Hierarchie, Split bei 834px, gestapelte Sidebar-Uebergangsbreiten 840-1099px, Split bei 1194px und eigener authentifizierter E2E-Gate sind umgesetzt.
+- [ ] R5-Akzeptanzrest 2026-07-10: authentifizierter QA-Datenzustand, echter `qa:beta`-Lauf und vollstaendige Redesign-Integrity-Evidence in Light/Field Mode fehlen noch; R5 darf bis dahin nicht als merge-/beta-ready gelten.
 
 Aufwand/Risiko/QA:
 - Aufwand: L.
 - Risiko: M, weil Datenverdichtung und visuelle Hierarchie neu geordnet werden.
 - QA-Gate: `npm run qa:local`; zusaetzlich visuelle Pruefung in 375/393/834/1194.
+- R5-Hardening-Evidence: `docs/field-hub/2026-07-10_onfield_r5_squad_heute_audit.md`.
 
 Rollback-/Sicherheitshinweis:
 - Rollback auf alten `TodayDashboard` ist moeglich, solange neue OnField-Komponenten kompatibel bleiben. Keine Datenmigration.

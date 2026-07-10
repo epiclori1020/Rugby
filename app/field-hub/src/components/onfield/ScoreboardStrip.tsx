@@ -5,6 +5,7 @@ export type ScoreboardMetric = {
   id: string
   label: string
   value: number | string
+  detail?: string
   tone: ReadinessTone
   icon?: ReactNode
   assistiveLabel?: string
@@ -22,12 +23,14 @@ export function ScoreboardStrip({ metrics, primaryMetricId }: ScoreboardStripPro
         <div
           className={[
             'of-scoreboard-cell',
+            `of-scoreboard-cell-${metric.id}`,
             `of-scoreboard-cell-${metric.tone}`,
             metric.id === primaryMetricId ? 'of-scoreboard-cell-primary' : null,
           ]
             .filter(Boolean)
             .join(' ')}
           key={metric.id}
+          data-metric-id={metric.id}
         >
           <dt>
             {metric.icon ? <span className="of-scoreboard-icon" aria-hidden>{metric.icon}</span> : null}
@@ -36,6 +39,7 @@ export function ScoreboardStrip({ metrics, primaryMetricId }: ScoreboardStripPro
           <dd className="of-num" aria-label={metric.assistiveLabel}>
             {metric.value}
           </dd>
+          {metric.detail ? <dd className="of-scoreboard-detail">{metric.detail}</dd> : null}
         </div>
       ))}
     </dl>

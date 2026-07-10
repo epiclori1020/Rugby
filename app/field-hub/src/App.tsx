@@ -19,6 +19,7 @@ import { PwaUpdateNotice } from './components/PwaUpdateNotice'
 import { PlayersView } from './components/PlayersView'
 import { SessionWorkspace } from './components/SessionWorkspace'
 import type { SelfCheckInSubmissionInput } from './components/SelfCheckInFlow'
+import { SyncStatusBadge } from './components/SyncStatusBadge'
 import { TodayDashboard } from './components/TodayDashboard'
 import { TrainingView } from './components/TrainingView'
 import { getRelevantSessions, sessionDefinitions } from './content/sessions'
@@ -864,6 +865,19 @@ function CoachApp() {
     )
   }
 
+  const syncStatusSlot = (
+    <SyncStatusBadge
+      authState={authState}
+      backupRecommended={showBackupReminder}
+      isManualSyncing={isManualSyncing}
+      lastExportAt={lastExportAt}
+      onManualSync={runManualSync}
+      playerSync={syncOverview}
+      syncDetails={syncDetails}
+      syncFeedback={manualSyncFeedback}
+    />
+  )
+
   return (
     <AppShell
       activeRoute={activeRoute}
@@ -877,6 +891,8 @@ function CoachApp() {
       playerSync={syncOverview}
       syncDetails={syncDetails}
       syncFeedback={manualSyncFeedback}
+      syncStatusSlot={syncStatusSlot}
+      topbarMode={activeRouteKey === 'today' ? 'screen-owned' : 'standard'}
       transientNotice={transientNotice}
     >
       {needsAppRefresh ? <PwaUpdateNotice onReload={() => void updateServiceWorker(true)} /> : null}
@@ -885,6 +901,7 @@ function CoachApp() {
           checkInActions={checkInActions}
           coachInsights={coachInsightActions.insights}
           featuredSession={featuredSession}
+          isLoading={playerActions.isLoading || checkInActions.isLoading}
           isSignedIn={authState.status === 'signed-in'}
           onActionFeedback={showTransientNotice}
           onOpenCoachInsightSource={handleOpenCoachInsightSource}
@@ -899,6 +916,7 @@ function CoachApp() {
           selectedSessionId={selectedSession.id}
           sessions={sessionDefinitions}
           storagePersistence={storagePersistence}
+          syncStatusSlot={syncStatusSlot}
           todayDate={todayDate}
           upcomingSessions={upcomingSessions}
         />

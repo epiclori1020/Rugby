@@ -87,6 +87,7 @@ export function useCheckIns(
   const [observations, setObservations] = useState<PlayerObservation[]>([])
   const [syncOverview, setSyncOverview] = useState<PlayerSyncOverview>(defaultPlayerSyncOverview)
   const [isLoading, setIsLoading] = useState(false)
+  const [loadedHydrationKey, setLoadedHydrationKey] = useState<string | null>(null)
   const [sessionLogId, setSessionLogId] = useState<string | null>(null)
   const [sessionLog, setSessionLog] = useState<Awaited<ReturnType<typeof findSessionLog>>>(null)
   const [expectedPlayerIds, setExpectedPlayerIds] = useState<string[]>([])
@@ -98,6 +99,7 @@ export function useCheckIns(
   const remotePullInFlightRef = useRef<Promise<void> | null>(null)
   const lastRemotePullAtRef = useRef(0)
   const syncRunningRef = useRef(false)
+  const hydrationKey = userId ? `${userId}:${sessionDefinition.id}` : null
 
   const activePlayers = useMemo(() => players.filter((player) => player.active), [players])
   const activePlayerIds = useMemo(() => new Set(activePlayers.map((player) => player.id)), [activePlayers])
@@ -127,32 +129,37 @@ export function useCheckIns(
       setPublicCheckInLinks([])
       setPublicCheckInSubmissions([])
       setPublicCheckInNotice(null)
+      setLoadedHydrationKey(null)
       return
     }
 
-    const sessionLog = await findSessionLog(userId, sessionDefinition.id)
-    const [localEntries, localWarnings, localObservations, expectedIds, overview, localPublicLinks] = await Promise.all([
-      sessionLog ? listCheckInEntries(userId, sessionLog.id) : Promise.resolve([]),
-      listLatestWarnings(userId, sessionLog?.id ?? null, sessionDefinition.date),
-      listLatestObservations(userId, sessionLog?.id ?? null, sessionDefinition.date),
-      listExpectedPlayerIds(userId, sessionDefinition.date),
-      getCheckInSyncOverview(userId),
-      listLocalPublicCheckInLinks(userId, sessionDefinition.id),
-    ])
-    setSessionLogId(sessionLog?.id ?? null)
-    setSessionLog(sessionLog)
-    setEntries(localEntries)
-    setWarnings(localWarnings)
-    setObservations(localObservations)
-    setExpectedPlayerIds(expectedIds)
-    setSyncOverview(overview)
-    setPublicCheckInLinks(localPublicLinks.sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
-    setPublicCheckInSubmissions(
-      (
-        await Promise.all(localPublicLinks.map((link) => listLocalPublicCheckInSubmissions(userId, link.id)))
-      ).flat(),
-    )
-  }, [sessionDefinition, userId])
+    try {
+      const sessionLog = await findSessionLog(userId, sessionDefinition.id)
+      const [localEntries, localWarnings, localObservations, expectedIds, overview, localPublicLinks] = await Promise.all([
+        sessionLog ? listCheckInEntries(userId, sessionLog.id) : Promise.resolve([]),
+        listLatestWarnings(userId, sessionLog?.id ?? null, sessionDefinition.date),
+        listLatestObservations(userId, sessionLog?.id ?? null, sessionDefinition.date),
+        listExpectedPlayerIds(userId, sessionDefinition.date),
+        getCheckInSyncOverview(userId),
+        listLocalPublicCheckInLinks(userId, sessionDefinition.id),
+      ])
+      setSessionLogId(sessionLog?.id ?? null)
+      setSessionLog(sessionLog)
+      setEntries(localEntries)
+      setWarnings(localWarnings)
+      setObservations(localObservations)
+      setExpectedPlayerIds(expectedIds)
+      setSyncOverview(overview)
+      setPublicCheckInLinks(localPublicLinks.sort((a, b) => b.createdAt.localeCompare(a.createdAt)))
+      setPublicCheckInSubmissions(
+        (
+          await Promise.all(localPublicLinks.map((link) => listLocalPublicCheckInSubmissions(userId, link.id)))
+        ).flat(),
+      )
+    } finally {
+      setLoadedHydrationKey(hydrationKey)
+    }
+  }, [hydrationKey, sessionDefinition, userId])
 
   const runSync = useCallback(async () => {
     if (!userId) {
@@ -623,7 +630,7 @@ export function useCheckIns(
     warnings: activeWarnings,
     observations: activeObservations,
     syncOverview,
-    isLoading,
+    isLoading: isLoading || Boolean(hydrationKey && loadedHydrationKey !== hydrationKey),
     sessionLogId,
     publicCheckInLinks,
     publicCheckInSubmissions,

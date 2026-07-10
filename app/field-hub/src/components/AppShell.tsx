@@ -29,6 +29,8 @@ type AppShellProps = {
   syncDetails?: SyncDetailSummary | null
   syncFeedback?: ManualSyncFeedback | null
   transientNotice?: string | null
+  syncStatusSlot?: ReactNode
+  topbarMode?: 'standard' | 'screen-owned'
 }
 
 const routeMeta: Record<ReturnType<typeof routeKey>, { eyebrow: string; title: string; description: string }> = {
@@ -105,10 +107,24 @@ export function AppShell({
   syncDetails = null,
   syncFeedback = null,
   transientNotice = null,
+  syncStatusSlot,
+  topbarMode = 'standard',
 }: AppShellProps) {
   const meta = routeMeta[routeKey(activeRoute)]
   const activeSection = activeRoute.section
   const activeMoreRoute = activeRoute.section === 'more' ? activeRoute.moreRoute : routes.moreLibrary.moreRoute
+  const renderedSyncStatus = syncStatusSlot ?? (
+    <SyncStatusBadge
+      authState={authState}
+      backupRecommended={backupRecommended}
+      isManualSyncing={isManualSyncing}
+      lastExportAt={lastExportAt}
+      onManualSync={onManualSync}
+      playerSync={playerSync}
+      syncDetails={syncDetails}
+      syncFeedback={syncFeedback}
+    />
+  )
 
   return (
     <div className="app-shell">
@@ -121,24 +137,17 @@ export function AppShell({
         <MainNavigation activeSection={activeSection} onSectionChange={onSectionChange} />
       </aside>
 
-      <main className="shell-main">
-        <div className="topbar">
-          <div className="page-title">
-            <p className="eyebrow">{meta.eyebrow}</p>
-            <h2>{meta.title}</h2>
-            <p>{meta.description}</p>
+      <main className={topbarMode === 'screen-owned' ? 'shell-main shell-main-screen-owned' : 'shell-main'}>
+        {topbarMode === 'standard' ? (
+          <div className="topbar">
+            <div className="page-title">
+              <p className="eyebrow">{meta.eyebrow}</p>
+              <h2>{meta.title}</h2>
+              <p>{meta.description}</p>
+            </div>
+            {renderedSyncStatus}
           </div>
-          <SyncStatusBadge
-            authState={authState}
-            backupRecommended={backupRecommended}
-            isManualSyncing={isManualSyncing}
-            lastExportAt={lastExportAt}
-            onManualSync={onManualSync}
-            playerSync={playerSync}
-            syncDetails={syncDetails}
-            syncFeedback={syncFeedback}
-          />
-        </div>
+        ) : null}
         {transientNotice ? (
           <p className="app-transient-notice" role="status" aria-live="polite">
             {transientNotice}

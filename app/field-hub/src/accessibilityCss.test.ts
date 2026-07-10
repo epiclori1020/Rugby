@@ -44,4 +44,11 @@ describe('Sprint 18 accessibility CSS contracts', () => {
     expect(css).not.toContain('@media (max-width: 760px)')
     expect(css).not.toContain('@media (max-width: 560px)')
   })
+
+  it('stacks the R5 content while the expanded sidebar would compress its scoreboard', () => {
+    const css = readAppCss()
+
+    expect(css).toContain('@media (min-width: 840px) and (max-width: 1099px)')
+    expect(css).toContain('.dashboard-grid.today-squad-screen')
+  })
 })

@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 import { renderToStaticMarkup } from 'react-dom/server'
 import { createRoot } from 'react-dom/client'
-import { describe, expect, it, vi } from 'vitest'
+import { beforeEach, describe, expect, it, vi } from 'vitest'
 import { act } from 'react'
 import type { PdfRef, SessionDefinition } from '../content/types'
 import type { PlayerSessionEntry, PlayerObservation } from '../domain/checkIn'
@@ -12,6 +12,16 @@ import type { PlayerSyncOverview } from '../domain/sync'
 import type { useCheckIns } from '../hooks/useCheckIns'
 import { routes } from '../navigation'
 import { TodayDashboard } from './TodayDashboard'
+
+const interactionFeedbackMocks = vi.hoisted(() => ({
+  triggerHapticFeedback: vi.fn(),
+}))
+
+vi.mock('../lib/interactionFeedback', () => interactionFeedbackMocks)
+
+beforeEach(() => {
+  vi.clearAllMocks()
+})
 
 const syncOverview: PlayerSyncOverview = {
   isOnline: true,
@@ -237,6 +247,7 @@ function renderDashboardMarkup({
   isSignedIn = true,
   players = [player],
   postWork = null,
+  isLoading = false,
   today = todayDate,
   upcoming = [selectedSession, featuredSession],
 }: {
@@ -253,6 +264,7 @@ function renderDashboardMarkup({
   isSignedIn?: boolean
   players?: Player[]
   postWork?: LatestRelevantPostSessionWork | null
+  isLoading?: boolean
   today?: Date
   upcoming?: SessionDefinition[]
 } = {}) {
@@ -262,6 +274,7 @@ function renderDashboardMarkup({
       featuredSession={featured}
       coachInsights={coachInsights}
       isSignedIn={isSignedIn}
+      isLoading={isLoading}
       onActionFeedback={onActionFeedback}
       onOpenCoachInsightSource={onOpenCoachInsightSource}
       onNavigate={() => undefined}
@@ -285,10 +298,18 @@ describe('TodayDashboard', () => {
   it('does not count pure observations as open warnings', () => {
     const markup = renderDashboardMarkup()
 
-    expect(markup).toContain('Keine offenen Punkte')
-    expect(markup).toContain('Keine offenen Warnungen, Returner-Hinweise oder Coach Insights')
+    expect(markup).toContain('Noch niemand eingecheckt')
+    expect(markup).not.toContain('Keine offenen Punkte')
     expect(markup).toContain('Notizen aus letzter Einheit')
     expect(markup).toContain('Landing im Warm-up beobachten')
+  })
+
+  it('shows a dedicated no-check-in state instead of claiming that there are no open points', () => {
+    const markup = renderDashboardMarkup()
+
+    expect(markup).toContain('Noch niemand eingecheckt')
+    expect(markup).toContain('Öffne den Check-in, um Anwesenheit und aktuelle Hinweise für diese Einheit zu sehen.')
+    expect(markup).not.toContain('Keine offenen Punkte')
   })
 
   it('shows unfinished post-session work as a compact dashboard action', () => {
@@ -411,6 +432,7 @@ describe('TodayDashboard', () => {
       root.render(
         <TodayDashboard
           checkInActions={buildCheckInActions({
+            entries: [{ ...entry, present: true }],
             warnings: [warningEntry],
             syncOverview: { ...syncOverview, pendingCount: 2, status: 'pending' },
           })}
@@ -430,6 +452,7 @@ describe('TodayDashboard', () => {
           selectedSessionId={selectedSession.id}
           sessions={[selectedSession]}
           storagePersistence={{ status: 'persisted' }}
+          syncStatusSlot={<span>Sync: 2 Aenderungen warten auf Sync</span>}
           todayDate={todayDate}
           upcomingSessions={[selectedSession]}
         />,
@@ -446,10 +469,33 @@ describe('TodayDashboard', () => {
 
     expect(onNavigate).toHaveBeenCalledWith(routes.unitCheckIn)
     expect(onActionFeedback).toHaveBeenCalledWith('Check-in geöffnet.')
+    expect(interactionFeedbackMocks.triggerHapticFeedback).toHaveBeenCalledWith('selection')
 
     await act(async () => {
       root.unmount()
     })
+  })
+
+  it('keeps every aggregated safety reason visible in the athlete row', () => {
+    const markup = renderDashboardMarkup({
+      checkInActions: buildCheckInActions({
+        entries: [
+          {
+            ...entry,
+            present: true,
+            returnerFlag: 'ja',
+            trafficLight: 'red',
+            trafficLightSuggestion: 'red',
+          },
+        ],
+        expectedPlayerIds: [player.id],
+      }),
+      players: [{ ...player, returnerStatus: 'ja' }],
+    })
+
+    expect(markup).toContain('Ampel Rot im heutigen Check-in.')
+    expect(markup).toContain('Returner-Belastungsplan für heute prüfen.')
+    expect(markup).not.toContain('weitere Hinweise')
   })
 
   it('reports quick action and session-change feedback', async () => {
@@ -515,6 +561,14 @@ describe('TodayDashboard', () => {
     expect(signedInMarkup).toContain('Spieler anlegen')
     expect(activeMarkup).not.toContain('Trainingstag vorbereiten')
     expect(activeMarkup).not.toContain('Squad für OnField anlegen')
+  })
+
+  it('shows a loading state instead of a false empty roster', () => {
+    const markup = renderDashboardMarkup({ isLoading: true, players: [] })
+
+    expect(markup).toContain('Squad wird geladen')
+    expect(markup).toContain('role="status"')
+    expect(markup).not.toContain('Squad für OnField anlegen')
   })
 
   it('uses upcoming sessions from the app-level date calculation', () => {

@@ -2,6 +2,7 @@ import type { ReactNode } from 'react'
 import { ReadinessDot, type ReadinessTone } from './ReadinessDot'
 
 type AthleteRowProps = {
+  playerId?: string
   name: string
   meta?: string[]
   status?: ReactNode
@@ -22,6 +23,7 @@ export function AthleteRow({
   meta = [],
   name,
   note,
+  playerId,
   readinessLabel,
   readinessTone,
   status,
@@ -38,7 +40,7 @@ export function AthleteRow({
     .join(' ')
 
   return (
-    <article className={rowClassName}>
+    <article className={rowClassName} data-player-id={playerId}>
       {readinessTone ? (
         <ReadinessDot
           label={readinessLabel ?? `Status ${readinessTone}`}

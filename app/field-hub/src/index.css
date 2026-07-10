@@ -775,13 +775,13 @@ button {
 
 .dashboard-grid.today-squad-screen {
   grid-template-areas:
-    "header context"
+    "header header"
     "main context";
   grid-template-columns: minmax(0, 1fr) minmax(280px, 380px);
   gap: var(--of-space-lg);
 }
 
-.today-squad-empty {
+.dashboard-grid.today-squad-screen.today-squad-empty {
   grid-template-areas:
     "header"
     "main";
@@ -816,6 +816,15 @@ button {
   font-size: var(--of-font-size-caption);
   font-weight: var(--of-font-weight-semibold);
   text-transform: uppercase;
+}
+
+.today-sync-slot {
+  margin-left: auto;
+  min-width: min(300px, 100%);
+}
+
+.today-sync-slot .sync-status-trigger {
+  width: 100%;
 }
 
 .today-wordmark {
@@ -4033,6 +4042,16 @@ code {
     grid-template-columns: 1fr;
   }
 
+  .today-squad-title {
+    display: grid;
+  }
+
+  .today-context-column {
+    width: 100%;
+  }
+}
+
+@media (max-width: 833px) {
   .dashboard-grid.today-squad-screen {
     grid-template-areas:
       "header"
@@ -4041,8 +4060,18 @@ code {
     grid-template-columns: 1fr;
   }
 
-  .today-squad-title {
-    display: grid;
+  .today-context-column {
+    width: 100%;
+  }
+}
+
+@media (min-width: 840px) and (max-width: 1099px) {
+  .dashboard-grid.today-squad-screen {
+    grid-template-areas:
+      "header"
+      "main"
+      "context";
+    grid-template-columns: 1fr;
   }
 
   .today-context-column {
