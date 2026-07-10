@@ -15,10 +15,18 @@ import { routes, type AppRoute } from '../navigation'
 import { libraryItems } from '../content/library'
 import { exerciseMappings, variantCards } from '../content/trainingReference'
 import type { SessionBlock, SessionBlockExercise, SessionDefinition } from '../content/types'
-import type { CheckInEntryPatch, CheckInLimit, PlayerSessionEntry, PlayerWarning, TrafficLight } from '../domain/checkIn'
+import {
+  deriveAttendanceStatus,
+  hasMeaningfulCheckIn,
+  type CheckInEntryPatch,
+  type CheckInLimit,
+  type PlayerSessionEntry,
+  type PlayerWarning,
+  type TrafficLight,
+} from '../domain/checkIn'
 import type { Player } from '../domain/players'
 import type { ReturnerCapSummary } from '../domain/returners'
-import { sessionBlockStatusLabels } from '../domain/sessionBlocks'
+import { sessionBlockStatusLabels, type SessionBlockReason, type SessionBlockStatus } from '../domain/sessionBlocks'
 import {
   appendLiveObservation,
   applyTrainingQuickAction,
@@ -37,8 +45,9 @@ import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../
 import { LiveSessionStepper } from './LiveSessionStepper'
 import { ExposureReviewPanel } from './ExposureReviewPanel'
 import { SessionPicker } from './SessionPicker'
+import { AthleteRow } from './onfield/Rows'
 import { ActionFeedback } from './ui/ActionFeedback'
-import { PrimaryButton, SecondaryButton } from './ui'
+import { EmptyState, PrimaryButton, SecondaryButton, Skeleton, StatusChip, TrafficLightChip } from './ui'
 
 type TrainingActions = ReturnType<typeof useCheckIns>
 type SessionBlockActions = ReturnType<typeof useSessionBlocks>
@@ -69,7 +78,7 @@ type TrainingViewProps = {
 type TrainingPlayerFilter = 'open' | 'present' | 'warning' | 'returner' | 'cluster' | 'all'
 
 const trafficLabels: Record<TrafficLight, string> = {
-  green: 'Gruen',
+  green: 'Grün',
   yellow: 'Gelb',
   red: 'Rot',
 }
@@ -79,12 +88,12 @@ const limitLabels: Record<CheckInLimit, string> = {
   kein_cond: 'kein Conditioning',
   kein_schweres_heben: 'kein schweres Heben',
   physio: 'Physio/Medical',
-  klaeren: 'klaeren',
+  klaeren: 'klären',
 }
 
 const quickActions: Array<{ action: TrainingQuickAction; label: string; tone?: 'danger' }> = [
   { action: 'variant_c', label: 'C-Variante' },
-  { action: 'variant_d', label: 'D / stoppen / klaeren', tone: 'danger' },
+  { action: 'variant_d', label: 'D / stoppen / klären', tone: 'danger' },
   { action: 'kein_sprint', label: 'kein Sprint' },
   { action: 'kein_conditioning', label: 'kein Conditioning' },
   { action: 'kein_schweres_heben', label: 'kein schweres Heben' },
@@ -147,6 +156,10 @@ function errorMessageFromSaveResult(result: unknown) {
   }
 
   return undefined
+}
+
+function saveResultFailed(result: unknown) {
+  return Boolean(result && typeof result === 'object' && 'ok' in result && result.ok === false)
 }
 
 function trainingCollapsedStorageKey(userId: string, sessionId: string) {
@@ -266,6 +279,10 @@ function formatTrafficLight(trafficLight: TrafficLight | null) {
   return trafficLight ? trafficLabels[trafficLight] : 'Offen'
 }
 
+function hasMeaningfulTrainingCheckIn(entry: PlayerSessionEntry) {
+  return !entry.id.startsWith('preview:') && hasMeaningfulCheckIn(entry)
+}
+
 function libraryButtonLabel(itemId: string) {
   const item = libraryItems.find((candidate) => candidate.id === itemId)
 
@@ -342,56 +359,53 @@ function TrainingPlayerRow({
   returnerCap: ReturnerCapSummary | undefined
   warning: PlayerWarning | undefined
 }) {
-  const trafficLight = entry.trafficLight ?? entry.trafficLightSuggestion
+  const hasCheckIn = hasMeaningfulTrainingCheckIn(entry)
+  const trafficLight = hasCheckIn ? (entry.trafficLight ?? entry.trafficLightSuggestion ?? 'open') : 'open'
+  const attendance = deriveAttendanceStatus(entry)
   const isStop = trafficLight === 'red' || entry.trainingVariant === 'D' || entry.limits.includes('klaeren')
-  const rowSummary = [
-    `Ampel ${formatTrafficLight(trafficLight)}`,
-    entry.limits.length > 0 ? `Limits ${entry.limits.map((limit) => limitLabels[limit]).join(', ')}` : null,
-    returnerCap ? 'Returner-Caps' : null,
-    warning ? 'Vorwarnung' : null,
+  const trafficLabel = formatTrafficLight(trafficLight === 'open' ? null : trafficLight)
+  const attendanceLabel = attendance === 'present' ? 'Da' : attendance === 'absent' ? 'Nicht da' : 'Offen'
+  const note = !hasCheckIn
+    ? 'Noch nicht erfasst'
+    : isStop
+      ? 'Heute prüfen'
+      : entry.limits.length > 0
+        ? `Limits: ${entry.limits.map((limit) => limitLabels[limit]).join(', ')}`
+        : trafficLight === 'yellow'
+          ? 'Belastung anpassen'
+          : returnerCap
+            ? 'Returner-Cap prüfen'
+            : warning
+              ? 'Vorwarnung prüfen'
+              : 'Keine Warnsignale dokumentiert'
+  const statusChips = [
+    <StatusChip
+      key="attendance"
+      label={attendanceLabel}
+      tone={attendance === 'present' ? 'success' : attendance === 'absent' ? 'danger' : 'neutral'}
+    />,
+    entry.trainingVariant ? <StatusChip key="variant" label={`Variante ${entry.trainingVariant}`} tone={isStop ? 'danger' : 'info'} /> : null,
+    returnerCap ? <StatusChip key="cap" label="Cap" tone="info" /> : null,
+    warning ? <StatusChip key="warning" label="Vorwarnung" tone="warning" /> : null,
+    entry.syncStatus !== 'synced' ? (
+      <StatusChip key="sync" label={syncStatusLabel(entry.syncStatus)} tone={entry.syncStatus === 'error' ? 'danger' : 'warning'} />
+    ) : null,
   ].filter(Boolean)
 
   return (
-    <article
-      className={`training-player-row training-player-scan-row traffic-${trafficLight ?? 'open'}`}
-      role="button"
-      tabIndex={0}
-      onClick={() => onSelect(player)}
-      onKeyDown={(event) => {
-        if (event.key === 'Enter' || event.key === ' ') {
-          event.preventDefault()
-          onSelect(player)
-        }
-      }}
-    >
-      <div className="checkin-player-head">
-        <div>
-          <div className="player-name-line">
-            <strong>{player.name}</strong>
-            {entry.trainingVariant ? <span className="tag compact">Variante {entry.trainingVariant}</span> : null}
-            {isStop ? <span className="tag danger compact">Stop/klaeren</span> : null}
-          </div>
-          <p>
-            {player.position} · {player.cluster} · Ampel {formatTrafficLight(trafficLight)}
-          </p>
-        </div>
-        <span className={`sync-pill ${entry.syncStatus}`}>{syncStatusLabel(entry.syncStatus)}</span>
-      </div>
-
-      <p>{rowSummary.join(' · ')}</p>
-      <div className="training-limits" aria-label={`Training Status ${player.name}`}>
-        {entry.limits.length > 0 ? (
-          entry.limits.map((limit) => (
-            <span className={limit === 'klaeren' || limit === 'physio' ? 'tag danger compact' : 'tag compact'} key={limit}>
-              {limitLabels[limit]}
-            </span>
-          ))
-        ) : (
-          <span className="tag compact">keine Limits gesetzt</span>
-        )}
-      </div>
-      <span className="text-action training-row-focus">Fokus oeffnen</span>
-    </article>
+    <AthleteRow
+      meta={[`${player.position} · ${player.cluster}`]}
+      name={player.name}
+      note={note}
+      onSelect={() => onSelect(player)}
+      playerId={player.id}
+      readinessLabel={`${trafficLabel}: ${note}`}
+      readinessTone={trafficLight}
+      selectDescription={`Ampel ${trafficLabel}. ${note}. Anwesenheit ${attendanceLabel}. Details und Quick Actions öffnen.`}
+      selectLabel={`${player.name} im Training öffnen`}
+      status={statusChips}
+      traffic={<TrafficLightChip label={trafficLabel} tone={trafficLight} />}
+    />
   )
 }
 
@@ -558,13 +572,17 @@ export function TrainingView({
     started: false,
   })
   const [restartConfirmSessionId, setRestartConfirmSessionId] = useState<string | null>(null)
+  const [isSavingBlockLog, setIsSavingBlockLog] = useState(false)
   const [trainingPlayerFilter, setTrainingPlayerFilter] = useState<TrainingPlayerFilter>('open')
   const [trainingPlayerSearch, setTrainingPlayerSearch] = useState('')
   const [trainingClusterFilter, setTrainingClusterFilter] = useState('offen')
   const [selectedTrainingPlayerId, setSelectedTrainingPlayerId] = useState<string | null>(initialSelectedPlayerId)
   const selectedTrainingPlayerSheetRef = useRef<HTMLDivElement | null>(null)
+  const lastSelectedTrainingPlayerIdRef = useRef<string | null>(initialSelectedPlayerId)
+  const trainingLayoutRef = useRef<HTMLElement | null>(null)
   const liveStepperRef = useRef<HTMLDivElement | null>(null)
   const toolbarOverflowRef = useRef<HTMLDetailsElement | null>(null)
+  const blockSaveInFlightRef = useRef(false)
   const actionFeedback = useActionFeedback()
   const hasTrainingProgress = sessionBlockActions.blockLogs.length > 0
   const isLiveModeForSession = liveModeState.sessionId === selectedSession.id
@@ -597,6 +615,19 @@ export function TrainingView({
     }
   }, [selectedTrainingPlayer])
 
+  useEffect(() => {
+    const playerId = lastSelectedTrainingPlayerIdRef.current
+    if (selectedTrainingPlayerId !== null || !playerId) {
+      return
+    }
+
+    const playerRow = Array.from(trainingLayoutRef.current?.querySelectorAll<HTMLElement>('.of-athlete-row') ?? []).find(
+      (row) => row.dataset.playerId === playerId,
+    )
+    playerRow?.querySelector<HTMLButtonElement>('.of-athlete-row-content')?.focus()
+    lastSelectedTrainingPlayerIdRef.current = null
+  }, [selectedTrainingPlayerId])
+
   function handleSessionTextBlur(field: 'contactIndex' | 'speedExposureNote') {
     return (event: FormEvent<HTMLInputElement | HTMLTextAreaElement>) => {
       const value = event.currentTarget.value.trim()
@@ -617,7 +648,7 @@ export function TrainingView({
   }
 
   function applySaveFeedback(result: unknown) {
-    if (result && typeof result === 'object' && 'ok' in result && result.ok === false) {
+    if (saveResultFailed(result)) {
       actionFeedback.showError(errorMessageFromSaveResult(result))
       return
     }
@@ -706,7 +737,25 @@ export function TrainingView({
     })
   }
 
-  function handleLiveObservationSubmit(event: FormEvent<HTMLFormElement>) {
+  async function handleSaveBlockLog(
+    blockKey: string,
+    patch: { status: SessionBlockStatus; reason: SessionBlockReason; coachNote: string },
+  ) {
+    if (blockSaveInFlightRef.current) {
+      return
+    }
+
+    blockSaveInFlightRef.current = true
+    setIsSavingBlockLog(true)
+    try {
+      await saveWithFeedback(() => sessionBlockActions.saveBlockLog(blockKey, patch))
+    } finally {
+      blockSaveInFlightRef.current = false
+      setIsSavingBlockLog(false)
+    }
+  }
+
+  async function handleLiveObservationSubmit(event: FormEvent<HTMLFormElement>) {
     event.preventDefault()
     const note = liveObservationText.trim()
 
@@ -714,31 +763,42 @@ export function TrainingView({
       return
     }
 
-    if (liveObservationTarget === 'group') {
-      void saveWithFeedback(() =>
-        saveSessionPatch({
-          coachReview: appendLiveObservation(sessionLog?.coachReview ?? '', liveObservationCategory, note),
-          planChanged: true,
-          status: 'in_progress',
-        }),
-      )
-      setLiveObservationFeedback('Gruppen-Notiz gespeichert.')
-    } else {
-      const player = orderedPlayers.find((item) => item.id === liveObservationTarget)
-      if (!player) {
-        return
+    try {
+      if (liveObservationTarget === 'group') {
+        const result = await saveWithFeedback(() =>
+          saveSessionPatch({
+            coachReview: appendLiveObservation(sessionLog?.coachReview ?? '', liveObservationCategory, note),
+            planChanged: true,
+            status: 'in_progress',
+          }),
+        )
+        if (saveResultFailed(result)) {
+          return
+        }
+        setLiveObservationFeedback('Gruppen-Notiz gespeichert.')
+      } else {
+        const player = orderedPlayers.find((item) => item.id === liveObservationTarget)
+        if (!player) {
+          return
+        }
+
+        const entry = getEntryForPlayer(player)
+        const result = await saveWithFeedback(() =>
+          saveEntry(player, {
+            observation: appendLiveObservation(entry.observation, liveObservationCategory, note),
+          }),
+        )
+        if (saveResultFailed(result)) {
+          return
+        }
+        setLiveObservationFeedback(`Notiz für ${player.name} gespeichert.`)
       }
 
-      const entry = getEntryForPlayer(player)
-      void saveWithFeedback(() =>
-        saveEntry(player, {
-          observation: appendLiveObservation(entry.observation, liveObservationCategory, note),
-        }),
-      )
-      setLiveObservationFeedback(`Notiz fuer ${player.name} gespeichert.`)
+      setLiveObservationText('')
+    } catch {
+      // saveWithFeedback already exposes the failure and keeps the draft intact.
+      return
     }
-
-    setLiveObservationText('')
   }
 
   function playerHasOpenTask(player: Player) {
@@ -746,6 +806,7 @@ export function TrainingView({
     const trafficLight = entry.trafficLight ?? entry.trafficLightSuggestion
 
     return (
+      !hasMeaningfulTrainingCheckIn(entry) ||
       trafficLight === 'yellow' ||
       trafficLight === 'red' ||
       entry.limits.length > 0 ||
@@ -770,7 +831,7 @@ export function TrainingView({
     }
 
     if (trainingPlayerFilter === 'warning') {
-      return trafficLight === 'yellow' || trafficLight === 'red'
+      return hasMeaningfulTrainingCheckIn(entry) && (trafficLight === 'yellow' || trafficLight === 'red')
     }
 
     if (trainingPlayerFilter === 'returner') {
@@ -801,7 +862,7 @@ export function TrainingView({
   }
 
   return (
-    <section className="training-layout" aria-labelledby="training-heading">
+    <section className="training-layout" aria-labelledby="training-heading" ref={trainingLayoutRef}>
       <div className="panel checkin-header">
         <div className="library-heading">
           <p className="eyebrow">Am Feld</p>
@@ -831,7 +892,7 @@ export function TrainingView({
                     Training abbrechen
                   </SecondaryButton>
                   <SecondaryButton onClick={() => { handleResetToStart(); closeToolbarOverflow() }}>
-                    Zurueck zum Start
+                    Zurück zum Start
                   </SecondaryButton>
                 </>
               ) : null}
@@ -841,7 +902,7 @@ export function TrainingView({
                 </SecondaryButton>
               ) : null}
               {syncOverview.status === 'error' ? (
-                <SecondaryButton icon={<RefreshCw className="nav-icon" aria-hidden />} isLoading={isLoading} loadingLabel="Sync laeuft" onClick={() => { void runSync(); closeToolbarOverflow() }}>
+                <SecondaryButton icon={<RefreshCw className="nav-icon" aria-hidden />} isLoading={isLoading} loadingLabel="Sync läuft" onClick={() => { void runSync(); closeToolbarOverflow() }}>
                   Erneut synchronisieren
                 </SecondaryButton>
               ) : null}
@@ -858,10 +919,10 @@ export function TrainingView({
 
       {errorMessage ? (
         <div className="panel error-panel" role="alert">
-          <strong>Training nicht vollstaendig synchronisiert</strong>
+          <strong>Training nicht vollständig synchronisiert</strong>
           <span>{errorMessage}</span>
           <button className="secondary-action" type="button" onClick={clearError}>
-            Schliessen
+            Schließen
           </button>
         </div>
       ) : null}
@@ -870,7 +931,7 @@ export function TrainingView({
 
       {sessionBlockActions.errorMessage ? (
         <div className="panel error-panel" role="alert">
-          <strong>Blockstatus nicht vollstaendig synchronisiert</strong>
+          <strong>Blockstatus nicht vollständig synchronisiert</strong>
           <span>{sessionBlockActions.errorMessage}</span>
           <SecondaryButton
             onClick={() => {
@@ -878,12 +939,12 @@ export function TrainingView({
             }}
             icon={<RefreshCw className="nav-icon" aria-hidden />}
             isLoading={sessionBlockActions.isLoading}
-            loadingLabel="Sync laeuft"
+            loadingLabel="Sync läuft"
           >
             Erneut synchronisieren
           </SecondaryButton>
           <button className="secondary-action" type="button" onClick={sessionBlockActions.clearError}>
-            Schliessen
+            Schließen
           </button>
         </div>
       ) : null}
@@ -901,7 +962,7 @@ export function TrainingView({
         <div className="panel checkin-sync-strip">
           <span className={`status-dot ${sessionBlockActions.syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
           <strong>{syncStatusLabel(sessionBlockActions.syncOverview.status)}</strong>
-          <span>{pendingCountLabel(sessionBlockActions.syncOverview.pendingCount, 'Blockstatus-Aenderungen')}</span>
+          <span>{pendingCountLabel(sessionBlockActions.syncOverview.pendingCount, 'Blockstatus-Änderungen')}</span>
           {sessionBlockActions.syncOverview.errorMessage ? <span>{sessionBlockActions.syncOverview.errorMessage}</span> : null}
           {sessionBlockActions.syncOverview.status === 'error' ? (
             <SecondaryButton
@@ -911,7 +972,7 @@ export function TrainingView({
               }}
               icon={<RefreshCw className="nav-icon" aria-hidden />}
               isLoading={sessionBlockActions.isLoading}
-              loadingLabel="Sync laeuft"
+              loadingLabel="Sync läuft"
             >
               Erneut synchronisieren
             </SecondaryButton>
@@ -921,10 +982,10 @@ export function TrainingView({
 
       {exposureActions.errorMessage ? (
         <div className="panel error-panel" role="alert">
-          <strong>Exposures nicht vollstaendig gespeichert</strong>
+          <strong>Exposures nicht vollständig gespeichert</strong>
           <span>{exposureActions.errorMessage}</span>
           <button className="secondary-action" type="button" onClick={exposureActions.clearError}>
-            Schliessen
+            Schließen
           </button>
         </div>
       ) : null}
@@ -943,7 +1004,7 @@ export function TrainingView({
           <strong id="restart-training-heading">Training neu starten?</strong>
           <span>
             Es werden {sessionBlockActions.blockLogs.length} Blockstatus und {activeExposureSummaryCount} Exposure-Summary
-            {activeExposureSummaryCount === 1 ? '' : 's'} fuer diese Session zurueckgesetzt.
+            {activeExposureSummaryCount === 1 ? '' : 's'} für diese Session zurückgesetzt.
           </span>
           <span>Check-ins bleiben erhalten. sRPE/Beschwerden/E2, Metrics, Exercise-Results, Progression und Baselines bleiben erhalten.</span>
           <div className="button-row training-actions">
@@ -970,11 +1031,11 @@ export function TrainingView({
           currentBlockKey={currentLiveBlockKey}
           exerciseActions={exerciseActions}
           isLiveActive={showLiveControls}
-          isSavingDisabled={isLoading || sessionBlockActions.isLoading}
+          isSavingDisabled={isLoading || sessionBlockActions.isLoading || isSavingBlockLog}
           metricActions={metricActions}
           onCurrentBlockKeyChange={handleCurrentBlockChange}
           onSaveBlockLog={(blockKey, patch) => {
-            void saveWithFeedback(() => sessionBlockActions.saveBlockLog(blockKey, patch))
+            void handleSaveBlockLog(blockKey, patch)
           }}
           players={orderedPlayers}
           session={selectedSession}
@@ -986,7 +1047,7 @@ export function TrainingView({
           <UserCheck className="nav-icon" aria-hidden />
           <div>
             <h3>Athletenliste</h3>
-            <p>Spieler antippen fuer Status, Limits, Caps, Quick Actions und Live-Notiz.</p>
+            <p>Spieler antippen für Status, Limits, Caps, Quick Actions und Live-Notiz.</p>
           </div>
         </div>
         <div className="training-coach-fields">
@@ -1000,10 +1061,11 @@ export function TrainingView({
           </label>
           <div className="control-group">
             <span>Filter</span>
-            <div className="button-row">
+            <div className="filter-row">
               {playerFilterOptions.map((option) => (
                 <button
-                  className={trainingPlayerFilter === option.value ? 'segmented active' : 'segmented'}
+                  aria-pressed={trainingPlayerFilter === option.value}
+                  className={trainingPlayerFilter === option.value ? 'filter-chip active' : 'filter-chip'}
                   key={option.value}
                   type="button"
                   onClick={() => setTrainingPlayerFilter(option.value)}
@@ -1027,26 +1089,35 @@ export function TrainingView({
           ) : null}
         </div>
         <div className="training-player-list">
-          {filteredTrainingPlayers.map((player) => (
-            <TrainingPlayerRow
-              entry={getEntryForPlayer(player)}
-              key={player.id}
-              onSelect={(selectedPlayer) => setSelectedTrainingPlayerId(selectedPlayer.id)}
-              player={player}
-              returnerCap={returnerCapByPlayerId.get(player.id)}
-              warning={warningByPlayerId.get(player.id)}
-            />
-          ))}
+          {isLoading && activePlayers.length === 0
+            ? [0, 1, 2].map((index) => <Skeleton key={index} label="Athletenliste wird geladen" variant="row" />)
+            : filteredTrainingPlayers.map((player) => (
+                <TrainingPlayerRow
+                  entry={getEntryForPlayer(player)}
+                  key={player.id}
+                  onSelect={(selectedPlayer) => {
+                    lastSelectedTrainingPlayerIdRef.current = selectedPlayer.id
+                    setSelectedTrainingPlayerId(selectedPlayer.id)
+                  }}
+                  player={player}
+                  returnerCap={returnerCapByPlayerId.get(player.id)}
+                  warning={warningByPlayerId.get(player.id)}
+                />
+              ))}
         </div>
         {activePlayers.length > 0 && filteredTrainingPlayers.length === 0 ? (
-          <p className="action-feedback visible">Keine Spieler fuer diesen Filter.</p>
+          <EmptyState
+            action={<SecondaryButton compact onClick={() => { setTrainingPlayerFilter('all'); setTrainingPlayerSearch('') }}>Filter zurücksetzen</SecondaryButton>}
+            body="Passe Suche oder Filter an, um Athleten wieder einzublenden."
+            title="Keine Athleten in diesem Filter"
+          />
         ) : null}
-        {activePlayers.length === 0 ? (
-          <section className="placeholder">
-            <UserCheck className="placeholder-icon" aria-hidden />
-            <h2>Noch keine aktiven Spieler</h2>
-            <p>Lege zuerst Spieler im Spieler-Tab an. Danach erscheinen sie hier automatisch im Training.</p>
-          </section>
+        {!isLoading && activePlayers.length === 0 ? (
+          <EmptyState
+            action={<SecondaryButton compact onClick={() => onNavigate(routes.players)}>Spieler öffnen</SecondaryButton>}
+            body="Lege zuerst Spieler im Spieler-Tab an. Danach erscheinen sie hier automatisch im Training."
+            title="Noch keine aktiven Spieler"
+          />
         ) : null}
       </section>
 
@@ -1055,7 +1126,7 @@ export function TrainingView({
           <summary>
             <span>
               Live-Beobachtung
-              <small>Gruppen-Notiz oder iPad-Diktat fuer den Trainingstag.</small>
+              <small>Gruppen-Notiz oder iPad-Diktat für den Trainingstag.</small>
             </span>
           </summary>
           <div className="checkin-secondary-body">
@@ -1101,15 +1172,15 @@ export function TrainingView({
               onChange={(event) => setLiveObservationText(event.target.value)}
             />
           </label>
-          <button
-            className="primary-action"
+          <SecondaryButton
             type="submit"
-            aria-busy={isLoading || undefined}
             aria-describedby={liveObservationText.trim().length === 0 ? 'live-observation-disabled-reason' : undefined}
             disabled={isLoading || liveObservationText.trim().length === 0}
+            isLoading={isLoading}
+            loadingLabel="Speichert"
           >
             Speichern
-          </button>
+          </SecondaryButton>
           {liveObservationText.trim().length === 0 ? (
             <p className="disabled-action-reason" id="live-observation-disabled-reason">
               Schreibe zuerst eine kurze Beobachtung.
@@ -1159,13 +1230,13 @@ export function TrainingView({
           <summary>
             <span>
               Timeline, Kontakt und Speed
-              <small>Blockuebersicht, Quellenlinks und Einheitsebene.</small>
+              <small>Blockübersicht, Quellenlinks und Einheitsebene.</small>
             </span>
           </summary>
           <div className="checkin-secondary-body">
             <div className="metric-grid checkin-metrics">
               <div className="metric">
-                <span>Bloecke</span>
+                <span>Blöcke</span>
                 <strong>{selectedSession.timeline.length}</strong>
               </div>
               <div className="metric">
@@ -1201,7 +1272,7 @@ export function TrainingView({
                       ) : null}
                     </div>
                     {block.libraryRefs && block.libraryRefs.length > 0 ? (
-                      <div className="block-library-links" aria-label={`Quellen fuer ${block.title}`}>
+                      <div className="block-library-links" aria-label={`Quellen für ${block.title}`}>
                         {block.libraryRefs.map((libraryRef) => (
                           <button
                             className="text-action block-library-link"

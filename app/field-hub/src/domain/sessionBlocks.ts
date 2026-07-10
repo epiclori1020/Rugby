@@ -54,7 +54,7 @@ export const sessionBlockStatusLabels: Record<SessionBlockStatus, string> = {
   planned: 'Geplant',
   done: 'Erledigt',
   reduced: 'Reduziert',
-  changed: 'Geaendert',
+  changed: 'Geändert',
   skipped: 'Gestrichen',
 }
 
@@ -76,7 +76,7 @@ export function validateSessionBlockStatusReason(status: SessionBlockStatus, rea
   if (isReasonRequiredForStatus(status) && reason === 'none') {
     return {
       valid: false,
-      error: 'Grund ist fuer reduziert, geaendert oder gestrichen verpflichtend.',
+      error: 'Grund ist für reduziert, geändert oder gestrichen verpflichtend.',
     }
   }
 

@@ -24,6 +24,7 @@ import {
 import type { useExercises } from '../hooks/useExercises'
 import type { useMetrics } from '../hooks/useMetrics'
 import { syncStatusLabel } from '../lib/syncLabels'
+import { SecondaryButton, StatusChip } from './ui'
 
 const selectableBlockReasons = sessionBlockReasons.filter((reason) => reason !== 'none')
 
@@ -203,6 +204,7 @@ function ExerciseDetailCard({
           <label className="inline-field">
             <span>{metricDefinition.name} ({metricDefinition.unit})</span>
             <input
+              className="of-num"
               defaultValue={metricResult?.value ?? ''}
               disabled={isSavingDisabled || !selectedPlayer}
               inputMode="decimal"
@@ -232,6 +234,7 @@ function ExerciseDetailCard({
           <label className="inline-field">
             <span>Sets</span>
             <input
+              className="of-num"
               defaultValue={exerciseResult?.sets ?? ''}
               disabled={isSavingDisabled || !selectedPlayer}
               inputMode="numeric"
@@ -242,6 +245,7 @@ function ExerciseDetailCard({
           <label className="inline-field">
             <span>Reps</span>
             <input
+              className="of-num"
               defaultValue={exerciseResult?.reps ?? ''}
               disabled={isSavingDisabled || !selectedPlayer}
               key={`${selectedPlayer?.id ?? 'none'}-${exercise.exerciseKey}-reps`}
@@ -251,6 +255,7 @@ function ExerciseDetailCard({
           <label className="inline-field">
             <span>Last ({exerciseDefinition.defaultUnit})</span>
             <input
+              className="of-num"
               defaultValue={exerciseResult?.loadValue ?? ''}
               disabled={isSavingDisabled || !selectedPlayer}
               inputMode="decimal"
@@ -261,6 +266,7 @@ function ExerciseDetailCard({
           <label className="inline-field">
             <span>RPE</span>
             <input
+              className="of-num"
               defaultValue={exerciseResult?.rpe ?? ''}
               disabled={isSavingDisabled || !selectedPlayer}
               inputMode="decimal"
@@ -312,8 +318,16 @@ function StepStatusControls({
     setDraftStatus(status)
 
     if (isReasonRequiredForStatus(status)) {
-      setDraftReason(log?.reason && log.reason !== 'none' ? log.reason : 'none')
+      const existingReason = draftReason !== 'none'
+        ? draftReason
+        : log?.reason && log.reason !== 'none'
+          ? log.reason
+          : 'none'
+      setDraftReason(existingReason)
       setValidationMessage(null)
+      if (existingReason !== 'none') {
+        persist(status, existingReason, noteValue)
+      }
       return
     }
 
@@ -327,25 +341,57 @@ function StepStatusControls({
   }
 
   function handleNoteBlur(event: FormEvent<HTMLTextAreaElement>) {
+    if (event.currentTarget.value === noteValue) {
+      return
+    }
     persist(draftStatus, draftReason, event.currentTarget.value)
   }
 
   const showReason = isReasonRequiredForStatus(draftStatus)
+  const adjustmentStatuses = sessionBlockStatuses.filter((status) => status !== 'done')
+  const statusTone = draftStatus === 'done'
+    ? 'success'
+    : draftStatus === 'skipped'
+      ? 'danger'
+      : draftStatus === 'reduced' || draftStatus === 'changed'
+        ? 'warning'
+        : 'neutral'
 
   return (
     <div className="session-block-controls live-step-controls">
-      <div className="button-row training-actions" aria-label="Status aktuelle Phase">
-        {sessionBlockStatuses.map((status) => (
-          <button
-            className={draftStatus === status ? 'segmented active' : 'segmented'}
+      <div className="live-block-status-line">
+        <StatusChip label={sessionBlockStatusLabels[draftStatus]} tone={statusTone} />
+        <div className="live-block-actions" aria-label="Status aktuelle Phase">
+          <SecondaryButton
+            compact
             disabled={isSavingDisabled}
-            key={status}
-            type="button"
-            onClick={() => handleStatusClick(status)}
+            disabledReason={isSavingDisabled ? 'Speichern läuft. Blockstatus ist kurz gesperrt.' : undefined}
+            onClick={() => handleStatusClick('done')}
           >
-            {sessionBlockStatusLabels[status]}
-          </button>
-        ))}
+            Erledigt
+          </SecondaryButton>
+          <details className="live-block-adjustments">
+            <summary>Block anpassen</summary>
+            <div className="live-block-adjustment-menu">
+              {adjustmentStatuses.map((status) => (
+                <button
+                  aria-pressed={draftStatus === status}
+                  className={[
+                    'segmented',
+                    status === 'skipped' ? 'danger' : null,
+                    draftStatus === status ? 'active' : null,
+                  ].filter(Boolean).join(' ')}
+                  disabled={isSavingDisabled}
+                  key={status}
+                  type="button"
+                  onClick={() => handleStatusClick(status)}
+                >
+                  {sessionBlockStatusLabels[status]}
+                </button>
+              ))}
+            </div>
+          </details>
+        </div>
       </div>
       {showReason ? (
         <label className="inline-field">
@@ -356,7 +402,7 @@ function StepStatusControls({
             value={draftReason}
             onChange={(event) => handleReasonChange(event.target.value as SessionBlockReason)}
           >
-            <option value="none">Grund waehlen</option>
+            <option value="none">Grund wählen</option>
             {selectableBlockReasons.map((reason) => (
               <option key={reason} value={reason}>
                 {sessionBlockReasonLabels[reason]}
@@ -432,12 +478,12 @@ export function LiveSessionStepper({
         <div>
           <p className="eyebrow">Aktuelle Phase</p>
           <h3 id="live-session-step-heading">{step.block.title}</h3>
-          <p>
+          <p className="of-num">
             Schritt {step.index + 1} von {step.total} · Status {sessionBlockStatusLabels[step.status]}
             {!isLiveActive ? ' · bereit' : ''}
           </p>
         </div>
-        <span className="tag compact">{step.block.time}</span>
+        <span className="tag compact of-num">{step.block.time}</span>
       </div>
 
       <div className="live-step-work">
@@ -446,12 +492,12 @@ export function LiveSessionStepper({
       </div>
 
       <div className="tag-row">
-        {step.block.dose ? <span className="tag compact">{step.block.dose}</span> : null}
+        {step.block.dose ? <span className="tag compact of-num">{step.block.dose}</span> : null}
         {step.block.note ? <span className="tag compact">{step.block.note}</span> : null}
       </div>
 
       {isLiveActive && step.block.exercises && step.block.exercises.length > 0 ? (
-        <div className="session-exercise-list" aria-label={`Uebungen ${step.block.title}`}>
+        <div className="session-exercise-list" aria-label={`Übungen ${step.block.title}`}>
           {step.block.exercises.map((exercise) => (
             <ExerciseDetailCard
               exercise={exercise}
@@ -490,14 +536,12 @@ export function LiveSessionStepper({
 
       {isLiveActive ? (
         <div className="live-step-navigation">
-          <button className="secondary-action" disabled={isFirst} type="button" onClick={goToPreviousStep}>
-            <ChevronLeft className="nav-icon" aria-hidden />
-            <span>Previous</span>
-          </button>
-          <button className="secondary-action" disabled={isLast} type="button" onClick={goToNextStep}>
-            <span>Next</span>
-            <ChevronRight className="nav-icon" aria-hidden />
-          </button>
+          <SecondaryButton compact disabled={isFirst} icon={<ChevronLeft className="nav-icon" aria-hidden />} onClick={goToPreviousStep}>
+            Vorheriger Block
+          </SecondaryButton>
+          <SecondaryButton compact disabled={isLast} icon={<ChevronRight className="nav-icon" aria-hidden />} onClick={goToNextStep}>
+            Nächster Block
+          </SecondaryButton>
         </div>
       ) : null}
     </section>

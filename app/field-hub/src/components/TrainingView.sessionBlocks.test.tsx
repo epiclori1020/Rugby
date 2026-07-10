@@ -236,10 +236,16 @@ describe('TrainingView session block status controls', () => {
       })
       root = null
     }
+    document.body.replaceChildren()
   })
 
   it('opens live mode without saving and lets the coach navigate steps', async () => {
-    const saveBlockLog = vi.fn(async () => undefined)
+    let resolveBlockSave: (() => void) | null = null
+    const saveBlockLog = vi.fn(
+      () => new Promise<void>((resolve) => {
+        resolveBlockSave = resolve
+      }),
+    )
     const saveSessionPatch = vi.fn(async () => undefined)
     const saveEntry = vi.fn(checkInActions.saveEntry)
     const container = document.createElement('div')
@@ -288,38 +294,53 @@ describe('TrainingView session block status controls', () => {
 
     expect(container.textContent).toContain('Aktuelle Phase')
     expect(container.textContent).toContain('Warm-up')
-    expect(Array.from(container.querySelectorAll('button')).some((button) => button.textContent === 'Geplant')).toBe(true)
+    expect(Array.from(container.querySelectorAll('button')).some((button) => button.textContent === 'Erledigt')).toBe(true)
+    expect(container.querySelector('details.live-block-adjustments')).toBeTruthy()
     expect(container.textContent).toContain('Aktuellen Block fokussieren')
     expect(container.textContent).toContain('Weitere Aktionen')
     expect(saveBlockLog).not.toHaveBeenCalled()
     expect(saveSessionPatch).not.toHaveBeenCalled()
     expect(saveEntry).not.toHaveBeenCalled()
 
+    const doneButton = Array.from(container.querySelectorAll<HTMLButtonElement>('button'))
+      .find((button) => button.textContent === 'Erledigt')
     await act(async () => {
-      Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Geplant')
-        ?.click()
+      doneButton?.click()
     })
+    expect(doneButton?.disabled).toBe(true)
+    expect(container.textContent).toContain('Speichern läuft. Blockstatus ist kurz gesperrt.')
+    doneButton?.click()
+    expect(saveBlockLog).toHaveBeenCalledTimes(1)
+    await act(async () => {
+      resolveBlockSave?.()
+      await Promise.resolve()
+    })
+    expect(doneButton?.disabled).toBe(false)
     const emptyNote = container.querySelector<HTMLTextAreaElement>('textarea[aria-label="Blocknotiz Warm-up"]')
     await act(async () => {
       emptyNote!.value = ''
       emptyNote!.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
     })
 
-    expect(saveBlockLog).not.toHaveBeenCalled()
+    expect(saveBlockLog).toHaveBeenCalledTimes(1)
+    expect(saveBlockLog).toHaveBeenCalledWith('kw25-do-2026-06-18:warmup', {
+      status: 'done',
+      reason: 'none',
+      coachNote: '',
+    })
 
     await act(async () => {
       Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Next')
+        .find((button) => button.textContent === 'Nächster Block')
         ?.click()
     })
 
     expect(container.textContent).toContain('Speed')
-    expect(saveBlockLog).not.toHaveBeenCalled()
+    expect(saveBlockLog).toHaveBeenCalledTimes(1)
 
     await act(async () => {
       Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Previous')
+        .find((button) => button.textContent === 'Vorheriger Block')
         ?.click()
     })
 
@@ -411,7 +432,7 @@ describe('TrainingView session block status controls', () => {
 
     await act(async () => {
       Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Zurueck zum Start')
+        .find((button) => button.textContent === 'Zurück zum Start')
         ?.click()
     })
     expect(container.textContent).toContain('Warm-up')
@@ -446,12 +467,74 @@ describe('TrainingView session block status controls', () => {
     expect(resetExposureSummaries).toHaveBeenCalledTimes(1)
   })
 
+  it('keeps a live observation draft when saving fails', async () => {
+    const saveSessionPatch = vi.fn(async () => ({ ok: false, errorMessage: 'Speichern fehlgeschlagen.' }) as never)
+    const container = document.createElement('div')
+    root = createRoot(container)
+
+    await act(async () => {
+      root?.render(
+        <TrainingView
+          authState={authState}
+          checkInActions={{ ...checkInActions, saveSessionPatch }}
+          exposureActions={exposureActions}
+          onOpenLibraryItem={() => undefined}
+          onNavigate={() => undefined}
+          onSessionChange={() => undefined}
+          returnerCaps={[]}
+          selectedSession={selectedSession}
+          selectedSessionId={selectedSession.id}
+          sessionBlockActions={{
+            blockLogs: [],
+            syncOverview,
+            isLoading: false,
+            errorMessage: null,
+            refreshSessionBlocks: async () => undefined,
+            runSync: async () => syncOverview,
+            saveBlockLog: async () => undefined,
+            getLogForBlock: () => null,
+            clearError: () => undefined,
+            resetSessionBlockLogs: async () => ({ resetCount: 0 }),
+          }}
+          sessions={[selectedSession]}
+        />,
+      )
+    })
+
+    const observation = container.querySelector<HTMLTextAreaElement>('.live-observation-form textarea')
+    const valueSetter = Object.getOwnPropertyDescriptor(HTMLTextAreaElement.prototype, 'value')?.set
+    await act(async () => {
+      valueSetter?.call(observation, 'Technik unter Ermüdung beobachten')
+      observation!.dispatchEvent(new Event('input', { bubbles: true }))
+      observation!.dispatchEvent(new Event('change', { bubbles: true }))
+    })
+    const observationForm = container.querySelector<HTMLFormElement>('.live-observation-form')
+    await act(async () => {
+      observationForm?.dispatchEvent(new Event('submit', { bubbles: true, cancelable: true }))
+      await Promise.resolve()
+    })
+
+    expect(saveSessionPatch).toHaveBeenCalledTimes(1)
+    expect(observation?.value).toBe('Technik unter Ermüdung beobachten')
+    expect(container.textContent).not.toContain('Gruppen-Notiz gespeichert.')
+  })
+
   it('keeps player quick actions hidden until a player is focused', async () => {
     const player = activePlayer('player-focus', 'Focus Player')
+    const untouchedPlayer = activePlayer('player-untouched', 'Untouched Player')
     const entry = { ...entryForPlayer(player), trafficLight: 'yellow' as const, limits: ['kein_sprint' as const] }
+    const untouchedEntry = {
+      ...entryForPlayer(untouchedPlayer),
+      id: `preview:${selectedSession.id}:${untouchedPlayer.id}`,
+      present: false,
+      returnerFlag: 'nein' as const,
+      trafficLight: null,
+      trafficLightSuggestion: 'yellow' as const,
+    }
     const saveEntry = vi.fn(checkInActions.saveEntry)
     const onOpenReturner = vi.fn()
     const container = document.createElement('div')
+    document.body.append(container)
     root = createRoot(container)
 
     await act(async () => {
@@ -460,9 +543,9 @@ describe('TrainingView session block status controls', () => {
           authState={authState}
           checkInActions={{
             ...checkInActions,
-            activePlayers: [player],
-            entries: [entry],
-            getEntryForPlayer: () => entry,
+            activePlayers: [player, untouchedPlayer],
+            entries: [entry, untouchedEntry],
+            getEntryForPlayer: (candidate) => candidate.id === player.id ? entry : untouchedEntry,
             saveEntry,
           }}
           exposureActions={exposureActions}
@@ -492,9 +575,26 @@ describe('TrainingView session block status controls', () => {
 
     expect(container.querySelector('[aria-label="Training Quick Actions Focus Player"]')).toBeNull()
     expect(container.querySelector('.training-player-list')?.textContent).toContain('Focus Player')
+    expect(container.querySelectorAll('.training-player-list .of-athlete-row')).toHaveLength(2)
+    expect(container.querySelector('.training-player-list')?.textContent).toContain('Untouched Player')
+    expect(container.querySelector('.training-player-list')?.textContent).toContain('Noch nicht erfasst')
+    expect(container.querySelector('.training-player-scan-row')).toBeNull()
+    expect(container.querySelector('.training-player-list .of-traffic-chip')?.textContent).toContain('Gelb')
+    expect(container.querySelector('.training-player-list .of-status-chip')?.textContent).toContain('Da')
+    expect(container.querySelector('.training-player-list')?.textContent).toContain('Limits: kein Sprint')
+    expect(container.querySelector<HTMLButtonElement>('button[aria-pressed="true"]')?.textContent).toBe('Offene Aufgaben')
 
     await act(async () => {
-      container.querySelector<HTMLElement>('.training-player-scan-row')?.click()
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Gelb/Rot')?.click()
+    })
+    expect(container.querySelectorAll('.training-player-list .of-athlete-row')).toHaveLength(1)
+    expect(container.querySelector('.training-player-list')?.textContent).not.toContain('Untouched Player')
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Offene Aufgaben')?.click()
+    })
+
+    await act(async () => {
+      container.querySelector<HTMLButtonElement>('.training-player-list .of-athlete-row-content')?.click()
     })
 
     expect(container.querySelector('[aria-label="Training Quick Actions Focus Player"]')).toBeTruthy()
@@ -512,13 +612,12 @@ describe('TrainingView session block status controls', () => {
     })
 
     expect(container.querySelector('[aria-label="Training Quick Actions Focus Player"]')).toBeNull()
+    expect(document.activeElement?.getAttribute('aria-label')).toBe('Focus Player im Training öffnen')
 
+    expect(container.querySelector('.training-player-list .of-athlete-row-content')?.tagName).toBe('BUTTON')
     await act(async () => {
-      container
-        .querySelector<HTMLElement>('.training-player-scan-row')
-        ?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Enter', bubbles: true }))
+      container.querySelector<HTMLButtonElement>('.training-player-list .of-athlete-row-content')?.click()
     })
-
     expect(container.querySelector('[aria-label="Training Quick Actions Focus Player"]')).toBeTruthy()
 
     await act(async () => {
@@ -1342,7 +1441,7 @@ describe('TrainingView session block status controls', () => {
     })
 
     expect(container.querySelector('.training-player-list')?.textContent).not.toContain('Artur Paseka')
-    expect(container.textContent).toContain('Keine Spieler fuer diesen Filter.')
+    expect(container.textContent).toContain('Keine Athleten in diesem Filter')
   })
 
   it('opens linked library references from timeline blocks', async () => {
@@ -1432,9 +1531,13 @@ describe('TrainingView session block status controls', () => {
     })
     await act(async () => {
       Array.from(container.querySelectorAll('button'))
-        .find((button) => button.textContent === 'Next')
+        .find((button) => button.textContent === 'Nächster Block')
         ?.click()
     })
+
+    const adjustments = container.querySelector<HTMLDetailsElement>('details.live-block-adjustments')
+    adjustments!.open = true
+    adjustments!.dispatchEvent(new Event('toggle', { bubbles: true }))
 
     await act(async () => {
       Array.from(container.querySelectorAll('button'))
@@ -1551,7 +1654,22 @@ describe('TrainingView session block status controls', () => {
     const reasonSelect = container.querySelector<HTMLSelectElement>('select[aria-label="Grund Speed"]')
 
     expect(skippedButton?.className).toContain('active')
+    expect(skippedButton?.className).toContain('danger')
     expect(reasonSelect?.value).toBe('time')
+
+    const adjustments = container.querySelector<HTMLDetailsElement>('details.live-block-adjustments')
+    adjustments!.open = true
+    const changedButton = Array.from(container.querySelectorAll('button')).find(
+      (button) => button.textContent === 'Geändert',
+    )
+    await act(async () => {
+      changedButton?.click()
+    })
+    expect(saveBlockLog).toHaveBeenCalledWith('kw25-do-2026-06-18:speed', {
+      status: 'changed',
+      reason: 'time',
+      coachNote: 'Zeitdruck',
+    })
   })
 
   it('retries block status sync from the training error strip', async () => {

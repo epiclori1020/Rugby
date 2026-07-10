@@ -46,7 +46,7 @@ describe('session block status rules', () => {
     expect(isReasonRequiredForStatus('reduced')).toBe(true)
     expect(validateSessionBlockStatusReason('reduced', 'none')).toEqual({
       valid: false,
-      error: 'Grund ist fuer reduziert, geaendert oder gestrichen verpflichtend.',
+      error: 'Grund ist für reduziert, geändert oder gestrichen verpflichtend.',
     })
     expect(validateSessionBlockStatusReason('changed', 'weather')).toEqual({ valid: true, error: null })
     expect(validateSessionBlockStatusReason('skipped', 'coach_decision')).toEqual({ valid: true, error: null })

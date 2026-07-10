@@ -2371,6 +2371,12 @@ button {
   color: var(--of-color-on-brand);
 }
 
+.segmented.danger {
+  border-color: var(--of-color-status-danger-border);
+  background: var(--of-color-status-danger-bg-soft);
+  color: var(--of-color-status-danger-text);
+}
+
 .segmented.danger.active {
   border-color: var(--of-color-status-danger);
   background: var(--of-color-status-danger);
@@ -2903,7 +2909,7 @@ button {
 
 .live-session-stepper {
   display: grid;
-  gap: 14px;
+  gap: var(--of-space-lg);
   border-color: var(--of-color-brand-border-muted);
   background: var(--of-color-status-success-bg);
 }
@@ -2917,7 +2923,7 @@ button {
   display: flex;
   align-items: start;
   justify-content: space-between;
-  gap: 12px;
+  gap: var(--of-space-md);
 }
 
 .live-step-heading h3,
@@ -2929,35 +2935,76 @@ button {
 .live-step-work {
   display: grid;
   grid-template-columns: auto minmax(0, 1fr);
-  gap: 10px;
+  gap: var(--of-space-md);
   align-items: start;
   border: 1px solid var(--line);
   border-radius: var(--of-radius-sm);
   background: var(--of-color-surface-default);
-  padding: 12px;
+  padding: var(--of-space-md);
 }
 
 .live-step-work p {
   font-size: var(--of-font-size-body);
   font-weight: var(--of-font-weight-semibold);
-  line-height: 1.45;
+  line-height: var(--of-line-height-normal);
 }
 
 .live-step-safety,
 .live-step-navigation {
   display: flex;
   flex-wrap: wrap;
-  gap: 10px;
+  gap: var(--of-space-sm);
 }
 
 .live-step-controls {
   display: grid;
-  gap: 12px;
+  gap: var(--of-space-sm);
+}
+
+.live-block-status-line,
+.live-block-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: var(--of-space-sm);
+}
+
+.live-block-status-line {
+  justify-content: space-between;
+}
+
+.live-block-adjustments {
+  position: relative;
+}
+
+.live-block-adjustments summary {
+  min-height: calc(var(--of-space-xl) + var(--of-space-xl));
+  border: var(--of-border-width-default) solid var(--of-color-border-default);
+  border-radius: var(--of-radius-sm);
+  background: var(--of-color-surface-default);
+  color: var(--of-color-brand-primary);
+  cursor: pointer;
+  display: grid;
+  place-items: center;
+  font-weight: var(--of-font-weight-semibold);
+  padding: var(--of-space-xs) var(--of-space-sm);
+}
+
+.live-block-adjustments summary:focus-visible {
+  outline: calc(var(--of-border-width-default) * 3) solid var(--of-color-focus-ring);
+  outline-offset: calc(var(--of-border-width-default) * 2);
+}
+
+.live-block-adjustment-menu {
+  display: flex;
+  flex-wrap: wrap;
+  gap: var(--of-space-xs);
+  padding-top: var(--of-space-xs);
 }
 
 .session-exercise-list {
   display: grid;
-  gap: 10px;
+  gap: var(--of-space-sm);
 }
 
 .session-exercise-card {
@@ -2965,8 +3012,8 @@ button {
   border-radius: var(--of-radius-sm);
   background: var(--of-color-surface-default);
   display: grid;
-  gap: 10px;
-  padding: 12px;
+  gap: var(--of-space-sm);
+  padding: var(--of-space-md);
 }
 
 .session-exercise-card p {
@@ -2977,7 +3024,7 @@ button {
   border-top: 1px solid var(--line);
   display: grid;
   grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
-  padding-top: 10px;
+  padding-top: var(--of-space-sm);
 }
 
 .live-step-navigation {
@@ -2986,7 +3033,7 @@ button {
 
 .training-coach-fields {
   display: grid;
-  gap: 12px;
+  gap: var(--of-space-md);
 }
 
 .variant-grid {
@@ -3055,53 +3102,7 @@ button {
 
 .training-player-list {
   display: grid;
-  gap: 12px;
-}
-
-.training-player-row {
-  border: 1px solid var(--line);
-  border-left: 7px solid var(--line);
-  border-radius: var(--of-radius-sm);
-  background: var(--surface);
-  display: grid;
-  gap: 12px;
-  padding: 14px;
-}
-
-.training-player-scan-row {
-  cursor: pointer;
-  text-align: left;
-}
-
-.training-player-scan-row:hover {
-  border-color: var(--brand);
-}
-
-.training-player-scan-row:focus-visible {
-  outline: 3px solid var(--of-color-focus-ring);
-  outline-offset: 2px;
-}
-
-.training-player-scan-row p {
-  margin: 0;
-  color: var(--muted);
-  line-height: 1.4;
-}
-
-.training-row-focus {
-  justify-self: start;
-}
-
-.training-player-row.traffic-green {
-  border-left-color: var(--ok);
-}
-
-.training-player-row.traffic-yellow {
-  border-left-color: var(--warning);
-}
-
-.training-player-row.traffic-red {
-  border-left-color: var(--of-color-status-danger);
+  gap: var(--of-space-sm);
 }
 
 .training-limits,
