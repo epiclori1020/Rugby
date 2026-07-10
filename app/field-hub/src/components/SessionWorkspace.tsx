@@ -1,9 +1,9 @@
-import { Activity, ClipboardCheck, Dumbbell } from 'lucide-react'
+import { Activity, ClipboardCheck, Dumbbell, HeartPulse } from 'lucide-react'
 import type { ReactNode } from 'react'
 import type { SessionDefinition, SessionType } from '../content/types'
 import { deriveAttendanceStatus, type PlayerSessionEntry, type PlayerWarning } from '../domain/checkIn'
 import type { PostSessionCompletion } from '../domain/postSessionCompletion'
-import type { ReturnerCapSummary } from '../domain/returners'
+import type { ReturnerTaskState } from '../domain/returnerTasks'
 import type { PlayerSyncOverview } from '../domain/sync'
 import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
 import type { UnitRoute } from '../navigation'
@@ -18,7 +18,7 @@ type SessionWorkspaceProps = {
   onSessionChange: (sessionId: string) => void
   onUnitRouteChange: (route: UnitRoute) => void
   postSessionCompletion: PostSessionCompletion
-  returnerCaps: ReturnerCapSummary[]
+  returnerTasks: ReturnerTaskState[]
   selectedSession: SessionDefinition
   selectedSessionId: string
   sessions: SessionDefinition[]
@@ -29,6 +29,7 @@ type SessionWorkspaceProps = {
 const unitOptions: SegmentedControlOption<UnitRoute>[] = [
   { value: 'check-in', label: 'Check-in', icon: <ClipboardCheck aria-hidden /> },
   { value: 'training', label: 'Training', icon: <Dumbbell aria-hidden /> },
+  { value: 'returners', label: 'Returner', icon: <HeartPulse aria-hidden /> },
   { value: 'post-session', label: 'Nachbereitung', icon: <Activity aria-hidden /> },
 ]
 
@@ -79,10 +80,6 @@ function countPresentEntries(entries: PlayerSessionEntry[]) {
   return entries.filter((entry) => !entry.deletedAt && deriveAttendanceStatus(entry) === 'present').length
 }
 
-function countReturnerHints(returnerCaps: ReturnerCapSummary[]) {
-  return new Set(returnerCaps.map((cap) => cap.playerId).filter(Boolean)).size
-}
-
 function syncTone(syncOverview: PlayerSyncOverview): StatusTone {
   if (!syncOverview.isOnline) {
     return 'warning'
@@ -106,7 +103,7 @@ export function SessionWorkspace({
   onSessionChange,
   onUnitRouteChange,
   postSessionCompletion,
-  returnerCaps,
+  returnerTasks = [],
   selectedSession,
   selectedSessionId,
   sessions,
@@ -115,7 +112,8 @@ export function SessionWorkspace({
 }: SessionWorkspaceProps) {
   const warningCount = countOpenWarnings(entries, warnings)
   const presentCount = countPresentEntries(entries)
-  const returnerHintCount = countReturnerHints(returnerCaps)
+  const openReturnerTasks = returnerTasks.filter((task) => task.isOpen)
+  const returnerTone: StatusTone = openReturnerTasks.some((task) => task.tone === 'danger') ? 'danger' : 'warning'
   const openPostSessionCount = postSessionCompletion.blockers.length + postSessionCompletion.advisories.length
   const hasSyncAttention = shouldShowSyncAttention(syncOverview)
   const syncDetail = syncOverview.errorMessage ?? pendingCountLabel(syncOverview.pendingCount)
@@ -140,7 +138,7 @@ export function SessionWorkspace({
           { label: 'Anwesend', value: `${presentCount}` },
           { label: 'Hinweise', value: `${warningCount}` },
           { label: 'Nachbereitung', value: completionLabel[postSessionCompletion.status] },
-          { label: 'Returner', value: `${returnerHintCount}` },
+          { label: 'Returner', value: `${returnerTasks.length}` },
         ]}
         subtitle={selectedSession.summary}
         title={selectedSession.title}
@@ -163,8 +161,14 @@ export function SessionWorkspace({
           tone={openPostSessionCount > 0 ? 'warning' : 'success'}
         />
         <StatusChip
-          label={returnerHintCount === 1 ? '1 Returner-Hinweis' : `${returnerHintCount} Returner-Hinweise`}
-          tone={returnerHintCount > 0 ? 'info' : 'neutral'}
+          label={
+            openReturnerTasks.length === 0
+              ? 'Returner aktuell geklärt'
+              : openReturnerTasks.length === 1
+                ? '1 Returner-Aufgabe offen'
+                : `${openReturnerTasks.length} Returner-Aufgaben offen`
+          }
+          tone={openReturnerTasks.length > 0 ? returnerTone : 'success'}
         />
       </div>
 

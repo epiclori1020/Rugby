@@ -301,21 +301,6 @@ export function deriveMissingPostSessionValues({
     }
   }
 
-  if (required.length === 0 && sessionLog.status !== 'completed') {
-    required.push({
-      id: 'session_status:session',
-      severity: 'required',
-      kind: 'session_status',
-      target: 'session',
-      label: 'Einheit abschliessen',
-      helperText: 'Pflichtwerte sind geklaert; markiere die Einheit als abgeschlossen, wenn der Trainingstag dokumentiert ist.',
-      playerId: null,
-      playerName: null,
-      sessionLogId: sessionLog.id,
-      fieldKey: 'status',
-    })
-  }
-
   if (backupIsNeeded(sessionLog, lastExportAt)) {
     optional.push({
       id: 'backup_export:session',

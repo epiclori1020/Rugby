@@ -20,6 +20,7 @@ describe('OnField coach routing', () => {
       '#/today',
       '#/unit/check-in',
       '#/unit/training',
+      '#/unit/returners',
       '#/unit/post-session',
       '#/players',
       '#/analysis',
@@ -64,6 +65,12 @@ describe('OnField coach routing', () => {
       canonicalHash: '#/more/settings',
       source: 'legacy',
     })
+    expect(parseHashRoute('#/returner')).toMatchObject({
+      kind: 'coach',
+      route: routes.unitReturners,
+      canonicalHash: '#/unit/returners',
+      source: 'legacy',
+    })
   })
 
   it('keeps public check-in hashes outside the coach route model', () => {
@@ -90,7 +97,7 @@ describe('OnField coach routing', () => {
 
   it('maps legacy domain navigation targets at the app boundary', () => {
     expect(legacyTargetToRoute('nachbereitung')).toBe(routes.unitPostSession)
-    expect(legacyTargetToRoute('returner')).toBe(routes.moreReturners)
+    expect(legacyTargetToRoute('returner')).toBe(routes.unitReturners)
     expect(legacyTargetToRoute('spieler')).toBe(routes.players)
   })
 })

@@ -23,6 +23,7 @@ type TodayDashboardProps = {
   isSignedIn: boolean
   onActionFeedback: (message: string) => void
   onOpenCoachInsightSource: (source: CoachInsightSource) => void
+  onOpenReturner?: (playerId: string) => void
   onNavigate: (route: AppRoute) => void
   onOpenLibrary: (session: SessionDefinition) => void
   onOpenPdf: (pdf: PdfRef) => void
@@ -121,6 +122,7 @@ export function TodayDashboard({
   isSignedIn,
   onActionFeedback,
   onOpenCoachInsightSource,
+  onOpenReturner,
   onNavigate,
   onOpenLibrary,
   onOpenPdf,
@@ -344,6 +346,9 @@ export function TodayDashboard({
               {todaySummary.attentionRows.map((row) => {
                 const primaryReason = row.reasons[0]
                 const reasonDetails = [...new Set(row.reasons.map((reason) => reason.detail))].join(' · ')
+                const isReturnerContext = row.reasons.some(
+                  (reason) => reason.tone === 'returner' || reason.tone === 'red' || reason.tone === 'yellow',
+                )
 
                 return (
                   <AthleteRow
@@ -356,6 +361,24 @@ export function TodayDashboard({
                     readinessTone={row.tone}
                     status={<StatusChip label={chipLabelForTone(row.tone)} tone={rowChipTone(row.tone)} />}
                     trendLabel={primaryReason.context}
+                    action={
+                      <SecondaryButton
+                        compact
+                        data-testid={`today-attention-${isReturnerContext ? 'returner' : 'check-in'}-${row.playerId}`}
+                        onClick={() => {
+                          if (isReturnerContext && onOpenReturner) {
+                            triggerHapticFeedback('selection')
+                            onOpenReturner(row.playerId)
+                            onActionFeedback('Returner-Aufgabe geöffnet.')
+                            return
+                          }
+
+                          navigateWithFeedback(routes.unitCheckIn, 'Check-in geöffnet.')
+                        }}
+                      >
+                        {isReturnerContext ? 'Returner öffnen' : 'Im Check-in klären'}
+                      </SecondaryButton>
+                    }
                   />
                 )
               })}

@@ -52,6 +52,14 @@ const screenChecks = [
     expectedTexts: ['Einheit / Training', 'Timeline, Varianten'],
   },
   {
+    name: 'Einheit / Returner',
+    navigate: async (page) => {
+      await clickButtonByLabelOrText(page, 'Einheit', 'Einheit / Returner')
+      await clickButtonByLabelOrText(page, 'Returner', 'Einheit / Returner')
+    },
+    expectedTexts: ['Einheit / Returner', 'Returner-Caps und Verlauf'],
+  },
+  {
     name: 'Einheit / Nachbereitung',
     navigate: async (page) => {
       await clickButtonByLabelOrText(page, 'Einheit', 'Einheit / Nachbereitung')

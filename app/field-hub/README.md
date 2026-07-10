@@ -45,6 +45,7 @@ npm run qa:local
 npm run qa:beta
 npm run test:e2e:kiosk
 npm run test:e2e:r5
+npm run test:e2e:r6
 npm run build
 npm run preview
 ```
@@ -59,6 +60,7 @@ Die Coach-App nutzt ab Sprint 24 kanonische Hash-Routen:
 - `#/today`
 - `#/unit/check-in`
 - `#/unit/training`
+- `#/unit/returners`
 - `#/unit/post-session`
 - `#/players`
 - `#/analysis`
@@ -66,6 +68,8 @@ Die Coach-App nutzt ab Sprint 24 kanonische Hash-Routen:
 - `#/more/export`
 - `#/more/settings`
 - `#/more/returners`
+
+`#/unit/returners` ist der primaere Arbeitsort im Einheit-Loop. `#/more/returners` bleibt als ruhiger Backup-Zugang kompatibel.
 
 Alte interne Ziele wie `#/heute`, `#/nachbereitung`, `#/bibliothek` oder `#/einstellungen`
 bleiben als Legacy-Links kompatibel und werden beim Oeffnen auf die kanonische Route normalisiert.
@@ -81,6 +85,8 @@ FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1 npm run test:e2e:kiosk
 Dabei muessen `FIELD_HUB_E2E_EMAIL` und `FIELD_HUB_E2E_PASSWORD` sicher zur Laufzeit gesetzt sein. Keine echten Werte in Commits, Markdown, Screenshots, Shell-History oder Memory uebernehmen; ein im Chat geteiltes Passwort nach dem QA-Lauf rotieren.
 
 `npm run test:e2e:r5` prueft den authentifizierten Leit-Screen `Squad heute` in 375/393/834/1194: einen Header, einen Sync-Status, plausible Kader-/Anwesenheitswerte, eindeutige Aufmerksamkeitszeilen und den responsiven Split. Der Test blockiert ohne dieselben Laufzeit-Credentials, statt den Signed-in-Pfad still zu ueberspringen.
+
+`npm run test:e2e:r6` prueft den authentifizierten Einheit-Loop in Light und Field Mode bei 375/393/744/834/1194 px. Screenshots sind nur mit einem explizit bestaetigten synthetischen Fixture erlaubt; fehlende Auth oder unsichere Evidence blockiert statt still zu ueberspringen.
 
 ## Historische Sprint-Notizen
 

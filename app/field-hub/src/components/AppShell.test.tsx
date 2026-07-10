@@ -151,6 +151,24 @@ describe('AppShell page title', () => {
     expect(markup).toContain('Training content')
   })
 
+  it('presents Returner as an Einheit route', () => {
+    const markup = renderToStaticMarkup(
+      <AppShell
+        activeRoute={routes.unitReturners}
+        authState={signedOutAuthState}
+        onSectionChange={() => undefined}
+        onNavigate={() => undefined}
+        playerSync={syncedOverview}
+      >
+        <p>Returner content</p>
+      </AppShell>,
+    )
+
+    expect(markup).toContain('Einheit / Returner')
+    expect(markup).toContain('Hinweise für Coaching-Entscheidungen')
+    expect(markup).not.toContain('aria-label="Mehr Unterbereiche"')
+  })
+
   it('renders more subnavigation with Returner as a utility, not a top-level tab', () => {
     const markup = renderToStaticMarkup(
       <AppShell
@@ -169,5 +187,6 @@ describe('AppShell page title', () => {
     expect(markup).toContain('Export &amp; Backup')
     expect(markup).toContain('Einstellungen')
     expect(markup).toContain('Returner')
+    expect(markup).toContain('Primärer Arbeitsort: Einheit')
   })
 })

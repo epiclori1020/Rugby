@@ -1,16 +1,16 @@
 // @vitest-environment jsdom
-import { act } from 'react'
+import { act, type ComponentProps } from 'react'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { createRoot, type Root } from 'react-dom/client'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import type { SessionDefinition } from '../content/types'
-import type { CheckInLimit, PlayerSessionEntry, PlayerWarning } from '../domain/checkIn'
-import type { PlayerObservation } from '../domain/checkIn'
+import { emptyCheckInDraft, type CheckInLimit, type PlayerObservation, type PlayerSessionEntry, type PlayerWarning } from '../domain/checkIn'
 import type { Player } from '../domain/players'
 import type { PlayerSyncOverview } from '../domain/sync'
 import type { useCheckIns } from '../hooks/useCheckIns'
 import type { usePlayers } from '../hooks/usePlayers'
 import type { AuthSessionState } from '../lib/auth'
+import { routes } from '../navigation'
 import { CheckInView } from './CheckInView'
 
 const authState = {
@@ -231,10 +231,16 @@ function createPlayerActions(overrides: Partial<ReturnType<typeof usePlayers>> =
 
 async function renderInteractiveCheckInView({
   checkInActions = createCheckInActions(),
+  initialSelectedPlayerId = null,
   playerActions = createPlayerActions(),
+  onNavigate = () => undefined,
+  onOpenReturner = () => undefined,
 }: {
   checkInActions?: ReturnType<typeof useCheckIns>
+  initialSelectedPlayerId?: string | null
   playerActions?: ReturnType<typeof usePlayers>
+  onNavigate?: CheckInViewPropsForTest['onNavigate']
+  onOpenReturner?: (playerId: string) => void
 } = {}) {
   const container = document.createElement('div')
   const root = createRoot(container)
@@ -244,7 +250,9 @@ async function renderInteractiveCheckInView({
       <CheckInView
         authState={authState}
         checkInActions={checkInActions}
-        onNavigate={() => undefined}
+        initialSelectedPlayerId={initialSelectedPlayerId}
+        onNavigate={onNavigate}
+        onOpenReturner={onOpenReturner}
         onSessionChange={() => undefined}
         onStartKiosk={() => undefined}
         playerActions={playerActions}
@@ -258,6 +266,8 @@ async function renderInteractiveCheckInView({
 
   return { container, root }
 }
+
+type CheckInViewPropsForTest = ComponentProps<typeof CheckInView>
 
 function getButton(container: HTMLElement, name: string) {
   const button = [...container.querySelectorAll('button')].find((item) => item.textContent?.trim() === name)
@@ -301,6 +311,111 @@ async function openPlayerSheet(container: HTMLElement) {
     playerCard.click()
   })
 }
+
+describe('CheckInView R6 primary flow', () => {
+  let root: Root | null = null
+
+  beforeEach(() => {
+    ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+  })
+
+  afterEach(async () => {
+    if (root) {
+      await act(async () => root?.unmount())
+      root = null
+    }
+  })
+
+  it('focuses the next open check-in as the single primary action', async () => {
+    const openEntry: PlayerSessionEntry = {
+      ...emptyCheckInDraft,
+      id: 'preview:player-active',
+      userId: 'user-1',
+      sessionLogId: 'session-log-1',
+      playerId: activePlayer.id,
+      sessionRpe: null,
+      durationMinutes: null,
+      sessionLoad: null,
+      postPainScore: null,
+      postPainLocation: '',
+      e2Decision: null,
+      nextStep: null,
+      createdAt: '2026-06-16T18:00:00.000Z',
+      updatedAt: '2026-06-16T18:00:00.000Z',
+      deletedAt: null,
+      clientUpdatedAt: '2026-06-16T18:00:00.000Z',
+      syncStatus: 'synced',
+      syncError: null,
+    }
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({
+        entries: [],
+        sessionEntries: [],
+        getEntryForPlayer: () => openEntry,
+      }),
+    })
+    root = rendered.root
+
+    expect(rendered.container.querySelectorAll('.of-button-primary')).toHaveLength(1)
+    await act(async () => getButton(rendered.container, 'Nächsten offenen Check-in').click())
+    expect(rendered.container.querySelector('[role="dialog"]')).not.toBeNull()
+  })
+
+  it('restores the focused check-in player after a Returner round trip', async () => {
+    const rendered = await renderInteractiveCheckInView({ initialSelectedPlayerId: activePlayer.id })
+    root = rendered.root
+
+    expect(rendered.container.querySelector('[role="dialog"]')).not.toBeNull()
+    expect(rendered.container.querySelector('#checkin-sheet-heading-player-active')?.textContent).toBe(activePlayer.name)
+  })
+
+  it('opens training when the roster is resolved', async () => {
+    const onNavigate = vi.fn()
+    const rendered = await renderInteractiveCheckInView({ onNavigate })
+    root = rendered.root
+
+    await act(async () => getButton(rendered.container, 'Training öffnen').click())
+    expect(onNavigate).toHaveBeenCalledWith(routes.unitTraining)
+  })
+
+  it('opens Returner context from a red check-in detail', async () => {
+    const redEntry = {
+      ...autoGreenEntry,
+      trafficLight: 'red' as const,
+      trafficLightSuggestion: 'red' as const,
+      redFlag: 'head_neck_neuro' as const,
+    }
+    const onOpenReturner = vi.fn()
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({ entries: [redEntry], getEntryForPlayer: () => redEntry }),
+      onOpenReturner,
+    })
+    root = rendered.root
+
+    await openPlayerSheet(rendered.container)
+    await act(async () => getButton(rendered.container, 'Im Returner prüfen').click())
+    expect(onOpenReturner).toHaveBeenCalledWith(activePlayer.id)
+  })
+
+  it('does not offer Returner for an untouched open check-in', async () => {
+    const openEntry = {
+      ...autoGreenEntry,
+      trafficLight: null,
+      trafficLightSuggestion: null,
+      redFlag: 'none' as const,
+      movementConcern: false,
+      returnerFlag: 'offen' as const,
+    }
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({ entries: [openEntry], getEntryForPlayer: () => openEntry }),
+      onOpenReturner: vi.fn(),
+    })
+    root = rendered.root
+
+    await openPlayerSheet(rendered.container)
+    expect(Array.from(rendered.container.querySelectorAll('button')).some((button) => button.textContent === 'Im Returner prüfen')).toBe(false)
+  })
+})
 
 describe('CheckInView reset protection', () => {
   let root: Root | null = null

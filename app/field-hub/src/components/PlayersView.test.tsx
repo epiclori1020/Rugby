@@ -318,6 +318,61 @@ describe('PlayersView default layout', () => {
     root.unmount()
   })
 
+  it('opens the selected player in the Einheit Returner loop', async () => {
+    ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+    await localDb.delete()
+    await localDb.open()
+    const onOpenReturner = vi.fn()
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <PlayersView
+          authState={authState}
+          onOpenReturner={onOpenReturner}
+          playerActions={buildPlayerActions()}
+        />,
+      )
+    })
+
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Sabine'))?.click()
+    })
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).reverse().find((button) => button.textContent === 'Returner')?.click()
+    })
+    await act(async () => {
+      Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'In Einheit öffnen')?.click()
+    })
+
+    expect(onOpenReturner).toHaveBeenCalledWith(player.id)
+    root.unmount()
+  })
+
+  it('restores the selected player on the Returner detail tab', async () => {
+    ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+    await localDb.delete()
+    await localDb.open()
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <PlayersView
+          authState={authState}
+          initialDetailTab="returner"
+          initialSelectedPlayerId={player.id}
+          playerActions={buildPlayerActions()}
+        />,
+      )
+    })
+
+    expect(container.querySelector('.player-detail')).not.toBeNull()
+    expect(container.querySelector('[role="tab"][aria-selected="true"]')?.textContent).toBe('Returner')
+    root.unmount()
+  })
+
   it('renders athlete rows as accessible profile openers with selected state', async () => {
     await localDb.delete()
     await localDb.open()

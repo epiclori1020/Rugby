@@ -52,9 +52,11 @@ type PlayerActions = ReturnType<typeof usePlayers>
 type CheckInViewProps = {
   authState: AuthSessionState
   checkInActions: CheckInActions
+  initialSelectedPlayerId?: string | null
   playerActions: PlayerActions
   returnerCaps: ReturnerCapSummary[]
   onNavigate: (route: AppRoute) => void
+  onOpenReturner?: (playerId: string) => void
   onSessionChange: (sessionId: string) => void
   onStartKiosk: () => void
   selectedSession: SessionDefinition
@@ -376,6 +378,7 @@ function CheckInPlayerRow({
   isSavingDisabled,
   onSave,
   onReset,
+  onOpenReturner,
   player,
   returnerCap,
   warning,
@@ -389,6 +392,7 @@ function CheckInPlayerRow({
     manualTrafficLight?: TrafficLight | 'auto',
   ) => Promise<{ ok: true; entry: PlayerSessionEntry } | { ok: false; error: string }>
   onReset: (entry: PlayerSessionEntry) => Promise<{ ok: true; entry: PlayerSessionEntry } | { ok: false; error: string }>
+  onOpenReturner?: (playerId: string) => void
   player: Player
   returnerCap: ReturnerCapSummary | undefined
   warning: PlayerWarning | undefined
@@ -406,6 +410,14 @@ function CheckInPlayerRow({
   const sourceEntryKey = entryRenderKey(entry)
   const displayEntry = localEntryOverride?.baseKey === sourceEntryKey ? localEntryOverride.entry : entry
   const guidance = buildCheckInGuidance({ entry: displayEntry, warning, returnerCap })
+  const shouldOfferReturner =
+    displayEntry.returnerFlag === 'ja' ||
+    displayEntry.redFlag !== 'none' ||
+    displayEntry.movementConcern ||
+    Boolean(
+      (displayEntry.trafficLight ?? displayEntry.trafficLightSuggestion) &&
+      (displayEntry.trafficLight ?? displayEntry.trafficLightSuggestion) !== 'green',
+    )
   const canReset = !displayEntry.id.startsWith('preview:')
   const [textValues, setTextValues] = useState(() => {
     const painLocationParts = splitPainLocationParts(displayEntry.painLocation)
@@ -603,6 +615,12 @@ function CheckInPlayerRow({
       </div>
 
       <GuidanceList collapsible guidance={guidance} title="Heute beachten" />
+
+      {shouldOfferReturner && onOpenReturner ? (
+        <SecondaryButton compact onClick={() => onOpenReturner(player.id)}>
+          Im Returner prüfen
+        </SecondaryButton>
+      ) : null}
 
       <div className="checkin-controls">
         <div className="control-group">
@@ -1004,7 +1022,9 @@ function CheckInRosterRow({
 export function CheckInView({
   authState,
   checkInActions,
+  initialSelectedPlayerId = null,
   onNavigate,
+  onOpenReturner,
   onSessionChange,
   onStartKiosk,
   playerActions,
@@ -1039,7 +1059,7 @@ export function CheckInView({
   const [copyStatus, setCopyStatus] = useState<CopyStatus>('idle')
   const [searchTerm, setSearchTerm] = useState('')
   const [activeFilter, setActiveFilter] = useState<'all' | 'open' | 'present' | 'issues' | 'returner' | 'clarify' | 'warning'>('all')
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(initialSelectedPlayerId)
   const [isPlayerEditorOpen, setIsPlayerEditorOpen] = useState(false)
   const [playerEditorValues, setPlayerEditorValues] = useState<PlayerFormValues | null>(null)
   const [playerEditorError, setPlayerEditorError] = useState<string | null>(null)
@@ -1079,6 +1099,7 @@ export function CheckInView({
   const checkedInCount = playerRows.filter(({ entry }) => deriveAttendanceStatus(entry) === 'present').length
   const absentCount = playerRows.filter(({ entry }) => deriveAttendanceStatus(entry) === 'absent').length
   const openCount = Math.max(activePlayers.length - checkedInCount - absentCount, 0)
+  const nextOpenPlayer = playerRows.find(({ entry }) => deriveAttendanceStatus(entry) === 'open')?.player ?? null
   const yellowCount = activeEntries.filter((entry) => entry.trafficLight === 'yellow').length
   const redCount = activeEntries.filter((entry) => entry.trafficLight === 'red').length
   const returnerCount = activeEntries.filter((entry) => entry.returnerFlag === 'ja').length
@@ -1419,6 +1440,20 @@ export function CheckInView({
               sessions={sessions}
             />
           ) : null}
+          <PrimaryButton
+            disabled={activePlayers.length === 0}
+            disabledReason={activePlayers.length === 0 ? 'Lege zuerst mindestens einen aktiven Spieler an.' : undefined}
+            onClick={() => {
+              if (nextOpenPlayer) {
+                setSelectedPlayerId(nextOpenPlayer.id)
+                return
+              }
+
+              onNavigate(routes.unitTraining)
+            }}
+          >
+            {nextOpenPlayer ? 'Nächsten offenen Check-in' : 'Training öffnen'}
+          </PrimaryButton>
           {syncOverview.status === 'error' ? (
             <SecondaryButton icon={<RefreshCw className="nav-icon" aria-hidden />} isLoading={isLoading} loadingLabel="Sync laeuft" onClick={runSync}>
               Erneut synchronisieren
@@ -1568,7 +1603,7 @@ export function CheckInView({
           </summary>
           <div className="checkin-secondary-body" aria-label="Check-in-Link teilen">
             <div className="button-row">
-              <PrimaryButton
+              <SecondaryButton
                 data-testid="public-checkin-create-link"
                 onClick={() => void handleCreatePublicLink()}
                 icon={<Plus className="nav-icon" aria-hidden />}
@@ -1576,7 +1611,7 @@ export function CheckInView({
                 loadingLabel="Link wird erstellt"
               >
                 {activePublicLink ? 'Neuen Link erstellen' : 'Link erstellen'}
-              </PrimaryButton>
+              </SecondaryButton>
               {activePublicLink ? (
                 <SecondaryButton
                   data-testid="public-checkin-close-link"
@@ -1777,6 +1812,7 @@ export function CheckInView({
                   return saveEntry(selectedPlayer, patch, manualTrafficLight)
                 }}
                 onReset={(entry) => resetEntry(entry.id)}
+                onOpenReturner={onOpenReturner}
                 player={selectedPlayer}
                 returnerCap={returnerCapByPlayerId.get(selectedPlayer.id)}
                 warning={warningByPlayerId.get(selectedPlayer.id)}

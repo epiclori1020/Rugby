@@ -54,6 +54,11 @@ const routeMeta: Record<ReturnType<typeof routeKey>, { eyebrow: string; title: s
     title: 'Einheit',
     description: 'Timeline, Varianten, Quick Actions und Coach-Beobachtungen.',
   },
+  'unit/returners': {
+    eyebrow: 'Einheit / Returner',
+    title: 'Einheit',
+    description: 'Caps, Reaktionen und Hinweise für Coaching-Entscheidungen im Trainingstag führen.',
+  },
   'unit/post-session': {
     eyebrow: 'Einheit / Nachbereitung',
     title: 'Einheit',
@@ -62,7 +67,7 @@ const routeMeta: Record<ReturnType<typeof routeKey>, { eyebrow: string; title: s
   'more/returners': {
     eyebrow: 'Mehr / Returner',
     title: 'Mehr',
-    description: 'Caps fuer Speed, COD/Decel, Conditioning und Kontakt getrennt fuehren.',
+    description: 'Primärer Arbeitsort: Einheit. Dieser Zugang bleibt als Backup erhalten.',
   },
   analysis: {
     eyebrow: 'Analyse',

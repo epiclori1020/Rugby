@@ -1,5 +1,11 @@
-import { AlertTriangle, HeartPulse, History, RefreshCw, ShieldAlert, UserCheck } from 'lucide-react'
-import { useRef, useState } from 'react'
+import { ArrowLeft, ArrowRight, HeartPulse, History, RefreshCw, ShieldAlert, UserCheck, X } from 'lucide-react'
+import {
+  useEffect,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+  type MouseEvent as ReactMouseEvent,
+} from 'react'
 import { routes, type AppRoute } from '../navigation'
 import type { SessionDefinition } from '../content/types'
 import {
@@ -11,6 +17,7 @@ import {
   type ReturnerEntry,
   type ReturnerEntryPatch,
 } from '../domain/returners'
+import type { ReturnerTaskState } from '../domain/returnerTasks'
 import type { Player } from '../domain/players'
 import { useActionFeedback } from '../hooks/useActionFeedback'
 import type { useReturners } from '../hooks/useReturners'
@@ -20,8 +27,9 @@ import { measureInteraction } from '../lib/performanceTrace'
 import { returnerEntryKeyBase } from '../lib/returnerEntryKey'
 import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
 import { SessionPicker } from './SessionPicker'
+import { TaskQueueRow } from './onfield'
 import { ActionFeedback } from './ui/ActionFeedback'
-import { SecondaryButton } from './ui'
+import { EmptyState, PrimaryButton, SecondaryButton, StatusChip } from './ui'
 
 type ReturnerActions = ReturnType<typeof useReturners>
 
@@ -33,6 +41,11 @@ type ReturnerViewProps = {
   selectedSession: SessionDefinition
   selectedSessionId: string
   sessions: SessionDefinition[]
+  focusedPlayer?: Player | null
+  focusedTaskState?: ReturnerTaskState | null
+  onReturn?: () => void
+  showBackupAccess?: boolean
+  showSessionPicker?: boolean
 }
 
 function ReturnerHistory({ entries }: { entries: ReturnerEntry[] }) {
@@ -63,13 +76,14 @@ function returnerEntryRenderKey(entry: ReturnerEntry) {
   return `${entry.id}:${entry.clientUpdatedAt}:${entry.syncStatus}`
 }
 
-function ReturnerPlayerCard({
+function ReturnerPlayerDetail({
   entry,
   history,
   isSavingDisabled,
   onSave,
   player,
   selectedSessionId,
+  taskState,
 }: {
   entry: ReturnerEntry
   history: ReturnerEntry[]
@@ -77,6 +91,7 @@ function ReturnerPlayerCard({
   onSave: (player: Player, patch: ReturnerEntryPatch) => Promise<{ ok: true; entry: ReturnerEntry } | { ok: false; error: string }>
   player: Player
   selectedSessionId: string
+  taskState: ReturnerTaskState
 }) {
   const keyBase = returnerEntryKeyBase(player.id, selectedSessionId)
   const [localEntryOverride, setLocalEntryOverride] = useState<{ baseKey: string; entry: ReturnerEntry } | null>(null)
@@ -120,7 +135,7 @@ function ReturnerPlayerCard({
   }
 
   return (
-    <article className={isConservative ? 'checkin-row traffic-red' : 'checkin-row traffic-yellow'}>
+    <article className="returner-detail-form">
       <div className="checkin-player-head">
         <div>
           <div className="player-name-line">
@@ -133,10 +148,10 @@ function ReturnerPlayerCard({
         <span className={`sync-pill ${displayEntry.syncStatus}`}>{syncStatusLabel(displayEntry.syncStatus)}</span>
       </div>
 
-      <div className={isConservative ? 'warning-note danger' : 'warning-note'}>
+      <div className={taskState.tone === 'danger' ? 'warning-note danger' : 'warning-note'}>
         <ShieldAlert className="nav-icon" aria-hidden />
         <span>
-          Vorschlag: {suggestedDecision}. App dokumentiert Caps und Hinweise, trifft aber keine medizinische Entscheidung.
+          Hinweis für Coaching-Entscheidung: {suggestedDecision}. Die App dokumentiert Caps und Reaktionen; die Entscheidung bleibt beim Coach im abgestimmten Prozess.
         </span>
       </div>
 
@@ -309,12 +324,7 @@ function ReturnerPlayerCard({
         </div>
       </div>
 
-      {!canProgress ? (
-        <div className="warning-note danger">
-          <AlertTriangle className="nav-icon" aria-hidden />
-          <span>Keine Progression ohne stabile Reaktion und Medical-/Coach-Klaerung.</span>
-        </div>
-      ) : null}
+      {!canProgress ? <p className="sync-help">Vor einer Steigerung Reaktion und vereinbarte Caps dokumentieren.</p> : null}
 
       <div className="returner-history-panel">
         <div className="status-line">
@@ -329,12 +339,17 @@ function ReturnerPlayerCard({
 
 export function ReturnerView({
   authState,
+  focusedPlayer = null,
+  focusedTaskState = null,
   onNavigate,
+  onReturn,
   onSessionChange,
   returnerActions,
   selectedSession,
   selectedSessionId,
   sessions,
+  showBackupAccess = false,
+  showSessionPicker = true,
 }: ReturnerViewProps) {
   const {
     activeReturnerPlayers,
@@ -343,11 +358,116 @@ export function ReturnerView({
     getEntryForPlayer,
     getHistoryForPlayer,
     isLoading,
+    returnerTaskStates,
     runSync,
     savePlayerReturner,
     syncOverview,
   } = returnerActions
   const showSyncAttention = shouldShowSyncAttention(syncOverview)
+  const detailPaneRef = useRef<HTMLElement | null>(null)
+  const detailReturnFocusRef = useRef<HTMLElement | null>(null)
+  const shouldRestoreDetailFocusRef = useRef(false)
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(focusedPlayer?.id ?? null)
+  const [isMobileDetailSheet, setIsMobileDetailSheet] = useState(() =>
+    typeof window === 'undefined' || typeof window.matchMedia !== 'function'
+      ? true
+      : window.matchMedia('(max-width: 599px)').matches,
+  )
+  const contextualPlayerIsAdditional = Boolean(
+    focusedPlayer && !activeReturnerPlayers.some((player) => player.id === focusedPlayer.id),
+  )
+  const visiblePlayers = contextualPlayerIsAdditional && focusedPlayer
+    ? [focusedPlayer, ...activeReturnerPlayers]
+    : activeReturnerPlayers
+  const visibleTasks = focusedTaskState && !returnerTaskStates.some((task) => task.playerId === focusedTaskState.playerId)
+    ? [focusedTaskState, ...returnerTaskStates]
+    : returnerTaskStates
+  const taskByPlayerId = new Map(visibleTasks.map((task) => [task.playerId, task]))
+  const playerById = new Map(visiblePlayers.map((player) => [player.id, player]))
+  const selectedPlayer = selectedPlayerId ? playerById.get(selectedPlayerId) ?? null : null
+  const selectedTask = selectedPlayer ? taskByPlayerId.get(selectedPlayer.id) ?? null : null
+  const openTasks = visibleTasks.filter((task) => task.isOpen)
+  const nextOpenTask = openTasks[0] ?? null
+
+  useEffect(() => {
+    if (selectedPlayer) {
+      detailPaneRef.current?.focus()
+    } else if (shouldRestoreDetailFocusRef.current) {
+      shouldRestoreDetailFocusRef.current = false
+      detailReturnFocusRef.current?.focus()
+    }
+  }, [selectedPlayer])
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return undefined
+    }
+
+    const mediaQuery = window.matchMedia('(max-width: 599px)')
+    const updateDetailMode = () => setIsMobileDetailSheet(mediaQuery.matches)
+    updateDetailMode()
+    mediaQuery.addEventListener('change', updateDetailMode)
+    return () => mediaQuery.removeEventListener('change', updateDetailMode)
+  }, [])
+
+  function handleDetailKeyDown(event: ReactKeyboardEvent<HTMLElement>) {
+    if (!isMobileDetailSheet || !selectedPlayer) {
+      return
+    }
+
+    if (event.key === 'Escape') {
+      event.preventDefault()
+      closeReturnerDetail()
+      return
+    }
+
+    if (event.key !== 'Tab') {
+      return
+    }
+
+    const focusableElements = Array.from(
+      detailPaneRef.current?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [href], [tabindex]:not([tabindex="-1"])',
+      ) ?? [],
+    )
+    const firstFocusable = focusableElements[0]
+    const lastFocusable = focusableElements.at(-1)
+    if (!firstFocusable || !lastFocusable) {
+      event.preventDefault()
+      return
+    }
+
+    if (event.shiftKey && (document.activeElement === firstFocusable || document.activeElement === detailPaneRef.current)) {
+      event.preventDefault()
+      lastFocusable.focus()
+    } else if (!event.shiftKey && document.activeElement === detailPaneRef.current) {
+      event.preventDefault()
+      firstFocusable.focus()
+    } else if (!event.shiftKey && document.activeElement === lastFocusable) {
+      event.preventDefault()
+      firstFocusable.focus()
+    }
+  }
+
+  function openReturnerDetail(playerId: string, trigger?: HTMLElement | null) {
+    detailReturnFocusRef.current = trigger ?? (document.activeElement instanceof HTMLElement ? document.activeElement : null)
+    shouldRestoreDetailFocusRef.current = false
+    setSelectedPlayerId(playerId)
+  }
+
+  function closeReturnerDetail() {
+    shouldRestoreDetailFocusRef.current = true
+    setSelectedPlayerId(null)
+  }
+
+  function handlePrimaryAction(event: ReactMouseEvent<HTMLButtonElement>) {
+    if (nextOpenTask) {
+      openReturnerDetail(nextOpenTask.playerId, event.currentTarget)
+      return
+    }
+
+    onNavigate(routes.unitPostSession)
+  }
 
   if (authState.status !== 'signed-in') {
     return (
@@ -365,16 +485,22 @@ export function ReturnerView({
     <section className="checkin-layout returner-layout" aria-labelledby="returner-heading">
       <div className="panel checkin-header">
         <div className="library-heading">
-          <p className="eyebrow">Returner-Steuerung</p>
-          <h3 id="returner-heading">Returner-Modul</h3>
-          <p>{selectedSession.title}: Speed, COD/Decel, Conditioning und Kontakt getrennt dokumentieren.</p>
+          <p className="eyebrow">Im Trainingstag</p>
+          <h3 id="returner-heading">Returner-Aufgaben</h3>
+          <p>{selectedSession.title}: Caps, Reaktionen und nächste Coaching-Schritte in einem ruhigen Arbeitslauf.</p>
+          {showBackupAccess ? <p className="sync-help">Primärer Arbeitsort: Einheit. Dieser Zugang bleibt als Backup erhalten.</p> : null}
         </div>
         <div className="player-toolbar">
-          <SessionPicker
-            onSessionChange={onSessionChange}
-            selectedSessionId={selectedSessionId}
-            sessions={sessions}
-          />
+          {showSessionPicker ? (
+            <SessionPicker
+              onSessionChange={onSessionChange}
+              selectedSessionId={selectedSessionId}
+              sessions={sessions}
+            />
+          ) : null}
+          <PrimaryButton icon={<ArrowRight aria-hidden />} onClick={handlePrimaryAction}>
+            {nextOpenTask ? 'Nächste Returner-Aufgabe' : 'Nachbereitung öffnen'}
+          </PrimaryButton>
           {syncOverview.status === 'error' ? (
             <SecondaryButton icon={<RefreshCw className="nav-icon" aria-hidden />} isLoading={isLoading} loadingLabel="Sync laeuft" onClick={runSync}>
               Erneut synchronisieren
@@ -387,17 +513,12 @@ export function ReturnerView({
         </div>
       </div>
 
-      <div className="metric-grid checkin-metrics">
-        <div className="metric">
-          <span>Returner</span>
-          <strong>{activeReturnerPlayers.length}</strong>
-        </div>
-        {showSyncAttention ? (
-          <div className="metric">
-            <span>Offen</span>
-            <strong>{syncOverview.pendingCount}</strong>
-          </div>
-        ) : null}
+      <div className="returner-status-strip" aria-label="Returner Status">
+        <StatusChip
+          label={openTasks.length === 0 ? 'Returner aktuell geklärt' : `${openTasks.length} Aufgabe(n) offen`}
+          tone={openTasks.length === 0 ? 'success' : openTasks.some((task) => task.tone === 'danger') ? 'danger' : 'warning'}
+        />
+        <span className="of-num">{visibleTasks.length} im heutigen Kontext</span>
       </div>
 
       {errorMessage ? (
@@ -419,40 +540,91 @@ export function ReturnerView({
         </div>
       ) : null}
 
-      <section className="panel returner-red-flags" aria-label="Returner Red Flags">
-        <div className="status-line">
-          <ShieldAlert className="nav-icon" aria-hidden />
-          <h3>Red Flags</h3>
-        </div>
-        <ul className="compact-list">
-          {returnerRedFlags.map((flag) => (
-            <li key={flag}>{flag}</li>
-          ))}
-        </ul>
-        <p>S&C dokumentiert Caps und Belastungshinweise. Medizinische Entscheidungen bleiben bei Fachpersonal.</p>
-      </section>
+      <div className="returner-workspace-grid">
+        <section className="panel returner-task-list" aria-label="Returner Aufgabenliste">
+          {visibleTasks.length > 0 ? visibleTasks.map((task) => {
+            const player = playerById.get(task.playerId)
+            if (!player) {
+              return null
+            }
 
-      <div className="checkin-list">
-        {activeReturnerPlayers.map((player) => (
-          <ReturnerPlayerCard
-            entry={getEntryForPlayer(player)}
-            history={getHistoryForPlayer(player)}
-            isSavingDisabled={isLoading}
-            key={player.id}
-            onSave={savePlayerReturner}
-            player={player}
-            selectedSessionId={selectedSessionId}
-          />
-        ))}
+            const isActive = selectedPlayerId === player.id
+            return (
+              <TaskQueueRow
+                action={
+                  <SecondaryButton compact onClick={(event) => openReturnerDetail(player.id, event.currentTarget)}>
+                    {isActive ? 'Aktiv' : 'Öffnen'}
+                  </SecondaryButton>
+                }
+                ariaCurrent={isActive ? 'step' : undefined}
+                detail={task.label}
+                key={player.id}
+                meta={[player.position || 'Position offen', task.isOpen ? 'Offen' : 'Geklärt']}
+                title={player.name}
+                tone={task.tone}
+              />
+            )
+          }) : (
+            <EmptyState
+              body="Aktuell gibt es für diese Einheit keine Returner-Aufgabe. Offene Statusklärungen bleiben im Check-in."
+              title="Returner aktuell geklärt"
+            />
+          )}
+        </section>
+
+        {selectedPlayer && selectedTask && isMobileDetailSheet ? (
+          <div className="returner-sheet-backdrop" aria-hidden="true" />
+        ) : null}
+
+        {selectedPlayer && selectedTask ? (
+          <aside
+            aria-label={`Returner ${selectedPlayer.name}`}
+            aria-labelledby={`returner-detail-heading-${selectedPlayer.id}`}
+            aria-modal={isMobileDetailSheet ? 'true' : undefined}
+            className="returner-detail-pane"
+            onKeyDown={handleDetailKeyDown}
+            ref={detailPaneRef}
+            role={isMobileDetailSheet ? 'dialog' : undefined}
+            tabIndex={-1}
+          >
+            <header className="returner-detail-heading">
+              <div>
+                <p className="eyebrow">Returner-Fokus</p>
+                <h3 id={`returner-detail-heading-${selectedPlayer.id}`}>{selectedPlayer.name}</h3>
+                <StatusChip label={selectedTask.label} tone={selectedTask.tone} />
+              </div>
+              <button className="icon-button" type="button" aria-label="Returner-Fokus schliessen" onClick={closeReturnerDetail}>
+                <X aria-hidden />
+              </button>
+            </header>
+            {onReturn ? (
+              <SecondaryButton compact icon={<ArrowLeft aria-hidden />} onClick={onReturn}>
+                Zurück zum Ursprung
+              </SecondaryButton>
+            ) : null}
+            <ReturnerPlayerDetail
+              entry={getEntryForPlayer(selectedPlayer)}
+              history={getHistoryForPlayer(selectedPlayer)}
+              isSavingDisabled={isLoading}
+              onSave={savePlayerReturner}
+              player={selectedPlayer}
+              selectedSessionId={selectedSessionId}
+              taskState={selectedTask}
+            />
+          </aside>
+        ) : null}
       </div>
 
-      {activeReturnerPlayers.length === 0 ? (
-        <section className="placeholder">
-          <HeartPulse className="placeholder-icon" aria-hidden />
-          <h2>Keine aktiven Returner markiert</h2>
-          <p>Setze im Spieler-Tab oder Check-in den Returner-Status. Danach erscheint der Spieler hier.</p>
-        </section>
-      ) : null}
+      <details className="panel returner-safety-disclosure">
+        <summary>
+          <ShieldAlert className="nav-icon" aria-hidden />
+          <span>Safety-Hinweise</span>
+        </summary>
+        <ul className="compact-list">
+          {returnerRedFlags.map((flag) => <li key={flag}>{flag}</li>)}
+        </ul>
+        <p>Bei offenen Hinweisen Belastung anpassen und den abgestimmten medizinischen oder physiotherapeutischen Prozess nutzen.</p>
+      </details>
     </section>
   )
 }

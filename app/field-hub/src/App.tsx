@@ -29,6 +29,7 @@ import { deriveRedFlagFromPainLocation, type CheckInEntryPatch, type SessionLog 
 import type { CoachInsightSource } from './domain/coachInsights'
 import type { PlayerAnalysisSource } from './domain/playerAnalysis'
 import { derivePostSessionCompletion } from './domain/postSessionCompletion'
+import { deriveReturnerTaskState } from './domain/returnerTasks'
 import type { PlayerSyncOverview, SyncDetailSummary } from './domain/sync'
 import { defaultPlayerSyncOverview } from './domain/sync'
 import { useAuthSession } from './hooks/useAuthSession'
@@ -99,6 +100,7 @@ const SettingsView = lazy(() =>
 
 const selectedSessionStorageKey = 'fieldHub:selectedSessionId'
 type PwaDisplayMode = 'browser' | 'standalone'
+type ReturnerFocus = { playerId: string; originRoute: AppRoute }
 
 type LazyScreenBoundaryProps = {
   children: ReactNode
@@ -287,6 +289,8 @@ function CoachApp() {
   const [libraryInitialItemId, setLibraryInitialItemId] = useState<string | undefined>(undefined)
   const [libraryReturnRoute, setLibraryReturnRoute] = useState<AppRoute | null>(null)
   const [transientNotice, setTransientNotice] = useState<string | null>(null)
+  const [returnerFocus, setReturnerFocus] = useState<ReturnerFocus | null>(null)
+  const [returnerRestoreFocus, setReturnerRestoreFocus] = useState<ReturnerFocus | null>(null)
   const [appTodayKey, setAppTodayKey] = useState(() => toLocalDateKey(new Date()))
   const {
     needRefresh: [needsAppRefresh],
@@ -347,6 +351,22 @@ function CoachApp() {
   const sessionBlockLogsForInsights = sessionBlockActions.blockLogs ?? []
   const exposureSummariesForInsights = exposureActions.summaries ?? []
   const activePlayers = useMemo(() => playerActions.players.filter((player) => player.active), [playerActions.players])
+  const focusedReturnerPlayer = useMemo(
+    () => activePlayers.find((player) => player.id === returnerFocus?.playerId) ?? null,
+    [activePlayers, returnerFocus?.playerId],
+  )
+  const focusedReturnerTask = useMemo(() => {
+    if (!focusedReturnerPlayer) {
+      return null
+    }
+
+    return deriveReturnerTaskState({
+      player: focusedReturnerPlayer,
+      checkInEntry: checkInActions.entries.find((entry) => entry.playerId === focusedReturnerPlayer.id),
+      currentEntry: returnerActions.entries.find((entry) => entry.playerId === focusedReturnerPlayer.id),
+      contextual: true,
+    })
+  }, [checkInActions.entries, focusedReturnerPlayer, returnerActions.entries])
   const activeRouteKey = routeKey(activeRoute)
   const postSessionOverview = usePostSessionCompletionOverview({
     activePlayers,
@@ -501,6 +521,13 @@ function CoachApp() {
         setLibraryReturnRoute(null)
       }
 
+      if (routeKey(route) !== 'unit/returners') {
+        setReturnerFocus(null)
+      }
+      setReturnerRestoreFocus((currentFocus) =>
+        currentFocus && routesEqual(currentFocus.originRoute, route) ? currentFocus : null,
+      )
+
       rememberNavigationRoute(route)
       setActiveRoute((currentRoute) => (routesEqual(currentRoute, route) ? currentRoute : route))
 
@@ -528,6 +555,12 @@ function CoachApp() {
 
       clearLibraryInitialState()
       setLibraryReturnRoute(null)
+      if (routeKey(parsedRoute.route) !== 'unit/returners') {
+        setReturnerFocus(null)
+      }
+      setReturnerRestoreFocus((currentFocus) =>
+        currentFocus && routesEqual(currentFocus.originRoute, parsedRoute.route) ? currentFocus : null,
+      )
       rememberNavigationRoute(parsedRoute.route)
       setActiveRoute((currentRoute) => (routesEqual(currentRoute, parsedRoute.route) ? currentRoute : parsedRoute.route))
     }
@@ -541,6 +574,24 @@ function CoachApp() {
       window.removeEventListener('popstate', syncRouteFromHash)
     }
   }, [clearLibraryInitialState, rememberNavigationRoute])
+
+  const handleOpenReturnerForPlayer = useCallback(
+    (playerId: string) => {
+      setReturnerRestoreFocus(null)
+      setReturnerFocus({ playerId, originRoute: activeRoute })
+      navigateToRoute(routes.unitReturners)
+    },
+    [activeRoute, navigateToRoute],
+  )
+
+  const handleReturnFromReturner = useCallback(() => {
+    const originRoute = returnerFocus?.originRoute ?? routes.unitTraining
+    if (returnerFocus) {
+      setReturnerRestoreFocus(returnerFocus)
+    }
+    setReturnerFocus(null)
+    navigateToRoute(originRoute, { replace: true })
+  }, [navigateToRoute, returnerFocus])
 
   const handleSectionChange = useCallback(
     (section: AppSection) => {
@@ -905,6 +956,7 @@ function CoachApp() {
           isSignedIn={authState.status === 'signed-in'}
           onActionFeedback={showTransientNotice}
           onOpenCoachInsightSource={handleOpenCoachInsightSource}
+          onOpenReturner={handleOpenReturnerForPlayer}
           onNavigate={navigateToRoute}
           onOpenLibrary={handleOpenLibraryForSession}
           onOpenPdf={handleOpenPdf}
@@ -924,9 +976,12 @@ function CoachApp() {
         <PlayersView
           authState={authState}
           canOpenSourceSession={canOpenPlayerSourceSession}
+          initialDetailTab={returnerRestoreFocus?.originRoute.section === 'players' ? 'returner' : 'overview'}
+          initialSelectedPlayerId={returnerRestoreFocus?.originRoute.section === 'players' ? returnerRestoreFocus.playerId : null}
           metricActions={metricActions}
           metricSessionLabel={`${selectedSession.title} · ${selectedSession.date}`}
           onOpenSourceSession={handleOpenPlayerSourceSession}
+          onOpenReturner={handleOpenReturnerForPlayer}
           playerActions={playerActions}
           todayKey={appTodayKey}
         />
@@ -937,7 +992,7 @@ function CoachApp() {
           onSessionChange={setSelectedSessionId}
           onUnitRouteChange={(unitRoute) => navigateToRoute(routeForUnit(unitRoute))}
           postSessionCompletion={currentPostSessionCompletion}
-          returnerCaps={returnerActions.returnerCaps}
+          returnerTasks={returnerActions.returnerTaskStates}
           selectedSession={selectedSession}
           selectedSessionId={selectedSession.id}
           sessions={sessionDefinitions}
@@ -947,7 +1002,13 @@ function CoachApp() {
           <CheckInView
             authState={authState}
             checkInActions={checkInActions}
+            initialSelectedPlayerId={
+              returnerRestoreFocus && routesEqual(returnerRestoreFocus.originRoute, routes.unitCheckIn)
+                ? returnerRestoreFocus.playerId
+                : null
+            }
             onNavigate={navigateToRoute}
+            onOpenReturner={handleOpenReturnerForPlayer}
             onSessionChange={setSelectedSessionId}
             onStartKiosk={handleStartKiosk}
             playerActions={playerActions}
@@ -965,7 +1026,7 @@ function CoachApp() {
           onSessionChange={setSelectedSessionId}
           onUnitRouteChange={(unitRoute) => navigateToRoute(routeForUnit(unitRoute))}
           postSessionCompletion={currentPostSessionCompletion}
-          returnerCaps={returnerActions.returnerCaps}
+          returnerTasks={returnerActions.returnerTaskStates}
           selectedSession={selectedSession}
           selectedSessionId={selectedSession.id}
           sessions={sessionDefinitions}
@@ -975,11 +1036,17 @@ function CoachApp() {
           <TrainingView
             authState={authState}
             checkInActions={checkInActions}
+            initialSelectedPlayerId={
+              returnerRestoreFocus && routesEqual(returnerRestoreFocus.originRoute, routes.unitTraining)
+                ? returnerRestoreFocus.playerId
+                : null
+            }
             exerciseActions={exerciseActions}
             exposureActions={exposureActions}
             metricActions={metricActions}
             onOpenLibraryItem={handleOpenLibraryItem}
             onNavigate={navigateToRoute}
+            onOpenReturner={handleOpenReturnerForPlayer}
             onSessionChange={setSelectedSessionId}
             returnerCaps={returnerActions.returnerCaps}
             selectedSession={selectedSession}
@@ -989,6 +1056,36 @@ function CoachApp() {
             showSessionPicker={false}
           />
         </SessionWorkspace>
+      ) : activeRouteKey === 'unit/returners' ? (
+        <SessionWorkspace
+          activeUnitRoute="returners"
+          entries={checkInActions.entries}
+          onSessionChange={setSelectedSessionId}
+          onUnitRouteChange={(unitRoute) => navigateToRoute(routeForUnit(unitRoute))}
+          postSessionCompletion={currentPostSessionCompletion}
+          returnerTasks={returnerActions.returnerTaskStates}
+          selectedSession={selectedSession}
+          selectedSessionId={selectedSession.id}
+          sessions={sessionDefinitions}
+          syncOverview={syncOverview}
+          warnings={checkInActions.warnings}
+        >
+          <LazyScreen resetKey={activeRouteKey} screenName="Returner">
+            <ReturnerView
+              authState={authState}
+              focusedPlayer={focusedReturnerPlayer}
+              focusedTaskState={focusedReturnerTask}
+              onNavigate={navigateToRoute}
+              onReturn={returnerFocus ? handleReturnFromReturner : undefined}
+              onSessionChange={setSelectedSessionId}
+              returnerActions={returnerActions}
+              selectedSession={selectedSession}
+              selectedSessionId={selectedSession.id}
+              sessions={sessionDefinitions}
+              showSessionPicker={false}
+            />
+          </LazyScreen>
+        </SessionWorkspace>
       ) : activeRouteKey === 'unit/post-session' ? (
         <SessionWorkspace
           activeUnitRoute="post-session"
@@ -996,7 +1093,7 @@ function CoachApp() {
           onSessionChange={setSelectedSessionId}
           onUnitRouteChange={(unitRoute) => navigateToRoute(routeForUnit(unitRoute))}
           postSessionCompletion={currentPostSessionCompletion}
-          returnerCaps={returnerActions.returnerCaps}
+          returnerTasks={returnerActions.returnerTaskStates}
           selectedSession={selectedSession}
           selectedSessionId={selectedSession.id}
           sessions={sessionDefinitions}
@@ -1031,6 +1128,7 @@ function CoachApp() {
             selectedSession={selectedSession}
             selectedSessionId={selectedSession.id}
             sessions={sessionDefinitions}
+            showBackupAccess
           />
         </LazyScreen>
       ) : activeRouteKey === 'analysis' ? (

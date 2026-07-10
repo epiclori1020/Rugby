@@ -3,6 +3,7 @@ import type { SessionDefinition } from '../content/types'
 import type { PlayerSessionEntry } from '../domain/checkIn'
 import type { Player } from '../domain/players'
 import type { ReturnerCapSummary, ReturnerEntry, ReturnerEntryPatch } from '../domain/returners'
+import { deriveReturnerTaskState } from '../domain/returnerTasks'
 import { defaultPlayerSyncOverview, type PlayerSyncOverview } from '../domain/sync'
 import { scheduleBackgroundSync } from '../lib/backgroundSync'
 import { ensureSessionLog, findSessionLog, pushPendingCheckIns, syncCheckIns } from '../lib/checkInRepository'
@@ -40,27 +41,41 @@ export function useReturners(
     checkInEntriesRef.current = checkInEntries
   }, [checkInEntries])
 
-  const activeReturnerPlayers = useMemo(() => {
-    const flaggedPlayerIds = new Set(
-      checkInEntries.filter((entry) => hasPlayerId(entry) && entry.returnerFlag !== 'nein').map((entry) => entry.playerId),
+  const returnerTaskStates = useMemo(() => {
+    const checkInEntryByPlayerId = new Map(
+      checkInEntries.filter(hasPlayerId).map((entry) => [entry.playerId, entry]),
     )
+    const currentEntryByPlayerId = new Map(entries.filter(hasPlayerId).map((entry) => [entry.playerId, entry]))
     const capPlayerIds = new Set(returnerCaps.filter(hasPlayerId).map((cap) => cap.playerId))
 
     return players
-      .filter(
-        (player) =>
-          player.active &&
-          (player.returnerStatus !== 'nein' || flaggedPlayerIds.has(player.id) || capPlayerIds.has(player.id)),
-      )
+      .filter((player) => player.active)
+      .flatMap((player) => {
+        const taskState = deriveReturnerTaskState({
+          player,
+          checkInEntry: checkInEntryByPlayerId.get(player.id),
+          currentEntry: currentEntryByPlayerId.get(player.id),
+          hasPreviousCap: capPlayerIds.has(player.id),
+        })
+
+        return taskState ? [taskState] : []
+      })
+      .sort((a, b) => Number(b.isOpen) - Number(a.isOpen) || a.label.localeCompare(b.label, 'de-AT'))
+  }, [checkInEntries, entries, players, returnerCaps])
+
+  const activeReturnerPlayers = useMemo(() => {
+    const taskPlayerIds = new Set(returnerTaskStates.map((task) => task.playerId))
+    return players
+      .filter((player) => player.active && taskPlayerIds.has(player.id))
       .sort((a, b) => a.name.localeCompare(b.name, 'de-AT'))
-  }, [checkInEntries, players, returnerCaps])
+  }, [players, returnerTaskStates])
 
   const flaggedPlayerIds = useMemo(
     () =>
       [
         ...new Set(
           checkInEntries.flatMap((entry) =>
-            hasPlayerId(entry) && entry.returnerFlag !== 'nein' ? [entry.playerId] : [],
+            hasPlayerId(entry) && entry.returnerFlag === 'ja' ? [entry.playerId] : [],
           ),
         ),
       ].sort(),
@@ -85,10 +100,10 @@ export function useReturners(
       getReturnerSyncOverview(userId),
     ])
     const relevantPlayerIds = new Set<string>(
-      players.filter((player) => player.active && player.returnerStatus !== 'nein').map((player) => player.id),
+      players.filter((player) => player.active && player.returnerStatus === 'ja').map((player) => player.id),
     )
     for (const entry of checkInEntriesRef.current) {
-      if (hasPlayerId(entry) && entry.returnerFlag !== 'nein') {
+      if (hasPlayerId(entry) && entry.returnerFlag === 'ja') {
         relevantPlayerIds.add(entry.playerId)
       }
     }
@@ -254,6 +269,7 @@ export function useReturners(
     isLoading,
     refreshReturners,
     returnerCaps,
+    returnerTaskStates,
     runSync,
     savePlayerReturner,
     syncOverview,

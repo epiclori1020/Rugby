@@ -495,7 +495,48 @@ describe('TodayDashboard', () => {
 
     expect(markup).toContain('Ampel Rot im heutigen Check-in.')
     expect(markup).toContain('Returner-Belastungsplan für heute prüfen.')
+    expect(markup).toContain('Returner öffnen')
     expect(markup).not.toContain('weitere Hinweise')
+  })
+
+  it('opens a contextual Returner task from an attention row', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+    const onOpenReturner = vi.fn()
+
+    await act(async () => {
+      root.render(
+        <TodayDashboard
+          checkInActions={buildCheckInActions({
+            entries: [{ ...entry, present: true, returnerFlag: 'ja' }],
+          })}
+          coachInsights={[]}
+          featuredSession={selectedSession}
+          isSignedIn
+          onActionFeedback={() => undefined}
+          onOpenCoachInsightSource={() => undefined}
+          onNavigate={() => undefined}
+          onOpenLibrary={() => undefined}
+          onOpenPdf={() => undefined}
+          onOpenReturner={onOpenReturner}
+          onResetToTodaySession={() => undefined}
+          onSessionChange={() => undefined}
+          players={[{ ...player, returnerStatus: 'ja' }]}
+          postSessionWork={null}
+          selectedSession={selectedSession}
+          selectedSessionId={selectedSession.id}
+          sessions={[selectedSession]}
+          storagePersistence={{ status: 'persisted' }}
+          todayDate={todayDate}
+          upcomingSessions={[selectedSession]}
+        />,
+      )
+    })
+
+    container.querySelector<HTMLButtonElement>('[data-testid="today-attention-returner-player-1"]')?.click()
+    expect(onOpenReturner).toHaveBeenCalledWith(player.id)
+
+    await act(async () => root.unmount())
   })
 
   it('reports quick action and session-change feedback', async () => {

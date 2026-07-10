@@ -277,6 +277,7 @@ describe('TrainingView session block status controls', () => {
     expect(container.textContent).toContain('Aktuelle Phase')
     expect(container.textContent).toContain('Warm-up')
     expect(container.textContent).toContain('Training starten aktiviert Blockstatus')
+    expect(container.querySelectorAll('.player-toolbar .of-button-primary')).toHaveLength(1)
     expect(Array.from(container.querySelectorAll('button')).some((button) => button.textContent === 'Geplant')).toBe(false)
 
     await act(async () => {
@@ -288,6 +289,8 @@ describe('TrainingView session block status controls', () => {
     expect(container.textContent).toContain('Aktuelle Phase')
     expect(container.textContent).toContain('Warm-up')
     expect(Array.from(container.querySelectorAll('button')).some((button) => button.textContent === 'Geplant')).toBe(true)
+    expect(container.textContent).toContain('Aktuellen Block fokussieren')
+    expect(container.textContent).toContain('Weitere Aktionen')
     expect(saveBlockLog).not.toHaveBeenCalled()
     expect(saveSessionPatch).not.toHaveBeenCalled()
     expect(saveEntry).not.toHaveBeenCalled()
@@ -447,6 +450,7 @@ describe('TrainingView session block status controls', () => {
     const player = activePlayer('player-focus', 'Focus Player')
     const entry = { ...entryForPlayer(player), trafficLight: 'yellow' as const, limits: ['kein_sprint' as const] }
     const saveEntry = vi.fn(checkInActions.saveEntry)
+    const onOpenReturner = vi.fn()
     const container = document.createElement('div')
     root = createRoot(container)
 
@@ -464,6 +468,7 @@ describe('TrainingView session block status controls', () => {
           exposureActions={exposureActions}
           onOpenLibraryItem={() => undefined}
           onNavigate={() => undefined}
+          onOpenReturner={onOpenReturner}
           onSessionChange={() => undefined}
           returnerCaps={[]}
           selectedSession={selectedSession}
@@ -493,6 +498,12 @@ describe('TrainingView session block status controls', () => {
     })
 
     expect(container.querySelector('[aria-label="Training Quick Actions Focus Player"]')).toBeTruthy()
+    await act(async () => {
+      Array.from(container.querySelectorAll('button'))
+        .find((button) => button.textContent === 'Im Returner prüfen')
+        ?.click()
+    })
+    expect(onOpenReturner).toHaveBeenCalledWith(player.id)
 
     await act(async () => {
       Array.from(container.querySelectorAll('button'))
@@ -521,6 +532,50 @@ describe('TrainingView session block status controls', () => {
       previousWarning: false,
     })
     expect(container.textContent).toContain('gespeichert')
+  })
+
+  it('restores the focused training player after a Returner round trip', async () => {
+    const player = activePlayer('player-restore', 'Restore Player')
+    const entry = entryForPlayer(player)
+    const container = document.createElement('div')
+    root = createRoot(container)
+
+    await act(async () => {
+      root?.render(
+        <TrainingView
+          authState={authState}
+          checkInActions={{
+            ...checkInActions,
+            activePlayers: [player],
+            entries: [entry],
+            getEntryForPlayer: () => entry,
+          }}
+          exposureActions={exposureActions}
+          initialSelectedPlayerId={player.id}
+          onOpenLibraryItem={() => undefined}
+          onNavigate={() => undefined}
+          onSessionChange={() => undefined}
+          returnerCaps={[]}
+          selectedSession={selectedSession}
+          selectedSessionId={selectedSession.id}
+          sessionBlockActions={{
+            blockLogs: [],
+            syncOverview,
+            isLoading: false,
+            errorMessage: null,
+            refreshSessionBlocks: async () => undefined,
+            runSync: async () => syncOverview,
+            saveBlockLog: async () => undefined,
+            getLogForBlock: () => null,
+            clearError: () => undefined,
+            resetSessionBlockLogs: async () => ({ resetCount: 0 }),
+          }}
+          sessions={[selectedSession]}
+        />,
+      )
+    })
+
+    expect(container.querySelector('[aria-label="Training Quick Actions Restore Player"]')).not.toBeNull()
   })
 
   it('refreshes exercise capture defaults when the selected player changes', async () => {

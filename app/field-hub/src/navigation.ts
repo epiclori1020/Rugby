@@ -1,5 +1,5 @@
 export type AppSection = 'today' | 'unit' | 'players' | 'analysis' | 'more'
-export type UnitRoute = 'check-in' | 'training' | 'post-session'
+export type UnitRoute = 'check-in' | 'training' | 'returners' | 'post-session'
 export type MoreRoute = 'library' | 'export' | 'settings' | 'returners'
 
 export type AppRoute =
@@ -29,13 +29,14 @@ export type ParsedHashRoute =
   | { kind: 'public-check-in'; token: string }
 
 export const appSections: readonly AppSection[] = ['today', 'unit', 'players', 'analysis', 'more']
-export const unitRoutes: readonly UnitRoute[] = ['check-in', 'training', 'post-session']
+export const unitRoutes: readonly UnitRoute[] = ['check-in', 'training', 'returners', 'post-session']
 export const moreRoutes: readonly MoreRoute[] = ['library', 'export', 'settings', 'returners']
 
 export const routes = {
   today: { section: 'today' },
   unitCheckIn: { section: 'unit', unitRoute: 'check-in' },
   unitTraining: { section: 'unit', unitRoute: 'training' },
+  unitReturners: { section: 'unit', unitRoute: 'returners' },
   unitPostSession: { section: 'unit', unitRoute: 'post-session' },
   players: { section: 'players' },
   analysis: { section: 'analysis' },
@@ -49,6 +50,7 @@ export const canonicalCoachRoutes = [
   routes.today,
   routes.unitCheckIn,
   routes.unitTraining,
+  routes.unitReturners,
   routes.unitPostSession,
   routes.players,
   routes.analysis,
@@ -62,6 +64,7 @@ const canonicalHashByKey = {
   today: '#/today',
   'unit/check-in': '#/unit/check-in',
   'unit/training': '#/unit/training',
+  'unit/returners': '#/unit/returners',
   'unit/post-session': '#/unit/post-session',
   players: '#/players',
   analysis: '#/analysis',
@@ -77,6 +80,7 @@ const routeByHashPath = new Map<string, AppRoute>([
   ['today', routes.today],
   ['unit/check-in', routes.unitCheckIn],
   ['unit/training', routes.unitTraining],
+  ['unit/returners', routes.unitReturners],
   ['unit/post-session', routes.unitPostSession],
   ['players', routes.players],
   ['analysis', routes.analysis],
@@ -105,8 +109,9 @@ const legacyRouteByHashPath = new Map<string, AppRoute>([
   ['einstellungen', routes.moreSettings],
   ['settings', routes.moreSettings],
   ['more/einstellungen', routes.moreSettings],
-  ['returner', routes.moreReturners],
-  ['returners', routes.moreReturners],
+  ['returner', routes.unitReturners],
+  ['returners', routes.unitReturners],
+  ['unit/returner', routes.unitReturners],
   ['more/returner', routes.moreReturners],
 ])
 
@@ -145,6 +150,10 @@ export function routeForUnit(unitRoute: UnitRoute): AppRoute {
 
   if (unitRoute === 'training') {
     return routes.unitTraining
+  }
+
+  if (unitRoute === 'returners') {
+    return routes.unitReturners
   }
 
   return routes.unitPostSession
@@ -226,7 +235,7 @@ export function legacyTargetToRoute(target: LegacyNavigationTarget): AppRoute {
     return routes.moreSettings
   }
 
-  return routes.moreReturners
+  return routes.unitReturners
 }
 
 function normalizeHashPath(hash: string) {

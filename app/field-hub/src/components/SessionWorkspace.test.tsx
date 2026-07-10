@@ -2,7 +2,7 @@ import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import { sessionDefinitions } from '../content/sessions'
 import type { PostSessionCompletion } from '../domain/postSessionCompletion'
-import type { ReturnerCapSummary } from '../domain/returners'
+import type { ReturnerTaskState } from '../domain/returnerTasks'
 import type { PlayerSyncOverview } from '../domain/sync'
 import { emptyCheckInDraft, type PlayerSessionEntry, type PlayerWarning } from '../domain/checkIn'
 import { SessionWorkspace } from './SessionWorkspace'
@@ -54,21 +54,12 @@ const warning: PlayerWarning = {
   sessionDate: '2026-06-14',
 }
 
-const returnerCap: ReturnerCapSummary = {
+const returnerTask: ReturnerTaskState = {
   playerId: 'player-3',
-  sessionLogId: 'session-log-1',
-  sessionDate: '2026-06-16',
-  currentStage: 'gelb',
-  speedCap: '70%',
-  codDecelCap: '',
-  conditioningCap: '',
-  contactCap: '',
-  allowedToday: 'Non-contact',
-  plannedCaps: '',
-  completed: '',
-  symptomsDuring: '',
-  nextMorning: '',
-  decision: null,
+  phase: 'planning',
+  tone: 'warning',
+  isOpen: true,
+  label: 'Plan für heute festlegen',
 }
 
 const completion: PostSessionCompletion = {
@@ -87,7 +78,7 @@ describe('SessionWorkspace', () => {
         onSessionChange={() => undefined}
         onUnitRouteChange={() => undefined}
         postSessionCompletion={completion}
-        returnerCaps={[returnerCap]}
+        returnerTasks={[returnerTask]}
         selectedSession={selectedSession}
         selectedSessionId={selectedSession.id}
         sessions={sessionDefinitions}
@@ -102,11 +93,12 @@ describe('SessionWorkspace', () => {
     expect(markup).toContain('aria-label="Einheit Unterbereiche"')
     expect(markup).toContain('Check-in')
     expect(markup).toContain('Training')
+    expect(markup).toContain('Returner')
     expect(markup).toContain('Nachbereitung')
     expect(markup).toContain('aria-pressed="true"')
     expect(markup).toContain('Hinweise')
     expect(markup).toContain('Nachbereitung')
-    expect(markup).toContain('Returner')
+    expect(markup).toContain('1 Returner-Aufgabe offen')
     expect(markup).toContain('Sync')
     expect(markup).toContain('2 Aenderungen warten auf Sync')
     expect(markup).toContain('Training content')
@@ -120,7 +112,7 @@ describe('SessionWorkspace', () => {
         onSessionChange={() => undefined}
         onUnitRouteChange={() => undefined}
         postSessionCompletion={completion}
-        returnerCaps={[returnerCap]}
+        returnerTasks={[]}
         selectedSession={selectedSession}
         selectedSessionId={selectedSession.id}
         sessions={sessionDefinitions}
@@ -134,5 +126,6 @@ describe('SessionWorkspace', () => {
     expect(markup).toContain('aria-label="Einheit Kontext"')
     expect(markup).not.toContain('aria-label="Einheit Kontext" role="status"')
     expect(markup).toContain('class="session-workspace-sync-status" role="status" aria-live="polite"')
+    expect(markup).toContain('Returner aktuell geklärt')
   })
 })

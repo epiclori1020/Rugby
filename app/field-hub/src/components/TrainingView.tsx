@@ -50,11 +50,13 @@ type SaveSyncStatus = 'synced' | 'pending' | 'error'
 type TrainingViewProps = {
   authState: AuthSessionState
   checkInActions: TrainingActions
+  initialSelectedPlayerId?: string | null
   exerciseActions?: ExerciseActions
   exposureActions: ExposureActions
   metricActions?: MetricActions
   onOpenLibraryItem: (itemId: string) => void
   onNavigate: (route: AppRoute) => void
+  onOpenReturner?: (playerId: string) => void
   onSessionChange: (sessionId: string) => void
   returnerCaps: ReturnerCapSummary[]
   selectedSession: SessionDefinition
@@ -396,6 +398,7 @@ function TrainingPlayerRow({
 function TrainingPlayerDetail({
   entry,
   isSavingDisabled,
+  onOpenReturner,
   onSave,
   player,
   returnerCap,
@@ -403,6 +406,7 @@ function TrainingPlayerDetail({
 }: {
   entry: PlayerSessionEntry
   isSavingDisabled: boolean
+  onOpenReturner?: (playerId: string) => void
   onSave: (player: Player, patch: CheckInEntryPatch) => void
   player: Player
   returnerCap: ReturnerCapSummary | undefined
@@ -421,6 +425,12 @@ function TrainingPlayerDetail({
 
   const trafficLight = entry.trafficLight ?? entry.trafficLightSuggestion
   const isStop = trafficLight === 'red' || entry.trainingVariant === 'D' || entry.limits.includes('klaeren')
+  const shouldOfferReturner =
+    entry.returnerFlag === 'ja' ||
+    entry.redFlag !== 'none' ||
+    entry.movementConcern ||
+    trafficLight === 'yellow' ||
+    trafficLight === 'red'
 
   return (
     <article className={`training-player-detail traffic-${trafficLight ?? 'open'}`}>
@@ -432,6 +442,12 @@ function TrainingPlayerDetail({
 
       <WarningNote warning={warning} />
       <ReturnerCapNote cap={returnerCap} />
+
+      {shouldOfferReturner && onOpenReturner ? (
+        <SecondaryButton compact onClick={() => onOpenReturner(player.id)}>
+          Im Returner prüfen
+        </SecondaryButton>
+      ) : null}
 
       <div className="training-limits">
         {entry.limits.length > 0 ? (
@@ -483,11 +499,13 @@ function TrainingPlayerDetail({
 export function TrainingView({
   authState,
   checkInActions,
+  initialSelectedPlayerId = null,
   exerciseActions,
   exposureActions,
   metricActions,
   onOpenLibraryItem,
   onNavigate,
+  onOpenReturner,
   onSessionChange,
   returnerCaps,
   selectedSession,
@@ -543,8 +561,10 @@ export function TrainingView({
   const [trainingPlayerFilter, setTrainingPlayerFilter] = useState<TrainingPlayerFilter>('open')
   const [trainingPlayerSearch, setTrainingPlayerSearch] = useState('')
   const [trainingClusterFilter, setTrainingClusterFilter] = useState('offen')
-  const [selectedTrainingPlayerId, setSelectedTrainingPlayerId] = useState<string | null>(null)
+  const [selectedTrainingPlayerId, setSelectedTrainingPlayerId] = useState<string | null>(initialSelectedPlayerId)
   const selectedTrainingPlayerSheetRef = useRef<HTMLDivElement | null>(null)
+  const liveStepperRef = useRef<HTMLDivElement | null>(null)
+  const toolbarOverflowRef = useRef<HTMLDetailsElement | null>(null)
   const actionFeedback = useActionFeedback()
   const hasTrainingProgress = sessionBlockActions.blockLogs.length > 0
   const isLiveModeForSession = liveModeState.sessionId === selectedSession.id
@@ -557,7 +577,11 @@ export function TrainingView({
   const currentLiveBlock =
     selectedSession.timeline.find((block) => block.key === currentLiveBlockKey) ?? selectedSession.timeline[0]
   const canResumeTraining = hasTrainingProgress || isLiveCollapsed
-  const trainingActionLabel = showLiveControls ? 'Training laeuft' : canResumeTraining ? 'Training fortsetzen' : 'Training starten'
+  const trainingActionLabel = showLiveControls
+    ? 'Aktuellen Block fokussieren'
+    : canResumeTraining
+      ? 'Training fortsetzen'
+      : 'Training starten'
   const activeExposureSummaryCount = sessionLog
     ? exposureActions.summaries.filter((summary) => summary.sessionLogId === sessionLog.id && !summary.deletedAt).length
     : 0
@@ -620,6 +644,25 @@ export function TrainingView({
       sessionId: selectedSession.id,
       started: true,
     })
+  }
+
+  function handlePrimaryTrainingAction() {
+    if (showLiveControls) {
+      liveStepperRef.current?.focus()
+      liveStepperRef.current?.scrollIntoView?.({ block: 'start', behavior: 'smooth' })
+      return
+    }
+
+    handleStartOrResumeTraining()
+  }
+
+  function closeToolbarOverflow() {
+    if (!toolbarOverflowRef.current) {
+      return
+    }
+
+    toolbarOverflowRef.current.open = false
+    toolbarOverflowRef.current.querySelector<HTMLElement>('summary')?.focus()
   }
 
   function handleAbortTraining() {
@@ -774,36 +817,42 @@ export function TrainingView({
             />
           ) : null}
           <PrimaryButton
-            onClick={handleStartOrResumeTraining}
-            disabled={showLiveControls}
-            disabledReason={showLiveControls ? 'Live-Steuerung ist bereits aktiv.' : undefined}
+            onClick={handlePrimaryTrainingAction}
             icon={<Play className="nav-icon" aria-hidden />}
           >
             {trainingActionLabel}
           </PrimaryButton>
-          {showLiveControls ? (
-            <>
-              <button className="secondary-action" type="button" onClick={handleAbortTraining}>
-                Training abbrechen
-              </button>
-              <button className="secondary-action" type="button" onClick={handleResetToStart}>
-                Zurueck zum Start
-              </button>
-            </>
-          ) : null}
-          {hasTrainingProgress || activeExposureSummaryCount > 0 ? (
-            <button className="secondary-action" type="button" onClick={() => setRestartConfirmSessionId(selectedSession.id)}>
-              Training neu starten
-            </button>
-          ) : null}
-          {syncOverview.status === 'error' ? (
-            <SecondaryButton icon={<RefreshCw className="nav-icon" aria-hidden />} isLoading={isLoading} loadingLabel="Sync laeuft" onClick={runSync}>
-              Erneut synchronisieren
-            </SecondaryButton>
-          ) : null}
-          <SecondaryButton icon={<UserCheck className="nav-icon" aria-hidden />} onClick={() => onNavigate(routes.unitCheckIn)}>
-            Check-in
-          </SecondaryButton>
+          <details className="training-toolbar-overflow" ref={toolbarOverflowRef}>
+            <summary>Weitere Aktionen</summary>
+            <div className="training-toolbar-overflow-menu">
+              {showLiveControls ? (
+                <>
+                  <SecondaryButton onClick={() => { handleAbortTraining(); closeToolbarOverflow() }}>
+                    Training abbrechen
+                  </SecondaryButton>
+                  <SecondaryButton onClick={() => { handleResetToStart(); closeToolbarOverflow() }}>
+                    Zurueck zum Start
+                  </SecondaryButton>
+                </>
+              ) : null}
+              {hasTrainingProgress || activeExposureSummaryCount > 0 ? (
+                <SecondaryButton tone="danger" onClick={() => { setRestartConfirmSessionId(selectedSession.id); closeToolbarOverflow() }}>
+                  Training neu starten
+                </SecondaryButton>
+              ) : null}
+              {syncOverview.status === 'error' ? (
+                <SecondaryButton icon={<RefreshCw className="nav-icon" aria-hidden />} isLoading={isLoading} loadingLabel="Sync laeuft" onClick={() => { void runSync(); closeToolbarOverflow() }}>
+                  Erneut synchronisieren
+                </SecondaryButton>
+              ) : null}
+              <SecondaryButton icon={<UserCheck className="nav-icon" aria-hidden />} onClick={() => { onNavigate(routes.unitCheckIn); closeToolbarOverflow() }}>
+                Check-in
+              </SecondaryButton>
+              <SecondaryButton onClick={() => { onNavigate(routes.unitReturners); closeToolbarOverflow() }}>
+                Returner-Aufgaben
+              </SecondaryButton>
+            </div>
+          </details>
         </div>
       </div>
 
@@ -915,20 +964,22 @@ export function TrainingView({
         </section>
       ) : null}
 
-      <LiveSessionStepper
-        blockLogs={sessionBlockActions.blockLogs}
-        currentBlockKey={currentLiveBlockKey}
-        exerciseActions={exerciseActions}
-        isLiveActive={showLiveControls}
-        isSavingDisabled={isLoading || sessionBlockActions.isLoading}
-        metricActions={metricActions}
-        onCurrentBlockKeyChange={handleCurrentBlockChange}
-        onSaveBlockLog={(blockKey, patch) => {
-          void saveWithFeedback(() => sessionBlockActions.saveBlockLog(blockKey, patch))
-        }}
-        players={orderedPlayers}
-        session={selectedSession}
-      />
+      <div ref={liveStepperRef} tabIndex={-1}>
+        <LiveSessionStepper
+          blockLogs={sessionBlockActions.blockLogs}
+          currentBlockKey={currentLiveBlockKey}
+          exerciseActions={exerciseActions}
+          isLiveActive={showLiveControls}
+          isSavingDisabled={isLoading || sessionBlockActions.isLoading}
+          metricActions={metricActions}
+          onCurrentBlockKeyChange={handleCurrentBlockChange}
+          onSaveBlockLog={(blockKey, patch) => {
+            void saveWithFeedback(() => sessionBlockActions.saveBlockLog(blockKey, patch))
+          }}
+          players={orderedPlayers}
+          session={selectedSession}
+        />
+      </div>
 
       <section className="panel training-player-panel" aria-label="Athleten im Training">
         <div className="status-line">
@@ -1255,6 +1306,7 @@ export function TrainingView({
             <TrainingPlayerDetail
               entry={getEntryForPlayer(selectedTrainingPlayer)}
               isSavingDisabled={isLoading}
+              onOpenReturner={onOpenReturner}
               onSave={(selectedPlayer, patch) => {
                 void saveWithFeedback(() => saveEntry(selectedPlayer, patch))
               }}

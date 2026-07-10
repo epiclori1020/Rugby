@@ -59,6 +59,7 @@ const routeSmokeChecks = [
   { hash: '#/today', expectedHash: '#/today', expectedText: 'Heute' },
   { hash: '#/unit/check-in', expectedHash: '#/unit/check-in', expectedText: 'Einheit / Check-in' },
   { hash: '#/unit/training', expectedHash: '#/unit/training', expectedText: 'Einheit / Training' },
+  { hash: '#/unit/returners', expectedHash: '#/unit/returners', expectedText: 'Einheit / Returner' },
   { hash: '#/unit/post-session', expectedHash: '#/unit/post-session', expectedText: 'Einheit / Nachbereitung' },
   { hash: '#/players', expectedHash: '#/players', expectedText: 'Spieler' },
   { hash: '#/analysis', expectedHash: '#/analysis', expectedText: 'Analyse' },
@@ -68,6 +69,7 @@ const routeSmokeChecks = [
   { hash: '#/more/returners', expectedHash: '#/more/returners', expectedText: 'Mehr / Returner' },
   { hash: '#/nachbereitung', expectedHash: '#/unit/post-session', expectedText: 'Einheit / Nachbereitung' },
   { hash: '#/bibliothek', expectedHash: '#/more/library', expectedText: 'Mehr / Bibliothek' },
+  { hash: '#/returner', expectedHash: '#/unit/returners', expectedText: 'Einheit / Returner' },
 ]
 
 function chromeExecutablePath() {

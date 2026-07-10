@@ -463,14 +463,14 @@ Abhaengigkeiten:
 - R5 empfohlen, weil `Heute` die Einstiege liefert.
 
 Definition of Done:
-- [ ] Returner ist in `Einheit` erreichbar und nicht nur unter `Mehr`.
-- [ ] Check-in-, Training-, Returner- und Nachbereitungszustand teilen denselben Session-Kontext.
-- [ ] Jede View hat genau eine dominante Primaeraktion.
-- [ ] Training-Toolbar hat keine 5 gleichgewichtigen Buttons.
-- [ ] Nachbereitung vermeidet doppelte Pflichtaktionen und fuehrt zur naechsten offenen Aufgabe.
-- [ ] Safety-Copy sagt "Hinweis fuer Coaching-Entscheidung", keine Freigabe.
-- [ ] iPhone nutzt Stack/Sheets, iPad nutzt Content plus Pane; fachliche Paritaet bleibt.
-- [ ] Save-/Action-Feedback aus R4 ist in den betroffenen Flows sichtbar.
+- [x] Returner ist in `Einheit` erreichbar und nicht nur unter `Mehr`.
+- [x] Check-in-, Training-, Returner- und Nachbereitungszustand teilen denselben Session-Kontext.
+- [x] Jede View hat genau eine dominante Primaeraktion.
+- [x] Training-Toolbar hat keine 5 gleichgewichtigen Buttons.
+- [x] Nachbereitung vermeidet doppelte Pflichtaktionen und fuehrt zur naechsten offenen Aufgabe.
+- [x] Safety-Copy sagt "Hinweis fuer Coaching-Entscheidung", keine Freigabe.
+- [x] iPhone nutzt Stack/Sheets, iPad nutzt Content plus Pane; fachliche Paritaet bleibt.
+- [x] Save-/Action-Feedback aus R4 ist in den betroffenen Flows sichtbar.
 
 Aufwand/Risiko/QA:
 - Aufwand: L.

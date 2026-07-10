@@ -44,7 +44,10 @@ type MetricActions = ReturnType<typeof useMetrics>
 type PlayersViewProps = {
   authState: AuthSessionState
   canOpenSourceSession?: (source: PlayerAnalysisSource) => boolean
+  initialDetailTab?: PlayerDetailTab
+  initialSelectedPlayerId?: string | null
   onOpenSourceSession?: (source: PlayerAnalysisSource) => void
+  onOpenReturner?: (playerId: string) => void
   metricActions?: MetricActions
   metricSessionLabel?: string
   playerActions: PlayerActions
@@ -357,6 +360,7 @@ function PlayerDetailView({
   onMetricSave,
   onPhotoLoadError,
   onOpenSourceSession,
+  onOpenReturner,
   onTabChange,
   photoPreviewUrl,
   player,
@@ -376,6 +380,7 @@ function PlayerDetailView({
   onMetricSave: (definition: MetricDefinition) => Promise<void> | void
   onPhotoLoadError: () => void
   onOpenSourceSession?: (source: PlayerAnalysisSource) => void
+  onOpenReturner?: (playerId: string) => void
   onTabChange: (tab: PlayerDetailTab) => void
   photoPreviewUrl?: string
   player: Player
@@ -687,6 +692,11 @@ function PlayerDetailView({
 
       {activeTab === 'returner' ? (
         <div className="player-profile-content">
+          {onOpenReturner ? (
+            <SecondaryButton onClick={() => onOpenReturner(player.id)}>
+              In Einheit öffnen
+            </SecondaryButton>
+          ) : null}
           <ProfileSection title="Returner" emptyText="Kein Returner-Eintrag vorhanden.">
             {profile?.latestReturner ? (
               <div className="profile-fact-list">
@@ -714,17 +724,20 @@ function PlayerDetailView({
 export function PlayersView({
   authState,
   canOpenSourceSession,
+  initialDetailTab = 'overview',
+  initialSelectedPlayerId = null,
   metricActions,
   metricSessionLabel,
   onOpenSourceSession,
+  onOpenReturner,
   playerActions,
   todayKey,
 }: PlayersViewProps) {
   const { players, syncOverview, isLoading, runSync, savePlayer, deactivatePlayer, deletePlayer, uploadPlayerPhoto } =
     playerActions
   const { removePlayerPhoto } = playerActions
-  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(null)
-  const [activeDetailTab, setActiveDetailTab] = useState<PlayerDetailTab>('overview')
+  const [selectedPlayerId, setSelectedPlayerId] = useState<string | null>(initialSelectedPlayerId)
+  const [activeDetailTab, setActiveDetailTab] = useState<PlayerDetailTab>(initialDetailTab)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [searchQuery, setSearchQuery] = useState('')
@@ -1273,6 +1286,7 @@ export function PlayersView({
           onMetricSave={saveProfileMetric}
           onPhotoLoadError={markPhotoLoadError}
           onOpenSourceSession={onOpenSourceSession}
+          onOpenReturner={onOpenReturner}
           onTabChange={handleDetailTabChange}
           photoPreviewUrl={photoPreviewUrls[selectedPlayer.id]}
           player={selectedPlayer}

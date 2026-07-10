@@ -22,6 +22,14 @@ const publicRouteState = vi.hoisted(() => ({
     }) => Promise<unknown>
     onExit?: () => void
   },
+  lastReturnerProps: null as null | {
+    focusedPlayer?: { id: string } | null
+    onReturn?: () => void
+  },
+  lastPlayersProps: null as null | {
+    initialDetailTab?: string
+    initialSelectedPlayerId?: string | null
+  },
   saveKioskEntry: vi.fn(async () => ({ ok: true as const })),
   signOutCoach: vi.fn(async () => undefined),
 }))
@@ -80,8 +88,13 @@ vi.mock('./components/AppShell', async () => {
 vi.mock('./components/TodayDashboard', async () => {
   const React = await import('react')
   return {
-    TodayDashboard: ({ selectedSessionId }: { selectedSessionId: string }) =>
-      React.createElement('div', { 'data-testid': 'today-dashboard', 'data-selected-session-id': selectedSessionId }, 'Heute'),
+    TodayDashboard: ({ onOpenReturner, selectedSessionId }: { onOpenReturner?: (playerId: string) => void; selectedSessionId: string }) =>
+      React.createElement(
+        'div',
+        { 'data-testid': 'today-dashboard', 'data-selected-session-id': selectedSessionId },
+        'Heute',
+        React.createElement('button', { type: 'button', 'data-testid': 'today-open-returner', onClick: () => onOpenReturner?.('player-1') }, 'Returner'),
+      ),
   }
 })
 
@@ -160,12 +173,38 @@ vi.mock('./components/PwaUpdateNotice', async () => {
 
 vi.mock('./components/PlayersView', async () => {
   const React = await import('react')
-  return { PlayersView: () => React.createElement('div') }
+  return {
+    PlayersView: (props: {
+      initialDetailTab?: string
+      initialSelectedPlayerId?: string | null
+      onOpenReturner?: (playerId: string) => void
+    }) => {
+      publicRouteState.lastPlayersProps = props
+      return React.createElement(
+        'div',
+        { 'data-testid': 'players-view' },
+        React.createElement(
+          'button',
+          { type: 'button', 'data-testid': 'players-open-returner', onClick: () => props.onOpenReturner?.('player-1') },
+          'Returner',
+        ),
+      )
+    },
+  }
 })
 
 vi.mock('./components/ReturnerView', async () => {
   const React = await import('react')
-  return { ReturnerView: () => React.createElement('div') }
+  return {
+    ReturnerView: (props: { focusedPlayer?: { id: string } | null; onReturn?: () => void }) => {
+      publicRouteState.lastReturnerProps = props
+      return React.createElement(
+        'div',
+        { 'data-testid': 'returner-view' },
+        React.createElement('button', { type: 'button', 'data-testid': 'returner-return', onClick: props.onReturn }, 'Zurück'),
+      )
+    },
+  }
 })
 
 vi.mock('./components/SettingsView', async () => {
@@ -320,7 +359,14 @@ vi.mock('./hooks/usePostSession', () => ({
 }))
 
 vi.mock('./hooks/useReturners', () => ({
-  useReturners: () => ({ returnerCaps: [], syncOverview, refreshReturners: vi.fn(async () => undefined) }),
+  useReturners: () => ({
+    activeReturnerPlayers: [],
+    entries: [],
+    returnerCaps: [],
+    returnerTaskStates: [],
+    syncOverview,
+    refreshReturners: vi.fn(async () => undefined),
+  }),
 }))
 
 vi.mock('./hooks/useStoragePersistence', () => ({
@@ -397,6 +443,8 @@ describe('App public check-in routing', () => {
     publicRouteState.nextMountId = 0
     publicRouteState.authState.status = 'signed-out'
     publicRouteState.lastKioskProps = null
+    publicRouteState.lastPlayersProps = null
+    publicRouteState.lastReturnerProps = null
     publicRouteState.saveKioskEntry.mockClear()
     publicRouteState.signOutCoach.mockClear()
     syncRepositoryMocks.syncAllUserData.mockClear()
@@ -508,6 +556,47 @@ describe('App public check-in routing', () => {
     const coachApp = rendered.container.querySelector<HTMLElement>('[data-testid="coach-app"]')
     expect(coachApp?.dataset.activeRoute).toBe('more/settings')
     expect(window.location.hash).toBe('#/more/settings')
+  })
+
+  it('keeps contextual Returner focus ephemeral and returns to its origin route', async () => {
+    const rendered = await renderApp()
+    root = rendered.root
+
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('[data-testid="today-open-returner"]')?.click()
+    })
+    await flushLazyScreens()
+
+    const coachApp = rendered.container.querySelector<HTMLElement>('[data-testid="coach-app"]')
+    expect(coachApp?.dataset.activeRoute).toBe('unit/returners')
+    expect(window.location.hash).toBe('#/unit/returners')
+    expect(publicRouteState.lastReturnerProps?.focusedPlayer?.id).toBe('player-1')
+
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('[data-testid="returner-return"]')?.click()
+    })
+
+    expect(coachApp?.dataset.activeRoute).toBe('today')
+    expect(window.location.hash).toBe('#/today')
+  })
+
+  it('restores the selected player and Returner tab after returning to Players', async () => {
+    const rendered = await renderApp()
+    root = rendered.root
+
+    await dispatchHashChange('#/players')
+    await flushLazyScreens()
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('[data-testid="players-open-returner"]')?.click()
+    })
+    await flushLazyScreens()
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('[data-testid="returner-return"]')?.click()
+    })
+
+    expect(window.location.hash).toBe('#/players')
+    expect(publicRouteState.lastPlayersProps?.initialSelectedPlayerId).toBe('player-1')
+    expect(publicRouteState.lastPlayersProps?.initialDetailTab).toBe('returner')
   })
 
   it('restores the signed-in kiosk mode from local storage', async () => {

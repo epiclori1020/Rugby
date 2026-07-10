@@ -212,7 +212,6 @@ function MissingValuesPanel({
   onNavigate,
   onPostSave,
   onProgressSave,
-  onSessionSave,
   playersById,
 }: {
   isMetricSavingDisabled: boolean
@@ -223,7 +222,6 @@ function MissingValuesPanel({
   onNavigate: (route: AppRoute) => void
   onPostSave: PostSessionActions['savePlayerPostSession']
   onProgressSave: PostSessionActions['savePlayerProgress']
-  onSessionSave: PostSessionActions['saveSessionPatch']
   playersById: Map<string, Player>
 }) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
@@ -317,14 +315,6 @@ function MissingValuesPanel({
         <SecondaryButton compact disabled={isPostSavingDisabled} disabledReason={isPostSavingDisabled ? 'Speichern laeuft gerade.' : undefined} onClick={focusDurationInput}>
           Dauerfeld fokussieren
         </SecondaryButton>
-      )
-    }
-
-    if (item.kind === 'session_status') {
-      return (
-        <PrimaryButton compact disabled={isPostSavingDisabled} disabledReason={isPostSavingDisabled ? 'Speichern laeuft gerade.' : undefined} onClick={() => void onSessionSave({ status: 'completed' })}>
-          Einheit abschliessen
-        </PrimaryButton>
       )
     }
 
@@ -1336,6 +1326,15 @@ export function PostSessionView({
     lastExportAt,
   })
   const playersById = new Map(activePlayers.map((player) => [player.id, player]))
+  const closeoutBlockers = completion.blockers.filter((blocker) => blocker.kind !== 'session_status')
+  const firstCloseoutBlocker = closeoutBlockers[0] ?? null
+  const isSessionCompleted = sessionLog?.status === 'completed'
+  const closeoutDisabled = isLoading || !sessionLog || isSessionCompleted || closeoutBlockers.length > 0
+  const closeoutDisabledReason = isLoading
+    ? 'Speichern läuft gerade.'
+    : !sessionLog
+      ? 'Noch keine lokale Einheit für den Abschluss vorhanden.'
+      : firstCloseoutBlocker?.label
 
   function handleSessionNumberBlur(field: 'durationMinutes' | 'groupSize') {
     return (event: FormEvent<HTMLInputElement>) => {
@@ -1505,9 +1504,25 @@ export function PostSessionView({
         onNavigate={onNavigate}
         onPostSave={savePlayerPostSessionWithFeedback}
         onProgressSave={savePlayerProgressWithFeedback}
-        onSessionSave={saveSessionPatchWithFeedback}
         playersById={playersById}
       />
+
+      <section className="post-session-sticky-closeout" aria-label="Einheit Abschluss">
+        <div>
+          <p className="eyebrow">Nächster Pflichtschritt</p>
+          <strong>{isSessionCompleted ? 'Einheit abgeschlossen' : firstCloseoutBlocker?.label ?? 'Pflichtwerte geklärt'}</strong>
+          {!isSessionCompleted && firstCloseoutBlocker ? <span>{firstCloseoutBlocker.playerNames.join(', ')}</span> : null}
+        </div>
+        <PrimaryButton
+          disabled={closeoutDisabled}
+          disabledReason={closeoutDisabled ? closeoutDisabledReason : undefined}
+          isLoading={isLoading}
+          loadingLabel="Einheit wird abgeschlossen"
+          onClick={() => void saveSessionPatchWithFeedback({ status: 'completed' })}
+        >
+          {isSessionCompleted ? 'Einheit abgeschlossen' : 'Einheit abschliessen'}
+        </PrimaryButton>
+      </section>
 
       {errorMessage ? (
         <div className="panel error-panel" role="alert">

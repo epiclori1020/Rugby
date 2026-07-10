@@ -158,22 +158,30 @@ const latestBaseline = {
   syncError: null,
 }
 
-function renderPostSessionView() {
+function renderPostSessionView({
+  entryOverrides = {},
+  sessionLogOverrides = {},
+}: {
+  entryOverrides?: Partial<PlayerSessionEntry>
+  sessionLogOverrides?: Partial<SessionLog>
+} = {}) {
+  const renderedEntry = { ...entry, ...entryOverrides }
+  const renderedSessionLog = { ...sessionLog, ...sessionLogOverrides }
   const postSessionActions = {
     activePlayers: [player],
-    entries: [entry],
+    entries: [renderedEntry],
     errorMessage: null,
     progressEntries: [],
     warnings: [],
     syncOverview,
     isLoading: false,
-    sessionLog,
+    sessionLog: renderedSessionLog,
     refreshPostSession: async () => undefined,
     runSync: async () => syncOverview,
     savePlayerPostSession: async () => undefined,
     savePlayerProgress: async () => undefined,
     saveSessionPatch: async () => undefined,
-    getEntryForPlayer: () => entry,
+    getEntryForPlayer: () => renderedEntry,
     getProgressForPlayer: () => null,
     clearError: () => undefined,
   } satisfies ReturnType<typeof usePostSession>
@@ -271,6 +279,34 @@ describe('PostSessionView post-session queue', () => {
     expect(markup).toContain('10 m Sprint')
     expect(markup).toContain('Mini-Baseline / Re-Check')
     expect(markup).toContain('Max')
+    expect(markup).toContain('post-session-sticky-closeout')
+    expect(markup).toContain('Einheit abschliessen')
+    expect(markup).toContain('sRPE fehlt bei anwesenden Spielern.')
+    expect(markup.match(/of-button-primary/g)).toHaveLength(1)
     expect(markup.toLowerCase()).not.toContain('freigabe')
+  })
+
+  it('keeps the sticky closeout as the only completion action and shows completed state', () => {
+    const readyMarkup = renderPostSessionView({
+      entryOverrides: {
+        sessionRpe: 6,
+        postPainScore: 2,
+        e2Decision: 'normal',
+        nextStep: 'halten',
+      },
+    })
+    const completedMarkup = renderPostSessionView({
+      entryOverrides: {
+        sessionRpe: 6,
+        postPainScore: 2,
+        e2Decision: 'normal',
+        nextStep: 'halten',
+      },
+      sessionLogOverrides: { status: 'completed' },
+    })
+
+    expect(readyMarkup).not.toContain('session_status:session')
+    expect(readyMarkup.match(/Einheit abschliessen/g)).toHaveLength(1)
+    expect(completedMarkup).toContain('Einheit abgeschlossen')
   })
 })
