@@ -1973,75 +1973,6 @@ button {
   gap: 12px;
 }
 
-.checkin-finder,
-.checkin-player-groups,
-.checkin-player-group {
-  display: grid;
-  gap: 12px;
-}
-
-.checkin-finder-head {
-  display: grid;
-  gap: 12px;
-}
-
-.checkin-player-group h4 {
-  color: var(--muted);
-  font-size: var(--of-font-size-secondary);
-  letter-spacing: 0;
-  margin: 0;
-}
-
-.checkin-player-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(230px, 1fr));
-  gap: 8px;
-}
-
-.checkin-player-card {
-  min-height: 76px;
-  border: 1px solid var(--line);
-  border-left: 6px solid var(--line);
-  border-radius: var(--of-radius-sm);
-  background: var(--of-color-surface-default);
-  color: var(--ink);
-  cursor: pointer;
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  gap: 10px;
-  padding: 10px;
-  text-align: left;
-}
-
-.checkin-player-card.traffic-green {
-  border-left-color: var(--ok);
-}
-
-.checkin-player-card.traffic-yellow {
-  border-left-color: var(--warning);
-}
-
-.checkin-player-card.traffic-red {
-  border-left-color: var(--of-color-status-danger);
-}
-
-.checkin-player-card-main {
-  min-width: 0;
-  display: grid;
-  gap: 3px;
-}
-
-.checkin-player-card-main small {
-  color: var(--muted);
-}
-
-.checkin-player-card-tags {
-  grid-column: 1 / -1;
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
 .checkin-roster-panel {
   display: grid;
   gap: var(--of-space-lg);
@@ -2055,18 +1986,40 @@ button {
 }
 
 .checkin-roster-counts {
+  margin: 0;
+  border: var(--of-border-width-default) solid var(--of-color-border-default);
+  border-radius: var(--of-radius-md);
+  background: var(--of-color-surface-muted);
   display: grid;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
-  gap: var(--of-space-sm);
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  overflow: hidden;
 }
 
-.checkin-roster-counts .metric {
-  min-height: 74px;
+.checkin-roster-counts > div {
+  min-width: 0;
+  min-height: 68px;
+  border-left: var(--of-border-width-default) solid var(--of-color-border-default);
+  display: grid;
+  align-content: center;
+  gap: var(--of-space-xs);
   padding: var(--of-space-sm);
 }
 
-.checkin-roster-counts .metric strong {
+.checkin-roster-counts > div:first-child {
+  border-left: 0;
+}
+
+.checkin-roster-counts dt {
+  color: var(--of-color-text-secondary);
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
+}
+
+.checkin-roster-counts dd {
+  margin: 0;
+  color: var(--of-color-text-primary);
   font-size: var(--of-font-size-section);
+  font-weight: var(--of-font-weight-bold);
 }
 
 .checkin-roster-groups,
@@ -2083,108 +2036,32 @@ button {
   margin: 0;
 }
 
-.checkin-roster-row {
-  border: 1px solid var(--line);
-  border-left: 6px solid var(--line);
-  border-radius: var(--of-radius-sm);
-  background: var(--of-color-surface-default);
-  display: grid;
-  grid-template-columns: minmax(0, 1fr) minmax(176px, max-content);
-  gap: var(--of-space-sm);
-  padding: var(--of-space-sm);
-}
-
-.checkin-roster-row.traffic-green {
-  border-left-color: var(--ok);
-}
-
-.checkin-roster-row.traffic-yellow {
-  border-left-color: var(--warning);
-}
-
-.checkin-roster-row.traffic-red {
-  border-left-color: var(--of-color-status-danger);
-}
-
-.checkin-roster-row-main {
-  min-height: 56px;
-  border: 0;
-  background: transparent;
-  color: var(--ink);
-  cursor: pointer;
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr) minmax(190px, 0.72fr);
-  gap: var(--of-space-sm);
-  align-items: center;
-  padding: 0;
-  text-align: left;
-}
-
-.checkin-roster-copy,
-.checkin-roster-status {
-  min-width: 0;
-  display: grid;
-  gap: 3px;
-}
-
-.checkin-roster-copy small,
-.roster-traffic-reason {
-  color: var(--muted);
-}
-
-.checkin-roster-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 6px;
-}
-
-.roster-traffic-chip {
-  width: max-content;
-  min-height: 28px;
-  border: 1px solid var(--line);
-  border-radius: var(--of-radius-pill);
-  background: var(--of-color-surface-muted);
-  color: var(--ink);
-  display: inline-flex;
-  align-items: center;
-  padding: 3px 10px;
-  font-size: var(--of-font-size-caption);
-  font-weight: var(--of-font-weight-semibold);
-}
-
-.roster-traffic-chip.traffic-green {
-  border-color: var(--ok);
-  color: var(--ok);
-}
-
-.roster-traffic-chip.traffic-yellow {
-  border-color: var(--warning);
-  background: var(--warning-bg);
-  color: var(--of-color-status-warning-text);
-}
-
-.roster-traffic-chip.traffic-red {
-  border-color: var(--of-color-status-danger);
-  color: var(--of-color-status-danger);
+.checkin-roster-list .of-athlete-row-action {
+  min-width: 188px;
 }
 
 .checkin-roster-actions {
   display: grid;
   grid-template-columns: repeat(2, minmax(78px, 1fr));
-  gap: 6px;
+  gap: var(--of-space-sm);
   align-content: center;
+}
+
+.checkin-roster-action-stack {
+  display: grid;
+  gap: var(--of-space-xs);
 }
 
 .checkin-row-action {
   min-height: 48px;
-  border: 1px solid var(--line);
+  border: var(--of-border-width-default) solid var(--of-color-border-default);
   border-radius: var(--of-radius-sm);
   background: var(--of-color-surface-default);
-  color: var(--brand);
+  color: var(--of-color-brand-primary);
   cursor: pointer;
   font: inherit;
   font-weight: var(--of-font-weight-semibold);
-  padding: 8px 10px;
+  padding: var(--of-space-sm) var(--of-space-md);
 }
 
 .checkin-row-action.active,
@@ -2197,6 +2074,31 @@ button {
 .checkin-row-action:disabled {
   cursor: wait;
   opacity: 0.72;
+}
+
+.checkin-row-action:focus-visible {
+  outline: 3px solid var(--of-color-focus-ring);
+  outline-offset: 2px;
+}
+
+.checkin-row-feedback {
+  max-width: 188px;
+  margin: 0;
+  color: var(--of-color-status-success-text);
+  font-size: var(--of-font-size-caption);
+  line-height: var(--of-line-height-normal);
+}
+
+.checkin-row-feedback.error {
+  color: var(--of-color-status-danger-text);
+}
+
+.checkin-row-feedback.pending {
+  color: var(--of-color-status-warning-text);
+}
+
+.checkin-row-feedback.offline {
+  color: var(--of-color-status-info-text);
 }
 
 .checkin-secondary-tools {
@@ -4524,8 +4426,6 @@ code {
   .form-grid,
   .checkin-metrics,
   .checkin-roster-head,
-  .checkin-roster-row,
-  .checkin-roster-row-main,
   .checkin-reset-panel,
   .reset-confirm-grid,
   .export-actions {
@@ -4536,8 +4436,22 @@ code {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
+  .checkin-roster-counts > div:nth-child(odd) {
+    border-left: 0;
+  }
+
+  .checkin-roster-counts > div:nth-child(n + 3) {
+    border-top: var(--of-border-width-default) solid var(--of-color-border-default);
+  }
+
   .checkin-roster-actions {
     grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .checkin-roster-list .of-athlete-row-action,
+  .checkin-row-feedback {
+    min-width: 0;
+    max-width: none;
   }
 
   .live-step-heading,

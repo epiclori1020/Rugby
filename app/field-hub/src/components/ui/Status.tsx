@@ -1,4 +1,4 @@
-import { AlertTriangle, CheckCircle2, Cloud, CloudOff, Info, RefreshCw } from 'lucide-react'
+import { AlertTriangle, CheckCircle2, CircleDashed, Cloud, CloudOff, Info, RefreshCw } from 'lucide-react'
 import type { ReactNode } from 'react'
 
 export type StatusTone = 'neutral' | 'success' | 'warning' | 'danger' | 'info'
@@ -9,6 +9,13 @@ const statusIcons: Record<Exclude<StatusTone, 'neutral'>, ReactNode> = {
   warning: <AlertTriangle />,
   danger: <AlertTriangle />,
   info: <Info />,
+}
+
+const trafficIcons: Record<TrafficTone, ReactNode> = {
+  green: <CheckCircle2 />,
+  yellow: <AlertTriangle />,
+  red: <AlertTriangle />,
+  open: <CircleDashed />,
 }
 
 type StatusChipProps = {
@@ -37,6 +44,7 @@ type TrafficLightChipProps = {
 export function TrafficLightChip({ label, reason, tone }: TrafficLightChipProps) {
   return (
     <span className={`of-traffic-chip of-traffic-${tone}`} aria-label={reason ? `${label}: ${reason}` : label}>
+      <span className="of-traffic-icon" aria-hidden>{trafficIcons[tone]}</span>
       <span>{label}</span>
       {reason ? <span>· {reason}</span> : null}
     </span>

@@ -103,6 +103,45 @@ describe('Sprint 5 OnField component compositions', () => {
     expect(markup).toContain('Klären')
   })
 
+  it('keeps row selection separate from quick actions', () => {
+    const markup = renderToStaticMarkup(
+      <AthleteRow
+        name="Max Muster"
+        onSelect={() => undefined}
+        readinessLabel="Status offen"
+        readinessTone="open"
+        selectLabel="Max Muster Check-in öffnen"
+        action={<PrimaryButton compact>Da</PrimaryButton>}
+      />,
+    )
+
+    expect(markup).toContain('class="of-athlete-row-content"')
+    expect(markup).toContain('aria-label="Max Muster Check-in öffnen"')
+    expect(markup).toContain('<button')
+    expect(markup).toContain('of-athlete-row-action')
+    expect(markup.indexOf('</button>')).toBeLessThan(markup.indexOf('of-athlete-row-action'))
+    expect(markup.lastIndexOf('<button')).toBeGreaterThan(markup.indexOf('of-athlete-row-action'))
+    const selectionButtonMarkup = markup.slice(markup.indexOf('<button'), markup.indexOf('</button>'))
+    expect(selectionButtonMarkup).not.toMatch(/<(div|h3|p)(\s|>)/)
+  })
+
+  it('associates selectable athlete rows with their visible status summary', () => {
+    const markup = renderToStaticMarkup(
+      <AthleteRow
+        name="Max Muster"
+        onSelect={() => undefined}
+        readinessLabel="Status Gelb"
+        readinessTone="yellow"
+        selectDescription="Gelb: Belastung anpassen. Da. Returner heute."
+        selectLabel="Max Muster Check-in öffnen"
+      />,
+    )
+
+    expect(markup).toContain('aria-describedby=')
+    expect(markup).toContain('class="sr-only"')
+    expect(markup).toContain('Gelb: Belastung anpassen. Da. Returner heute.')
+  })
+
   it('renders queue rows with visible tone and recovery action', () => {
     const markup = renderToStaticMarkup(
       <TaskQueueRow

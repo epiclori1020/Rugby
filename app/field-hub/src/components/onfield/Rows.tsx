@@ -1,7 +1,7 @@
-import type { ReactNode } from 'react'
+import { useId, type ReactNode } from 'react'
 import { ReadinessDot, type ReadinessTone } from './ReadinessDot'
 
-type AthleteRowProps = {
+export type AthleteRowProps = {
   playerId?: string
   name: string
   meta?: string[]
@@ -14,6 +14,9 @@ type AthleteRowProps = {
   trendLabel?: string
   compact?: boolean
   className?: string
+  onSelect?: () => void
+  selectDescription?: string
+  selectLabel?: string
 }
 
 export function AthleteRow({
@@ -23,13 +26,17 @@ export function AthleteRow({
   meta = [],
   name,
   note,
+  onSelect,
   playerId,
   readinessLabel,
   readinessTone,
   status,
+  selectDescription,
+  selectLabel,
   traffic,
   trendLabel,
 }: AthleteRowProps) {
+  const selectDescriptionId = useId()
   const rowClassName = [
     'of-athlete-row',
     readinessTone ? `of-athlete-row-${readinessTone}` : null,
@@ -39,8 +46,8 @@ export function AthleteRow({
     .filter(Boolean)
     .join(' ')
 
-  return (
-    <article className={rowClassName} data-player-id={playerId}>
+  const content = (
+    <>
       {readinessTone ? (
         <ReadinessDot
           label={readinessLabel ?? `Status ${readinessTone}`}
@@ -48,26 +55,49 @@ export function AthleteRow({
           tone={readinessTone}
         />
       ) : null}
-      <div className="of-athlete-row-main">
-        <div>
-          <h3>{name}</h3>
-          {note ? <p>{note}</p> : null}
-        </div>
+      <span className="of-athlete-row-main">
+        <span className="of-athlete-row-identity">
+          <span className="of-athlete-row-name">{name}</span>
+          {note ? <span className="of-athlete-row-note">{note}</span> : null}
+        </span>
         {meta.length > 0 ? (
-          <div className="of-athlete-row-meta">
+          <span className="of-athlete-row-meta">
             {meta.map((item) => (
               <span key={item}>{item}</span>
             ))}
-          </div>
+          </span>
         ) : null}
         {trendLabel ? <span className="of-athlete-row-trend">{trendLabel}</span> : null}
         {status || traffic ? (
-          <div className="of-athlete-row-status">
+          <span className="of-athlete-row-status">
             {traffic}
             {status}
-          </div>
+          </span>
         ) : null}
-      </div>
+      </span>
+    </>
+  )
+
+  return (
+    <article className={rowClassName} data-player-id={playerId}>
+      {onSelect ? (
+        <button
+          aria-describedby={selectDescription ? selectDescriptionId : undefined}
+          aria-label={selectLabel ?? `${name} öffnen`}
+          className="of-athlete-row-content"
+          onClick={onSelect}
+          type="button"
+        >
+          {content}
+          {selectDescription ? (
+            <span className="sr-only" id={selectDescriptionId}>
+              {selectDescription}
+            </span>
+          ) : null}
+        </button>
+      ) : (
+        <div className="of-athlete-row-content">{content}</div>
+      )}
       {action ? <div className="of-athlete-row-action">{action}</div> : null}
     </article>
   )

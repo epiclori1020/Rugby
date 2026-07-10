@@ -27,6 +27,10 @@ function readComponentCss() {
   return readFileSync(join(projectRoot, 'src/components/ui/onfield-ui.css'), 'utf8')
 }
 
+function readIndexCss() {
+  return readFileSync(join(projectRoot, 'src/index.css'), 'utf8')
+}
+
 describe('Sprint 5 Core Component Kit', () => {
   it('renders button loading and disabled contracts with accessible copy', () => {
     const loadingMarkup = renderToStaticMarkup(
@@ -92,6 +96,8 @@ describe('Sprint 5 Core Component Kit', () => {
     expect(markup).toContain('of-status-chip-warning')
     expect(markup).toContain('Gelb')
     expect(markup).toContain('modifizieren')
+    expect(markup).toContain('of-traffic-icon')
+    expect(markup).toContain('aria-hidden="true"')
     expect(markup).toContain('Online · Aenderungen offen')
     expect(markup).toContain('Aenderungen bleiben lokal gespeichert.')
   })
@@ -130,5 +136,25 @@ describe('Sprint 5 Core Component Kit', () => {
     expect(css.match(/#[0-9A-Fa-f]{3,8}|rgba?\(/g)).toBeNull()
     expect(css).toContain('var(--of-color-brand-primary)')
     expect(css).toContain('var(--of-color-status-danger)')
+  })
+
+  it('keeps selectable athlete-row padding on the inner control only', () => {
+    const css = readComponentCss()
+    const sharedRowLayoutIndex = css.indexOf('.of-athlete-row,\n.of-task-queue-row {\n  display: grid;')
+    const athleteRowResetIndex = css.lastIndexOf('.of-athlete-row {\n  padding: 0;')
+
+    expect(sharedRowLayoutIndex).toBeGreaterThan(-1)
+    expect(athleteRowResetIndex).toBeGreaterThan(sharedRowLayoutIndex)
+  })
+
+  it('routes R7A roster action spacing, borders and type rhythm through tokens', () => {
+    const css = readIndexCss()
+    const rosterActionCss = css.slice(css.indexOf('.checkin-roster-actions'), css.indexOf('.checkin-secondary-tools'))
+
+    expect(rosterActionCss).toContain('gap: var(--of-space-sm)')
+    expect(rosterActionCss).toContain('border: var(--of-border-width-default) solid var(--of-color-border-default)')
+    expect(rosterActionCss).toContain('padding: var(--of-space-sm) var(--of-space-md)')
+    expect(rosterActionCss).toContain('line-height: var(--of-line-height-normal)')
+    expect(rosterActionCss).not.toMatch(/gap: 6px|border: 1px|padding: 8px 10px|line-height: 1\.35/)
   })
 })

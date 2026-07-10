@@ -301,7 +301,7 @@ async function changeInput(element: HTMLInputElement | HTMLTextAreaElement, valu
 }
 
 async function openPlayerSheet(container: HTMLElement) {
-  const playerCard = container.querySelector<HTMLButtonElement>('.checkin-roster-row-main')
+  const playerCard = container.querySelector<HTMLButtonElement>('.of-athlete-row-content')
 
   if (!playerCard) {
     throw new Error('Player roster row not found')
@@ -367,6 +367,49 @@ describe('CheckInView R6 primary flow', () => {
 
     expect(rendered.container.querySelector('[role="dialog"]')).not.toBeNull()
     expect(rendered.container.querySelector('#checkin-sheet-heading-player-active')?.textContent).toBe(activePlayer.name)
+  })
+
+  it('keeps keyboard focus inside the selected player sheet and restores the row trigger', async () => {
+    const rendered = await renderInteractiveCheckInView()
+    root = rendered.root
+    document.body.appendChild(rendered.container)
+    const opener = rendered.container.querySelector<HTMLButtonElement>('.of-athlete-row-content')
+    opener?.focus()
+
+    await act(async () => opener?.click())
+
+    const dialog = rendered.container.querySelector<HTMLElement>('[role="dialog"]')
+    expect(dialog).not.toBeNull()
+    dialog?.focus()
+    await act(async () => {
+      dialog?.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true, bubbles: true }))
+    })
+
+    expect(dialog?.contains(document.activeElement)).toBe(true)
+    expect(document.activeElement).not.toBe(dialog)
+
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('button[aria-label="Check-in schließen"]')?.click()
+    })
+    expect(document.activeElement).toBe(opener)
+    rendered.container.remove()
+  })
+
+  it('does not trap Tab when an initial player id no longer resolves to a dialog', async () => {
+    const rendered = await renderInteractiveCheckInView({ initialSelectedPlayerId: 'missing-player' })
+    root = rendered.root
+    document.body.appendChild(rendered.container)
+    const toolbarButton = rendered.container.querySelector<HTMLButtonElement>('.player-toolbar button')
+    toolbarButton?.focus()
+    const tabEvent = new KeyboardEvent('keydown', { key: 'Tab', bubbles: true, cancelable: true })
+
+    await act(async () => {
+      toolbarButton?.dispatchEvent(tabEvent)
+    })
+
+    expect(tabEvent.defaultPrevented).toBe(false)
+    expect(rendered.container.querySelector('[role="dialog"]')).toBeNull()
+    rendered.container.remove()
   })
 
   it('opens training when the roster is resolved', async () => {
@@ -876,6 +919,26 @@ describe('CheckInView active player metrics', () => {
     }
   })
 
+  it('shows roster loading feedback instead of a false empty state', () => {
+    const markup = renderToStaticMarkup(
+      <CheckInView
+        authState={authState}
+        checkInActions={createCheckInActions({ activePlayers: [], entries: [], isLoading: false, sessionEntries: [] })}
+        onNavigate={() => undefined}
+        onSessionChange={() => undefined}
+        onStartKiosk={() => undefined}
+        playerActions={createPlayerActions({ players: [], isLoading: true })}
+        returnerCaps={[]}
+        selectedSession={selectedSession}
+        selectedSessionId={selectedSession.id}
+        sessions={[selectedSession]}
+      />,
+    )
+
+    expect(markup).toContain('aria-label="Check-in Roster wird geladen"')
+    expect(markup).not.toContain('Noch keine aktiven Spieler')
+  })
+
   it('renders a roster-first check-in list instead of a player card wall', () => {
     const secondPlayer: Player = { ...activePlayer, id: 'player-second', name: 'Anton', position: 'Hooker' }
     const yellowEntry = {
@@ -942,16 +1005,75 @@ describe('CheckInView active player metrics', () => {
     expect(markup).toContain('Hooker')
     expect(markup).toContain('Keine Warnsignale dokumentiert')
     expect(markup).toContain('Belastung anpassen')
+    expect(markup).toContain('Ampel Gelb. Belastung anpassen. Da.')
     expect(markup).toContain('data-testid="checkin-roster-present-player-active"')
     expect(markup).toContain('data-testid="checkin-roster-absent-player-active"')
+    expect(markup).toContain('class="checkin-roster-actions" role="group" aria-label="Max Schnellaktionen"')
+    expect(markup.match(/<article class="of-athlete-row /g)).toHaveLength(2)
+    expect(markup).toContain('aria-label="Max Check-in öffnen"')
+    expect(markup).toContain('aria-label="Roster-Zusammenfassung"')
+    expect(markup).toContain('class="of-num"')
+    expect(markup).toMatch(/aria-pressed="true"[^>]*>Alle<\/button>/)
     expect(markup).not.toContain('checkin-player-grid')
     expect(markup).not.toContain('checkin-player-card')
+    expect(markup).not.toContain('checkin-roster-row')
+    expect(markup).not.toContain('roster-traffic-chip')
     expect(markup).not.toContain('aria-label="Readiness Max"')
     expect(markup).not.toContain('aria-label="Schmerz Max"')
 
     expect(markup.indexOf('aria-label="Check-in Roster"')).toBeLessThan(
       markup.indexOf('aria-label="Sekundäre Check-in Werkzeuge"'),
     )
+  })
+
+  it('keeps an untouched preview entry visibly open even when it carries a green suggestion', () => {
+    const untouchedEntry: PlayerSessionEntry = {
+      ...autoGreenEntry,
+      present: false,
+      readiness: null,
+      lifeFlag: '',
+      painScore: null,
+      painLocation: '',
+      returnerFlag: 'offen',
+      sessionReaction: 'none',
+      redFlag: 'none',
+      movementConcern: false,
+      previousWarning: false,
+      trafficLight: null,
+      trafficLightSuggestion: 'green',
+      trainingVariant: null,
+      limits: [],
+      observation: '',
+      playerNote: '',
+      playerSubmittedAt: null,
+      coachEditedAt: null,
+    }
+    const markup = renderToStaticMarkup(
+      <CheckInView
+        authState={authState}
+        checkInActions={createCheckInActions({
+          entries: [],
+          sessionEntries: [],
+          getEntryForPlayer: () => untouchedEntry,
+        })}
+        onNavigate={() => undefined}
+        onSessionChange={() => undefined}
+        onStartKiosk={() => undefined}
+        playerActions={createPlayerActions()}
+        returnerCaps={[]}
+        selectedSession={selectedSession}
+        selectedSessionId={selectedSession.id}
+        sessions={[selectedSession]}
+      />,
+    )
+    const rowMarkup = markup.slice(markup.indexOf('<article'), markup.indexOf('</article>') + '</article>'.length)
+
+    expect(rowMarkup).toContain('of-athlete-row-open')
+    expect(rowMarkup).toContain('Offen: Noch nicht erfasst')
+    expect(rowMarkup).toContain('aria-describedby=')
+    expect(rowMarkup).toContain('Ampel Offen. Noch nicht erfasst. Offen.')
+    expect(rowMarkup).not.toContain('Keine Warnsignale dokumentiert')
+    expect(rowMarkup).not.toContain('Returner klären')
   })
 
   it('saves quick attendance from a roster row without opening the detail sheet', async () => {
@@ -984,6 +1106,181 @@ describe('CheckInView active player metrics', () => {
 
     expect(saveEntry).toHaveBeenCalledWith(activePlayer, expect.objectContaining({ present: true, previousWarning: false }), undefined)
     expect(rendered.container.querySelector('[role="dialog"]')).toBeNull()
+    expect(rendered.container.querySelector('[data-player-id="player-active"]')?.textContent).toContain('gespeichert')
+    expect(rendered.container.querySelector('.checkin-roster-panel > .action-feedback')).toBeNull()
+  })
+
+  it('shows loading only on the clicked quick attendance action', async () => {
+    let resolveSave: ((value: { ok: true; entry: PlayerSessionEntry }) => void) | undefined
+    const saveEntry = vi.fn(
+      () => new Promise<{ ok: true; entry: PlayerSessionEntry }>((resolve) => {
+        resolveSave = resolve
+      }),
+    )
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({ saveEntry }),
+    })
+    root = rendered.root
+    const presentButton = rendered.container.querySelector<HTMLButtonElement>(
+      '[data-testid="checkin-roster-present-player-active"]',
+    )
+    const absentButton = rendered.container.querySelector<HTMLButtonElement>(
+      '[data-testid="checkin-roster-absent-player-active"]',
+    )
+
+    await act(async () => {
+      presentButton?.click()
+      await Promise.resolve()
+    })
+
+    expect(presentButton?.textContent).toContain('Speichert')
+    expect(presentButton?.getAttribute('aria-busy')).toBe('true')
+    expect(absentButton?.textContent).toBe('Nicht da')
+    expect(absentButton?.hasAttribute('aria-busy')).toBe(false)
+
+    await act(async () => {
+      resolveSave?.({ ok: true, entry: autoGreenEntry })
+      await Promise.resolve()
+    })
+  })
+
+  it('keeps concurrent quick attendance saves pending on their own player rows', async () => {
+    const secondPlayer: Player = { ...activePlayer, id: 'player-second', name: 'Anton' }
+    const entriesByPlayerId = new Map([
+      [activePlayer.id, autoGreenEntry],
+      [secondPlayer.id, { ...autoGreenEntry, id: 'entry-player-second', playerId: secondPlayer.id }],
+    ])
+    const resolveByPlayerId = new Map<string, (value: { ok: true; entry: PlayerSessionEntry }) => void>()
+    const saveEntry = vi.fn(
+      (player: Player) => new Promise<{ ok: true; entry: PlayerSessionEntry }>((resolve) => {
+        resolveByPlayerId.set(player.id, resolve)
+      }),
+    )
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({
+        activePlayers: [activePlayer, secondPlayer],
+        entries: [...entriesByPlayerId.values()],
+        sessionEntries: [...entriesByPlayerId.values()],
+        getEntryForPlayer: (player) => entriesByPlayerId.get(player.id) ?? autoGreenEntry,
+        saveEntry,
+      }),
+      playerActions: createPlayerActions({ players: [activePlayer, secondPlayer] }),
+    })
+    root = rendered.root
+    const firstButton = rendered.container.querySelector<HTMLButtonElement>(
+      '[data-testid="checkin-roster-present-player-active"]',
+    )
+    const secondButton = rendered.container.querySelector<HTMLButtonElement>(
+      '[data-testid="checkin-roster-absent-player-second"]',
+    )
+
+    await act(async () => {
+      firstButton?.click()
+      secondButton?.click()
+      await Promise.resolve()
+    })
+
+    expect(firstButton?.getAttribute('aria-busy')).toBe('true')
+    expect(secondButton?.getAttribute('aria-busy')).toBe('true')
+
+    await act(async () => {
+      resolveByPlayerId.get(activePlayer.id)?.({ ok: true, entry: autoGreenEntry })
+      await Promise.resolve()
+    })
+
+    expect(firstButton?.hasAttribute('aria-busy')).toBe(false)
+    expect(secondButton?.getAttribute('aria-busy')).toBe('true')
+
+    await act(async () => {
+      resolveByPlayerId.get(secondPlayer.id)?.({
+        ok: true,
+        entry: entriesByPlayerId.get(secondPlayer.id) as PlayerSessionEntry,
+      })
+      await Promise.resolve()
+    })
+
+    expect(rendered.container.querySelector('[data-player-id="player-active"]')?.textContent).toContain('gespeichert')
+    expect(rendered.container.querySelector('[data-player-id="player-second"]')?.textContent).toContain('gespeichert')
+  })
+
+  it('reports pending quick attendance honestly as waiting for sync', async () => {
+    const pendingEntry: PlayerSessionEntry = { ...autoGreenEntry, syncStatus: 'pending' }
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({
+        saveEntry: async () => ({ ok: true as const, entry: pendingEntry }),
+      }),
+    })
+    root = rendered.root
+
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('[data-testid="checkin-roster-present-player-active"]')?.click()
+      await Promise.resolve()
+    })
+
+    expect(rendered.container.querySelector('[data-player-id="player-active"]')?.textContent).toContain('wartet auf Sync')
+  })
+
+  it('does not expose raw repository errors in quick attendance feedback', async () => {
+    const rendered = await renderInteractiveCheckInView({
+      checkInActions: createCheckInActions({
+        saveEntry: async () => ({ ok: false as const, error: 'relation player_session_entries violates row-level security' }),
+      }),
+    })
+    root = rendered.root
+
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('[data-testid="checkin-roster-present-player-active"]')?.click()
+      await Promise.resolve()
+    })
+
+    const rowText = rendered.container.querySelector('[data-player-id="player-active"]')?.textContent ?? ''
+    expect(rowText).toContain('nicht gespeichert - erneut versuchen')
+    expect(rowText).not.toContain('row-level security')
+  })
+
+  it('does not carry an old session quick-save result into the newly selected session', async () => {
+    let resolveSave: ((value: { ok: true; entry: PlayerSessionEntry }) => void) | undefined
+    const checkInActions = createCheckInActions({
+      saveEntry: () => new Promise<{ ok: true; entry: PlayerSessionEntry }>((resolve) => {
+        resolveSave = resolve
+      }),
+    })
+    const playerActions = createPlayerActions()
+    const rendered = await renderInteractiveCheckInView({ checkInActions, playerActions })
+    root = rendered.root
+
+    await act(async () => {
+      rendered.container.querySelector<HTMLButtonElement>('[data-testid="checkin-roster-present-player-active"]')?.click()
+      await Promise.resolve()
+    })
+
+    const nextSession = { ...selectedSession, id: 'session-2', title: 'Donnerstag' }
+    await act(async () => {
+      rendered.root.render(
+        <CheckInView
+          authState={authState}
+          checkInActions={checkInActions}
+          onNavigate={() => undefined}
+          onSessionChange={() => undefined}
+          onStartKiosk={() => undefined}
+          playerActions={playerActions}
+          returnerCaps={[]}
+          selectedSession={nextSession}
+          selectedSessionId={nextSession.id}
+          sessions={[selectedSession, nextSession]}
+        />,
+      )
+      await Promise.resolve()
+    })
+
+    await act(async () => {
+      resolveSave?.({ ok: true, entry: autoGreenEntry })
+      await Promise.resolve()
+    })
+
+    const rowText = rendered.container.querySelector('[data-player-id="player-active"]')?.textContent ?? ''
+    expect(rowText).not.toContain('gespeichert')
+    expect(rowText).not.toContain('Speichert')
   })
 
   it('opens a quick player editor from the selected player sheet settings icon', async () => {
@@ -1067,9 +1364,9 @@ describe('CheckInView active player metrics', () => {
       />,
     )
 
-    expect(markup).toContain('<span>Da / offen</span><strong>0 / 0</strong>')
-    expect(markup).toContain('<span>Gelb / Rot</span><strong>0 / 0</strong>')
-    expect(markup).toContain('<span>Returner / Klärung</span><strong>0 / 0</strong>')
+    expect(markup).toContain('<dt>Da / offen</dt><dd class="of-num">0 / 0</dd>')
+    expect(markup).toContain('<dt>Gelb / Rot</dt><dd class="of-num">0 / 0</dd>')
+    expect(markup).toContain('<dt>Returner / Klärung</dt><dd class="of-num">0 / 0</dd>')
   })
 
   it('does not show stale warnings for deleted players', () => {
