@@ -2,7 +2,7 @@
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { SessionDefinition } from '../content/types'
 import type { Player } from '../domain/players'
 import type { ReturnerEntry } from '../domain/returners'
@@ -147,6 +147,8 @@ describe('ReturnerView', () => {
     )
 
     expect(markup).toContain('Returner-Aufgaben')
+    expect(markup).toContain('of-athlete-row')
+    expect(markup).not.toContain('of-task-queue-row')
     expect(markup).toContain('Plan für heute festlegen')
     expect(markup).toContain('Nächste Returner-Aufgabe')
     expect(markup.match(/of-button-primary/g)).toHaveLength(1)
@@ -177,6 +179,12 @@ describe('ReturnerView', () => {
     expect(markup).toContain('returner-sheet-backdrop')
     expect(markup).toContain('Zurück zum Ursprung')
     expect(markup).toContain('Hinweis für Coaching-Entscheidung')
+    expect(markup).toContain('returner-stage-control')
+    expect(markup).toContain('Stufe 1')
+    expect(markup).toContain('returner-cap-row')
+    expect(markup.match(/returner-cap-row/g)).toHaveLength(4)
+    expect(markup).toContain('Plan &amp; Ist')
+    expect(markup).toContain('Reaktion &amp; nächster Morgen')
     expect(markup.toLowerCase()).not.toContain('freigabe')
   })
 
@@ -201,6 +209,29 @@ describe('ReturnerView', () => {
     expect(markup).toContain('Returner aktuell geklärt')
     expect(markup).toContain('Nachbereitung öffnen')
     expect(markup).not.toContain('Dauer-Alarm')
+  })
+
+  it('keeps an in-progress neutral Returner visibly under observation', () => {
+    const markup = renderToStaticMarkup(
+      <ReturnerView
+        authState={authState}
+        onNavigate={() => undefined}
+        onSessionChange={() => undefined}
+        returnerActions={actions({
+          returnerTaskStates: [
+            { playerId: player.id, phase: 'in_progress', tone: 'neutral', isOpen: false, label: 'Im Training beobachten' },
+          ],
+        })}
+        selectedSession={selectedSession}
+        selectedSessionId={selectedSession.id}
+        sessions={[selectedSession]}
+        showSessionPicker={false}
+      />,
+    )
+
+    expect(markup).toContain('Beobachten')
+    expect(markup).toContain('of-readiness-dot-open')
+    expect(markup).not.toContain('Geklärt')
   })
 
   it('contains reverse focus from the dialog container and restores the opener', async () => {
@@ -243,6 +274,104 @@ describe('ReturnerView', () => {
     await act(async () => closeButton?.click())
     expect(document.activeElement).toBe(opener)
 
+    await act(async () => root.unmount())
+    container.remove()
+  })
+
+  it('restores a cap input after an optimistic save fails', async () => {
+    ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+    const recordedEntry = { ...entry, speedCap: '4 × 10 m smooth' }
+    const savePlayerReturner = vi.fn(async () => ({ ok: false as const, error: 'Speichern fehlgeschlagen' }))
+    const container = document.createElement('div')
+    document.body.append(container)
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <ReturnerView
+          authState={authState}
+          focusedPlayer={player}
+          focusedTaskState={{ playerId: player.id, phase: 'planning', tone: 'warning', isOpen: true, label: 'Plan für heute festlegen' }}
+          onNavigate={() => undefined}
+          onSessionChange={() => undefined}
+          returnerActions={actions({
+            entries: [recordedEntry],
+            getEntryForPlayer: () => recordedEntry,
+            getHistoryForPlayer: () => [recordedEntry],
+            savePlayerReturner,
+          })}
+          selectedSession={selectedSession}
+          selectedSessionId={selectedSession.id}
+          sessions={[selectedSession]}
+          showSessionPicker={false}
+        />,
+      )
+    })
+
+    const capInput = container.querySelector<HTMLInputElement>('input[placeholder="z. B. 4 × 10 m smooth"]')
+    expect(capInput?.value).toBe('4 × 10 m smooth')
+    await act(async () => {
+      if (capInput) {
+        capInput.value = '8 × 10 m hart'
+        capInput.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+      }
+      await Promise.resolve()
+    })
+
+    expect(savePlayerReturner).toHaveBeenCalledOnce()
+    expect(container.querySelector<HTMLInputElement>('input[placeholder="z. B. 4 × 10 m smooth"]')?.value)
+      .toBe('4 × 10 m smooth')
+
+    await act(async () => root.unmount())
+    container.remove()
+  })
+
+  it('serializes local Returner saves across cap and stage controls', async () => {
+    ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+    let resolveSave: ((result: { ok: true; entry: ReturnerEntry }) => void) | undefined
+    const pendingSave = new Promise<{ ok: true; entry: ReturnerEntry }>((resolve) => {
+      resolveSave = resolve
+    })
+    const savePlayerReturner = vi.fn(() => pendingSave)
+    const container = document.createElement('div')
+    document.body.append(container)
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <ReturnerView
+          authState={authState}
+          focusedPlayer={player}
+          focusedTaskState={{ playerId: player.id, phase: 'planning', tone: 'warning', isOpen: true, label: 'Plan für heute festlegen' }}
+          onNavigate={() => undefined}
+          onSessionChange={() => undefined}
+          returnerActions={actions({ savePlayerReturner })}
+          selectedSession={selectedSession}
+          selectedSessionId={selectedSession.id}
+          sessions={[selectedSession]}
+          showSessionPicker={false}
+        />,
+      )
+    })
+
+    const capInput = container.querySelector<HTMLInputElement>('input[placeholder="z. B. 4 × 10 m smooth"]')
+    await act(async () => {
+      if (capInput) {
+        capInput.value = '4 × 10 m smooth'
+        capInput.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+      }
+    })
+
+    const stageButton = Array.from(container.querySelectorAll<HTMLButtonElement>('.returner-stage-control button'))
+      .find((button) => button.textContent?.includes('Stufe 1'))
+    await act(async () => stageButton?.click())
+    expect(savePlayerReturner).toHaveBeenCalledOnce()
+    expect(stageButton?.disabled).toBe(true)
+
+    await act(async () => {
+      resolveSave?.({ ok: true, entry: { ...entry, speedCap: '4 × 10 m smooth' } })
+      await pendingSave
+    })
     await act(async () => root.unmount())
     container.remove()
   })

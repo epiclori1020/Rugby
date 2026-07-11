@@ -62,8 +62,8 @@ export function AthleteRow({
         </span>
         {meta.length > 0 ? (
           <span className="of-athlete-row-meta">
-            {meta.map((item) => (
-              <span key={item}>{item}</span>
+            {meta.map((item, index) => (
+              <span key={`${item}-${index}`}>{item}</span>
             ))}
           </span>
         ) : null}
@@ -132,8 +132,8 @@ export function TaskQueueRow({
         {detail ? <p>{detail}</p> : null}
         {meta.length > 0 ? (
           <div className="of-task-queue-row-meta">
-            {meta.map((item) => (
-              <span key={item}>{item}</span>
+            {meta.map((item, index) => (
+              <span key={`${item}-${index}`}>{item}</span>
             ))}
           </div>
         ) : null}

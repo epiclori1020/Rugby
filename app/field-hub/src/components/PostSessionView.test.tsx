@@ -1,3 +1,6 @@
+// @vitest-environment jsdom
+import { act } from 'react'
+import { createRoot } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import type { SessionDefinition } from '../content/types'
@@ -158,7 +161,7 @@ const latestBaseline = {
   syncError: null,
 }
 
-function renderPostSessionView({
+function postSessionViewElement({
   entryOverrides = {},
   sessionLogOverrides = {},
 }: {
@@ -239,7 +242,7 @@ function renderPostSessionView({
     clearError: () => undefined,
   }
 
-  return renderToStaticMarkup(
+  return (
     <PostSessionView
       authState={authState}
       baselineActions={baselineActions}
@@ -255,8 +258,12 @@ function renderPostSessionView({
       selectedSession={selectedSession}
       selectedSessionId={selectedSession.id}
       sessions={[selectedSession]}
-    />,
+    />
   )
+}
+
+function renderPostSessionView(options: Parameters<typeof postSessionViewElement>[0] = {}) {
+  return renderToStaticMarkup(postSessionViewElement(options))
 }
 
 describe('PostSessionView post-session queue', () => {
@@ -264,7 +271,8 @@ describe('PostSessionView post-session queue', () => {
     const markup = renderPostSessionView()
 
     expect(markup).toContain('Nachbereitungsqueue')
-    expect(markup).toContain('Aktiver Schritt')
+    expect(markup).toContain('post-session-summary-strip')
+    expect(markup).not.toContain('metric-grid checkin-metrics')
     expect(markup).toContain('sRPE nachtragen')
     expect(markup).toContain('Subjektive Belastung 0-10')
     expect(markup).toContain('Dauer Minuten')
@@ -280,6 +288,7 @@ describe('PostSessionView post-session queue', () => {
     expect(markup).toContain('Mini-Baseline / Re-Check')
     expect(markup).toContain('Max')
     expect(markup).toContain('post-session-sticky-closeout')
+    expect(markup).toContain('post-session-task-pane')
     expect(markup).toContain('Einheit abschliessen')
     expect(markup).toContain('sRPE fehlt bei anwesenden Spielern.')
     expect(markup.match(/of-button-primary/g)).toHaveLength(1)
@@ -308,5 +317,79 @@ describe('PostSessionView post-session queue', () => {
     expect(readyMarkup).not.toContain('session_status:session')
     expect(readyMarkup.match(/Einheit abschliessen/g)).toHaveLength(1)
     expect(completedMarkup).toContain('Einheit abgeschlossen')
+  })
+
+  it('closes the mobile task sheet before focusing the duration field', async () => {
+    ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+    const originalMatchMedia = window.matchMedia
+    window.matchMedia = () => ({
+      matches: true,
+      media: '(max-width: 599px)',
+      onchange: null,
+      addEventListener: () => undefined,
+      removeEventListener: () => undefined,
+      addListener: () => undefined,
+      removeListener: () => undefined,
+      dispatchEvent: () => true,
+    })
+    const container = document.createElement('div')
+    document.body.append(container)
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(postSessionViewElement({ sessionLogOverrides: { durationMinutes: null } }))
+    })
+
+    const durationRow = Array.from(container.querySelectorAll<HTMLElement>('.of-task-queue-row'))
+      .find((row) => row.textContent?.includes('Dauer nachtragen'))
+    const opener = Array.from(durationRow?.querySelectorAll<HTMLButtonElement>('button') ?? [])
+      .find((button) => button.textContent === 'Öffnen')
+    expect(opener).toBeDefined()
+    await act(async () => opener?.click())
+    expect(container.querySelector('[role="dialog"]')).not.toBeNull()
+
+    const focusDurationButton = Array.from(container.querySelectorAll<HTMLButtonElement>('button'))
+      .find((button) => button.textContent === 'Dauerfeld fokussieren')
+    await act(async () => focusDurationButton?.click())
+
+    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    const durationInput = container.querySelector<HTMLInputElement>('#post-session-duration-input')
+    expect(document.activeElement).toBe(durationInput)
+    await act(async () => {
+      if (durationInput) {
+        durationInput.value = '75'
+        durationInput.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+      }
+      await Promise.resolve()
+    })
+    expect(container.querySelector('.post-session-sticky-closeout .action-feedback')?.textContent)
+      .toContain('gespeichert')
+
+    await act(async () => root.unmount())
+    container.remove()
+    window.matchMedia = originalMatchMedia
+  })
+
+  it('does not silently advance when an explicitly selected desktop task disappears', async () => {
+    ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+    const container = document.createElement('div')
+    document.body.append(container)
+    const root = createRoot(container)
+
+    await act(async () => root.render(postSessionViewElement()))
+    const painRow = Array.from(container.querySelectorAll<HTMLElement>('.of-task-queue-row'))
+      .find((row) => row.textContent?.includes('Beschwerden nach Training nachtragen'))
+    const opener = Array.from(painRow?.querySelectorAll<HTMLButtonElement>('button') ?? [])
+      .find((button) => button.textContent === 'Öffnen')
+    await act(async () => opener?.click())
+    expect(container.querySelector('.post-session-task-pane')?.textContent)
+      .toContain('Beschwerden nach Training nachtragen')
+
+    await act(async () => root.render(postSessionViewElement({ entryOverrides: { postPainScore: 2 } })))
+    expect(container.querySelector('.post-session-task-pane')).toBeNull()
+    expect(document.activeElement).toBe(container.querySelector('#missing-values-heading'))
+
+    await act(async () => root.unmount())
+    container.remove()
   })
 })

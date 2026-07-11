@@ -490,7 +490,7 @@ Ziel: Die Kernarbeitsbereiche Check-in, Training, Nachbereitung und Spieler kons
 Scope drin:
 - R7A Check-in Rows & shared row primitives: Check-in-Roster auf v2-Athleten-Row mit Readiness-Dot, Status-Chip, Quick Action und Detail-Sheet aktualisieren; `Rows.tsx`, `Status.tsx` und gemeinsame CSS-Klassen stabilisieren.
 - R7B Training Live Rows: Training-Athletenliste, Live-Block-Aktionen und Toolbar-Dichte an R6/R7A ausrichten; genau eine Primaeraktion und Overflow fuer Sekundaeres/destruktive Aktionen.
-- R7C Nachbereitung & Returner Rows: Nachbereitungsqueue visuell an `TaskQueueRow`/row-first ausrichten; Returner-Caps als strukturierte Chips/Stepper vorbereiten, soweit ohne Datenumbau moeglich.
+- R7C Nachbereitung & Returner Rows: Nachbereitungsqueue visuell an `TaskQueueRow`/row-first ausrichten; Returner-Caps als strukturierte Chips/Stepper vorbereiten, soweit ohne Datenumbau moeglich. **Status: Abgeschlossen am 2026-07-11.** Evidence: `docs/field-hub/2026-07-11_onfield_r7c_post_session_returner_rows_audit.md`.
 - R7D Spielerliste & Profilkopf: Spieler-Liste und Profilkopf auf v2-Hierarchie, tabular Metrics und Row-Muster bringen; Detail bleibt Sheet/Pane.
 - In jedem Sub-Slice Status-Chips und Traffic-Light-Chips pruefen: Farbe + Text + Glyph/Form.
 

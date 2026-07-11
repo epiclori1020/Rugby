@@ -27,9 +27,9 @@ import { measureInteraction } from '../lib/performanceTrace'
 import { returnerEntryKeyBase } from '../lib/returnerEntryKey'
 import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
 import { SessionPicker } from './SessionPicker'
-import { TaskQueueRow } from './onfield'
+import { AthleteRow } from './onfield'
 import { ActionFeedback } from './ui/ActionFeedback'
-import { EmptyState, PrimaryButton, SecondaryButton, StatusChip } from './ui'
+import { EmptyState, PrimaryButton, SecondaryButton, SegmentedControl, StatusChip } from './ui'
 
 type ReturnerActions = ReturnType<typeof useReturners>
 
@@ -59,7 +59,7 @@ function ReturnerHistory({ entries }: { entries: ReturnerEntry[] }) {
         <div className="returner-history-item" key={entry.id}>
           <strong>{entry.createdAt.slice(0, 10)}</strong>
           <span>{entry.currentStage || 'Stufe offen'} · {entry.decision ?? 'Entscheidung offen'}</span>
-          <small>
+          <small className="of-num">
             Speed: {entry.speedCap || '-'} · COD: {entry.codDecelCap || '-'} · Cond: {entry.conditioningCap || '-'} · Kontakt:{' '}
             {entry.contactCap || '-'}
           </small>
@@ -74,6 +74,37 @@ function ReturnerHistory({ entries }: { entries: ReturnerEntry[] }) {
 
 function returnerEntryRenderKey(entry: ReturnerEntry) {
   return `${entry.id}:${entry.clientUpdatedAt}:${entry.syncStatus}`
+}
+
+const stageControlOptions = returnerStageOptions.map((option, index) => ({
+  value: option.value,
+  label: index === 0 ? 'Offen' : `Stufe ${index} · ${option.label.split(': ')[1] ?? option.label}`,
+}))
+
+function ReturnerCapRow({
+  disabled,
+  label,
+  onSave,
+  placeholder,
+  value,
+}: {
+  disabled: boolean
+  label: string
+  onSave: (value: string) => void
+  placeholder: string
+  value: string
+}) {
+  const isRecorded = value.trim().length > 0
+
+  return (
+    <label className="returner-cap-row">
+      <span className="returner-cap-label">
+        <strong>{label}</strong>
+        <StatusChip label={isRecorded ? 'Erfasst' : 'Offen'} tone={isRecorded ? 'success' : 'neutral'} />
+      </span>
+      <input className="of-num" defaultValue={value} disabled={disabled} placeholder={placeholder} onBlur={(event) => onSave(event.currentTarget.value)} />
+    </label>
+  )
 }
 
 function ReturnerPlayerDetail({
@@ -103,10 +134,11 @@ function ReturnerPlayerDetail({
   const suggestedDecision = suggestReturnerDecision(displayEntry)
   const canProgress = canConsiderReturnerProgression(displayEntry)
   const isConservative = suggestedDecision === 'rueckmelden' || displayEntry.decision === 'rueckmelden'
+  const controlsDisabled = isSavingDisabled || savingActionKey !== null
   const savingReasonId = `${keyBase}-saving-reason`
 
   async function savePatch(patch: ReturnerEntryPatch, actionKey = 'field') {
-    if (isSavingDisabled || savingActionRef.current === actionKey) {
+    if (isSavingDisabled || savingActionRef.current !== null) {
       return
     }
 
@@ -155,7 +187,7 @@ function ReturnerPlayerDetail({
         </span>
       </div>
 
-      {isSavingDisabled ? (
+      {controlsDisabled ? (
         <p className="disabled-action-reason" id={savingReasonId}>
           Speichern laeuft gerade.
         </p>
@@ -164,138 +196,71 @@ function ReturnerPlayerDetail({
       <ActionFeedback feedback={actionFeedback.feedback} />
 
       <div
-        aria-busy={isSavingDisabled || undefined}
-        aria-describedby={isSavingDisabled ? savingReasonId : undefined}
+        aria-busy={controlsDisabled || undefined}
+        aria-describedby={controlsDisabled ? savingReasonId : undefined}
         className="checkin-controls post-session-controls"
       >
-        <label className="inline-field">
+        <div className="control-group wide returner-stage-control">
           <span>Aktuelle Stufe</span>
-          <select
-            defaultValue={displayEntry.currentStage}
-            disabled={isSavingDisabled}
-            key={`${keyBase}::stage`}
-            onBlur={(event) => void savePatch({ currentStage: event.currentTarget.value })}
-          >
-            {returnerStageOptions.map((option) => (
-              <option key={option.value} value={option.value}>
-                {option.label}
-              </option>
-            ))}
-          </select>
-        </label>
+          <SegmentedControl
+            label={`Aktuelle Returner-Stufe ${player.name}`}
+            onChange={(value) => void savePatch({ currentStage: value }, `stage:${value || 'offen'}`)}
+            options={stageControlOptions.map((option) => ({ ...option, disabled: controlsDisabled }))}
+            value={displayEntry.currentStage}
+          />
+        </div>
 
         <label className="inline-field">
           <span>Medical/Physio Kontakt</span>
           <input
             defaultValue={displayEntry.medicalContactNote}
-            disabled={isSavingDisabled}
+            disabled={controlsDisabled}
             key={`${keyBase}::medical`}
             placeholder="z. B. Physio: kein Kontakt"
             onBlur={(event) => void savePatch({ medicalContactNote: event.currentTarget.value })}
           />
         </label>
 
-        <label className="inline-field">
-          <span>Speed-Cap</span>
-          <input
-            defaultValue={displayEntry.speedCap}
-            disabled={isSavingDisabled}
-            key={`${keyBase}::speed`}
-            placeholder="z. B. 4x10 m smooth"
-            onBlur={(event) => void savePatch({ speedCap: event.currentTarget.value })}
-          />
-        </label>
+        <section className="returner-cap-group wide" aria-labelledby={`${keyBase}-caps-heading`}>
+          <div className="returner-section-heading">
+            <p className="eyebrow">Belastungsrahmen</p>
+            <h3 id={`${keyBase}-caps-heading`}>Caps für heute</h3>
+          </div>
+          <div className="returner-cap-list">
+            <ReturnerCapRow disabled={controlsDisabled} key={`${keyBase}::speed::${displayEntry.speedCap}`} label="Speed" onSave={(value) => void savePatch({ speedCap: value })} placeholder="z. B. 4 × 10 m smooth" value={displayEntry.speedCap} />
+            <ReturnerCapRow disabled={controlsDisabled} key={`${keyBase}::cod::${displayEntry.codDecelCap}`} label="COD / Decel" onSave={(value) => void savePatch({ codDecelCap: value })} placeholder="geplant, keine offenen Cuts" value={displayEntry.codDecelCap} />
+            <ReturnerCapRow disabled={controlsDisabled} key={`${keyBase}::conditioning::${displayEntry.conditioningCap}`} label="Conditioning" onSave={(value) => void savePatch({ conditioningCap: value })} placeholder="kurz / extensiv / gestrichen" value={displayEntry.conditioningCap} />
+            <ReturnerCapRow disabled={controlsDisabled} key={`${keyBase}::contact::${displayEntry.contactCap}`} label="Kontakt" onSave={(value) => void savePatch({ contactCap: value })} placeholder="kein Kontakt / Bags / kontrolliert" value={displayEntry.contactCap} />
+          </div>
+        </section>
 
-        <label className="inline-field">
-          <span>COD/Decel-Cap</span>
-          <input
-            defaultValue={displayEntry.codDecelCap}
-            disabled={isSavingDisabled}
-            key={`${keyBase}::cod`}
-            placeholder="geplant, keine offenen Cuts"
-            onBlur={(event) => void savePatch({ codDecelCap: event.currentTarget.value })}
-          />
-        </label>
+        <section className="returner-field-group wide" aria-labelledby={`${keyBase}-plan-heading`}>
+          <div className="returner-section-heading"><h3 id={`${keyBase}-plan-heading`}>Plan &amp; Ist</h3></div>
+          <label className="inline-field">
+            <span>Heute vorgesehen</span>
+            <textarea defaultValue={displayEntry.allowedToday} disabled={controlsDisabled} key={`${keyBase}::allowed`} rows={2} placeholder="Team-Warm-up plus individuelle Caps" onBlur={(event) => void savePatch({ allowedToday: event.currentTarget.value })} />
+          </label>
+          <label className="inline-field">
+            <span>Geplante Caps</span>
+            <textarea defaultValue={displayEntry.plannedCaps} disabled={controlsDisabled} key={`${keyBase}::planned`} rows={2} placeholder="Speed submax, keine Kontaktvorbereitung" onBlur={(event) => void savePatch({ plannedCaps: event.currentTarget.value })} />
+          </label>
+          <label className="inline-field">
+            <span>Tatsächlich absolviert</span>
+            <textarea defaultValue={displayEntry.completed} disabled={controlsDisabled} key={`${keyBase}::completed`} rows={2} placeholder="kurz und sachlich, keine Diagnose" onBlur={(event) => void savePatch({ completed: event.currentTarget.value })} />
+          </label>
+        </section>
 
-        <label className="inline-field">
-          <span>Conditioning-Cap</span>
-          <input
-            defaultValue={displayEntry.conditioningCap}
-            disabled={isSavingDisabled}
-            key={`${keyBase}::conditioning`}
-            placeholder="kurz / extensiv / gestrichen"
-            onBlur={(event) => void savePatch({ conditioningCap: event.currentTarget.value })}
-          />
-        </label>
-
-        <label className="inline-field">
-          <span>Kontakt-Cap</span>
-          <input
-            defaultValue={displayEntry.contactCap}
-            disabled={isSavingDisabled}
-            key={`${keyBase}::contact`}
-            placeholder="kein Kontakt / Bags / kontrolliert"
-            onBlur={(event) => void savePatch({ contactCap: event.currentTarget.value })}
-          />
-        </label>
-
-        <label className="inline-field wide">
-          <span>Heute erlaubt</span>
-          <textarea
-            defaultValue={displayEntry.allowedToday}
-            disabled={isSavingDisabled}
-            key={`${keyBase}::allowed`}
-            rows={2}
-            placeholder="z. B. Team-Warm-up plus individuelle Speed-Caps"
-            onBlur={(event) => void savePatch({ allowedToday: event.currentTarget.value })}
-          />
-        </label>
-
-        <label className="inline-field wide">
-          <span>Geplante Caps</span>
-          <textarea
-            defaultValue={displayEntry.plannedCaps}
-            disabled={isSavingDisabled}
-            key={`${keyBase}::planned`}
-            rows={2}
-            placeholder="z. B. Speed submax, keine Kontaktvorbereitung"
-            onBlur={(event) => void savePatch({ plannedCaps: event.currentTarget.value })}
-          />
-        </label>
-
-        <label className="inline-field wide">
-          <span>Tatsaechlich absolviert</span>
-          <textarea
-            defaultValue={displayEntry.completed}
-            disabled={isSavingDisabled}
-            key={`${keyBase}::completed`}
-            rows={2}
-            placeholder="kurz und sachlich, keine Diagnose"
-            onBlur={(event) => void savePatch({ completed: event.currentTarget.value })}
-          />
-        </label>
-
-        <label className="inline-field">
-          <span>Symptome Training</span>
-          <input
-            defaultValue={displayEntry.symptomsDuring}
-            disabled={isSavingDisabled}
-            key={`${keyBase}::symptoms`}
-            placeholder="ok / keine / Schmerzprovokation"
-            onBlur={(event) => void savePatch({ symptomsDuring: event.currentTarget.value })}
-          />
-        </label>
-
-        <label className="inline-field">
-          <span>Naechster Morgen</span>
-          <input
-            defaultValue={displayEntry.nextMorning}
-            disabled={isSavingDisabled}
-            key={`${keyBase}::morning`}
-            placeholder="stabil / schlechter / offen"
-            onBlur={(event) => void savePatch({ nextMorning: event.currentTarget.value })}
-          />
-        </label>
+        <section className="returner-field-group wide" aria-labelledby={`${keyBase}-reaction-heading`}>
+          <div className="returner-section-heading"><h3 id={`${keyBase}-reaction-heading`}>Reaktion &amp; nächster Morgen</h3></div>
+          <label className="inline-field">
+            <span>Reaktion im Training</span>
+            <input defaultValue={displayEntry.symptomsDuring} disabled={controlsDisabled} key={`${keyBase}::symptoms`} placeholder="ok / keine / auffällig" onBlur={(event) => void savePatch({ symptomsDuring: event.currentTarget.value })} />
+          </label>
+          <label className="inline-field">
+            <span>Nächster Morgen</span>
+            <input defaultValue={displayEntry.nextMorning} disabled={controlsDisabled} key={`${keyBase}::morning`} placeholder="stabil / schlechter / offen" onBlur={(event) => void savePatch({ nextMorning: event.currentTarget.value })} />
+          </label>
+        </section>
 
         <div className="control-group wide">
           <span>Entscheidung</span>
@@ -303,7 +268,7 @@ function ReturnerPlayerDetail({
             {returnerDecisionOptions.map((option) => (
               <button
                 className={displayEntry.decision === option.value ? 'segmented active' : 'segmented'}
-                disabled={isSavingDisabled || savingActionKey === `decision:${option.value}`}
+                disabled={controlsDisabled}
                 key={option.value}
                 type="button"
                 onClick={() => void savePatch({ decision: option.value }, `decision:${option.value}`)}
@@ -314,7 +279,7 @@ function ReturnerPlayerDetail({
             <button
               className={isConservative ? 'segmented danger' : 'segmented'}
               aria-busy={savingActionKey === `decision:${suggestedDecision}` || undefined}
-              disabled={isSavingDisabled || savingActionKey === `decision:${suggestedDecision}`}
+              disabled={controlsDisabled}
               type="button"
               onClick={() => void savePatch({ decision: suggestedDecision }, `decision:${suggestedDecision}`)}
             >
@@ -549,19 +514,24 @@ export function ReturnerView({
             }
 
             const isActive = selectedPlayerId === player.id
+            const isDone = task.phase === 'done' || task.tone === 'success'
+            const statusLabel = isDone ? 'Geklärt' : task.isOpen ? 'Offen' : 'Beobachten'
             return (
-              <TaskQueueRow
+              <AthleteRow
                 action={
                   <SecondaryButton compact onClick={(event) => openReturnerDetail(player.id, event.currentTarget)}>
                     {isActive ? 'Aktiv' : 'Öffnen'}
                   </SecondaryButton>
                 }
-                ariaCurrent={isActive ? 'step' : undefined}
-                detail={task.label}
+                className={isActive ? 'returner-athlete-row-active' : undefined}
                 key={player.id}
-                meta={[player.position || 'Position offen', task.isOpen ? 'Offen' : 'Geklärt']}
-                title={player.name}
-                tone={task.tone}
+                meta={[player.position || 'Position offen']}
+                name={player.name}
+                note={task.label}
+                playerId={player.id}
+                readinessLabel={isDone ? 'Für heute dokumentiert' : task.isOpen ? 'Aufgabe offen' : 'Im Training beobachten'}
+                readinessTone={task.tone === 'danger' ? 'red' : task.tone === 'warning' ? 'yellow' : isDone ? 'green' : 'open'}
+                status={<StatusChip label={statusLabel} tone={task.tone} />}
               />
             )
           }) : (

@@ -42,7 +42,7 @@ Sprint 5 hat die erste Code-Struktur fuer das Core Component Kit unter `app/fiel
 | Offline Banner | globaler Offline-Zustand | persistenter Hinweis, lokale Speicherung | kleiner Dot allein | global |
 | Number Scale | numerische Eingabe | Readiness, sRPE, Sessionwerte | Dropdown | Check-in, Nachbereitung |
 | Pain Scale | sensible Schmerzangabe | 0-10 plus Kontext | Ampelersatz oder medizinische Einordnung | Check-in, Nachbereitung, Spieler |
-| Returner Cap Card | erlaubte vs. absolvierte Caps | Speed, COD, Conditioning, Contact | medizinische Entscheidung | Training, Spieler |
+| Returner Cap Row/Group | geplante und dokumentierte Belastungsrahmen | Speed, COD/Decel, Conditioning, Kontakt | medizinische Entscheidung oder generische KPI-Card | Einheit, Training, Spieler |
 | Metric Card | fokussierte Kennzahl | Team-Readiness, offene Returner | Default fuer Listen | Heute, Analyse |
 | Analysis Card | Frage + Insight + Drilldown | Trends und Rueckblick | Live-Screens | Analyse, Spieler |
 | Form Field | Datenaufnahme | Coach-Notiz, Schmerzort, Settings | Placeholder-only | Einheit, Spieler, Mehr |
@@ -86,7 +86,7 @@ Sprint 2 spezifiziert nur die Informationsarchitektur. Die folgenden Punkte mark
 | Hauptnavigation | App Shell, iPad Sidebar, iPhone Bottom Tab Bar, Main Navigation | Von 10 gleichrangigen Tabs auf `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` reduzieren |
 | `Einheit` | App Shell, Topbar, Session Header, Segmented Control | `Check-in`, `Training` und `Nachbereitung` als Unterbereiche statt globale Tabs fuehren |
 | `Mehr` | App Shell, Topbar, Sheet, Empty State | `Bibliothek`, `Export & Backup`, `Einstellungen` und optional `Returner/Reconditioning Board` als Utility-Unterbereiche gruppieren |
-| Returner/Reconditioning | Filter Chip, Player/Athlete Row, Player Detail Sheet, Returner Cap Card, Safety Notice | Kontext in `Einheit`, `Spieler` und optional `Mehr`; kein globaler Hauptnavigationsbutton |
+| Returner/Reconditioning | Filter Chip, Player/Athlete Row, Player Detail Sheet, Returner Cap Row/Group, Safety Notice | Kontext in `Einheit`, `Spieler` und optional `Mehr`; kein globaler Hauptnavigationsbutton |
 | Quellen und Rueckspruenge | Sheet, Player Detail Sheet, Analysis Card, Task Queue Row | Analyse- und Spielerquellen muessen spaeter auf neue Bereiche und Unterbereiche zeigen |
 | Public/Kiosk | App Shell, Number Scale, Empty State, Error State | Eigene reduzierte Experience ausserhalb der Coach-Hauptnavigation behalten |
 

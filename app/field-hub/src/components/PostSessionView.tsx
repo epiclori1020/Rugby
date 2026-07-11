@@ -1,5 +1,5 @@
 import { AlertTriangle, ClipboardCheck, RefreshCw, ShieldAlert, UserCheck } from 'lucide-react'
-import { useState, type FormEvent } from 'react'
+import { useEffect, useRef, useState, type FormEvent } from 'react'
 import { routes, type AppRoute } from '../navigation'
 import type { SessionDefinition } from '../content/types'
 import { metricDefinitions } from '../content/metricDefinitions'
@@ -37,13 +37,14 @@ import type { useMetrics } from '../hooks/useMetrics'
 import type { usePostSession } from '../hooks/usePostSession'
 import { useActionFeedback } from '../hooks/useActionFeedback'
 import type { AuthSessionState } from '../lib/auth'
+import type { ActionFeedbackState } from '../lib/interactionFeedback'
 import { hasPlayerId } from '../lib/playerId'
 import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../lib/syncLabels'
 import { TaskQueueRow } from './onfield'
 import { ExposureReviewPanel } from './ExposureReviewPanel'
 import { SessionPicker } from './SessionPicker'
 import { ActionFeedback } from './ui/ActionFeedback'
-import { PainScale, PrimaryButton, SecondaryButton } from './ui'
+import { PainScale, PrimaryButton, SecondaryButton, Sheet } from './ui'
 
 type PostSessionActions = ReturnType<typeof usePostSession>
 type BaselineActions = ReturnType<typeof useBaselines>
@@ -51,6 +52,7 @@ type ExposureActions = ReturnType<typeof useExposures>
 type ExerciseActions = ReturnType<typeof useExercises>
 type MetricActions = ReturnType<typeof useMetrics>
 type SaveSyncStatus = 'synced' | 'pending' | 'error'
+type FeedbackController = Pick<ReturnType<typeof useActionFeedback>, 'showError' | 'showSaved'>
 
 type PostSessionViewProps = {
   authState: AuthSessionState
@@ -204,6 +206,7 @@ function WarningSummary({ warning }: { warning: PlayerWarning | undefined }) {
 }
 
 function MissingValuesPanel({
+  feedback,
   isMetricSavingDisabled,
   isPostSavingDisabled,
   items,
@@ -214,6 +217,7 @@ function MissingValuesPanel({
   onProgressSave,
   playersById,
 }: {
+  feedback: ActionFeedbackState | null
   isMetricSavingDisabled: boolean
   isPostSavingDisabled: boolean
   items: MissingPostSessionValue[]
@@ -225,7 +229,44 @@ function MissingValuesPanel({
   playersById: Map<string, Player>
 }) {
   const [activeTaskId, setActiveTaskId] = useState<string | null>(null)
-  const activeTask = items.find((item) => item.id === activeTaskId) ?? items[0] ?? null
+  const [isMobileTaskSheet, setIsMobileTaskSheet] = useState(false)
+  const focusDurationAfterSheetCloseRef = useRef(false)
+  const selectedTaskWasPresentRef = useRef(false)
+  const selectedTask = items.find((item) => item.id === activeTaskId) ?? null
+  const activeTask = isMobileTaskSheet || activeTaskId !== null ? selectedTask : items[0] ?? null
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return undefined
+    }
+
+    const mediaQuery = window.matchMedia('(max-width: 599px)')
+    const updateTaskMode = () => {
+      setIsMobileTaskSheet(mediaQuery.matches)
+      if (mediaQuery.matches) {
+        setActiveTaskId(null)
+      }
+    }
+    updateTaskMode()
+    mediaQuery.addEventListener('change', updateTaskMode)
+    return () => mediaQuery.removeEventListener('change', updateTaskMode)
+  }, [])
+
+  useEffect(() => {
+    if (!activeTask && focusDurationAfterSheetCloseRef.current) {
+      focusDurationAfterSheetCloseRef.current = false
+      document.getElementById('post-session-duration-input')?.focus()
+    }
+  }, [activeTask])
+
+  useEffect(() => {
+    const selectedTaskWasRemoved =
+      activeTaskId !== null && selectedTaskWasPresentRef.current && selectedTask === null
+    selectedTaskWasPresentRef.current = selectedTask !== null
+    if (selectedTaskWasRemoved) {
+      document.getElementById('missing-values-heading')?.focus()
+    }
+  }, [activeTaskId, selectedTask])
 
   function saveMetric(player: Player, item: MissingPostSessionValue, rawValue: string) {
     if (!item.metricKey) {
@@ -255,6 +296,12 @@ function MissingValuesPanel({
 
   function focusDurationInput() {
     if (typeof document === 'undefined') {
+      return
+    }
+
+    if (isMobileTaskSheet) {
+      focusDurationAfterSheetCloseRef.current = true
+      setActiveTaskId(null)
       return
     }
 
@@ -418,13 +465,34 @@ function MissingValuesPanel({
     return null
   }
 
+  function renderActiveTask(item: MissingPostSessionValue, showHeading: boolean) {
+    return (
+      <div className="post-session-active-task">
+        {showHeading ? <p className="eyebrow">Aktiver Schritt</p> : null}
+        {showHeading ? (
+          <h3>{item.playerName ? `${item.playerName}: ${item.label}` : item.label}</h3>
+        ) : null}
+        {showHeading ? <p>{item.helperText}</p> : null}
+        <div className="post-session-task-meta">
+          <span>{severityLabel(item)}</span>
+          <span>{targetLabel(item)}</span>
+          {item.playerName ? <span>{item.playerName}</span> : null}
+        </div>
+        <ActionFeedback feedback={feedback} />
+        <div className="post-session-task-actions">{renderAction(item)}</div>
+      </div>
+    )
+  }
+
   return (
     <section className="panel missing-values-panel" aria-labelledby="missing-values-heading">
       <div className="library-heading">
         <p className="eyebrow">Nachbereitung</p>
-        <h3 id="missing-values-heading">Nachbereitungsqueue</h3>
+        <h3 id="missing-values-heading" tabIndex={-1}>Nachbereitungsqueue</h3>
         <p>Pflichtaufgaben zuerst; erwartete und optionale Werte blockieren den Abschluss nicht.</p>
       </div>
+
+      {!activeTask ? <ActionFeedback feedback={feedback} /> : null}
 
       {items.length === 0 ? (
         <TaskQueueRow
@@ -441,8 +509,8 @@ function MissingValuesPanel({
               return (
                 <TaskQueueRow
                   action={
-                    <SecondaryButton compact onClick={() => setActiveTaskId(item.id)}>
-                      {isActive ? 'Aktiv' : 'Oeffnen'}
+                    <SecondaryButton compact onClick={() => setActiveTaskId(isActive && isMobileTaskSheet ? null : item.id)}>
+                      {isActive ? 'Aktiv' : 'Öffnen'}
                     </SecondaryButton>
                   }
                   ariaCurrent={isActive ? 'step' : undefined}
@@ -462,20 +530,18 @@ function MissingValuesPanel({
             })}
           </div>
 
-          {activeTask ? (
-            <div className="post-session-active-task" aria-labelledby="active-post-session-task-heading">
-              <p className="eyebrow">Aktiver Schritt</p>
-              <h3 id="active-post-session-task-heading">
-                {activeTask.playerName ? `${activeTask.playerName}: ${activeTask.label}` : activeTask.label}
-              </h3>
-              <p>{activeTask.helperText}</p>
-              <div className="post-session-task-meta">
-                <span>{severityLabel(activeTask)}</span>
-                <span>{targetLabel(activeTask)}</span>
-                {activeTask.playerName ? <span>{activeTask.playerName}</span> : null}
-              </div>
-              <div className="post-session-task-actions">{renderAction(activeTask)}</div>
-            </div>
+          {activeTask && !isMobileTaskSheet ? (
+            <div className="post-session-task-pane">{renderActiveTask(activeTask, true)}</div>
+          ) : null}
+          {activeTask && isMobileTaskSheet ? (
+            <Sheet
+              description={activeTask.helperText}
+              onClose={() => setActiveTaskId(null)}
+              title="Nachbereitungsaufgabe bearbeiten"
+            >
+              <h3>{activeTask.playerName ? `${activeTask.playerName}: ${activeTask.label}` : activeTask.label}</h3>
+              {renderActiveTask(activeTask, false)}
+            </Sheet>
           ) : null}
         </div>
       )}
@@ -1257,6 +1323,7 @@ export function PostSessionView({
   const [exerciseFormError, setExerciseFormError] = useState<string | null>(null)
   const [metricFormError, setMetricFormError] = useState<string | null>(null)
   const actionFeedback = useActionFeedback()
+  const taskActionFeedback = useActionFeedback()
   const {
     activePlayers,
     entries,
@@ -1349,22 +1416,25 @@ export function PostSessionView({
     }
   }
 
-  function applySaveFeedback(result: unknown) {
+  function applySaveFeedback(result: unknown, feedbackController: FeedbackController) {
     if (result && typeof result === 'object' && 'ok' in result && result.ok === false) {
-      actionFeedback.showError(errorMessageFromSaveResult(result))
+      feedbackController.showError(errorMessageFromSaveResult(result))
       return
     }
 
-    actionFeedback.showSaved(syncStatusFromSaveResult(result))
+    feedbackController.showSaved(syncStatusFromSaveResult(result))
   }
 
-  async function saveWithFeedback<T>(saveOperation: () => Promise<T>) {
+  async function saveWithFeedback<T>(
+    saveOperation: () => Promise<T>,
+    feedbackController: FeedbackController = actionFeedback,
+  ) {
     try {
       const result = await saveOperation()
-      applySaveFeedback(result)
+      applySaveFeedback(result, feedbackController)
       return result
     } catch (caughtError) {
-      actionFeedback.showError(caughtError instanceof Error ? caughtError.message : undefined)
+      feedbackController.showError(caughtError instanceof Error ? caughtError.message : undefined)
       throw caughtError
     }
   }
@@ -1375,6 +1445,12 @@ export function PostSessionView({
   const savePlayerProgressWithFeedback: PostSessionActions['savePlayerProgress'] = (player, patch) =>
     saveWithFeedback(() => savePlayerProgress(player, patch))
 
+  const saveTaskPostSessionWithFeedback: PostSessionActions['savePlayerPostSession'] = (player, patch) =>
+    saveWithFeedback(() => savePlayerPostSession(player, patch), taskActionFeedback)
+
+  const saveTaskProgressWithFeedback: PostSessionActions['savePlayerProgress'] = (player, patch) =>
+    saveWithFeedback(() => savePlayerProgress(player, patch), taskActionFeedback)
+
   const saveSessionPatchWithFeedback: PostSessionActions['saveSessionPatch'] = (patch) =>
     saveWithFeedback(() => saveSessionPatch(patch))
 
@@ -1383,6 +1459,9 @@ export function PostSessionView({
 
   const savePlayerMetricWithFeedback: MetricActions['savePlayerMetric'] = (player, patch) =>
     saveWithFeedback(() => metricActions.savePlayerMetric(player, patch))
+
+  const saveTaskMetricWithFeedback: MetricActions['savePlayerMetric'] = (player, patch) =>
+    saveWithFeedback(() => metricActions.savePlayerMetric(player, patch), taskActionFeedback)
 
   const savePlayerExerciseResultWithFeedback: ExerciseActions['savePlayerExerciseResult'] = (player, patch) =>
     saveWithFeedback(() => exerciseActions.savePlayerExerciseResult(player, patch))
@@ -1441,30 +1520,30 @@ export function PostSessionView({
         </div>
       </div>
 
-      <div className="metric-grid checkin-metrics">
-        <div className="metric">
-          <span>Spieler</span>
-          <strong>{activePlayers.length}</strong>
+      <dl className="post-session-summary-strip" aria-label="Nachbereitungsstatus">
+        <div>
+          <dt>Spieler</dt>
+          <dd className="of-num">{activePlayers.length}</dd>
         </div>
-        <div className="metric">
-          <span>Nachbereitet</span>
-          <strong>{completedCount}</strong>
+        <div>
+          <dt>Nachbereitet</dt>
+          <dd className="of-num">{completedCount}</dd>
         </div>
-        <div className="metric">
-          <span>Follow-ups</span>
-          <strong>{followUpCount}</strong>
+        <div>
+          <dt>Follow-ups</dt>
+          <dd className="of-num">{followUpCount}</dd>
         </div>
-        <div className="metric">
-          <span>Status</span>
-          <strong>
+        <div>
+          <dt>Status</dt>
+          <dd>
             {completion.status === 'teilweise_abgeschlossen'
               ? 'teilweise'
               : completion.status === 'abgeschlossen'
                 ? 'abgeschlossen'
                 : 'offen'}
-          </strong>
+          </dd>
         </div>
-      </div>
+      </dl>
 
       <section className="panel post-session-duration-strip" aria-label="Session-Dauer">
         <div className="library-heading">
@@ -1496,14 +1575,15 @@ export function PostSessionView({
       </section>
 
       <MissingValuesPanel
+        feedback={taskActionFeedback.feedback}
         isMetricSavingDisabled={metricActions.isLoading}
         isPostSavingDisabled={isLoading}
         items={missingValues}
         onMetricParseError={setMetricFormError}
-        onMetricSave={savePlayerMetricWithFeedback}
+        onMetricSave={saveTaskMetricWithFeedback}
         onNavigate={onNavigate}
-        onPostSave={savePlayerPostSessionWithFeedback}
-        onProgressSave={savePlayerProgressWithFeedback}
+        onPostSave={saveTaskPostSessionWithFeedback}
+        onProgressSave={saveTaskProgressWithFeedback}
         playersById={playersById}
       />
 
@@ -1512,6 +1592,7 @@ export function PostSessionView({
           <p className="eyebrow">Nächster Pflichtschritt</p>
           <strong>{isSessionCompleted ? 'Einheit abgeschlossen' : firstCloseoutBlocker?.label ?? 'Pflichtwerte geklärt'}</strong>
           {!isSessionCompleted && firstCloseoutBlocker ? <span>{firstCloseoutBlocker.playerNames.join(', ')}</span> : null}
+          <ActionFeedback feedback={actionFeedback.feedback} />
         </div>
         <PrimaryButton
           disabled={closeoutDisabled}
@@ -1533,8 +1614,6 @@ export function PostSessionView({
           </button>
         </div>
       ) : null}
-
-      <ActionFeedback feedback={actionFeedback.feedback} />
 
       {showSyncAttention ? (
         <div className="panel checkin-sync-strip">
