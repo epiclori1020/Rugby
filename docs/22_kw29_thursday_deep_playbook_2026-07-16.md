@@ -1,514 +1,537 @@
 # KW29 Deep Playbook: Donnerstag 16. Juli 2026
 
-Rugby Union Donau Wien, ca. 19:00. Vorbereitungsfassung fuer Arwin zur angepassten Donnerstagseinheit nach der Verschiebung vom 09.07.2026.
+Rugby Union Donau Wien, ca. 19:00. Vorbereitungsfassung fuer Arwin zur kontrollierten Session 4B nach dem Aufbau-Hauptreiz vom Dienstag, 14. Juli 2026.
 
 ## 0. Zweck und Leselogik
 
-**Ziel:** Dieses Dokument ist deine Deep-Prep-Fassung fuer Donnerstag, 16. Juli 2026. Es plant die Einheit so, dass sie sauber an das nachgeholte Donnerstagstraining vom Dienstag, 14. Juli 2026 anschliesst.
+**Ziel:** Dieses Dokument ist deine Deep-Prep-Fassung fuer Donnerstag, 16. Juli 2026. Es erklaert Ablauf, Wording, Beobachtung und Entscheidungen so, dass du die Einheit am Platz ruhig fuehren kannst.
 
-- **Kernaussage:** Dienstag 14.07. ist jetzt die nachgeholte Session 3B vom Donnerstag 09.07. Donnerstag 16.07. wird deshalb nicht als volle Nachhol-4A geplant, sondern als 4B-Bruecke: Sprintqualitaet, Power, Kraftsignal, Robustheit.
-- **Hauptziel:** Frisch und organisiert in den Aufbau ueberleiten, ohne den verpassten Hauptreiz kuenstlich in den Donnerstag zu stopfen.
-- **Heute nicht:** Kein Bronco. Kein Max-Sprint. Kein Max-Lift. Kein Conditioning-Finisher. Kein Nachholen der urspruenglichen Dienstag-4A-Session.
-- **Progression:** Ein kleiner Regler wird weitergefuehrt: Sprint-/Power-Qualitaet. Kraft bleibt bei RPE 6-7 und niedrigerem Umfang als eine echte 4A-Hauptsession.
-- **Benutzung:** Am Platz reicht die kompakte Klemmbrett-Datei `plans/offseason_coach_sheets/KW29_thursday_training_compact_2026-07-16.md`. Dieses Deep Playbook ist dein Hintergrund fuer Wording, Entscheidungen und Fallbacks.
+- **Kernaussage:** Dienstag 14.07 ist als kontrollierte 4A mit Kraft als deutlichem Hauptregler geplant. Donnerstag wird deshalb kein zweiter Aufbau-Hauptreiz, sondern eine hochwertige 4B-Konsolidierung.
+- **Hauptziel:** Speed- und Powerqualitaet erhalten, Kraft technisch festigen und positionsbezogene Robustheit setzen, waehrend die Gesamtdosis unter Dienstag bleibt.
+- **Hauptregler:** Dosis nach Dienstag-Reaktion. Intensitaet bleibt bei Gruen moderat bis zuegig, aber Volumen und Komplexitaet sinken.
+- **Track Prep:** A-Skip bleibt die zentrale Uebung. Es kommt kein neuer Laufdrill dazu.
+- **Speed:** Gleiche technische Absicht bei 14-33 Prozent weniger geplanter linearer Strecke als Dienstag. Diese Prozentwerte gelten nur als Vergleich zum vollstaendig geplanten Dienstag; die Donnerstag-Dosis ist eine Obergrenze, kein Nachholziel. Kein Fly, kein Max-Sprint, kein Timing.
+- **Power:** CMJ + Stick und Rotational Scoop als komplementaere Varianten; Rotational Scoop nur bei bereits bekannter Technik und mit dokumentiertem Ballgewicht. Sonst gerader Chest Pass. Keine Erhoehung der Sprungkontakte.
+- **Kraft:** Zwei Arbeitssaetze bei RPE 6-7. Kein A+-Satz und keine Nachholung verpasster Dienstagssaetze.
+- **COD/Contact:** Keine weitere Progression. Hybrid geht zurueck auf Decel-to-Stick ohne Reaccel; Collision Forwards bleiben bei kontrollierter Bodyline und Neck ISO.
+- **Tempo:** Default aus. Der Coach kann maximal eine kleine extensive Dosis aktivieren, wenn Dienstag-Ist-Dosis, Reaktion, Zeitplan und Folgebelastung passen.
+- **Benutzung:** Am Platz reicht `plans/offseason_coach_sheets/KW29_thursday_training_compact_2026-07-16.md`. Dieses Deep Playbook ist der Hintergrund fuer Cues, Entscheidungen und Fallbacks.
 
 **Was ich sage:**
-> Dienstag war das nachgeholte Donnerstagstraining vom 09.07. Heute holen wir keine komplette 4A nach. Wir machen eine saubere Bruecke: kurze Speedqualitaet, Power, ein Kraftsignal und Robustheit.
-> Wenn Dienstag schwer angekommen ist, ist das eine Info. Dann wird heute kuerzer, nicht haerter.
+> Dienstag war unser Aufbau-Hauptreiz. Heute bestaetigen wir Qualitaet, statt noch einmal alles hochzudrehen: Speed frisch, Power kurz, Kraft sauber und Robustheit kontrolliert.
 
 ## 1. Nicht verhandelbare Leitplanken
 
-**Ziel:** Die Einheit soll Progression ermoeglichen, ohne aus der Verschiebung eine Belastungsspitze zu machen.
+**Ziel:** Eine echte 4B-Welle erzeugen: Qualitaet behalten, Ermuedung nicht stapeln.
 
-- **Keine Nachholbelastung:** Die verpasste 4A-Hauptbelastung wird nicht am Donnerstag in 90 Minuten gepresst.
-- **Nur ein Regler:** Heute wird nicht gleichzeitig Speed, Kraft, Kontakt und Conditioning hochgezogen. Hauptregler ist kurze Speed-/Power-Qualitaet.
-- **Speed frisch:** Volle Pausen, kein Rennen gegeneinander, kein harter Stopp nach der Linie.
-- **Fly-In:** Nur fuer gruene Speed/Space Backs und sehr saubere Hybrid-Spieler. Fly-Zone heute 10 m als Default, 15 m nur wenn alles klar ist.
-- **Kraft:** RPE 6-7, kein Grind. Drei Saetze nur fuer Gruen. Bei schweren Beinen sind zwei Saetze der Plan.
-- **Conditioning:** Optional, locker, zuerst streichen. Kein Finisher, keine Strafe, kein Bronco.
-- **Kontakt:** Kein Full Contact. Keine ungeplante Shield-/Live-Kontaktarbeit. Collision Forwards bekommen nur kontrollierte Bodyline-/Sled-/Wall-Drive-Exposures, wenn symptomfrei.
-- **Nacken/Kopf:** Kopfweh, Schwindel, Nackenschmerz, Kribbeln, Taubheit oder neurologisches Gefuehl = Rot, kein normales Training, medizinisch klaeren.
-- **Returner:** Separate Caps fuer Speed, COD/Decel, Conditioning und Kontakt. Unklarer Status = konservativ.
+- **Keine Nachholbelastung:** Wer Dienstag gefehlt oder reduziert trainiert hat, holt heute keine Saetze, Sprints, COD-Reps oder Conditioning nach.
+- **Dienstag-Reaktion zuerst:** Schwere Beine, neue Schmerzen, deutlich erhoehter Muskelkater oder schlechte Erholung veraendern Speed, Kraft, Cluster und Tempo sofort.
+- **Speed frisch:** Volle Pausen, kein Rennen gegeneinander, kein harter Stopp an der Ziellinie.
+- **Kein neuer Track Drill:** A-March als kurzer Reset, A-Skip 2x10 m als Hauptuebung.
+- **Power:** Sechs CMJ-Kontakte und acht Rotational-Scoop-Wuerfe pro Spieler sind genug.
+- **Kraft:** Zwei Arbeitssaetze, RPE 6-7, jede Wiederholung gleich. Kein Grind und kein dritter Satz.
+- **COD:** Kein Reaccel. Nur geplantes Decel-to-Stick fuer gruene Hybrid-Spieler.
+- **Contact Prep:** Kontaktindex meistens 0-1. Kein Shield-Hit, kein Live-Tackle und kein Full Contact.
+- **Tempo:** Default aus und nur als Coach-Opt-in. Kein Bronco, kein Shuttle-Finisher und keine Strafe.
+- **Kopf/Nacken:** Kopfweh, Schwindel, Nackenschmerz, Kribbeln, Taubheit, neurologisches Gefuehl oder Concussion-Verdacht = sofort aus der Einheit nehmen und medizinisch abklaeren. Keine Rueckkehr am selben Tag; S&C erteilt keine Freigabe.
+- **Returner:** Speed, COD/Deceleration, Conditioning und Kontakt separat cappen. Unklarer Status = konservativ.
+- **Daten:** Vor Donnerstag die Dienstag-Ist-Dosis kurz sichern: Speed normal/reduziert/0, Hauptkraftsaetze, Conditioning 0/1, sRPE und Pain/Issue. Direkt nach Donnerstag pro Spieler sRPE und Pain/Issue erfassen; Dauer einmal als Teamwert und restliche Dosis aus Coach-Entscheidungen nachtragen.
 
 **Was ich sage:**
-> Wir machen heute nicht "weil etwas ausgefallen ist" mehr. Wir machen das, was in 48 Stunden sinnvoll adaptierbar ist.
-> Kopf, Nacken, Schwindel oder neurologisches Gefuehl ist Rot. Da gibt es keine Ersatzbelastung im normalen Training.
+> Donnerstag ist kein zweiter Dienstag. Wir halten die Geschwindigkeit der Bewegung, aber senken die Menge.
 
 ## 2. Kontext und Progressionsentscheidung
 
-**Ziel:** Klar halten, warum diese Einheit anders ist als der alte KW29-Plan.
+**Ziel:** Klar halten, warum Konsolidierung heute die richtige Progression ist.
 
-Der urspruengliche Plan war:
+Die reale Folge bis zur Planung war:
 
-- Donnerstag 09.07.2026: Session 3B, Konsolidierung, RPE 5-6.
-- Dienstag 14.07.2026: Session 4A, Aufbau-Hauptreiz, RPE 7.
-- Donnerstag 16.07.2026: Session 4B, Primer nach 4A, RPE 5-6.
+- Dienstag 30.06: Session 2A, erster klarer Hauptreiz.
+- Donnerstag 02.07: ausgefallen.
+- Dienstag 07.07: verschobene 2B als Primer mit A-Skip, Speedqualitaet und kleinem Kraftsignal.
+- Donnerstag 09.07: angepasste 3A mit Speed, Power, zwei bis drei Kraftsaetzen und kontrollierter Contact Prep.
+- Rueckmeldung 09.07: lief gut; fast alles konnte durchgefuehrt werden.
+- Dienstag 14.07: kontrollierte 4A mit Kraft als deutlichem Hauptregler, positionsbezogenem Speed und kleiner COD-Progression.
+- Donnerstag 16.07: 4B-Konsolidierung 48 Stunden spaeter.
 
-Die neue Realitaet ist:
+Die Progression ist eine Welle, keine lineare Steigerung jeder Einheit:
 
-- Donnerstag 09.07.2026 wurde geskippt.
-- Dienstag 14.07.2026 wird stattdessen Session 3B.
-- Donnerstag 16.07.2026 folgt nur 48 Stunden spaeter.
+| Bereich | Dienstag 14.07 geplant | Donnerstag 16.07 Entscheidung |
+| --- | --- | --- |
+| Track Prep | A-March, A-Skip 2x10 m, Pogo, Snap-down | gleiche Uebungen; A-Skip bleibt Hauptuebung |
+| CF Speed | 70 m | 60 m, ca. 14 % weniger |
+| HY Speed | 90 m plus kleines Reaccel | 60 m, ca. 33 % weniger; kein Reaccel |
+| SB Speed | 110 m Build-ups | 80 m Build-ups, ca. 27 % weniger; kein Fly |
+| Power | Broad Jump oder DB Jump, MB Punch | CMJ + Stick 3x2, Rotational Scoop 2x2/Seite |
+| Hauptkraft | 3x4 @ RPE 7 | 2x4 @ RPE 6-7 |
+| Unilateral | 3x5/Seite dynamisch | Split-Squat-ISO 2x15 s/Seite |
+| Contact/COD | Sled/Brace; HY Reaccel klein | Bodyline/Neck halten; HY Decel-to-Stick |
+| Conditioning | optional maximal 1 Serie 20/20 | optional 4x40 m extensive Tempo; nur bei passender Reaktion |
 
-Daraus folgt:
+**Wichtig:** Die Prozentangaben sind ein Soll-zu-Soll-Vergleich. Wenn Dienstag Speed, Kraft oder Conditioning reduziert beziehungsweise gestrichen wurde, wird Donnerstag nicht aufgefuellt. Die unten genannte 4B-Dosis bleibt maximal gleich oder wird weiter reduziert.
 
-- Donnerstag 16.07. ist keine volle 4A.
-- Donnerstag 16.07. ist auch kein reiner leichter Primer, weil Dienstag 14.07. nicht der schwere 4A-Hauptreiz war.
-- Die beste Loesung ist eine **4B-Bruecke**: etwas mehr Qualitaet als reine Konsolidierung, aber weniger Volumen/Dichte als 4A.
+**Warum das eine Progression ist:**
+
+- Spieler lernen, hohe Bewegungsqualitaet unter einer Wochenwelle zu reproduzieren.
+- A-Skip wird stabilisiert statt vorschnell ersetzt.
+- Speedintensitaet bleibt sichtbar, waehrend unnoetige Meter sinken.
+- Power wechselt die Richtung, ohne mehr Kontakte zu erzeugen.
+- Kraft wird ueber saubere Wiederholungen konsolidiert, nicht ueber einen zweiten Volumensprung.
+- COD und Kontakt werden nicht gleichzeitig weiter eskaliert.
 
 **Was ich sage:**
-> Wir haben die Reihenfolge angepasst. Dienstag war die Konsolidierung. Heute ist die Bruecke in den Aufbau. Der echte groessere Aufbau-Regler kommt erst wieder, wenn die Reaktion passt.
+> Progression heisst heute, Dienstag gut zu verarbeiten und Qualitaet erneut abrufen zu koennen. Mehr Ermuedung waere keine bessere Progression.
 
 ## 3. Begriffe und Cluster
 
-**Ziel:** Gleiche Begriffe wie in den letzten Deep Playbooks verwenden.
-
-- **Session 3B:** Nachgeholtes Donnerstagstraining vom 09.07., jetzt Dienstag 14.07.
-- **4B-Bruecke:** Angepasster Donnerstag 16.07.; Speed/Power ja, aber keine volle 4A-Nachholung.
-- **Ampel:** Gruen = normaler Plan. Gelb = reduzieren. Rot = kein normaler Plan.
+- **Session 4B kontrolliert:** Konsolidierungseinheit 48 Stunden nach 4A.
+- **Ampel:** Gruen = normaler 4B-Plan. Gelb = reduzieren. Rot = kein normales Training.
 - **Collision Forwards:** Front Row und Locks.
 - **Hybrid:** Back Row und Centres.
 - **Speed/Space Backs:** Halves und Back Three.
-- **Smooth:** schnell und entspannt, nicht maximal.
-- **Fly:** kurze schnelle Zone nach kontrolliertem Aufbau. Heute klein dosiert.
-- **Stick:** Landen oder stoppen und ca. 2 Sekunden einfrieren.
-
-**Was ich sage:**
-> Smooth heisst: schnell aussehen, aber nicht pressen. Wenn du verkrampfst, war es zu viel.
+- **Smooth fast:** schnell und entspannt, ohne Maximalpressen.
+- **Stick:** Landung oder Bremsposition zwei Sekunden stabil halten.
+- **RPE 6-7:** drei bis vier saubere Wiederholungen im Tank; kein Grind.
+- **Kontaktindex 1:** Sled-/Bodyline-/Brace-Arbeit ohne Live-Kollision.
+- **Tempo:** lockere lineare Laufdosis bei ca. 65-70 Prozent, keine wiederholten Sprints.
 
 ## 4. Material und Aufbau vor Start
 
-**Ziel:** Wenig Umbau, keine Warteschlangen, keine Hektik.
+**Ziel:** Der Aufbau funktioniert bei 10-15 Spielern und bleibt bei 20 Spielern kuerzbar.
 
-- **Feld:** 30-40-m-Bahn mit Start, 10 m, 20 m und 30 m. Optional Fly-Zone: 20 m Aufbau + 10 m Fly.
-- **Auslauf:** Hinter der Linie genug Platz. Kein harter Stopp.
-- **Sled/Wall-Zone:** Nur fuer Collision-Forwards-Option, kontrolliert und kurz.
-- **Power-Zone:** CMJ ohne Messdruck; Med-Ball Rotational/Scoop mit freiem Wurfbereich.
-- **Kraft-Zone:** Ein Squat/Trap-Bar-Bereich, ein Pull/Row-Bereich, ein Push-Bereich. Drei Saetze nur fuer Gruen; zwei Saetze sind bei schweren Beinen normal.
-- **Robustheit:** Bands, Platz fuer Calf/Soleus, Pallof/Dead Bug, kurze Hamstring-/Adduktor-Optionen.
-- **Dokumentation:** Check-in/Beobachtung fuer Ampel, Dienstag-Reaktion, Fly-Entscheidung, Kraftsignal, sRPE, Pain/Issue, KW30-Entscheidung.
+- **Dokumentation:** Check-in-/Nachbereitungsbogen und Stift ab ca. 18:50 bereit.
+- **Laufbahn:** 10 m, 20 m und 30 m markieren; mindestens 15-20 m Auslauf.
+- **Track:** drei bis vier breite Bahnen, Rueckweg ausserhalb der Laufbahnen.
+- **Power-Zone:** CMJ-Landeflaeche und getrennte Rotational-Scoop-Wurfzone; Ballgewicht sichtbar markieren und im Bogen notieren.
+- **Kraft A:** Trap Bar plus zweite KB/DB-Hinge-Lane.
+- **Kraft B:** DB/Floor Press oder Push-up plus Row/Band Row.
+- **Kraft C:** Split-Squat-ISO-Zone plus Pallof/Band-Zone.
+- **CF-Zone:** Wall/Sled Bodyline und Platz fuer sanfte Neck ISOs.
+- **HY-Zone:** 10 m Approach plus breite 5-m-Decel-Zone.
+- **SB-Zone:** Soleus- und Hamstring-Station, keine zusaetzliche Sprintbahn.
+- **Tempo:** gerade 40-m-Bahn ohne scharfe Wende.
+
+**Organisation:**
+
+- 8-10 Spieler: zwei bis drei Gruppen; viel Coaching, trotzdem nur zwei Kraftsaetze.
+- 11-14 Spieler: drei Gruppen; ca. sieben Minuten pro Kraft-Pod.
+- 15-20 Spieler: vier Untergruppen und zwei Lanes in A/B; Tempo wahrscheinlich streichen.
 
 **Was ich sage:**
-> Aufbau bleibt simpel: eine Laufbahn, eine Power-Zone, drei Kraftstationen und kurze Robustheit. Keine Zusatzprogramme.
+> Der Ablauf bleibt bewusst einfach. Zwei gute Saetze und klare Wechsel sind heute das Ziel.
 
 ## 5. Startansage 0-2 Minuten
 
-**Ziel:** Den Ton setzen: keine Nachholkultur, aber klare Progression.
-
 **Langversion:**
-> Servus zusammen. Dienstag war unser nachgeholtes Donnerstagstraining vom 09.07. Heute ist deshalb keine vollgestopfte Nachhol-4A.
-> Wir machen heute eine Bruecke in den Aufbau: kurze Speedqualitaet nach Positionsgruppen, Power-Primer, ein technisches Kraftsignal und kurze Robustheit.
-> Wer schwere Beine, Hamstring, Wade, Leiste, Knie, Sprunggelenk oder Kopf/Nacken-Themen hat, sagt es direkt. Dann gibt es keinen Fly, keine harten Stops und kein Conditioning.
-> Ziel ist, dass ihr heute besser rausgeht, nicht leer.
+> Servus zusammen. Dienstag war unser Aufbau-Hauptreiz. Heute bestaetigen wir die Qualitaet, ohne einen zweiten schweren Tag daraus zu machen.
+> A-Skip bleibt unsere Hauptuebung im Track Prep. Speed ist etwas kuerzer, aber weiter sauber und frisch. Power bleibt niedrig dosiert. Kraft sind zwei saubere Saetze bei RPE 6 bis 7. Danach bekommt jede Positionsgruppe einen kurzen Robustheitsakzent.
+> Kein Nachholen, kein Max-Sprint, kein Max-Lift und kein Full Contact. Wenn Dienstag schwer angekommen ist oder Hamstring, Wade, Leiste, Knie, Sprunggelenk, Kopf oder Nacken auffaellig sind, sagt es direkt.
 
 **Kurzversion:**
-> Heute keine Nachhol-4A. Kurze Speedqualitaet, Power, Kraftsignal, Robustheit. Schmerz, Returner, Kopf/Nacken direkt sagen. Wir bleiben frisch.
+> Heute 4B: Qualitaet bestaetigen, Dosis senken. A-Skip, kurzer Speed, Power-Primer, zwei Kraftsaetze und Robustheit. Kein Nachholen und kein Maximaltest.
 
-## 6. Check-in 0-5 Minuten
+## 6. Check-in ab ca. 18:50 und 0-5 Minuten
 
-**Ziel:** Entscheiden, wer heute normal, reduziert oder gar nicht in den normalen Plan geht.
+**Ziel:** Dienstag-Reaktion erfassen und nur relevante Entscheidungen im Teamfenster klaeren.
 
-- **Fragen:** Wie ist die Reaktion auf Dienstag 14.07.? Muskelkater 0-10? Schwere Beine? Hamstring/Wade/Leiste/Knie/Sprunggelenk? Kopf/Nacken/Schwindel? Returner oder Limit?
-- **Ampel:** Gruen, Gelb, Rot.
-- **Cluster:** Collision Forwards, Hybrid, Speed/Space Backs oder offen.
-- **Direkte Entscheidung:** Fly ja/nein, Decel ja/nein, Sled/Wall Drive ja/nein, Tempo ja/nein, Kraft normal/reduziert.
+- **Rollierend ab ca. 18:50:** Dienstag-Ist-Dosis (Speed normal/reduziert/0, Hauptkraftsaetze, Conditioning 0/1), Readiness 1-5, Muskelkater 0-10, schwere Beine ja/nein, Schmerz/Ort, Kopf/Nacken/Schwindel, Returner-/Medizinlimit und zusaetzliche Rugby-/Arbeits-/Studiumsbelastung.
+- **0-5 Minuten:** Nur Gelb/Rot, neue Beschwerden, offene Limits und spaet Angekommene klaeren.
+- **Direkte Entscheidung:** Speed normal/reduziert/auslassen; HY Decel ja/nein; Kraft 2x4 oder technisch leichter; CF Bodyline ja/nein; Tempo ja/nein.
 
-**Was ich sage:**
-> Ich brauche heute vor allem die Dienstag-Reaktion. Hamstring, Wade, Leiste, Knie, Sprunggelenk, Kopf und Nacken direkt sagen.
+### Ampel
 
-### Ampelentscheidung
+- **Gruen:** Readiness 3-5, Schmerz 0-2/10, Dienstag normal verarbeitet, Laufbild normal, kein offenes Limit.
+- **Gelb:** Readiness 1-2, deutlicher Muskelkater/schwere Beine, Schmerz 3-4/10, hohe Life Load, Returner offen oder technische Auffaelligkeit.
+- **Rot:** Schmerz >4/10, Hinken, akute Instabilitaet, Kopf/Nacken/Schwindel/neurologisch oder medizinisch ungeklaerter No-Go-Status.
 
-- **Gruen:** normale Reaktion, Schmerz 0-2/10, kein Kopf-/Nackenflag, Laufbild normal.
-- **Gelb:** deutlicher Muskelkater, Schmerz 3-4/10, schwere Beine, Returner offen, Technik auffaellig.
-- **Rot:** Schmerz >4/10, Hinken, akute Instabilitaet, Kopf/Nacken/Schwindel/neurologisch.
+### Entscheidung
 
-**Entscheidung:**
+- **Gruen:** normaler kontrollierter 4B-Plan.
+- **Gelb:** Speed 50-70 Prozent und ca. halbe Reps; kein Decel-to-Stick; Kraft technisch 1-2 Saetze @ RPE 5-6; kein Bodyline-Druck und kein Tempo.
+- **Rot:** kein normales Training; keine Ersatzbelastung gegen das Stoppsignal.
+- **Returner:** Team-Prep moeglich, danach getrennte Caps fuer Speed, COD, Conditioning und Kontakt.
 
-- Gruen: normaler Bruecken-Plan moeglich.
-- Gelb: kein Fly, keine harten Decels, Kraft 2 Saetze, Conditioning streichen.
-- Rot: kein normales Training.
+## 7. RAMP / Mobility 5-13 Minuten
 
-## 7. RAMP kurz 5-13 Minuten
+**Ziel:** Temperatur erhoehen, Dienstag-Reaktion sehen und Huefte, Leiste, Sprunggelenk, BWS und posterior chain fuer Speed und Kraft vorbereiten.
 
-**Ziel:** Dienstag-Reaktion sehen, Temperatur erhoehen und Huefte/Leiste/Sprunggelenk fuer Speed und Kraft vorbereiten.
+- **Intensitaet:** RPE 2-3.
+- **Organisation:** Alle zusammen seitlich der Laufbahn.
+- **Ablauf:** vertraut und fliessend; keine neue Mobility-Sequenz.
 
-- **Rahmen:** Kurz, ruhig, RPE 2-3.
-- **Plan:** Hip Switch 4/Seite, Adductor Rockback 5/Seite, Knee-to-Wall 6/Seite, Squat-to-Stand 3, Open Book 5/Seite.
-- **Gelb/Returner:** kleiner ROM, keine Maximalpositionen.
+### Lockerer Lauf, Backpedal und Shuffle je 1x15 m
 
-**Was ich sage:**
-> Das ist unser kurzer Reset. Wir checken, wie Dienstag angekommen ist, und bereiten Speed und Kraft vor.
+- **Wording:** Leise und kontrolliert. Kein Rennen. Beim Shuffle Fuesse nicht kreuzen.
+- **Beobachten:** Hinken, schwere Beine, Leiste, Knie, Sprunggelenk, Atmung.
+- **Entscheiden:** Laufbild veraendert = Ampel neu bewerten.
 
 ### Hip Switch 4 pro Seite
 
-- **Was:** Huefte kontrolliert von Seite zu Seite drehen.
-- **Wofuer:** Hueftrotation fuer Sprintposition, Squat und Kontaktposition.
-- **Wording:** Ruhig drehen, nicht reinwerfen. Kontrolle vor Tiefe.
-- **Beobachten:** Rueckenschmerz, Knie meldet sich, asymmetrisch.
-- **Entscheiden:** kleiner ROM oder auslassen.
+- **Wording:** Ruhig drehen, Endposition nicht erzwingen.
+- **Beobachten:** Knie, Ruecken, Ausweichen.
+- **Entscheiden:** kleiner ROM oder Haende als Stuetzpunkt.
 
 ### Adductor Rockback 5 pro Seite
 
-- **Was:** Vierfuessler, ein Bein seitlich, Huefte nach hinten.
-- **Wofuer:** Leiste/Adduktoren fuer Speed, Decel und spaetere COD-Progression.
-- **Wording:** Zug ist ok, Schmerz nicht. Ruecken lang, ruhig atmen.
-- **Beobachten:** stechende Leiste, Ausweichen, hektisches Wippen.
-- **Entscheiden:** Schmerz 3-4 = Gelb, >4 oder stechend = raus aus lateralen/schnellen Inhalten.
+- **Wording:** Zug ist okay, stechender Schmerz nicht.
+- **Beobachten:** Leiste und Beckenrotation.
+- **Entscheiden:** kleiner ROM; bei Schmerz kein HY-Decel und Copenhagen zu Squeeze.
 
 ### Knee-to-Wall 6 pro Seite
 
-- **Was:** Knie nach vorne, Ferse bleibt unten.
-- **Wofuer:** Sprunggelenk fuer Pogo, Sprint und Landung.
-- **Wording:** Ferse bleibt unten, Knie folgt Zehen.
-- **Beobachten:** Ferse hebt, Fuss kollabiert, Achilles/Wade meldet sich.
-- **Entscheiden:** Calf ISO statt Pogo/Fly, wenn Wade/Achilles auffaellig.
+- **Wording:** Ferse unten, Knie folgt den Zehen.
+- **Beobachten:** Achilles, Wade, Fusskontrolle.
+- **Entscheiden:** Pogo streichen und Speed kuerzen, wenn das Laufbild betroffen ist.
 
 ### Squat-to-Stand 3 Wiederholungen
 
-- **Was:** kontrolliert in Squat-Position und wieder aufrichten.
-- **Wofuer:** Rueckmeldung fuer Squat/Trap-Bar-Option im Kraftblock.
 - **Wording:** Ruhig, nicht maximal tief erzwingen.
-- **Beobachten:** Ruecken rundet, Knie kippt, Sprunggelenk limitiert.
-- **Entscheiden:** Goblet/Box-Variante vormerken.
+- **Beobachten:** Knie, Ruecken, Fersen.
+- **Entscheiden:** Hinge leichter oder Split-Squat-ISO kleiner.
 
-### Open Book 5 pro Seite
+### Open Book 4 pro Seite und Glute Bridge 8
 
-- **Was:** Brustwirbelsaeule rotieren.
-- **Wofuer:** Schulter/T-Spine fuer Med-Ball, Press, Kontaktrobustheit.
-- **Wording:** Dreh aus der Brustwirbelsaeule, nicht aus dem unteren Ruecken reissen.
-- **Beobachten:** Schulter/Ruecken zwickt.
-- **Entscheiden:** kleiner ROM oder Band/Scap-Arbeit spaeter leichter.
+- **Wording:** BWS ruhig drehen; Bridge mit Rippen unten und stabilem Becken.
+- **Beobachten:** Schulter/Nacken/Ruecken, Hamstring-Krampf.
+- **Entscheiden:** kleiner ROM oder kurzer ISO-Hold.
 
 ## 8. Track Prep 13-20 Minuten
 
-**Ziel:** In schnelle, aber kontrollierte Kontakte kommen, ohne daraus Conditioning zu machen.
+**Ziel:** A-Skip weiter stabilisieren und Sprintmechanik vorbereiten, ohne eine neue Uebung einzufuehren.
 
-- **Aufbau:** 10-m-Bahn, 3-4 Reihen, Rueckweg gehen.
-- **Plan:** A-March 1x10 m, A-Skip oder Dribble 2x10 m, Pogo 2x10, Snap-down + Stick 2x3.
-- **Stopps:** Hamstring, Hueftbeuger, Wade/Achilles, Leiste, Knie, Sprunggelenk.
-
-**Was ich sage:**
-> Das ist Technik und Vorbereitung. Kleine schnelle Kontakte, kein Rennen. Wer schwere Beine hat, bleibt kleiner.
+- **Aufbau:** 10-m-Bahn, drei bis vier Reihen, Rueckweg gehen.
+- **Rahmen:** Technik, keine Ermuedung.
 
 ### A-March 1x10 m
 
-- **Was:** Knie hoch, Fuss aktiv unter Huefte absetzen, Arme mitnehmen.
-- **Wofuer:** Sprintposition und Rhythmus.
-- **Wording:** Einmal sauber als Reminder. Gross bleiben, Fuss unter dich.
-- **Beobachten:** Ruecklage, Fuss landet weit vorne, Balance schlecht.
-- **Entscheiden:** Wenn March nicht stabil ist, kein A-Skip.
+- **Wofuer:** kurzer Technik-Reset.
+- **Wording:** Gross bleiben. Fuss unter dich. Arme arbeiten mit.
+- **Beobachten:** Ruecklage, Fuss weit vorne, Balance.
+- **Entscheiden:** Instabil = beim March bleiben; A-Skip kleiner/langsamer oder auslassen.
 
-### A-Skip oder Dribble 2x10 m
+### A-Skip 2x10 m als Hauptuebung
 
-- **Was:** A-Skip fuer stabile Spieler; Dribble fuer Spieler, die kleiner bleiben sollen.
-- **Wofuer:** Fussaufsatz, Rhythmus, Sprintmechanik.
-- **Wording:** Klein und rhythmisch. Fuss unter dich, nicht nach vorne hetzen.
-- **Beobachten:** Spieler springt zu hoch, Fuss landet vorne, Oberkoerper lehnt zurueck, Hamstring/Hueftbeuger/Wade zieht.
-- **Entscheiden:** Rueckschritt zu A-March oder Dribble. Bei Schmerz auslassen.
+- **Wofuer:** Rhythmus, aktiver Fussaufsatz, Sprintmechanik und elastischer Kontakt.
+- **Wording:** Klein und rhythmisch. Nicht hochspringen. Fuss unter dich.
+- **Beobachten:** Ruecklage, overstriding, Hueftbeuger/Hamstring/Wade.
+- **Entscheiden:** Zurueck zu A-March oder A-Skip mit kleinerem Rhythmus und kuerzerer Strecke.
 
-### Pogo 2x10 Kontakte
+**Coach-Fokus:** Die Zeit wird fuer Demonstration, Rhythmuskorrektur und vollstaendiges Zurueckgehen genutzt. Kein Ersatzdrill.
 
-- **Was:** kleine beidbeinige elastische Kontakte.
-- **Wofuer:** Fuss-/Sprunggelenkssteifigkeit, Calf/Soleus-Toleranz.
-- **Wording:** Leise, klein, nicht hoch.
-- **Beobachten:** harte Kontakte, Wade/Achilles, Fuss knickt.
-- **Entscheiden:** 1x10 oder Calf ISO.
+### Pogo 1x10 und Snap-down + Stick 2x2
 
-### Snap-down + Stick 2x3
+- **Wording:** Pogo klein und leise. Snap-down schnell, stabil und zwei Sekunden halten.
+- **Beobachten:** Wade/Achilles, harte Kontakte, Knie kollabiert, Ferse hebt.
+- **Entscheiden:** Pogo zu Calf ISO; Snap-down kleiner/langsamer.
 
-- **Was:** schnell in athletische Position, 2 Sekunden halten.
-- **Wofuer:** Landung, Rumpf-/Kniekontrolle, CMJ-Landung.
-- **Wording:** Runter, einfrieren, Knie ueber Zehen.
-- **Beobachten:** Knie kollabiert, Ruecken/Huefte/Knie schmerzt.
-- **Entscheiden:** kleiner/langsamer, bei Schmerz auslassen.
+## 9. Speed Quality 20-31 Minuten
 
-## 9. Speed Quality 20-32 Minuten
+**Ziel:** Speedintensitaet erhalten und Volumen gegenueber Dienstag sichtbar senken.
 
-**Ziel:** Eine hochwertige Speed-Exposure setzen, aber keine Maximaljagd und keine Dienstag-4A nachholen.
+- **Pause:** 60-120 Sekunden nach 10-20 m; 90-150 Sekunden bei 30-m-Build-ups.
+- **Intent:** Gruen ca. 80-90 Prozent, entspannt. Gelb 50-70 Prozent.
+- **Kein Timing, kein Fly, kein Nebenmannrennen.**
+- **Stopp:** Laufbild wird schlechter oder Hamstring/Wade/Achilles/Leiste meldet sich.
 
-- **Aufbau:** Start, 20 m, 30 m markieren. Speed/Space Backs: 20 m Aufbau + 10 m Fly-Zone.
-- **Pause:** Vollstaendig. Rueckweg gehen plus warten. Keine dichten Reps.
-- **Messen:** Kein Timing. Coach-Auge: locker, schnell, sauber.
-- **Gelb:** kein Fly, keine harten Decels, nur smooth 10-20 m.
+### Collision Forwards: 2x10 m + 2x20 m smooth
 
-**Was ich sage:**
-> Speed heute ist kurz und sauber. Wer gruen ist, bekommt eine kleine schnelle Exposure. Wer gelb ist, macht smooth und bleibt darunter. Kein Rennen.
+- **Dosis:** 60 m, gegenueber Dienstag 70 m reduziert.
+- **Wofuer:** erste Schritte und Line-Speed ohne zusaetzliche Sled-Meter.
+- **Wording:** Druck in den ersten Schritten, danach smooth durch die Linie.
+- **Entscheiden:** Gelb 2x10 m + 1x15 m; spaeter keine Bodyline unter Last.
 
-### Collision Forwards: 2-3x20 m smooth oder leichte Sled-Option
+### Hybrid: 2x10 m + 2x20 m smooth fast
 
-- **Was:** Entweder 2-3 kontrollierte 20-m-Build-ups oder 2x15 m smooth plus 2x10 m leichter Sled/Wall Drive. Nicht beides als Maxblock.
-- **Wofuer:** Line-Speed, erste Schritte, horizontale Kraft ohne Live-Kontakt.
-- **Wording:** Stark starten, smooth durchlaufen. Beim Sled/Wall Drive: Druck durch den Boden, kein Maxkampf.
-- **Beobachten:** schwere Beine, Hinken, Wade/Hamstring, Ruecken faellt ein, Nacken verkrampft.
-- **Entscheiden:** Gelb 2x10-15 m @ 60-70 %, kein Sled. Kopf/Nackenflag = kein Drive.
+- **Dosis:** 60 m statt Dienstag 90 m; spaeter nur kleines Decel-to-Stick.
+- **Wofuer:** Beschleunigungsqualitaet und Speedreserve ohne Reaccel-Stapelung.
+- **Wording:** Kraeftig starten, dann locker schnell. Ausrollen.
+- **Entscheiden:** Gelb 2x10 m + 1x15 m; kein Decel-Block.
 
-### Hybrid: 3x20-25 m smooth plus optional Decel Stick
+### Speed/Space Backs: 2x10 m + 2x30 m Build-up
 
-- **Was:** Drei smooth Build-ups ueber 20-25 m. Danach optional 2x Decel Stick pro Seite aus niedriger Geschwindigkeit.
-- **Wofuer:** Accel-Qualitaet plus kleine Decel-Exposition fuer Back Row/Centres.
-- **Wording:** Entspannt schnell. Wenn wir stoppen, dann sauber und klein. Kein Reaccel heute als Pflicht.
-- **Beobachten:** Leiste/Hamstring/Wade, Knie/Sprunggelenk, Verkrampfung, harter Stopp.
-- **Entscheiden:** Bei Gelb nur 2x15-20 m linear, Decel streichen.
+- **Dosis:** 80 m statt Dienstag 110 m.
+- **Wofuer:** Speedreserve und Hamstring-/Calf-Exposure bei reduzierter Strecke.
+- **Wording:** Geduldig aufbauen. Letzte zehn Meter locker schnell, nicht pressen.
+- **Entscheiden:** Gelb 2x10 m + 1x20 m smooth; Returner-Cap respektieren.
 
-### Speed/Space Backs: 2-3x build 20 m + fly 10 m
+## 10. Power Primer 31-39 Minuten
 
-- **Was:** 20 m geduldig aufbauen, 10 m locker schnell halten, danach ausrollen.
-- **Wofuer:** Max-V-Annaeherung, Hamstring-/Calf-Exposure, Speed-Erhalt.
-- **Wording:** Geduldig aufbauen. In der Fly-Zone locker schnell, nicht maximal pressen. Danach ausrollen.
-- **Beobachten:** Hamstring, Wade/Achilles, Ruecklage, overstriding, verkrampfte Arme.
-- **Entscheiden:** Nur build-up ohne Fly, wenn Gelb oder Technik kippt. Returner offen kein Fly. 15 m Fly nur bei sehr gruen, sauber und voller Pause.
-
-## 10. Power Primer 32-42 Minuten
-
-**Ziel:** Kleine explosive Dosis, niedrige Ermuedung, keine Testkultur.
-
-- **Plan:** CMJ + Stick 3x2, Med-Ball Rotational/Scoop 3x3/Seite.
-- **Pause:** Qualitaetspausen, keine Dichte.
-- **Gelb:** 2x2 CMJ submax oder nur Snap-down; MB leichter/statischer.
-
-**Was ich sage:**
-> Power ist heute ein Primer. Wenige Wiederholungen, maximal sauber, nicht maximal muede.
+**Ziel:** Komplementaere Powerqualitaet mit niedriger Kontaktzahl und ohne Ermuedungsjagd.
 
 ### CMJ + Stick 3x2
 
-- **Was:** Countermovement Jump, landen und 2 Sekunden halten.
-- **Wofuer:** vertikale Power, Landing, kurzer neuraler Reiz.
-- **Wording:** Schnell runter, schnell hoch, leise landen und halten.
-- **Beobachten:** Knie kollabieren, harte Landung, Wade/Achilles/Knie.
-- **Entscheiden:** 2x2 oder nur Snap-down, wenn muede/auffaellig.
+- **Was:** schneller vertikaler Sprung, beidbeinig leise landen, zwei Sekunden halten.
+- **Wofuer:** vertikale Power und Landekontrolle als Kontrast zum Broad Jump vom Dienstag.
+- **Wording:** Schnell hoch, leise landen, Position halten.
+- **Beobachten:** harte Landung, Knie kippt, Nachstolpern.
+- **Entscheiden:** kleiner CMJ oder Snap-down 2x2.
 
-### Med-Ball Rotational/Scoop 3x3 pro Seite
+### Med-Ball Rotational Scoop 2x2 pro Seite
 
-- **Was:** Rotational oder Scoop Throw aus stabilem Stand.
-- **Wofuer:** Rumpf-/Hueft-Power, Pass-/Kontakttransfer.
-- **Wording:** Huefte startet, Rumpf bleibt fest, sauber werfen. Kein Rueckenreissen.
-- **Beobachten:** Ruecken/Schulter/Handgelenk, unkontrollierte Rotation.
-- **Entscheiden:** halbknieend, leichter Ball oder Chest Pass.
+- **Voraussetzung:** nur verwenden, wenn die Technik aus bisherigen Einheiten bekannt ist. Unbekannt = gerader Chest Pass 2x3 statt neuer Einfuehrung.
+- **Was:** aus stabiler athletischer Position ueber Huefte/Rumpf seitlich werfen.
+- **Wofuer:** Rotationspower fuer Pass, Carry und Kontakttransfer.
+- **Wording:** Boden-Huefte-Ball. Nicht aus dem unteren Ruecken reissen.
+- **Standardisierung:** Ballgewicht pro Gruppe/Spieler dokumentieren und fuer beide Seiten gleich halten.
+- **Beobachten:** Schulter/Ruecken, Gleichgewicht, Wurfzone und ungewohntes Bewegungsmuster.
+- **Entscheiden:** leichter Ball, halbkniend, gerader Chest Pass 2x3 oder auslassen.
 
-## 11. Kraftsignal 42-62 Minuten
+## 11. Kraft-Konsolidierung 39-61 Minuten
 
-**Ziel:** Kraft technisch erhalten und kleinen Aufbaukontakt setzen, ohne eine schwere 4A-Krafteinheit nachzuholen.
+**Ziel:** Kraftqualitaet bestaetigen und Dienstag verarbeiten. Zwei Arbeitssaetze sind der vollstaendige Plan.
 
-- **Organisation:** Drei Stationen oder Kleingruppen.
-- **Intensitaet:** RPE 6-7 fuer Gruen, RPE 5-6 fuer Gelb.
-- **Saetze:** Gruen 3 Saetze beim Hauptlift moeglich. Schwere Beine/Gelb/grosse Gruppe = 2 Saetze.
-- **Keine Grind-Reps:** Wenn Bar Speed oder Technik kippt, Last runter oder Satz beenden.
+- **Organisation:** drei Pods, ca. sieben Minuten pro Pod.
+- **RPE:** Gruen 6-7; Gelb 5-6.
+- **Regel:** kein dritter Satz, kein A+, kein Grind.
+- **Grossgruppe:** zwei Hinge- und zwei Press/Row-Lanes; wenn Wechsel stocken, nur ein Satz Pod C statt Hektik.
 
-**Was ich sage:**
-> Kraft heute ist ein Signal. Gruen kann drei saubere Saetze machen. Wenn Dienstag noch in den Beinen steckt, sind zwei Saetze richtig.
+### Pod A: Trap Bar / KB / DB Deadlift 2x4 @ RPE 6
 
-### A Lower: Squat oder Trap Bar 2-3x3-4
+- **Vorbereitung:** 1x4 leicht, wenn erforderlich.
+- **Arbeit:** 2x4; ca. 5-10 Prozent leichter als Dienstag oder eine Last, die heute klar RPE 6 ergibt.
+- **Wording:** Spannung vor dem Zug. Boden wegdruecken. Jede Rep schnell und gleich.
+- **Beobachten:** Ruecken rundet, Hamstring/Ruecken zieht, Rep-Speed faellt.
+- **Entscheiden:** Last runter, KB vom Block, Goblet/Box Squat oder nur ein technischer Satz.
 
-- **Was:** bekannte Squat- oder Trap-Bar-Variante.
-- **Wofuer:** Lower-body Kraftsignal, Bewegungsqualitaet, Erhalt.
-- **Wording:** Jede Rep gleich. Schnell sauber hoch, keine Grind-Reps.
-- **Beobachten:** Knie/Ruecken, Fersen, Hamstring, Ermuedung aus Dienstag.
-- **Entscheiden:** 2 Saetze, weniger Last, Goblet/Box-Variante oder KB/DB Deadlift.
+### Pod B: DB/Floor Press + Row 2x6 @ RPE 6-7
 
-### B Pull: Pull-up, Inverted Row oder Band Row 3x5-8
+- **Arbeit:** zwei Saetze Press und zwei Saetze Row/Band Row.
+- **Wording:** Schulter ruhig, Rippen kontrolliert; Row ohne Reissen.
+- **Beobachten:** Schulter/Handgelenk/Nacken, Failure-Naehe, Rotation.
+- **Entscheiden:** neutraler DB Press, Incline Push-up, leichteres Band oder kleiner ROM.
 
-- **Was:** vertikaler oder horizontaler Zug.
-- **Wofuer:** Schulter/Ruecken, Kontaktrobustheit, Ausgleich zu Pressing.
-- **Wording:** Schulter tief, Brust ruhig, kein Nacken.
-- **Beobachten:** Nackenziehen, Schulter vorne, Schwung.
-- **Entscheiden:** Band Row oder reduzierte Reps.
+### Pod C: Split-Squat-ISO + Pallof
 
-### C Push: DB Press, Floor Press oder Push-up 2x6
+- **Arbeit:** Split-Squat-ISO 2x15 Sekunden pro Seite; Pallof Press 2x8 pro Seite.
+- **Wofuer:** unilaterale Position und Rumpfkontrolle ohne weitere dynamische Beindosis.
+- **Wording:** Vorderer Fuss stabil, Becken ruhig, gleichmaessig atmen.
+- **Beobachten:** Knie kippt, Leiste/Knie, Balance, Atem wird blockiert.
+- **Entscheiden:** hoeherer Winkel, Hand-Support, bilateral Wall Sit kurz oder Dead Bug.
 
-- **Was:** DB Press, Floor Press, Incline Push-up oder Push-up.
-- **Wofuer:** Oberkoerperkraft, Schulterkontrolle.
-- **Wording:** Rumpf fest, Schulter ruhig, nicht bis Failure.
-- **Beobachten:** Schulter/Handgelenk, Ruecken ueberstreckt.
-- **Entscheiden:** Incline, Band Press oder auslassen.
+## 12. Positionscluster + Robustheit 61-75 Minuten
 
-## 12. Cluster-Robustheit 62-74 Minuten
+**Ziel:** Spielrollenbezogene Robustheit setzen, ohne Dienstag-COD oder Contact Prep weiter zu steigern.
 
-**Ziel:** Kurze positionsnahe Robustheit setzen, ohne Kontaktlast oder Zusatzermuedung zu stapeln.
+### Collision Forwards: Bodyline + Neck
 
-- **Rahmen:** Ein kurzer Block, kein zweites Training.
-- **Kontaktindex:** 0-1. Keine Live-Kollision, kein Tackle, kein Scrum-Wettkampf.
-- **Gelb/Returner:** nur schmerzfreie Isos/leichte Varianten.
+- **Wall/Sled Bodyline ISO:** 2x8 Sekunden moderater Druck, kein March und kein Grind.
+- **Neck ISO:** 1x8 Sekunden je Richtung, nur symptomfrei und sanft.
+- **Bear-Hug Carry optional:** 1-2x15 m moderat, nur wenn Beine frisch und Zeit passt.
+- **Wofuer:** Set-Piece-/Kontaktbodyline, Rumpf und Nacken ohne Kollision.
+- **Entscheiden:** Kopf/Nacken = kein Neck und keine Bodyline; Ruecken faellt ein = leichter oder Wall ISO.
+- **Kontaktindex:** 1 bei Bodyline/Brace, sonst 0.
 
-**Was ich sage:**
-> Das ist Positionspflege, kein Zusatzkampf. Jeder bekommt eine kleine Dosis passend zur Rolle.
+### Hybrid: Decel-to-Stick + Adduktor
 
-### Collision Forwards: Neck Iso + Wall/Sled Drive ISO
+- **Drill:** 10 m smooth approach, in breiter 5-m-Zone abbremsen und Position zwei Sekunden halten.
+- **Dosis:** 2x1 pro Seite bei ca. 70 Prozent; kein Reaccel.
+- **Adduktor:** Copenhagen short lever 2x15 Sekunden/Seite oder Squeeze 2x20 Sekunden.
+- **Wording:** Frueh bremsen, kleine Kontakte, Position finden und halten.
+- **Entscheiden:** Gelb nur Walk-in/Plant oder Squeeze; Leiste/Knie/Sprunggelenk = dynamischen Teil streichen.
 
-- **Was:** Neck Iso 2x8-10 s je Richtung nur symptomfrei; Wall/Sled Drive ISO 2-3x8-10 s.
-- **Wofuer:** Nacken-/Brace-/Bodyline-Robustheit fuer Set-Piece und Kontakt, ohne Live-Kontakt.
-- **Wording:** Sanfte Nackenspannung. Beim Drive: stabil, Druck durch den Boden, nicht pressen.
-- **Beobachten:** Kopf/Nacken, Ruecken faellt ein, Atem komplett weg, Spieler macht Maxkampf.
-- **Entscheiden:** Bei Kopf/Nackenflag kein Neck/Drive. Alternative: Dead Bug, Scap, Carry leicht.
+### Speed/Space Backs: Soleus + Hamstring
 
-### Hybrid: Copenhagen/Squeeze + Pallof
+- **Soleus ISO:** 2x20 Sekunden pro Seite oder bilateral.
+- **Assisted Nordic:** 2x3 bleibt der regulaere Donnerstag-Baustein fuer gruene, technisch bekannte und symptomfreie Spieler. Die Uebung wurde im bisherigen Teamtraining wiederholt eingesetzt und gut vertragen; heute gibt es keine Volumen- oder ROM-Steigerung.
+- **Regression:** Hamstring Bridge ISO 2x20 Sekunden nur bei Gelb, schweren Beinen, Hamstring-Flag, unsauberer Nordic-Technik oder individuellem Cap.
+- **Wofuer:** Wade/Achilles/Hamstring nach der Speed-Exposure robust halten.
+- **Wording:** Isos ruhig halten; Nordic nur so weit, wie Spannung kontrolliert bleibt.
+- **Entscheiden:** schwere Beine/Hamstringflag = Bridge bilateral oder auslassen.
 
-- **Was:** Copenhagen short lever 1-2x10-15 s/Seite oder Adductor Squeeze; Pallof Press 2x8/Seite.
-- **Wofuer:** Leiste/Adduktor, Rumpf, Brems-/Kontaktposition.
-- **Wording:** Kurz und sauber. Leiste darf arbeiten, aber nicht stechen.
-- **Beobachten:** Leistenschmerz, Becken kippt, Knie/Sprunggelenk nach Speed auffaellig.
-- **Entscheiden:** Squeeze statt Copenhagen, Pallof leichter, Decel heute komplett streichen.
+## 13. Optionales Extensive Tempo 75-83 Minuten
 
-### Speed/Space Backs: Calf/Soleus + Hamstring Bridge
+**Ziel:** Nur bei passender Wochenreaktion eine kleine aerobe Laufdosis setzen, nicht die Einheit hart beenden.
 
-- **Was:** Calf/Soleus 2x10-12; Hamstring Bridge ISO 2x15-20 s oder assisted Nordic 1-2x3 nur sehr gruen.
-- **Wofuer:** Wade/Achilles/Hamstring fuer Speed-Exposition.
-- **Wording:** Ruhig, kontrolliert, kein Krampf und kein Ziehen. Nordic nur klein und assistiert.
-- **Beobachten:** Hamstring-Krampf, Wade/Achilles, Fusskontrolle.
-- **Entscheiden:** ISO statt exzentrisch, weniger ROM, auslassen bei Schmerz.
-
-## 13. Optional Tempo 74-84 Minuten
-
-**Ziel:** Nur wenn die Gruppe gruen, frisch und organisiert ist: lockerer Flush, kein Finisher.
-
-- **Default:** 4-6x60-80 m @ 65-70 %, Walk/Jog-back.
-- **Alternative:** Bike/Erg 6-8 Minuten locker.
-- **Streichen:** bei vielen Gelb/Rot, Zeitdruck, schweren Beinen, Hamstring/Wade/Leiste, rutschigem Feld.
-- **Keine Steigerung:** Wenn Dienstag bereits Tempo gemacht wurde und die Beine schwer sind, faellt dieser Block weg.
+- **Default:** aus. Tempo findet nur nach aktiver Coach-Freigabe statt.
+- **Option:** 4x40 m bei ca. 65-70 Prozent, geradeaus, zurueckgehen, keine scharfe Wende.
+- **Nur wenn:** Dienstag gut verarbeitet, Gruppe ueberwiegend gruen, kein hohes zusaetzliches Rugby-Conditioning, Start spaetestens Minute 75 und Technik ruhig.
+- **Streichen wenn:** Dienstag-Conditioning gemacht und schwer angekommen, viele Gelb/Rot, Hitze, Zeitdruck, Laufbild schlechter oder Wochenende mit hoher Belastung.
+- **Returner/offen:** kein Team-Tempo ohne individuellen Cap.
 
 **Was ich sage:**
-> Tempo ist heute optional. Wenn wir es machen, ist es locker und sauber. Wenn nicht, ist das genau richtig.
+> Das ist lockeres Tempo, kein Sprint und kein Finisher. Wenn es nicht locker aussieht, lassen wir es weg.
 
-### Extensive Tempo 4-6x60-80 m
+## 14. Downshift und Abschluss 83-90 Minuten
 
-- **Was:** lockere Laeufe bei 65-70 %, Walk/Jog-back.
-- **Wofuer:** leichte aerobe Arbeit, Rhythmus, Flush, ohne Ermuedungsziel.
-- **Wording:** Du kannst sprechen. Kein Sprint, kein Rennen, kein Finish.
-- **Beobachten:** Spieler wird schneller, Technik kippt, Wade/Hamstring/Leiste.
-- **Entscheiden:** sofort streichen oder Bike/Erg.
-
-## 14. Abschluss 84-90 Minuten
-
-**Ziel:** sRPE, Pain/Issue und KW30-Entscheidung sichern.
-
-- **Eintrag:** sRPE 0-10, Pain/Issue, auffaellige Reaktion, wer KW30 reduziert/normal/unklar.
-- **Frage:** Was ist nach Dienstag/Donnerstag fuer naechste Woche relevant?
-- **Keine Diagnose:** Nur trainingsrelevante Notiz.
+- **83-87:** lockeres Gehen, Atmung beruhigen, Wasser. Wenn Tempo gestrichen wird, beginnt die Nachbereitung frueher.
+- **Direkt pro Spieler:** sRPE 0-10 und neuer oder schlechterer Schmerz ja/nein; bei Ja Ort und Zahl.
+- **Teamwert:** Dauer einmal erfassen.
+- **Coach ergaenzt danach:** Speed normal/reduziert/ausgelassen; Kraft 0/1/2 Saetze; Kontaktindex 0/1; Tempo 0/1; relevante Variante.
+- **Folgetag:** deutliche Verschlechterung bis Freitag melden; das steuert KW30.
 
 **Was ich sage:**
-> Gebt mir kurz sRPE und ob nach dem Training etwas auffaellig ist. Das steuert direkt, ob wir KW30 normal in den Aufbau gehen.
-> Wenn morgen etwas deutlich schlechter ist, meldet euch. Dann war heute nicht "zu wenig", sondern die richtige Information fuer die naechste Anpassung.
+> sRPE fuer die ganze Einheit und kurz: irgendwo neu oder schlechter? Wenn sich bis morgen etwas deutlich verschlechtert, meldet es. Das steuert naechste Woche.
 
 ## 15. Wenn die Gruppe anders ist als erwartet
 
-**Ziel:** Schnell kuerzen koennen, ohne den Sinn der Einheit zu verlieren.
+### 8-10 Spieler
 
-- **8 Spieler:** Plan normal, mehr Coaching pro Spieler, Kraft sauber, Tempo nur wenn wirklich frisch.
-- **15 Spieler:** Standardfall. Drei Stationen, klare Wechsel, Cluster sauber trennen.
-- **20 Spieler:** Power kurz halten, Kraft auf 2 Saetze, Cluster auf 6-8 Minuten, Tempo wahrscheinlich streichen.
-- **Viele Gelb/Rot:** Speed 10-20 m smooth, kein Fly, Kraft 2 Saetze, Robustheit regressiert, kein Tempo.
-- **Zeitdruck 5 Minuten:** Tempo streichen.
-- **Zeitdruck 10 Minuten:** Cluster-Robustheit kuerzen.
-- **Zeitdruck 15 Minuten:** Kraft 2 Saetze und Power 2 Runden.
-- **Nie streichen:** Check-in, Kopf/Nacken/Concussion-Grenze, Speed nur frisch, Abschlussfrage nach Schmerzverschlechterung.
+- Plan normal, trotzdem nur zwei Kraftsaetze.
+- Mehr Coaching bei A-Skip und CMJ.
+- Tempo bleibt Tagesentscheidung, keine Belohnung.
 
-**Was ich sage:**
-> Wir kuerzen von hinten. Qualitaet bleibt vorne drin.
+### 11-14 Spieler
+
+- Standardfall: drei Kraft-Pods, ca. sieben Minuten pro Pod.
+- Speed in drei Clusterbahnen.
+- Tempo nur bei sauberem Zeitplan.
+
+### 15-20 Spieler
+
+- Vier Untergruppen und zwei Lanes in Hinge/Press-Row.
+- Power in zwei sicheren Zonen parallel.
+- Wenn die Wechsel nicht innerhalb von sieben Minuten sauber funktionieren: ein Arbeitssatz pro Kraft-Pod statt Hektik. Pod C dann ein ISO pro Seite plus ein Pallof-Satz.
+- Cluster auf 10-12 Minuten kuerzen.
+- Tempo wahrscheinlich streichen.
+
+### Viele Gelb/Rot
+
+- Speed halbieren und bei 10-20 m smooth halten.
+- Kein dynamisches Decel und keine Bodyline unter Last.
+- Kraft 1-2 technische Saetze @ RPE 5-6.
+- Kein Tempo.
+
+### Zeitdruck
+
+1. Tempo streichen.
+2. Downshift mit Abschluss zusammenfassen, Abschlussdaten behalten.
+3. Cluster auf eine Hauptuebung pro Gruppe kuerzen.
+4. Power auf 2x2 CMJ + 1x2/Seite MB kuerzen.
+5. Kraft lieber ein sauberer Satz pro Pod als hektische Wechsel.
+
+**Nie streichen:** Check-in, Kopf-/Nacken-Grenze, kurze Speedqualitaet nur bei passendem Status und direkte Abschlussfrage nach Schmerzverschlechterung.
 
 ## 16. Fallbacks am Platz
 
-**Ziel:** Sofortentscheidungen, wenn Material, Wetter, Gruppe oder Beschwerden nicht zum Plan passen.
-
-- **Kein Trap Bar:** KB/DB Deadlift, KB vom Block, Goblet Squat oder Box Squat.
-- **Zu wenig DB/KB:** Kraft nur 2 Saetze; Push-up/Row/Band parallel am Feld.
-- **Kein Sled:** Collision Forwards machen Wall Drive ISO, Bear Hug Carry leicht oder Dead Bug/Scap.
-- **Kein Med-Ball:** CMJ 3x2 plus Band Punch 2x6/Seite oder Push-up plyo nur fuer sehr gruene Spieler.
-- **Handgelenk/Schulter:** Keine Push-ups auf flacher Hand. Incline, DB neutral, Band Press oder auslassen.
-- **Knie:** Squat kleiner ROM, Box/Goblet, keine harten Landungen.
-- **Sprunggelenk/Wade/Achilles:** Pogo reduzieren/streichen, Build-ups kuerzen, Calf ISO statt Tempo.
-- **Leiste/Adduktor:** Adductor Rockback kleiner, keine Decels, Copenhagen durch Squeeze ersetzen.
-- **Hamstring/Glute:** Kein Fly, keine 30 m, Trap Bar leichter, Hamstring Bridge ISO statt Nordic.
-- **Rutschiger Platz:** Keine schnellen Sprints, keine Flys, keine Jumps, kein Tempo. Track-Technik und Kraftsignal bleiben.
-
-**Was ich sage:**
-> Wir passen die Variante an, nicht deinen Wert als Spieler.
+- **Kein Trap Bar:** KB/DB Deadlift, zwei KBs vom Block oder Goblet/Box Squat.
+- **Zu wenig Last:** technische Geschwindigkeit und stabile Variante priorisieren; keine kuenstlich langsamen Ermuedungssaetze.
+- **Keine Bank:** Floor Press, Push-up oder Incline Push-up.
+- **Kein Med-Ball:** Band Rotational Press 2x4/Seite oder gerader explosiver Band Press.
+- **Kein Sled:** Wall Bodyline ISO.
+- **Kein Band fuer Pallof:** Dead Bug 2x6/Seite.
+- **Knie:** CMJ zu Snap-down; Split-Squat-ISO hoeher/Hand-Support; kein HY-Decel.
+- **Sprunggelenk/Wade/Achilles:** Pogo streichen, Build-ups kuerzen, Soleus bilateral; kein Tempo.
+- **Leiste/Adduktor:** kein HY-Decel; Copenhagen zu Squeeze; Split-Squat-Winkel hoeher.
+- **Hamstring:** keine 30-m-Build-ups; Hinge leichter; Nordic zu Bridge ISO; kein Tempo.
+- **Ruecken:** Hinge vom Block oder Goblet/Box Squat; kein Bodyline-Druck.
+- **Schulter/Handgelenk:** neutraler Press, Incline Push-up, leichter Ball oder MB auslassen.
+- **Rutschiger Platz:** A-Skip kleiner/langsamer oder A-March; keine schnellen Build-ups, CMJ oder Decels; Kraft/Isos bleiben.
+- **Hitze:** Pausen verlaengern, Tempo streichen, Wasserzugang sichern.
 
 ## 17. Beobachten und entscheiden: Spickzettel
 
-**Ziel:** Feldentscheidungen ohne lange Diskussion.
+| Beobachtung | Bedeutung | Entscheidung |
+| --- | --- | --- |
+| Dienstag-Reaktion schwer | 4A noch nicht verarbeitet | Gelb, Speed halbieren, Kraft technisch, kein Tempo |
+| A-Skip hektisch | Rhythmus nicht stabil | A-March oder A-Skip kleiner/langsamer |
+| Hamstring/Wade bei Build-up | Speed-Risiko | Strecke kuerzen, kein 30 m, kein Tempo |
+| CMJ-Landung hart | Power heute zu hoch | kleiner CMJ oder Snap-down |
+| Hauptlift Rep-Speed faellt | Last/Ermuedung zu hoch | Last runter oder Satz beenden |
+| Split-Squat-ISO instabil | Winkel/Ermuedung zu hoch | hoeher, Hand-Support oder bilateral |
+| HY bremst spaet | Decel nicht kontrolliert | nur Walk-in/Plant oder streichen |
+| CF Bodyline wird Maxkampf | falscher Reiz | leichter, Wall ISO oder streichen |
+| viele Gelb/Rot | Gruppendosis zu hoch | kein Tempo, Kraft 1-2 Saetze |
+| Kopf/Nacken/Schwindel | Red Flag | sofort raus, medizinisch abklaeren, kein Same-Day-Return |
 
-- **Dienstag-Reaktion schlecht:** Heute kein Fly, Kraft 2 Saetze, Tempo streichen.
-- **Mobility schmerzhaft:** ROM kleiner oder auslassen, nicht hineinwippen.
-- **A-Skip chaotisch:** Dribble oder A-March.
-- **Pogo hart:** Calf ISO.
-- **Sprint wird Rennen:** Sofort abbremsen: kein Timing, keine Nebenmann-Jagd.
-- **Fly verkrampft:** Fly streichen, naechster Lauf nur build-up.
-- **Landung unsicher:** Kein CMJ fuer den Spieler, Snap-down.
-- **Squat/Trap Bar kippt:** Gewicht runter, Variante einfacher, weniger Saetze.
-- **Pull/Press reizt Schulter/Nacken:** Band Row, neutraler DB Press, kleiner ROM oder auslassen.
-- **Copenhagen reizt Leiste:** Adductor Squeeze oder auslassen.
-- **Neck/Kopf-Symptome:** Kein Neck-Training, kein Drive, kein Diskutieren, klaeren.
-- **Viele Spieler muede:** Tempo streichen, Kraft 2 Saetze, Cluster kurz.
+## 18. Safety Review
+
+**Pass mit Bedingungen:** Der Plan passt zur Research- und Projektlinie, wenn Donnerstag als Konsolidierung bleibt und die Dienstag-Reaktion wirklich die Dosis steuert.
+
+### Hoechste Risiken
+
+1. **Zweiter Unterkoerper-Hauptreiz:** Dienstag hatte Speed, Jumps, Hinge, RFESS, Cluster und optional Conditioning.
+2. **Speed bei heterogener Anwesenheit:** Nicht jeder Spieler hat dieselbe Expositionsstufe.
+3. **Verdeckte Speed-COD-Stapelung:** HY bekommt nur Decel-to-Stick, kein Reaccel.
+4. **Tempo als Finisher missverstanden:** Tempo ist optional und submaximal.
+5. **Grossgruppenlogistik:** Drei Pods funktionieren nur mit zwei Lanes und klaren Wechseln.
+6. **Fehlende Dienstag-Ist-Daten:** Prozentreduktionen duerfen nicht als exakt gelten, wenn reale Speed-, Kraft- und Conditioning-Dosis fehlen. Dann wird konservativ entschieden.
+
+### Schutzentscheidungen
+
+- Speedmeter gegenueber Dienstag reduziert;
+- Dienstag-Ist-Dosis vor der Donnerstag-Entscheidung erfasst; geplante Donnerstag-Dosen bleiben Obergrenzen;
+- kein Fly und kein Max-Sprint;
+- gleiche A-Skip-Dosis, keine neue Track-Uebung;
+- sechs Sprungkontakte, keine Kontaktsteigerung;
+- Kraft nur zwei Saetze bei RPE 6-7;
+- HY ohne Reaccel;
+- kein Shield-Hit und kein Live-Kontakt;
+- Tempo Default aus; als Opt-in geradeaus und maximal vier Wiederholungen;
+- Returner-Caps getrennt;
+- Concussion-Verdacht: sofort entfernen, medizinisch abklaeren, keine Rueckkehr am selben Tag.
+
+### Was unveraendert bleiben kann
+
+- RAMP-Struktur;
+- Speed vor Power und Kraft;
+- vertraute Kraftfamilien;
+- drei Positionscluster;
+- kleine Neck-/Adduktor-/Soleus-/Hamstring-Dosen;
+- kurze Ampelsteuerung und direkter Abschluss.
+
+## 19. Was du Donnerstag nicht sagen solltest
+
+- Nicht: "Dienstag ging gut, also machen wir heute noch mehr."
+- Nicht: "Wer Dienstag gefehlt hat, holt heute nach."
+- Nicht: "Der dritte Kraftsatz ist Progression."
+- Nicht: "Die Backs machen heute einen Max-Fly."
+- Nicht: "Tempo ist unser Finisher."
+- Nicht: "Sled/Wall Drive ist Kontakttraining."
+- Nicht: "Schmerz einfach durchziehen."
+
+**Besser:**
+
+- "Heute bestaetigen wir Qualitaet bei weniger Dosis."
+- "A-Skip bleibt unsere Hauptuebung."
+- "Zwei saubere Kraftsaetze sind der Plan."
+- "Decel ist geplant und endet im Stick."
+- "Tempo ist optional."
+- "Gelb ist Steuerung, keine Bewertung."
+
+## 20. Vollstaendigkeitscheck vor Start
+
+- [ ] Check-in-Bogen ab ca. 18:50 bereit.
+- [ ] Dienstag-sRPE, Pain/Issue und reale Dosis verfuegbar oder konservative Annahme gesetzt.
+- [ ] 10/20/30 m und Auslauf markiert.
+- [ ] A-Skip-Demo vorbereitet; kein neuer Track Drill.
+- [ ] CMJ-Landeflaeche und MB-Wurfzone sicher.
+- [ ] Zwei Hinge- und zwei Press/Row-Lanes vorbereitet.
+- [ ] Split-Squat-ISO/Pallof-Zone vorbereitet.
+- [ ] CF Bodyline-, HY Decel- und SB Robustheitszone markiert.
+- [ ] Tempo geradeaus und nur optional.
+- [ ] Kopf/Nacken-/Concussion-Regel klar.
+- [ ] Returner-Caps fuer Speed, COD, Conditioning und Kontakt klar.
+- [ ] Abschluss mit sRPE und Pain/Issue eingeplant.
+
+## 21. Kurzfassung fuer dich
+
+- **Check-in:** Dienstag-Ist-Dosis plus Reaktion rollierend ab ca. 18:50; 0-5 Minuten nur Flags und Limits.
+- **RAMP:** vertraut, fliessend, keine neue Mobility-Show.
+- **Track Prep:** A-March 1x10 m; A-Skip 2x10 m als Hauptuebung; Pogo 1x10; Snap-down 2x2.
+- **Speed:** CF 60 m, HY 60 m, SB 80 m; 80-90 Prozent smooth fast; kein Fly.
+- **Power:** CMJ + Stick 3x2; bekannter Rotational Scoop 2x2/Seite mit dokumentiertem Ballgewicht, sonst Chest Pass 2x3.
+- **Kraft:** Hinge 2x4 @ RPE 6; Press/Row 2x6; Split-Squat-ISO + Pallof.
+- **Cluster:** CF Bodyline/Neck; HY Decel-to-Stick/Adduktor; SB Soleus plus Assisted Nordic 2x3 als etablierter Gruen-Standard, Bridge nur als Regression.
+- **Tempo:** Default aus; Coach-Opt-in maximal 4x40 m bei 65-70 Prozent, geradeaus.
+- **Abschluss:** direkt sRPE und Pain/Issue; Coach ergaenzt Dauer, Speed-, Kraft-, Kontakt- und Tempo-Dosis.
+
+## 22. Quellen und Projektbasis
+
+- `research/01_match_demands_and_load_profile.md`
+- `research/02_injury_risk_reduction.md`
+- `research/03_periodization_2x_week.md`
+- `research/04_position_specific_requirements.md`
+- `research/05_testing_monitoring.md`
+- `research/06_return_to_play_reconditioning.md`
+- `research/07_exercise_drill_pool.md`
+- `plans/00_planning_principles_from_research.md`
+- `plans/07_offseason_pre_august_kw25_31.md`
+- `templates/session_prescription_defaults.md`
+- `templates/exercise_pool_offseason_mapping.md`
+- `docs/20_kw27_tuesday_deep_playbook_2026-06-30.md`
+- `docs/22_kw28_thursday_deep_playbook_2026-07-09.md`
+- `docs/23_training_history_audit_2026-07-12.md`
+- `docs/24_kw29_tuesday_deep_playbook_2026-07-14.md`
 
 **Was ich sage:**
-> Ich will heute keine heldenhafte Wiederholung. Ich will saubere Wiederholungen, die wir naechste Woche weiter nutzen koennen.
-
-## 18. Was du Donnerstag nicht sagen solltest
-
-**Ziel:** Diese Saetze wuerden falsche Kultur, falsche Last oder falsche medizinische Sicherheit erzeugen.
-
-- **Nicht sagen:** Dienstag war nur Nachholen, also machen wir heute 4A dazu.
-- **Nicht sagen:** Wer Dienstag nicht da war, macht heute mehr.
-- **Nicht sagen:** Heute testen wir alle.
-- **Nicht sagen:** Fly ist Pflicht fuer Backs.
-- **Nicht sagen:** Conditioning muss weh tun.
-- **Nicht sagen:** Schmerz durchziehen.
-- **Nicht sagen:** Neck-Training schuetzt euch vor Gehirnerschuetterung.
-- **Nicht sagen:** Das ist Diagnose X.
-- **Nicht sagen:** Forwards muessen den Sled heute zerstoeren.
-
-**Was ich sage:**
-> Wenn du unsicher bist, nimm Druck raus: Heute Qualitaet, Progression und saubere Daten.
-
-## 19. Safety Review
-
-**Pass:** Der Plan passt zur Research-Linie: Donnerstag bleibt low-volume/high-quality, die verpasste 4A wird nicht nachgeholt, Speed kommt frisch, Kraft bleibt submaximal, Conditioning ist optional und Returner werden konservativ gefuehrt.
-
-**Haupt-Risiken und Steuerung:**
-
-- **Load spike durch Verschiebung:** Keine volle 4A am Donnerstag; Kraft 2-3 Saetze, RPE 6-7, Tempo optional.
-- **Hamstring/Wade durch Fly:** Fly nur gruen; 10 m Default; bei Gelb build-up ohne Fly.
-- **Adduktor/Knie durch Decel:** Hybrid-Decel nur optional und niedrig; bei Gelb linear.
-- **Kontakt-/Nackenrisiko:** Kein Full Contact; Neck Iso nur symptomfrei; Kopf/Nacken/neurologisch = Rot.
-- **Returner:** keine Flys, keine harten Decels, kein Tempo, keine Kontaktprogression bei offenem Status.
-- **Amateur-Kontext:** Schwere Beine, Arbeit/Studium/Schlafstress fuehren zu Kuerzung, nicht zu Zusatzlast.
-
-**Spezifische Edits gegenueber dem urspruenglichen 4B-Plan:**
-
-- Speed/Space Backs bekommen 2-3 Reps statt 3-4 als Default.
-- Fly-Zone bleibt 10 m; 15 m nur fuer sehr gruene Spieler.
-- Kraft ist 2-3x3-4, nicht automatisch 3 Saetze fuer alle.
-- Conditioning ist 4-6 Reps/6-8 Minuten locker, nicht als Pflichtblock.
-- Cluster-Robustheit ersetzt jede spontane Contact-Prep-Eskalation.
-
-## 20. Vollstaendigkeitscheck fuer Donnerstag
-
-**Ziel:** Diese Liste prueft, ob du jeden relevanten Punkt vorbereitet hast.
-
-- **Start:** Verschiebung erklaert, keine Nachhol-4A, Ziel Bruecke.
-- **Check-in:** Dienstag-Reaktion, Ampel, Schmerz, Returner, Kopf/Nacken-Grenze.
-- **RAMP:** Hip Switch, Adductor Rockback, Knee-to-Wall, Squat-to-Stand, Open Book.
-- **Track Prep:** A-March, A-Skip/Dribble, Pogo, Snap-down.
-- **Speed:** CF 20 m/Sled leicht, HY 20-25 m/Decel optional, SB build + 10 m fly nur gruen.
-- **Power:** CMJ + Stick, MB Rotational/Scoop.
-- **Kraft:** Squat/Trap Bar, Pull, DB Press; RPE 6-7; zwei Saetze bei schweren Beinen.
-- **Cluster-Robustheit:** CF Neck/Drive, HY Adductor/Pallof, SB Calf/Hamstring.
-- **Tempo:** optional, locker, zuerst streichen.
-- **Abschluss:** sRPE, Pain/Issue, KW30-Entscheidung.
-- **Safety:** Keine medizinische Freigabe durch S&C, keine Diagnosen, keine Concussion-Rueckkehrentscheidung.
-- **Organisation:** 8/15/20 Spieler, viele Gelb/Rot, Zeitdruck, Material-Fallbacks.
-
-**Was ich sage:**
-> Wenn du diese Liste einmal durchgehst, hast du den Donnerstag vorbereitet. Am Feld kuerzt du von hinten und schuetzt die Qualitaet.
-
-## 21. Quellen und Video-Logik
-
-**Ziel:** Quellen geben die Richtung. Video-Suchbegriffe sind Bewegungsbilder, keine automatische Freigabe einzelner Videos.
-
-- **World Rugby Activate:** https://passport.world.rugby/injury-prevention-and-risk-management/activate/
-- **World Rugby Concussion Management:** https://passport.world.rugby/player-welfare-medical/concussion-management-for-the-general-public/
-- **World Rugby Player Load Guidance:** https://www.world.rugby/the-game/player-welfare/medical/player-load/coaches-guidance
-- **World Rugby Contact Load:** https://www.world.rugby/the-game/player-welfare/medical/player-load/contact-load?lang=en
-- **Projektbasis:** `plans/offseason_coach_sheets/KW28_basis_3.md`, `plans/offseason_coach_sheets/KW29_aufbau_1.md`, `plans/offseason_coach_sheets/kw28_31_print_workbook.md`, `research/01_match_demands_and_load_profile.md`, `research/02_injury_risk_reduction.md`, `research/03_periodization_2x_week.md`, `research/04_position_specific_requirements.md`, `research/05_testing_monitoring.md`, `research/06_return_to_play_reconditioning.md`, `research/07_exercise_drill_pool.md`.
-
-**Was ich sage:**
-> Nutze Quellen und Videos als Orientierung. Deine Entscheidung am Feld bleibt: schmerzfrei, kontrolliert, passend zur Ampel und passend zur Spielrolle.
+> Die Quellen geben die Richtung. Donnerstag bleibt eine hochwertige Welle nach Dienstag: weniger Dosis, gleiche Aufmerksamkeit und klare Tagesentscheidungen.

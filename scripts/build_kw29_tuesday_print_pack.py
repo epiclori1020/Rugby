@@ -13,15 +13,15 @@ from export_print_pdfs import build_pdf as build_markdown_pdf
 
 
 ROOT = Path(__file__).resolve().parents[1]
-OUT_DIR = ROOT / "print_pdfs" / "DONNERSTAG_2026-07-16_DRUCKEN"
+OUT_DIR = ROOT / "print_pdfs" / "DIENSTAG_2026-07-14_DRUCKEN"
+OUT_TRAINING = OUT_DIR / "01_training_kompakt_pflicht.pdf"
 OUT_COMBINED = OUT_DIR / "02_checkin_beobachtung_pflicht_2seiten.pdf"
 OUT_CHECKIN = OUT_DIR / "02a_checkin_pflicht.pdf"
 OUT_OBSERVATION = OUT_DIR / "02b_beobachtung_nachbereitung_pflicht.pdf"
-OUT_TRAINING = OUT_DIR / "01_training_kompakt_pflicht.pdf"
 OUT_DEEP = OUT_DIR / "03_deep_playbook_optional_ipad.pdf"
 
-TRAINING_SRC = ROOT / "plans" / "offseason_coach_sheets" / "KW29_thursday_training_compact_2026-07-16.md"
-DEEP_SRC = ROOT / "docs" / "22_kw29_thursday_deep_playbook_2026-07-16.styled.pdf"
+TRAINING_SRC = ROOT / "plans" / "offseason_coach_sheets" / "KW29_tuesday_training_compact_2026-07-14.md"
+DEEP_SRC = ROOT / "docs" / "24_kw29_tuesday_deep_playbook_2026-07-14.styled.pdf"
 
 PAGE_SIZE = landscape(A4)
 MARGIN_X = 8 * mm
@@ -60,8 +60,6 @@ def make_table(rows, col_widths, row_heights=None, repeat_rows=1):
                 ("TOPPADDING", (0, 0), (-1, -1), 1.5),
                 ("BOTTOMPADDING", (0, 0), (-1, -1), 1.5),
                 ("ALIGN", (0, 0), (0, -1), "CENTER"),
-                ("ALIGN", (3, 0), (4, -1), "CENTER"),
-                ("ALIGN", (7, 0), (8, -1), "CENTER"),
             ]
         )
     )
@@ -88,45 +86,45 @@ def make_doc(path: Path, title: str) -> BaseDocTemplate:
 def make_styles() -> dict[str, ParagraphStyle]:
     return {
         "title": ParagraphStyle("title", fontName="Helvetica-Bold", fontSize=14, leading=16, textColor=ACCENT, spaceAfter=3),
-        "meta": ParagraphStyle("meta", fontName="Helvetica", fontSize=7.45, leading=8.7, textColor=TEXT, spaceAfter=2),
-        "red": ParagraphStyle("red", fontName="Helvetica-Bold", fontSize=7.2, leading=8.3, textColor=RED, spaceAfter=3),
-        "cell": ParagraphStyle("cell", fontName="Helvetica", fontSize=6.05, leading=6.7, textColor=TEXT),
-        "cell_bold": ParagraphStyle("cell_bold", fontName="Helvetica-Bold", fontSize=6.05, leading=6.7, textColor=TEXT),
-        "section": ParagraphStyle("section", fontName="Helvetica-Bold", fontSize=10, leading=11, textColor=ACCENT, spaceBefore=3, spaceAfter=2),
+        "meta": ParagraphStyle("meta", fontName="Helvetica", fontSize=7.25, leading=8.4, textColor=TEXT, spaceAfter=2),
+        "red": ParagraphStyle("red", fontName="Helvetica-Bold", fontSize=7.05, leading=8.15, textColor=RED, spaceAfter=3),
+        "cell": ParagraphStyle("cell", fontName="Helvetica", fontSize=5.8, leading=6.35, textColor=TEXT),
+        "cell_bold": ParagraphStyle("cell_bold", fontName="Helvetica-Bold", fontSize=5.8, leading=6.35, textColor=TEXT),
+        "section": ParagraphStyle("section", fontName="Helvetica-Bold", fontSize=9.5, leading=10.5, textColor=ACCENT, spaceBefore=2, spaceAfter=2),
     }
 
 
 def checkin_story(styles: dict[str, ParagraphStyle]) -> list:
-    story = []
-    story.append(para("Check-in | Donnerstag 16.07.2026", styles["title"]))
+    story = [para("Check-in | Dienstag 14.07.2026", styles["title"])]
     story.append(
         para(
-            "R = Readiness 1-5. Ret = Returner N/J/offen. A = Ampel G/Y/R. Cluster: CF / HY / SB. "
-            "Vorab rollierend ab ca. 18:50 beginnen; 0-5 Minuten nur Flags und Limits klaeren.",
+            "R = Readiness 1-5. MK = Muskelkater 0-10. A = Ampel G/Y/R. "
+            "Cluster: CF / HY / SB. Einziger deutlicher Hauptregler heute: Kraftintensitaet. Vorab rollierend ab ca. 18:50 beginnen.",
             styles["meta"],
         )
     )
     story.append(
         para(
-            "4B nach Dienstag-4A: Di-Ist-Dosis + Reaktion steuern; Donnerstag-Dosen sind Obergrenzen, kein Nachholen. "
-            "Concussion-Verdacht/Kopf/Nacken/Schwindel/neurologisch = sofort raus; medizinisch abklaeren; kein Same-Day-Return.",
+            "Kopf/Nacken/Schwindel/neurologisch/Concussion-Verdacht = sofort raus, medizinisch abklaeren, keine Rueckkehr am selben Tag. "
+            "Gelb: Speed/Volumen 30-50 % runter, Kraft 2 Saetze @ RPE 5-6, kein HY-Reaccel, kein Conditioning.",
             styles["red"],
         )
     )
-    header = ["Nr", "Name", "Pos", "Cluster", "R", "Di-Ist / Reaktion", "Schmerz + Ort", "Ret", "A", "Entscheidung heute"]
+
+    header = ["Nr", "Name", "Pos/Cl.", "R", "MK", "Schmerz + Ort", "09.07-Reaktion / Life Load", "Ret/Limit", "A", "Entscheidung heute"]
     rows = [[str(i), "", "", "", "", "", "", "", "", ""] for i in range(1, 21)]
     story.append(
         make_table(
             [[para(c, styles["cell_bold"]) for c in header]]
             + [[para(c, styles["cell"]) for c in row] for row in rows],
-            [8 * mm, 34 * mm, 15 * mm, 15 * mm, 8 * mm, 34 * mm, 43 * mm, 13 * mm, 9 * mm, 78 * mm],
-            [6.6 * mm] + [7.35 * mm] * 20,
+            [8 * mm, 31 * mm, 16 * mm, 8 * mm, 9 * mm, 39 * mm, 49 * mm, 27 * mm, 9 * mm, 81 * mm],
+            [6.4 * mm] + [7.25 * mm] * 20,
         )
     )
     story.append(Spacer(1, 3))
     story.append(
         para(
-            "Gruene ohne Aenderung nicht einzeln interviewen. Code: normal | Speed red. | kein Decel | Kraft 1-2 leicht | kein Bodyline | kein Tempo | Ret-Cap | klaeren.",
+            "Gruene ohne Aenderung nicht einzeln interviewen. Code: normal | Speed red. | kein Reaccel | Kraft 2x4 | kein Cond. | Returner-Cap | klaeren.",
             styles["meta"],
         )
     )
@@ -134,37 +132,39 @@ def checkin_story(styles: dict[str, ParagraphStyle]) -> list:
 
 
 def observation_story(styles: dict[str, ParagraphStyle]) -> list:
-    story = []
-    story.append(para("Beobachtung + Nachbereitung | Donnerstag 16.07.2026", styles["title"]))
+    story = [para("Beobachtung + Nachbereitung | Dienstag 14.07.2026", styles["title"])]
     story.append(
         para(
-            "Reale Dosis und Auffaelligkeiten eintragen. Direkt pro Spieler nur sRPE und Pain/Issue; Dauer einmal, weitere Dosis danach ergaenzen.",
+            "Hauptlift immer dokumentieren. Sonst nur Auffaelligkeiten, Regressionen und reale Dosis eintragen. "
+            "Direkt pro Spieler nur sRPE und Pain/Issue. Dauer einmal; KI, Conditioning und reale Dosis danach aus Coach-Entscheidungen ergaenzen.",
             styles["meta"],
         )
     )
     story.append(
         para(
-            "Kuerzen: zuerst Tempo, dann Cluster, dann Power. Kraft lieber ein sauberer Satz pro Pod als Hektik. Kein dritter Satz.",
+            "Kuerzen: optionales Conditioning, Cluster verkuerzen, Power reduzieren; Kraft lieber zwei saubere Saetze. "
+            "Ab 15 Spielern Pod B/C je 2 Saetze; Pod A 3x4 nur bei sauberem Lane-Durchlauf.",
             styles["red"],
         )
     )
 
     story.append(para("Beobachtung pro Spieler", styles["section"]))
-    header = ["Nr", "Name", "A-Skip/Speed", "CMJ/MB kg", "Hinge Last", "Saetze/RPE", "Cluster/Tempo", "sRPE/Pain/KW30"]
-    rows = [[str(i), "", "", "", "", "", "", ""] for i in range(1, 21)]
+    header = ["Nr", "Name", "Speed gemacht", "Jump/MB", "Hauptlift Last", "Saetze/Reps/RPE", "Cluster", "Cond.", "sRPE direkt", "Pain/Do-Schritt"]
+    rows = [[str(i), "", "", "", "", "", "", "", "", ""] for i in range(1, 21)]
     story.append(
         make_table(
             [[para(c, styles["cell_bold"]) for c in header]]
             + [[para(c, styles["cell"]) for c in row] for row in rows],
-            [8 * mm, 28 * mm, 36 * mm, 34 * mm, 38 * mm, 38 * mm, 27 * mm, 58 * mm],
-            [6.0 * mm] + [7.0 * mm] * 20,
+            [8 * mm, 28 * mm, 31 * mm, 25 * mm, 32 * mm, 35 * mm, 31 * mm, 14 * mm, 35 * mm, 40 * mm],
+            [5.8 * mm] + [6.75 * mm] * 20,
         )
     )
     story.append(Spacer(1, 3))
     story.append(
         para(
-            "Coach-Review: Di-Ist S/K/C __/__/__ | Anwesend __ | G/Y/R __/__/__ | CF/HY/SB __/__/__ | Speed red./0 __ | "
-            "Hinge 2x4 __ | Kraft 0-1 Satz __ | KI 0/1 __/__ | Tempo Opt-in 0/1 __ | sRPE __ | KW30 reduzieren/Ruecksprache: ______",
+            "Coach-Review: Anwesend __ | G/Y/R __/__/__ | CF/HY/SB __/__/__ | 3x4 @ RPE7 __ | "
+            "Kraft reduziert __ | Cluster reduziert __ | KI 0/1 __/__ | Cond. 0/1 __ | sRPE Bereich __ | "
+            "neue Pain/Issue __ | Donnerstag reduzieren/Ruecksprache: ____________________",
             styles["meta"],
         )
     )
@@ -173,11 +173,11 @@ def observation_story(styles: dict[str, ParagraphStyle]) -> list:
 
 def build_checkin_pdfs() -> None:
     styles = make_styles()
-    make_doc(OUT_COMBINED, "KW29 Donnerstag Check-in Beobachtung 2 Seiten 2026-07-16").build(
+    make_doc(OUT_COMBINED, "KW29 Dienstag Check-in Beobachtung 2 Seiten 2026-07-14").build(
         checkin_story(styles) + [PageBreak()] + observation_story(styles)
     )
-    make_doc(OUT_CHECKIN, "KW29 Donnerstag Check-in 2026-07-16").build(checkin_story(styles))
-    make_doc(OUT_OBSERVATION, "KW29 Donnerstag Beobachtung Nachbereitung 2026-07-16").build(observation_story(styles))
+    make_doc(OUT_CHECKIN, "KW29 Dienstag Check-in 2026-07-14").build(checkin_story(styles))
+    make_doc(OUT_OBSERVATION, "KW29 Dienstag Beobachtung Nachbereitung 2026-07-14").build(observation_story(styles))
 
 
 def build_pack() -> None:
