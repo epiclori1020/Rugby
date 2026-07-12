@@ -3,6 +3,7 @@ import { getExerciseDefinition } from '../domain/exercises'
 import { exposureTypes } from '../domain/exposures'
 import { getMetricDefinition } from '../domain/metrics'
 import type { PlayerAnalysisPoint, PlayerAnalysisSource, PlayerAnalysisSummary } from '../domain/playerAnalysis'
+import { MetricTile } from './onfield'
 
 type PlayerAnalysisChartsProps = {
   analysis: PlayerAnalysisSummary
@@ -20,9 +21,9 @@ const sourceTableLabels: Record<PlayerAnalysisSource['table'], string> = {
   player_session_entries: 'Check-in/Nachbereitung',
   progress_entries: 'Progression',
   returner_entries: 'Returner',
-  player_exposure_summaries: 'Exposure Summary',
-  metric_results: 'Metric Result',
-  exercise_results: 'Exercise Result',
+  player_exposure_summaries: 'Belastungsübersicht',
+  metric_results: 'Messwert',
+  exercise_results: 'Übungsergebnis',
 }
 
 const attendanceLabels = {
@@ -171,30 +172,31 @@ export function LoadAnalysis({ analysis, canOpenSourceSession, onOpenSourceSessi
   return (
     <div className="player-analysis-grid">
       <CompactSection
-        title="Rolling Load"
+        title="Rollierende Belastung"
         isEmpty={analysis.load.length === 0}
-        emptyText="Keine lokalen sRPE-/Load-Werte fuer diesen Spieler. Load entsteht in der Nachbereitung."
+        emptyText="Keine lokalen sRPE-/Belastungswerte fuer diesen Spieler. Belastung entsteht in der Nachbereitung."
       >
         <div className="metric-grid mini player-analysis-metrics">
           {analysis.rollingLoad.map((load) => (
-            <div className="metric" key={load.label}>
-              <small>{load.label} Load</small>
-              <strong>{load.total === null ? '-' : Math.round(load.total).toLocaleString('de-AT')}</strong>
-              <small>{load.entryCount} lokale Eintraege</small>
-            </div>
+            <MetricTile
+              detail={`${load.entryCount} lokale Eintraege`}
+              key={load.label}
+              label={`${load.label} Belastung`}
+              value={load.total === null ? '-' : Math.round(load.total).toLocaleString('de-AT')}
+            />
           ))}
         </div>
       </CompactSection>
       <CompactSection
-        title="sRPE / Load History"
+        title="sRPE-/Belastungsverlauf"
         isEmpty={analysis.load.length === 0}
-        emptyText="Noch keine sRPE, Dauer oder Session Load lokal erfasst."
+        emptyText="Noch keine sRPE, Dauer oder Einheitenbelastung lokal erfasst."
       >
         <SourceList canOpenSourceSession={canOpenSourceSession} onOpenSourceSession={onOpenSourceSession} points={analysis.load}>
           {(point) => (
             <p>
               <strong>{point.sessionDate}</strong> · sRPE {formatValue(point.value.sessionRpe)} · Dauer{' '}
-              {point.value.durationMinutes === null ? '-' : `${point.value.durationMinutes} min`} · Load{' '}
+              {point.value.durationMinutes === null ? '-' : `${point.value.durationMinutes} min`} · Belastung{' '}
               {formatValue(point.value.sessionLoad)}
             </p>
           )}
@@ -208,9 +210,9 @@ export function IssuesAnalysis({ analysis, canOpenSourceSession, onOpenSourceSes
   return (
     <div className="player-analysis-grid">
       <CompactSection
-        title="Readiness History"
+        title="Belastbarkeitsverlauf"
         isEmpty={analysis.readiness.length === 0}
-        emptyText="Keine Readiness-Werte lokal sichtbar. Werte entstehen im Check-in."
+        emptyText="Keine Belastbarkeitswerte lokal sichtbar. Werte entstehen im Check-in."
       >
         <NumericBars
           canOpenSourceSession={canOpenSourceSession}
@@ -272,7 +274,7 @@ export function TrainingAnalysis({ analysis, canOpenSourceSession, onOpenSourceS
   return (
     <div className="player-analysis-grid">
       <CompactSection
-        title="Attendance History"
+        title="Anwesenheitsverlauf"
         isEmpty={attendancePoints.length === 0}
         emptyText="Noch keine lokalen Check-ins fuer diesen Spieler."
       >
@@ -289,7 +291,7 @@ export function TrainingAnalysis({ analysis, canOpenSourceSession, onOpenSourceS
         </SourceList>
       </CompactSection>
       <CompactSection
-        title="Exercise Progression"
+        title="Übungsprogression"
         isEmpty={analysis.exercisesByKey.length === 0}
         emptyText="Noch keine strukturierte Exercise-Historie lokal sichtbar."
       >
@@ -318,9 +320,9 @@ export function TrainingAnalysis({ analysis, canOpenSourceSession, onOpenSourceS
         </div>
       </CompactSection>
       <CompactSection
-        title="Exposure History / Gaps"
+        title="Belastungsarten: Verlauf und Lücken"
         isEmpty={analysis.exposures.length === 0}
-        emptyText="Keine Exposure-Summaries lokal sichtbar. Exposures entstehen aus Training/Nachbereitung."
+        emptyText="Keine Belastungsübersichten lokal sichtbar. Sie entstehen aus Training und Nachbereitung."
       >
         <SourceList
           canOpenSourceSession={canOpenSourceSession}
@@ -329,14 +331,14 @@ export function TrainingAnalysis({ analysis, canOpenSourceSession, onOpenSourceS
         >
           {(point) => (
             <p>
-              <strong>{point.sessionDate}</strong> · {point.label || 'Keine Exposure'}
+              <strong>{point.sessionDate}</strong> · {point.label || 'Keine Belastungsart'}
             </p>
           )}
         </SourceList>
         <div className="player-analysis-gap-list">
           {analysis.exposureGaps.slice(0, 6).map((gap) => (
             <span className={gap.sessionsSinceSeen === null ? 'tag compact warning-tag' : 'tag compact'} key={gap.exposureType}>
-              {exposureLabels[gap.exposureType]}: {gap.sessionsSinceSeen === null ? 'keine lokale Exposure' : `${gap.sessionsSinceSeen} Sessions`}
+              {exposureLabels[gap.exposureType]}: {gap.sessionsSinceSeen === null ? 'keine lokale Belastung' : `${gap.sessionsSinceSeen} Einheiten`}
             </span>
           ))}
         </div>
@@ -348,9 +350,9 @@ export function TrainingAnalysis({ analysis, canOpenSourceSession, onOpenSourceS
 export function MetricAnalysis({ analysis, canOpenSourceSession, onOpenSourceSession }: PlayerAnalysisChartsProps) {
   return (
     <CompactSection
-      title="Metric History"
+      title="Messwertverlauf"
       isEmpty={analysis.metricsByKey.length === 0}
-      emptyText="Noch keine Metric-Historie lokal sichtbar. Flexible Metrics entstehen in der Nachbereitung."
+      emptyText="Noch keine Messwerthistorie lokal sichtbar. Flexible Messwerte entstehen in der Nachbereitung."
     >
       <div className="player-analysis-list">
         {analysis.metricsByKey.map((group) => {

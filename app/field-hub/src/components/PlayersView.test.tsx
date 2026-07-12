@@ -557,14 +557,14 @@ describe('PlayersView default layout', () => {
     })
 
     expect(container.textContent).toContain('Letzte Teilnahme')
-    expect(container.textContent).not.toContain('Rolling Load')
+    expect(container.textContent).not.toContain('Rollierende Belastung')
 
     const loadTab = Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Load')
     await act(async () => {
       loadTab?.click()
     })
 
-    expect(container.textContent).toContain('Rolling Load')
+    expect(container.textContent).toContain('Rollierende Belastung')
     expect(container.textContent).toContain('Session lokal nicht direkt verknuepft.')
 
     const issuesTab = Array.from(container.querySelectorAll('button'))
@@ -583,7 +583,7 @@ describe('PlayersView default layout', () => {
       testsTab?.click()
     })
 
-    expect(container.textContent).toContain('Metric History')
+    expect(container.textContent).toContain('Messwertverlauf')
     expect(container.textContent).toContain('Broad Jump')
 
     root.unmount()

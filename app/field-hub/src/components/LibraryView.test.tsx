@@ -163,4 +163,53 @@ describe('LibraryView empty states', () => {
     expect(markup).toContain('nicht als aktive Vorlage')
     expect(markup).not.toContain('alt_unit_1_one_pager.pdf')
   })
+
+  it('keeps compact library navigation list-first and opens detail in a sheet', async () => {
+    const originalMatchMedia = window.matchMedia
+    window.matchMedia = vi.fn().mockImplementation(() => ({
+      matches: true,
+      media: '(max-width: 599px)',
+      onchange: null,
+      addEventListener: vi.fn(),
+      removeEventListener: vi.fn(),
+      addListener: vi.fn(),
+      removeListener: vi.fn(),
+      dispatchEvent: vi.fn(),
+    }))
+    const container = document.createElement('div')
+    document.body.append(container)
+    const root = createRoot(container)
+
+    try {
+      await act(async () => root.render(<LibraryView />))
+
+      expect(container.querySelector('[role="dialog"]')).toBeNull()
+      const item = container.querySelector<HTMLButtonElement>('.library-list-item')
+      await act(async () => item?.click())
+
+      expect(container.querySelector('[role="dialog"]')).not.toBeNull()
+      expect(container.textContent).toContain('Unterlage ansehen')
+      expect(item?.getAttribute('aria-pressed')).toBe('true')
+
+      const pdfButton = container.querySelector<HTMLButtonElement>('.pdf-link')
+      await act(async () => pdfButton?.click())
+      await act(async () => new Promise((resolve) => window.setTimeout(resolve, 20)))
+
+      const dialogs = container.querySelectorAll('[role="dialog"][aria-modal="true"]')
+      expect(dialogs).toHaveLength(1)
+      expect(dialogs[0]?.getAttribute('aria-label')).toContain('PDF Viewer')
+      expect(document.activeElement?.getAttribute('aria-label')).toBe('PDF schliessen')
+      const pdfFrame = container.querySelector<HTMLIFrameElement>('.pdf-viewer-body iframe')
+      expect(pdfFrame?.tabIndex).toBe(0)
+      pdfFrame?.focus()
+      await act(async () => {
+        pdfFrame?.dispatchEvent(new KeyboardEvent('keydown', { bubbles: true, key: 'Tab' }))
+      })
+      expect(document.activeElement).toBe(dialogs[0]?.querySelector('a, button'))
+    } finally {
+      await act(async () => root.unmount())
+      container.remove()
+      window.matchMedia = originalMatchMedia
+    }
+  })
 })

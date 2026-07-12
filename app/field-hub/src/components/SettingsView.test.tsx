@@ -104,6 +104,10 @@ describe('SettingsView', () => {
     expect(markup).toContain('Zum Home-Bildschirm')
     expect(markup).toContain('Neue App-Version bereit')
     expect(markup).toContain('Wartet auf Sync')
+    expect(markup).toContain('settings-utility-workspace')
+    expect(markup).toContain('settings-sync-strip')
+    expect((markup.match(/of-button-primary/g) ?? []).length).toBe(1)
+    expect(markup.indexOf('Synchronisierung')).toBeLessThan(markup.indexOf('Coach-Session'))
     expect(markup).not.toContain('pending write queue')
   })
 
@@ -112,6 +116,8 @@ describe('SettingsView', () => {
 
     expect(markup).toContain('Coach-Login')
     expect(markup).toContain('Einloggen')
+    expect((markup.match(/of-button-primary/g) ?? []).length).toBe(1)
+    expect(markup).toContain('of-button-secondary')
   })
 
   it('renders warning feedback without using success or error styling', () => {

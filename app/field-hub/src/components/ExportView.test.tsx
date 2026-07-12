@@ -114,7 +114,9 @@ describe('ExportView utility zone', () => {
     expect(markup).toContain('CSV-Tabellen')
     expect(markup).toContain('Import-Vorschau')
     expect(markup).toContain('Backup-Datei pruefen')
-    expect(markup).toContain('CSV Flexible Metrics')
+    expect(markup).toContain('CSV Flexible Messwerte')
+    expect(markup).toContain('export-action-list')
+    expect((markup.match(/of-button-primary/g) ?? []).length).toBe(1)
     expect(markup).not.toContain('pending write queue')
     expect(markup).not.toContain('JSON conflict object')
   })
@@ -134,8 +136,14 @@ describe('ExportView utility zone', () => {
       )
     })
 
+    expect(container.querySelector('input[type="file"]')).toBeNull()
+    const openImportButton = Array.from(container.querySelectorAll('button'))
+      .find((button) => button.textContent === 'Backup-Datei pruefen')
+    await act(async () => openImportButton?.click())
+
     const input = container.querySelector<HTMLInputElement>('input[type="file"]')
     expect(input).not.toBeNull()
+    expect(container.querySelector('[role="dialog"]')).not.toBeNull()
 
     const file = new File([JSON.stringify(emptyBackup)], 'backup.json', { type: 'application/json' })
 
@@ -194,6 +202,10 @@ describe('ExportView utility zone', () => {
         />,
       )
     })
+
+    const openImportButton = Array.from(container.querySelectorAll('button'))
+      .find((button) => button.textContent === 'Backup-Datei pruefen')
+    await act(async () => openImportButton?.click())
 
     const input = container.querySelector<HTMLInputElement>('input[type="file"]')
     const file = new File([JSON.stringify({})], 'backup.json', { type: 'application/json' })

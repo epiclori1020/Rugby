@@ -9,7 +9,7 @@ import { pendingCountLabel, syncStatusLabel } from '../lib/syncLabels'
 import type { ThemePreference } from '../lib/themePreference'
 import { AuthPanel } from './AuthPanel'
 import { BrandSurface } from './onfield'
-import { SegmentedControl, type SegmentedControlOption } from './ui'
+import { PrimaryButton, SecondaryButton, SegmentedControl, type SegmentedControlOption } from './ui'
 
 type SettingsViewProps = {
   authState: AuthSessionState
@@ -122,8 +122,8 @@ export function SettingsView({
     isOnline: syncOverview.isOnline,
   })
   const canManualSync = syncDisabledReason === null
+  const ManualSyncButton = authState.status === 'signed-in' ? PrimaryButton : SecondaryButton
   const SyncIcon = syncOverview.isOnline ? Cloud : CloudOff
-  const syncDisabledReasonId = 'manual-sync-disabled-reason'
   const pwaModeLabel = pwaDisplayMode === 'standalone' ? 'PWA installiert' : 'Browser-Modus'
   const pwaModeDescription =
     pwaDisplayMode === 'standalone'
@@ -131,9 +131,7 @@ export function SettingsView({
       : 'Installiere OnField Coach fuer mehr Platz am Spielfeldrand.'
 
   return (
-    <div className="settings-layout">
-      <AuthPanel authState={authState} />
-
+    <div className="settings-layout settings-utility-workspace">
       <section className="panel settings-panel" aria-labelledby="settings-sync-heading">
         <div className="status-line">
           <SyncIcon className="nav-icon" aria-hidden />
@@ -142,42 +140,38 @@ export function SettingsView({
             <p>Coach-nahe Ablage fuer Spieler, Check-ins, Training, Nachbereitung, Baseline und Returner.</p>
           </div>
         </div>
-        <div className="metric-grid mini">
-          <div className="metric">
-            <span>Status</span>
-            <strong>{syncOverview.isOnline ? 'Online' : 'Offline'}</strong>
+        <dl className="settings-sync-strip">
+          <div>
+            <dt>Status</dt>
+            <dd>{syncOverview.isOnline ? 'Online' : 'Offline'}</dd>
           </div>
-          <div className="metric">
-            <span>Wartet auf Sync</span>
-            <strong>{syncOverview.pendingCount}</strong>
+          <div>
+            <dt>Wartet auf Sync</dt>
+            <dd className="of-num">{syncOverview.pendingCount}</dd>
           </div>
-          <div className="metric">
-            <span>Sync</span>
-            <strong>{syncStatusLabel(syncOverview.status)}</strong>
+          <div>
+            <dt>Sync</dt>
+            <dd>{syncStatusLabel(syncOverview.status)}</dd>
           </div>
-          <div className="metric">
-            <span>Letzter Sync</span>
-            <strong>{syncOverview.lastSuccessfulSyncAt ? 'vorhanden' : 'offen'}</strong>
+          <div>
+            <dt>Letzter Sync</dt>
+            <dd>{syncOverview.lastSuccessfulSyncAt ? 'vorhanden' : 'offen'}</dd>
             <small>{formatTimestamp(syncOverview.lastSuccessfulSyncAt)}</small>
           </div>
-        </div>
+        </dl>
         {syncOverview.errorMessage ? <p className="form-error">{syncOverview.errorMessage}</p> : null}
         {syncFeedback ? <p className={manualSyncFeedbackClassName(syncFeedback.kind)}>{syncFeedback.message}</p> : null}
-        <button
-          aria-describedby={!canManualSync ? syncDisabledReasonId : undefined}
-          className="primary-action"
+        <ManualSyncButton
           disabled={!canManualSync}
-          type="button"
+          disabledReason={syncDisabledReason ?? undefined}
+          icon={<RefreshCw aria-hidden />}
+          id="manual-sync"
+          isLoading={isManualSyncing}
+          loadingLabel="Sync laeuft gerade"
           onClick={onManualSync}
         >
-          <RefreshCw className="nav-icon" aria-hidden />
-          <span>{isManualSyncing ? 'Sync laeuft gerade' : 'Jetzt synchronisieren'}</span>
-        </button>
-        {!canManualSync ? (
-          <p className="disabled-action-reason" id={syncDisabledReasonId}>
-            {syncDisabledReason}
-          </p>
-        ) : null}
+          Jetzt synchronisieren
+        </ManualSyncButton>
         <p className="sync-help">
           {syncOverview.pendingCount > 0
             ? `${pendingCountLabel(syncOverview.pendingCount)}.`
@@ -185,6 +179,8 @@ export function SettingsView({
           Bei Unterschieden zwischen Geraeten zaehlt die zuletzt gespeicherte Version.
         </p>
       </section>
+
+      <AuthPanel authState={authState} />
 
       <section className="panel settings-panel" aria-labelledby="settings-backup-heading">
         <div className="status-line">
@@ -227,7 +223,7 @@ export function SettingsView({
           <span>{pwaModeDescription}</span>
         </div>
         <div className="settings-theme-control">
-          <div>
+          <div className="settings-theme-copy">
             <strong>Darstellung</strong>
             <span>System folgt dem Geraet. Field Mode nutzt die dunkle Sideline-Darstellung.</span>
           </div>

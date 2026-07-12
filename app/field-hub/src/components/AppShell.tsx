@@ -159,7 +159,7 @@ export function AppShell({
           </p>
         ) : null}
         {activeSection === 'more' ? (
-          <div className="section-subnav">
+          <div className="section-subnav more-subnav">
             <SegmentedControl
               label="Mehr Unterbereiche"
               onChange={(moreRoute) => onNavigate(routeForMore(moreRoute))}

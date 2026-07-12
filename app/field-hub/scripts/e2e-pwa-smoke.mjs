@@ -17,17 +17,13 @@ const viewports = [
   { name: 'iPad landscape', width: 1194, height: 834, isMobile: false },
 ]
 
-const lazyScreenViewports = [
-  { name: 'iPhone small lazy screens', width: 375, height: 667, isMobile: true },
-  { name: 'Medium 744 lazy screens', width: 744, height: 1133, isMobile: true },
-  { name: 'iPad landscape lazy screens', width: 1194, height: 834, isMobile: false },
-]
+const lazyScreenViewports = viewports
 
 const lazyScreenChecks = [
   {
     sectionLabel: 'Analyse',
     screenName: 'Analyse',
-    expectedTexts: ['Filter einstellen', 'Kernwerte mit Kontext'],
+    expectedTexts: ['Analyse', 'Kernwerte mit Kontext'],
   },
   {
     sectionLabel: 'Mehr',

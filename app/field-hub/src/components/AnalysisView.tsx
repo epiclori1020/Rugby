@@ -20,7 +20,10 @@ import type { MetricResult } from '../domain/metrics'
 import type { Player } from '../domain/players'
 import type { SessionBlockLog } from '../domain/sessionBlocks'
 import { localDb } from '../lib/localDb'
+import { AnalysisResultList } from './AnalysisResultList'
 import { CoachInsightsPanel } from './CoachInsightsPanel'
+import { MetricTile } from './onfield'
+import { PrimaryButton, SecondaryButton, Sheet } from './ui'
 
 type AnalysisViewProps = {
   coachInsights: CoachInsight[]
@@ -40,6 +43,20 @@ type AnalysisLocalData = {
   exerciseResults: ExerciseResult[]
 }
 
+type AnalysisFilterSelection = {
+  rangeWeeks: AnalysisRangeWeeks
+  cluster: AnalysisClusterFilter
+  position: string
+  exposureType: AnalysisExposureFilter
+}
+
+const defaultFilterSelection: AnalysisFilterSelection = {
+  rangeWeeks: 8,
+  cluster: 'all',
+  position: 'all',
+  exposureType: 'all',
+}
+
 const rangeOptions: Array<{ value: AnalysisRangeWeeks; label: string }> = [
   { value: 8, label: 'Letzte 8 Wochen' },
   { value: 4, label: 'Letzte 4 Wochen' },
@@ -52,7 +69,7 @@ const trafficLabels = {
 } as const
 
 const exposureLabels: Record<AnalysisExposureFilter, string> = {
-  all: 'Alle Exposures',
+  all: 'Alle Belastungsarten',
   speed: 'Speed',
   acceleration: 'Acceleration',
   cod_decel: 'COD/Decel',
@@ -76,12 +93,12 @@ function formatLoad(value: number) {
 
 function rollingLoadLabel(rollingLoad: TeamAnalysisSummary['rolling7dLoad']) {
   if (!rollingLoad) {
-    return { value: '-', detail: 'keine Load-Eintraege' }
+    return { value: '-', detail: 'keine Belastungseintraege' }
   }
 
   return {
     value: formatLoad(rollingLoad.total),
-    detail: `${rollingLoad.entryCount} Load-Eintraege`,
+    detail: `${rollingLoad.entryCount} Belastungseintraege`,
   }
 }
 
@@ -121,6 +138,81 @@ function readinessTrendLabel(trend: number | null | undefined) {
   }
 
   return trend > 0 ? `+${trend}` : String(trend)
+}
+
+type AnalysisFilterControlsProps = {
+  filters: AnalysisFilterSelection
+  onChange: (filters: AnalysisFilterSelection) => void
+  positionOptions: string[]
+  testIdSuffix?: string
+}
+
+function AnalysisFilterControls({ filters, onChange, positionOptions, testIdSuffix = '' }: AnalysisFilterControlsProps) {
+  const testId = (name: string) => `analysis-${name}-filter${testIdSuffix}`
+
+  return (
+    <div className="analysis-filter-grid">
+      <label className="inline-field">
+        <span>Zeitraum</span>
+        <select
+          data-testid={testId('range')}
+          value={filters.rangeWeeks}
+          onChange={(event) => onChange({ ...filters, rangeWeeks: Number(event.target.value) as AnalysisRangeWeeks })}
+        >
+          {rangeOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="inline-field">
+        <span>Cluster</span>
+        <select
+          data-testid={testId('cluster')}
+          value={filters.cluster}
+          onChange={(event) => onChange({ ...filters, cluster: event.target.value as AnalysisClusterFilter })}
+        >
+          <option value="all">Alle Cluster</option>
+          {positionGroupOptions.map((option) => (
+            <option key={option.value} value={option.value}>
+              {option.label}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="inline-field">
+        <span>Position</span>
+        <select
+          data-testid={testId('position')}
+          value={filters.position}
+          onChange={(event) => onChange({ ...filters, position: event.target.value })}
+        >
+          <option value="all">Alle Positionen</option>
+          {positionOptions.map((option) => (
+            <option key={option} value={option}>
+              {option}
+            </option>
+          ))}
+        </select>
+      </label>
+      <label className="inline-field">
+        <span>Belastungsart</span>
+        <select
+          data-testid={testId('exposure')}
+          value={filters.exposureType}
+          onChange={(event) => onChange({ ...filters, exposureType: event.target.value as AnalysisExposureFilter })}
+        >
+          <option value="all">Alle Belastungsarten</option>
+          {exposureTypes.map((type) => (
+            <option key={type} value={type}>
+              {exposureLabels[type]}
+            </option>
+          ))}
+        </select>
+      </label>
+    </div>
+  )
 }
 
 async function readAnalysisLocalData(userId: string, filters: AnalysisFilters): Promise<AnalysisLocalData> {
@@ -169,13 +261,13 @@ async function readAnalysisLocalData(userId: string, filters: AnalysisFilters): 
 }
 
 export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players, sessions, todayKey, userId }: AnalysisViewProps) {
-  const [rangeWeeks, setRangeWeeks] = useState<AnalysisRangeWeeks>(8)
-  const [cluster, setCluster] = useState<AnalysisClusterFilter>('all')
-  const [position, setPosition] = useState('all')
-  const [exposureType, setExposureType] = useState<AnalysisExposureFilter>('all')
+  const [draftFilters, setDraftFilters] = useState<AnalysisFilterSelection>(defaultFilterSelection)
+  const [appliedFilters, setAppliedFilters] = useState<AnalysisFilterSelection>(defaultFilterSelection)
+  const [isFilterSheetOpen, setIsFilterSheetOpen] = useState(false)
   const [summary, setSummary] = useState<TeamAnalysisSummary | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const { cluster, exposureType, position, rangeWeeks } = appliedFilters
   const filters = useMemo<AnalysisFilters>(
     () => ({
       startDate: analysisStartDateForRange(todayKey, rangeWeeks),
@@ -195,6 +287,15 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
 
     return positions
   }, [players])
+
+  function applyDraftFilters() {
+    setAppliedFilters(draftFilters)
+    setIsFilterSheetOpen(false)
+  }
+
+  function resetDraftFilters() {
+    setDraftFilters(defaultFilterSelection)
+  }
 
   const refreshAnalysis = useCallback(async () => {
     if (!userId) {
@@ -252,52 +353,52 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
     `Zeitraum: ${rangeLabel(rangeWeeks)}`,
     `Cluster: ${clusterLabel(cluster)}`,
     `Position: ${position === 'all' ? 'Alle Positionen' : position}`,
-    `Exposure: ${exposureLabels[exposureType]}`,
+    `Belastungsart: ${exposureLabels[exposureType]}`,
   ]
   const analysisQuestions = [
     {
       icon: <Eye className="nav-icon" aria-hidden />,
       label: 'Beobachten',
       question: 'Was faellt im Verlauf auf?',
-      value: latestWeek ? `${formatNumber(latestWeek.attendanceRate, '%')} Attendance` : '-',
+      value: latestWeek ? `${formatNumber(latestWeek.attendanceRate, '%')} Anwesenheit` : '-',
       detail: latestWeek
-        ? `Letzte lokale Woche: Readiness ${formatNumber(latestWeek.readinessAverage)}, Trend ${readinessTrendLabel(latestWeek.readinessTrend)}.`
+        ? `Letzte lokale Woche: Belastbarkeit ${formatNumber(latestWeek.readinessAverage)}, Trend ${readinessTrendLabel(latestWeek.readinessTrend)}.`
         : 'Noch keine lokale Wochenhistorie im gewaehlten Zeitraum.',
     },
     {
       icon: <Wrench className="nav-icon" aria-hidden />,
       label: 'Modifizieren',
       question: 'Was muss fuer die naechste Einheit angepasst werden?',
-      value: loadSpikeAdvisory ? `${loadSpikeAdvisory.ratio}x Load` : summary ? `${changedPlannedBlocks} Anpassungen` : '-',
+      value: loadSpikeAdvisory ? `${loadSpikeAdvisory.ratio}x Belastung` : summary ? `${changedPlannedBlocks} Anpassungen` : '-',
       detail:
         !summary
-          ? 'Nach Login werden lokale Load- und Blockdaten fuer diese Frage genutzt.'
+          ? 'Nach Login werden lokale Belastungs- und Blockdaten fuer diese Frage genutzt.'
           : (loadSpikeAdvisory?.message ??
             (changedPlannedBlocks > 0
               ? `${changedPlannedBlocks} reduzierte, geaenderte oder gestrichene Bloecke im Zeitraum pruefen.`
-              : 'Keine lokale Load-Spike- oder Blockanpassungsauffaelligkeit sichtbar.')),
+              : 'Keine lokale Belastungsspitze oder auffaellige Blockanpassung sichtbar.')),
     },
     {
       icon: <TrendingUp className="nav-icon" aria-hidden />,
       label: 'Steigern',
       question: 'Wo ist Progression plausibel?',
-      value: summary ? `${completedExposureTotal} completed` : '-',
+      value: summary ? `${completedExposureTotal} erledigt` : '-',
       detail:
         completedExposureTotal > 0
-          ? `${reducedExposureTotal} reduced und ${skippedExposureTotal} skipped Exposures als Dosierungscheck danebenlegen.`
-          : 'Progression erst bewerten, wenn genug lokale Exposure-Summaries vorhanden sind.',
+          ? `${reducedExposureTotal} reduziert und ${skippedExposureTotal} ausgelassen als Dosierungscheck danebenlegen.`
+          : 'Progression erst bewerten, wenn genug lokale Belastungsübersichten vorhanden sind.',
     },
     {
       icon: <MessageSquareText className="nav-icon" aria-hidden />,
       label: 'Rueckmelden',
       question: 'Welche Quelle oder offene Aufgabe muss geprueft werden?',
-      value: `${coachInsights.length} Insights`,
+      value: `${coachInsights.length} Hinweise`,
       detail:
         coachInsights.length > 0
-          ? 'Coach Insights unten als Quellenliste pruefen und bei Bedarf in den passenden Arbeitsbereich springen.'
+          ? 'Coach-Hinweise unten als Quellenliste pruefen und bei Bedarf in den passenden Arbeitsbereich springen.'
           : openPlannedBlocks > 0
             ? `${openPlannedBlocks} geplante Bloecke sind lokal noch offen.`
-            : 'Keine offenen Coach Insights im Analyse-Kontext.',
+            : 'Keine offenen Coach-Hinweise im Analyse-Kontext.',
     },
   ]
 
@@ -326,64 +427,48 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
         </div>
       </article>
 
-      <article className="panel analysis-filter-panel">
+      <div className="analysis-compact-filter-trigger">
+        <SecondaryButton onClick={() => setIsFilterSheetOpen(true)} icon={<SlidersHorizontal aria-hidden />}>
+          Filter anpassen
+        </SecondaryButton>
+      </div>
+
+      <article className="panel analysis-filter-panel analysis-filter-panel-expanded">
         <div className="status-line">
           <SlidersHorizontal className="nav-icon" aria-hidden />
           <h3>Filter einstellen</h3>
         </div>
-        <div className="analysis-filter-grid">
-          <label className="inline-field">
-            <span>Zeitraum</span>
-            <select value={rangeWeeks} onChange={(event) => setRangeWeeks(Number(event.target.value) as AnalysisRangeWeeks)}>
-              {rangeOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="inline-field">
-            <span>Cluster</span>
-            <select value={cluster} onChange={(event) => setCluster(event.target.value as AnalysisClusterFilter)}>
-              <option value="all">Alle Cluster</option>
-              {positionGroupOptions.map((option) => (
-                <option key={option.value} value={option.value}>
-                  {option.label}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="inline-field">
-            <span>Position</span>
-            <select value={position} onChange={(event) => setPosition(event.target.value)}>
-              <option value="all">Alle Positionen</option>
-              {positionOptions.map((option) => (
-                <option key={option} value={option}>
-                  {option}
-                </option>
-              ))}
-            </select>
-          </label>
-          <label className="inline-field">
-            <span>Exposure-Art</span>
-            <select
-              value={exposureType}
-              onChange={(event) => setExposureType(event.target.value as AnalysisExposureFilter)}
-            >
-              <option value="all">Alle Exposures</option>
-              {exposureTypes.map((type) => (
-                <option key={type} value={type}>
-                  {exposureLabels[type]}
-                </option>
-              ))}
-            </select>
-          </label>
+        <AnalysisFilterControls filters={draftFilters} onChange={setDraftFilters} positionOptions={positionOptions} />
+        <div className="analysis-filter-actions">
+          <SecondaryButton onClick={resetDraftFilters}>Zurücksetzen</SecondaryButton>
+          <PrimaryButton onClick={applyDraftFilters}>Filter anwenden</PrimaryButton>
         </div>
         <p className="privacy-note">
-          Zeitraum: {filters.startDate} bis {filters.endDate}. Attendance nutzt den aktuell aktiven gefilterten Kader;
+          Zeitraum: {filters.startDate} bis {filters.endDate}. Anwesenheit nutzt den aktuell aktiven gefilterten Kader;
           historische Kaderstaende werden in dieser Ansicht nicht rekonstruiert.
         </p>
       </article>
+
+      {isFilterSheetOpen ? (
+        <Sheet
+          title="Analysefilter anpassen"
+          description="Filter werden erst nach dem Anwenden übernommen."
+          onClose={() => setIsFilterSheetOpen(false)}
+        >
+          <div className="analysis-filter-sheet-content">
+            <AnalysisFilterControls
+              filters={draftFilters}
+              onChange={setDraftFilters}
+              positionOptions={positionOptions}
+              testIdSuffix="-sheet"
+            />
+            <div className="analysis-filter-actions">
+              <SecondaryButton onClick={resetDraftFilters}>Zurücksetzen</SecondaryButton>
+              <PrimaryButton onClick={applyDraftFilters}>Filter anwenden</PrimaryButton>
+            </div>
+          </div>
+        </Sheet>
+      ) : null}
 
       <section className="analysis-question-grid" aria-label="Coach-Fragen fuer die Auswertung">
         {analysisQuestions.map((card) => (
@@ -393,7 +478,7 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
               <span>{card.label}</span>
             </div>
             <h3>{card.question}</h3>
-            <strong>{card.value}</strong>
+            <strong className="of-num">{card.value}</strong>
             <p>{card.detail}</p>
           </article>
         ))}
@@ -401,7 +486,7 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
 
       <CoachInsightsPanel
         dismissKey={`analysis:${todayKey}`}
-        emptyText="Keine offenen Coach Insights."
+        emptyText="Keine offenen Coach-Hinweise."
         insights={coachInsights}
         onOpenSource={onOpenCoachInsightSource}
       />
@@ -437,77 +522,65 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
               <h3>Kernwerte mit Kontext</h3>
             </div>
             <div className="metric-grid analysis-metrics">
-              <div className="metric">
-                <small>Gefilterter Kader</small>
-                <strong>{summary.rosterSize}</strong>
-                <small>aktive Spieler</small>
-              </div>
-              <div className="metric">
-                <small>Sessions lokal</small>
-                <strong>{summary.sessionCount}</strong>
-                <small>im Zeitraum</small>
-              </div>
-              <div className="metric">
-                <small>Rolling 7d Load</small>
-                <strong>{rolling7d.value}</strong>
-                <small>{rolling7d.detail}</small>
-              </div>
-              <div className="metric">
-                <small>Rolling 28d Load</small>
-                <strong>{rolling28d.value}</strong>
-                <small>{rolling28d.detail}</small>
-              </div>
-              <div className={`metric analysis-advisory-${loadSpikeAdvisory?.level ?? 'none'}`}>
-                <small>Load Spike</small>
-                <strong>{loadSpikeAdvisory ? `${loadSpikeAdvisory.ratio}x` : '-'}</strong>
-                <small>{loadSpikeAdvisory?.message ?? 'zu wenige lokale Load-Eintraege'}</small>
-              </div>
+              <MetricTile label="Gefilterter Kader" value={summary.rosterSize} detail="aktive Spieler" />
+              <MetricTile label="Sessions lokal" value={summary.sessionCount} detail="im Zeitraum" />
+              <MetricTile label="Belastung 7 Tage" value={rolling7d.value} detail={rolling7d.detail} />
+              <MetricTile label="Belastung 28 Tage" value={rolling28d.value} detail={rolling28d.detail} />
+              <MetricTile
+                label="Belastungsspitze"
+                value={loadSpikeAdvisory ? `${loadSpikeAdvisory.ratio}x` : '-'}
+                detail={loadSpikeAdvisory?.message ?? 'zu wenige lokale Belastungseintraege'}
+                tone={loadSpikeAdvisory?.level === 'high' ? 'danger' : loadSpikeAdvisory?.level === 'watch' ? 'warning' : 'neutral'}
+              />
             </div>
           </article>
 
           <article className="panel analysis-detail-panel">
             <div className="status-line">
               <CalendarDays className="nav-icon" aria-hidden />
-              <h3>Wochenverlauf: Attendance, Readiness und Load</h3>
+              <h3>Wochenverlauf: Anwesenheit, Belastbarkeit und Belastung</h3>
             </div>
             {summary.weeklySummaries.length === 0 ? (
               <EmptyState>Keine lokalen Sessions im gewaehlten Zeitraum. Erst nach Check-in oder Nachbereitung entstehen Analysewerte.</EmptyState>
             ) : (
-              <div className="analysis-table-wrap">
-                <table className="analysis-table">
-                  <thead>
-                    <tr>
-                      <th>Woche</th>
-                      <th>Sessions</th>
-                      <th>Anwesend</th>
-                      <th>Abwesend</th>
-                      <th>Offen</th>
-                      <th>Attendance</th>
-                      <th>Readiness</th>
-                      <th>Trend</th>
-                      <th>sRPE Load</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.weeklySummaries.map((week) => (
-                      <tr key={week.weekStart}>
-                        <td>{week.weekLabel}</td>
-                        <td>{week.sessionCount}</td>
-                        <td>{week.presentCount}</td>
-                        <td>{week.absentCount}</td>
-                        <td>{week.openCount}</td>
-                        <td>{formatNumber(week.attendanceRate, '%')}</td>
-                        <td>{formatNumber(week.readinessAverage)}</td>
-                        <td>{week.readinessTrend === null ? '-' : week.readinessTrend > 0 ? `+${week.readinessTrend}` : week.readinessTrend}</td>
-                        <td>
-                          <BarValue value={week.weeklyLoad} max={weeklyLoadMax} />
-                          <span>{formatLoad(week.weeklyLoad)}</span>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
+              <AnalysisResultList
+                ariaLabel="Wochenverlauf: Anwesenheit, Belastbarkeit und Belastung"
+                columns={[
+                  { key: 'week', label: 'Woche' },
+                  { key: 'sessions', label: 'Sessions', numeric: true },
+                  { key: 'present', label: 'Anwesend', numeric: true },
+                  { key: 'absent', label: 'Abwesend', numeric: true },
+                  { key: 'open', label: 'Offen', numeric: true },
+                  { key: 'attendance', label: 'Anwesenheit', numeric: true },
+                  { key: 'readiness', label: 'Belastbarkeit', numeric: true },
+                  { key: 'trend', label: 'Trend', numeric: true },
+                  { key: 'load', label: 'sRPE-Belastung', numeric: true },
+                ]}
+                rows={summary.weeklySummaries.map((week) => ({
+                  id: week.weekStart,
+                  cells: {
+                    week: week.weekLabel,
+                    sessions: week.sessionCount,
+                    present: week.presentCount,
+                    absent: week.absentCount,
+                    open: week.openCount,
+                    attendance: formatNumber(week.attendanceRate, '%'),
+                    readiness: formatNumber(week.readinessAverage),
+                    trend:
+                      week.readinessTrend === null
+                        ? '-'
+                        : week.readinessTrend > 0
+                          ? `+${week.readinessTrend}`
+                          : week.readinessTrend,
+                    load: (
+                      <span className="analysis-result-load">
+                        <BarValue value={week.weeklyLoad} max={weeklyLoadMax} />
+                        <span>{formatLoad(week.weeklyLoad)}</span>
+                      </span>
+                    ),
+                  },
+                }))}
+              />
             )}
           </article>
 
@@ -557,43 +630,41 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
           </section>
 
           <article className="panel analysis-detail-panel">
-            <h3>Exposures pro Woche als Progressionscheck</h3>
+            <h3>Belastungsarten pro Woche als Progressionscheck</h3>
             {summary.weeklyExposureSummaries.length === 0 ? (
               <EmptyState>
-                Keine Exposure-Summaries im Zeitraum. Exposures entstehen in der Nachbereitung aus Blockstatus und Anwesenheit.
+                Keine Belastungsübersichten im Zeitraum. Sie entstehen in der Nachbereitung aus Blockstatus und Anwesenheit.
               </EmptyState>
             ) : (
-              <div className="analysis-table-wrap">
-                <table className="analysis-table">
-                  <thead>
-                    <tr>
-                      <th>Woche</th>
-                      <th>Completed</th>
-                      <th>Reduced</th>
-                      <th>Skipped</th>
-                      <th>Gesamt</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    {summary.weeklyExposureSummaries.map((week) => {
-                      const total = week.completed + week.reduced + week.skipped
+              <AnalysisResultList
+                ariaLabel="Belastungsarten pro Woche"
+                columns={[
+                  { key: 'week', label: 'Woche' },
+                  { key: 'completed', label: 'Erledigt', numeric: true },
+                  { key: 'reduced', label: 'Reduziert', numeric: true },
+                  { key: 'skipped', label: 'Ausgelassen', numeric: true },
+                  { key: 'total', label: 'Gesamt', numeric: true },
+                ]}
+                rows={summary.weeklyExposureSummaries.map((week) => {
+                  const total = week.completed + week.reduced + week.skipped
 
-                      return (
-                        <tr key={week.weekStart}>
-                          <td>{week.weekLabel}</td>
-                          <td>{week.completed}</td>
-                          <td>{week.reduced}</td>
-                          <td>{week.skipped}</td>
-                          <td>
-                            <BarValue value={total} max={exposureMax} />
-                            <span>{total}</span>
-                          </td>
-                        </tr>
-                      )
-                    })}
-                  </tbody>
-                </table>
-              </div>
+                  return {
+                    id: week.weekStart,
+                    cells: {
+                      week: week.weekLabel,
+                      completed: week.completed,
+                      reduced: week.reduced,
+                      skipped: week.skipped,
+                      total: (
+                        <span className="analysis-result-load">
+                          <BarValue value={total} max={exposureMax} />
+                          <span>{total}</span>
+                        </span>
+                      ),
+                    },
+                  }
+                })}
+              />
             )}
           </article>
 
@@ -603,29 +674,14 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
               <h3>Datenabdeckung</h3>
             </div>
             <div className="metric-grid mini">
-              <div className="metric">
-                <small>Check-ins</small>
-                <strong>{summary.dataCoverage.checkIns}</strong>
-              </div>
-              <div className="metric">
-                <small>Blocklogs</small>
-                <strong>{summary.dataCoverage.blockLogs}</strong>
-              </div>
-              <div className="metric">
-                <small>Exposures</small>
-                <strong>{summary.dataCoverage.exposureSummaries}</strong>
-              </div>
-              <div className="metric">
-                <small>Metrics</small>
-                <strong>{summary.dataCoverage.metricResults}</strong>
-              </div>
-              <div className="metric">
-                <small>Exercises</small>
-                <strong>{summary.dataCoverage.exerciseResults}</strong>
-              </div>
+              <MetricTile label="Check-ins" value={summary.dataCoverage.checkIns} />
+              <MetricTile label="Blocklogs" value={summary.dataCoverage.blockLogs} />
+              <MetricTile label="Belastungsübersichten" value={summary.dataCoverage.exposureSummaries} />
+              <MetricTile label="Messwerte" value={summary.dataCoverage.metricResults} />
+              <MetricTile label="Übungsergebnisse" value={summary.dataCoverage.exerciseResults} />
             </div>
             <p className="privacy-note">
-              Metrics und Exercise Results werden hier nur als Team-Datenabdeckung gezaehlt. Spieler-spezifische Charts bleiben im Spielerprofil.
+              Messwerte und Übungsergebnisse werden hier nur als Team-Datenabdeckung gezaehlt. Spielerspezifische Verläufe bleiben im Spielerprofil.
             </p>
           </article>
         </>

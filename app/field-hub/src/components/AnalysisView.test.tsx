@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+import { act } from 'react'
+import { createRoot } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
 import { describe, expect, it } from 'vitest'
 import type { SessionDefinition } from '../content/types'
@@ -88,7 +90,7 @@ describe('AnalysisView', () => {
     expect(markup).toContain('Zeitraum: Letzte 8 Wochen')
     expect(markup).toContain('Cluster: Alle Cluster')
     expect(markup).toContain('Position: Alle Positionen')
-    expect(markup).toContain('Exposure: Alle Exposures')
+    expect(markup).toContain('Belastungsart: Alle Belastungsarten')
     expect(markup).toContain('Coach Insights')
     expect(markup).toContain('Beschwerden nach Training ohne naechsten Schritt')
     expect(markup).toContain('Max')
@@ -109,5 +111,78 @@ describe('AnalysisView', () => {
     expect(markup).not.toContain('Da speichern')
     expect(markup).not.toContain('Nicht-da speichern')
     expect(markup).not.toContain('sRPE speichern')
+  })
+
+  it('keeps filter edits as a draft until the coach applies them', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    try {
+      await act(async () => {
+        root.render(
+          <AnalysisView
+            coachInsights={[]}
+            players={[player]}
+            sessions={[session]}
+            todayKey="2026-06-22"
+            userId={null}
+          />,
+        )
+      })
+
+      const rangeSelect = container.querySelector<HTMLSelectElement>('[data-testid="analysis-range-filter"]')
+      expect(rangeSelect).not.toBeNull()
+      expect(container.textContent).toContain('Zeitraum: Letzte 8 Wochen')
+
+      await act(async () => {
+        if (rangeSelect) {
+          rangeSelect.value = '4'
+          rangeSelect.dispatchEvent(new Event('change', { bubbles: true }))
+        }
+      })
+
+      expect(container.textContent).toContain('Zeitraum: Letzte 8 Wochen')
+      expect(container.textContent).not.toContain('Zeitraum: Letzte 4 Wochen')
+
+      const applyButton = [...container.querySelectorAll('button')].find(
+        (button) => button.textContent === 'Filter anwenden',
+      )
+      await act(async () => applyButton?.click())
+
+      expect(container.textContent).toContain('Zeitraum: Letzte 4 Wochen')
+      expect(container.textContent).not.toContain('Zeitraum: Letzte 8 Wochen')
+    } finally {
+      await act(async () => root.unmount())
+    }
+  })
+
+  it('opens the compact filter workflow in an accessible sheet', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    try {
+      await act(async () => {
+        root.render(
+          <AnalysisView
+            coachInsights={[]}
+            players={[player]}
+            sessions={[session]}
+            todayKey="2026-06-22"
+            userId={null}
+          />,
+        )
+      })
+
+      const trigger = [...container.querySelectorAll('button')].find(
+        (button) => button.textContent === 'Filter anpassen',
+      )
+      await act(async () => trigger?.click())
+
+      expect(container.querySelector('[role="dialog"]')).not.toBeNull()
+      expect(container.textContent).toContain('Analysefilter anpassen')
+      expect(container.textContent).toContain('Zurücksetzen')
+    } finally {
+      await act(async () => root.unmount())
+    }
   })
 })

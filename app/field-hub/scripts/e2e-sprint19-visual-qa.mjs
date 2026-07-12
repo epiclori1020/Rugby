@@ -5,14 +5,16 @@ import { fileURLToPath } from 'node:url'
 import puppeteer from 'puppeteer-core'
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
+const repoRoot = resolve(rootDir, '../..')
 const defaultPort = process.env.FIELD_HUB_SPRINT19_E2E_PORT ?? '5182'
 const baseUrl = process.env.FIELD_HUB_SPRINT19_E2E_BASE_URL ?? `http://127.0.0.1:${defaultPort}/`
 const screenshotsEnabled = process.env.FIELD_HUB_SPRINT19_SCREENSHOTS === '1'
 const requireAuth = process.env.FIELD_HUB_SPRINT19_REQUIRE_AUTH === '1'
-const screenshotsDir = resolve(rootDir, 'ux-audit-screenshots')
+const screenshotsDir = resolve(repoRoot, '.tmp/onfield-qa/r8/after')
 
 const authEmail = process.env.FIELD_HUB_E2E_EMAIL
 const authPassword = process.env.FIELD_HUB_E2E_PASSWORD
+const themes = ['light', 'dark']
 
 class QaBlockedError extends Error {
   constructor(message) {
@@ -79,7 +81,7 @@ const screenChecks = [
     navigate: async (page) => {
       await clickButtonByLabelOrText(page, 'Analyse', 'Analyse')
     },
-    expectedTexts: ['Analyse', 'Rueckblick, Trends und Quellen'],
+    expectedTexts: ['Analyse', 'Kernwerte mit Kontext'],
   },
   {
     name: 'Mehr / Bibliothek',
@@ -87,7 +89,7 @@ const screenChecks = [
       await clickButtonByLabelOrText(page, 'Mehr', 'Mehr / Bibliothek')
       await clickButtonByLabelOrText(page, 'Bibliothek', 'Mehr / Bibliothek')
     },
-    expectedTexts: ['Mehr / Bibliothek', 'Coach-Skripte, Varianten'],
+    expectedTexts: ['Referenzbereich', 'Ruhiger Nachschlagebereich'],
   },
   {
     name: 'Mehr / Export & Backup',
@@ -95,7 +97,7 @@ const screenChecks = [
       await clickButtonByLabelOrText(page, 'Mehr', 'Mehr / Export & Backup')
       await clickButtonByLabelOrText(page, 'Export & Backup', 'Mehr / Export & Backup')
     },
-    expectedTexts: ['Mehr / Export & Backup', 'JSON-Backup, CSV-Dateien'],
+    expectedTexts: ['Coach-Login noetig', 'Import-Vorschau'],
   },
   {
     name: 'Mehr / Einstellungen',
@@ -103,7 +105,7 @@ const screenChecks = [
       await clickButtonByLabelOrText(page, 'Mehr', 'Mehr / Einstellungen')
       await clickButtonByLabelOrText(page, 'Einstellungen', 'Mehr / Einstellungen')
     },
-    expectedTexts: ['Mehr / Einstellungen', 'Account, Sync, Backup'],
+    expectedTexts: ['Synchronisierung', 'Geraet & Offline'],
   },
   {
     name: 'Mehr / Returner',
@@ -293,6 +295,9 @@ async function assertNoHorizontalOverflow(page, contextLabel) {
 
 async function assertBottomNavigation(page, contextLabel) {
   const bottomNav = await page.evaluate(() => {
+    if (window.innerWidth >= 840) {
+      return null
+    }
     const element = document.querySelector('.bottom-tab-bar')
     if (!element) {
       return null
@@ -307,7 +312,22 @@ async function assertBottomNavigation(page, contextLabel) {
         width: buttonRect.width,
       }
     })
-    return { bottom: rect.bottom, buttons, height: rect.height, viewportHeight: window.innerHeight }
+    const main = document.querySelector('.shell-main')
+    const mainPaddingBottom = main ? Number.parseFloat(getComputedStyle(main).paddingBottom) : 0
+    const stickyCollisions = [...document.querySelectorAll('.post-session-sticky-closeout')]
+      .filter((candidate) => {
+        const candidateRect = candidate.getBoundingClientRect()
+        return candidateRect.width > 0 && candidateRect.height > 0 && candidateRect.bottom > rect.top + 1
+      })
+      .map((candidate) => candidate.className)
+    return {
+      bottom: rect.bottom,
+      buttons,
+      height: rect.height,
+      mainPaddingBottom,
+      stickyCollisions,
+      viewportHeight: window.innerHeight,
+    }
   })
 
   if (!bottomNav) {
@@ -316,6 +336,12 @@ async function assertBottomNavigation(page, contextLabel) {
 
   if (bottomNav.height < 44 || bottomNav.bottom > bottomNav.viewportHeight + 1) {
     throw new Error(`${contextLabel}: Bottom Navigation ist nicht PWA-tauglich positioniert.`)
+  }
+  if (bottomNav.mainPaddingBottom + 1 < bottomNav.height) {
+    throw new Error(`${contextLabel}: Content-Clearance ist kleiner als die Bottom Navigation.`)
+  }
+  if (bottomNav.stickyCollisions.length > 0) {
+    throw new Error(`${contextLabel}: Sticky Action ueberlappt die Bottom Navigation.`)
   }
 
   const undersizedButtons = bottomNav.buttons.filter((button) => button.height < 44 || button.width < 44)
@@ -361,22 +387,198 @@ async function assertNoForbiddenCopy(page, contextLabel) {
   }
 }
 
-async function captureScreenshot(page, viewport, screenName) {
+async function setTheme(page, theme) {
+  await page.evaluate((preference) => localStorage.setItem('fieldHub:themePreference', preference), theme)
+  await page.reload({ waitUntil: 'networkidle2', timeout: 30_000 })
+  await waitForAppShell(page)
+  const appliedTheme = await page.evaluate(() => document.documentElement.dataset.theme)
+  if (appliedTheme !== theme) {
+    throw new Error(`Theme ${theme} wurde nicht stabil angewendet (aktuell: ${appliedTheme ?? 'unset'}).`)
+  }
+}
+
+async function assertRenderedContrast(page, contextLabel) {
+  const failures = await page.evaluate(() => {
+    const textSelectors =
+      'h1, h2, h3, h4, h5, h6, p, span, small, strong, label, li, dt, dd, button, a, input, select, textarea, [role="status"], [role="alert"]'
+    const primaryControlSelectors = new Set([
+      '.of-button-primary',
+      '.nav-button.active',
+      '.of-segmented-option[aria-pressed="true"]',
+    ])
+    const resolvedTheme = document.documentElement.dataset.theme
+    const parseColor = (value) => {
+      const parts = value.match(/[\d.]+/g)?.map(Number) ?? []
+      return parts.length >= 3 ? { r: parts[0], g: parts[1], b: parts[2], a: parts[3] ?? 1 } : null
+    }
+    const luminance = (color) => {
+      const channel = (value) => {
+        const normalized = value / 255
+        return normalized <= 0.04045 ? normalized / 12.92 : ((normalized + 0.055) / 1.055) ** 2.4
+      }
+      return 0.2126 * channel(color.r) + 0.7152 * channel(color.g) + 0.0722 * channel(color.b)
+    }
+    const composite = (foreground, background) => {
+      const alpha = foreground.a + background.a * (1 - foreground.a)
+      if (alpha === 0) return { r: 0, g: 0, b: 0, a: 0 }
+      return {
+        r: (foreground.r * foreground.a + background.r * background.a * (1 - foreground.a)) / alpha,
+        g: (foreground.g * foreground.a + background.g * background.a * (1 - foreground.a)) / alpha,
+        b: (foreground.b * foreground.a + background.b * background.a * (1 - foreground.a)) / alpha,
+        a: alpha,
+      }
+    }
+    const effectiveBackground = (element) => {
+      const layers = []
+      let current = element
+      while (current) {
+        const color = parseColor(getComputedStyle(current).backgroundColor)
+        if (color && color.a > 0) layers.push(color)
+        current = current.parentElement
+      }
+      return layers
+        .reverse()
+        .reduce((background, foreground) => composite(foreground, background), { r: 255, g: 255, b: 255, a: 1 })
+    }
+    const results = []
+    for (const element of [...document.querySelectorAll(textSelectors)].slice(0, 800)) {
+      const rect = element.getBoundingClientRect()
+      const hasText = Boolean(element.textContent?.trim()) || ['INPUT', 'SELECT', 'TEXTAREA'].includes(element.tagName)
+      if (
+        !hasText ||
+        rect.width <= 1 ||
+        rect.height <= 1 ||
+        element.matches(':disabled') ||
+        element.closest('[aria-hidden="true"]') ||
+        element.classList.contains('sr-only')
+      ) {
+        continue
+      }
+      const foreground = parseColor(getComputedStyle(element).color)
+      const background = effectiveBackground(element)
+      if (!foreground) continue
+      const lighter = Math.max(luminance(foreground), luminance(background))
+      const darker = Math.min(luminance(foreground), luminance(background))
+      const ratio = (lighter + 0.05) / (darker + 0.05)
+      const isPrimaryControl = [...primaryControlSelectors].some((selector) => element.matches(selector))
+      const requiredRatio = resolvedTheme === 'dark' && isPrimaryControl ? 7 : 4.5
+      if (ratio < requiredRatio) {
+        results.push({
+          selector: `${element.tagName.toLocaleLowerCase()}${element.className ? `.${String(element.className).trim().replace(/\s+/g, '.')}` : ''}`,
+          ratio: Number(ratio.toFixed(2)),
+          requiredRatio: resolvedTheme === 'dark' && isPrimaryControl ? 7 : 4.5,
+          foreground: getComputedStyle(element).color,
+          background: getComputedStyle(element).backgroundColor,
+          effectiveBackground: `rgb(${Math.round(background.r)}, ${Math.round(background.g)}, ${Math.round(background.b)})`,
+          label: element.getAttribute('aria-label') ?? element.textContent?.trim().slice(0, 60) ?? '',
+        })
+      }
+    }
+    return results
+  })
+
+  if (failures.length > 0) {
+    throw new Error(
+      `${contextLabel}: gerenderter Kontrast unter Zielwert: ${failures
+        .map(
+          (failure) =>
+            `${failure.selector} ${failure.ratio}:1 < ${failure.requiredRatio}:1 (${failure.foreground} on ${failure.effectiveBackground}; own ${failure.background}, ${failure.label})`,
+        )
+        .join(', ')}`,
+    )
+  }
+}
+
+async function assertKioskFieldMode(page) {
+  await page.setViewport({ width: 393, height: 852, deviceScaleFactor: 2, isMobile: true })
+  await page.evaluate(() => localStorage.setItem('fieldHub:themePreference', 'light'))
+  await page.goto(new URL('/#/unit/check-in', baseUrl).toString(), {
+    waitUntil: 'networkidle2',
+    timeout: 30_000,
+  })
+  await waitForAppShell(page)
+  await clickButtonByLabelOrText(page, 'Kiosk starten', 'Kiosk Field Mode')
+  await assertExpectedTexts(page, ['Training Check-in', 'Coach-Modus'], 'Kiosk Field Mode')
+
+  let checkedKioskSurfaces = 0
+  for (const viewport of [viewports[1], viewports[3]]) {
+    await page.setViewport({
+      width: viewport.width,
+      height: viewport.height,
+      deviceScaleFactor: 2,
+      isMobile: viewport.isMobile,
+    })
+    for (const theme of themes) {
+      await page.evaluate((resolvedTheme) => {
+        document.documentElement.dataset.theme = resolvedTheme
+        document.documentElement.dataset.themePreference = resolvedTheme
+      }, theme)
+      await page.evaluate(() => new Promise((resolveFrame) => requestAnimationFrame(() => requestAnimationFrame(resolveFrame))))
+      const contextLabel = `Kiosk Field Mode / ${viewport.label} / ${theme}`
+      await assertExpectedTexts(page, ['Training Check-in', 'Coach-Modus'], contextLabel)
+      await assertNoHorizontalOverflow(page, contextLabel)
+      await assertRenderedContrast(page, contextLabel)
+      await captureScreenshot(page, viewport, theme, 'Kiosk')
+      checkedKioskSurfaces += 1
+    }
+  }
+
+  return checkedKioskSurfaces
+}
+
+async function assertR8ResponsiveContracts(page, viewport, contextLabel) {
+  const failures = await page.evaluate((width) => {
+    const visible = (selector) => {
+      const element = document.querySelector(selector)
+      if (!element) return false
+      const style = getComputedStyle(element)
+      return style.display !== 'none' && element.getBoundingClientRect().width > 0
+    }
+    const problems = []
+    if (document.querySelector('.analysis-layout')) {
+      if (document.querySelector('.analysis-table, .analysis-table-wrap')) problems.push('legacy analysis table present')
+      if (width < 600 && !visible('.analysis-compact-filter-trigger')) problems.push('compact filter trigger missing')
+      if (width < 600 && visible('.analysis-filter-panel-expanded')) problems.push('desktop filters visible on compact')
+      if (width >= 600 && !visible('.analysis-filter-panel-expanded')) problems.push('filter panel missing on medium/expanded')
+    }
+    if (document.querySelector('.library-layout') && width < 600 && document.querySelector('.library-detail-pane')) {
+      problems.push('library detail pane rendered on compact')
+    }
+    const moreNav = document.querySelector('.more-subnav .of-segmented-control')
+    if (moreNav) {
+      const columns = getComputedStyle(moreNav).gridTemplateColumns.split(' ').filter(Boolean).length
+      const expectedColumns = width < 600 ? 2 : 4
+      if (columns !== expectedColumns) problems.push(`more navigation has ${columns} instead of ${expectedColumns} columns`)
+    }
+    const settings = document.querySelector('.settings-utility-workspace')
+    if (settings && settings.querySelectorAll('.of-button-primary').length !== 1) {
+      problems.push('settings primary action count is not one')
+    }
+    return problems
+  }, viewport.width)
+
+  if (failures.length > 0) {
+    throw new Error(`${contextLabel}: R8-Layoutvertrag verletzt: ${failures.join(', ')}`)
+  }
+}
+
+async function captureScreenshot(page, viewport, theme, screenName) {
   if (!screenshotsEnabled) {
     return null
   }
 
-  mkdirSync(screenshotsDir, { recursive: true })
+  const themeDir = resolve(screenshotsDir, theme)
+  mkdirSync(themeDir, { recursive: true })
   const filename = `${viewport.name}__${screenName
     .toLocaleLowerCase('de-AT')
     .replace(/[^a-z0-9]+/g, '-')
     .replace(/^-|-$/g, '')}.png`
-  const path = resolve(screenshotsDir, filename)
+  const path = resolve(themeDir, filename)
   await page.screenshot({ path, fullPage: true })
   return path
 }
 
-async function runScreenMatrix(page, viewport) {
+async function runScreenMatrix(page, viewport, theme) {
   await page.setViewport({
     width: viewport.width,
     height: viewport.height,
@@ -384,30 +586,49 @@ async function runScreenMatrix(page, viewport) {
     isMobile: viewport.isMobile,
   })
 
+  await page.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 30_000 })
+  await waitForAppShell(page)
+  await setTheme(page, theme)
+
   const checkedScreens = []
   for (const screen of screenChecks) {
     await page.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 30_000 })
     await waitForAppShell(page)
     await screen.navigate(page)
-    await assertExpectedTexts(page, screen.expectedTexts, `${viewport.label} / ${screen.name}`)
-    await assertNoHorizontalOverflow(page, `${viewport.label} / ${screen.name}`)
-    await assertBottomNavigation(page, `${viewport.label} / ${screen.name}`)
-    await assertNoForbiddenCopy(page, `${viewport.label} / ${screen.name}`)
-    const screenshotPath = await captureScreenshot(page, viewport, screen.name)
+    const contextLabel = `${viewport.label} / ${theme} / ${screen.name}`
+    await assertExpectedTexts(page, screen.expectedTexts, contextLabel)
+    await assertNoHorizontalOverflow(page, contextLabel)
+    await assertBottomNavigation(page, contextLabel)
+    await assertNoForbiddenCopy(page, contextLabel)
+    await assertR8ResponsiveContracts(page, viewport, contextLabel)
+    await assertRenderedContrast(page, contextLabel)
+    const screenshotPath = await captureScreenshot(page, viewport, theme, screen.name)
     checkedScreens.push({ screen: screen.name, screenshotPath })
   }
 
-  await assertKeyboardFocusVisible(page, viewport.label)
+  await assertKeyboardFocusVisible(page, `${viewport.label} / ${theme}`)
   return checkedScreens
 }
 
-async function assertPublicCheckInErrorState(page) {
+async function assertPublicCheckInErrorState(page, viewport, theme) {
+  await page.setViewport({
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 2,
+    isMobile: viewport.isMobile,
+  })
+  await page.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 30_000 })
+  await waitForAppShell(page)
+  await setTheme(page, theme)
   await page.goto(new URL('/#/checkin/e2e-sprint19-invalid-token', baseUrl).toString(), {
     waitUntil: 'networkidle2',
     timeout: 30_000,
   })
-  await assertExpectedTexts(page, ['Training Check-in', 'Check-in-Link'], 'Public Check-in error state')
-  await assertNoHorizontalOverflow(page, 'Public Check-in error state')
+  const contextLabel = `Public Check-in error state / ${viewport.label} / ${theme}`
+  await assertExpectedTexts(page, ['Training Check-in', 'Check-in-Link'], contextLabel)
+  await assertNoHorizontalOverflow(page, contextLabel)
+  await assertRenderedContrast(page, contextLabel)
+  await captureScreenshot(page, viewport, theme, 'Public Check-in Fehler')
 }
 
 async function assertLazyLoadErrorState(browser) {
@@ -458,11 +679,41 @@ async function runSignedInSmoke(page) {
   await page.type('input[type="password"]', authPassword)
   await clickButtonByLabelOrText(page, 'Einloggen', 'Signed-in smoke')
   await assertExpectedTexts(page, ['Coach-Session', 'Eingeloggt als'], 'Signed-in smoke')
-  await clickButtonByLabelOrText(page, 'Spieler', 'Signed-in player profile smoke')
-  await assertExpectedTexts(page, ['Kader', 'Spieler'], 'Signed-in player profile smoke')
-  await assertNoHorizontalOverflow(page, 'Signed-in player profile smoke')
+  const signedInScreens = [
+    { route: '#/analysis', name: 'Analyse', expectedTexts: ['Analyse', 'Kernwerte mit Kontext'] },
+    { route: '#/more/library', name: 'Bibliothek', expectedTexts: ['Referenzbereich'] },
+    { route: '#/more/export', name: 'Export & Backup', expectedTexts: ['Export und Backup'] },
+    { route: '#/more/settings', name: 'Einstellungen', expectedTexts: ['Synchronisierung'] },
+  ]
+  let checkedScreens = 0
+  for (const viewport of viewports) {
+    await page.setViewport({
+      width: viewport.width,
+      height: viewport.height,
+      deviceScaleFactor: 2,
+      isMobile: viewport.isMobile,
+    })
+    for (const theme of themes) {
+      await page.evaluate((preference) => localStorage.setItem('fieldHub:themePreference', preference), theme)
+      for (const screen of signedInScreens) {
+        await page.goto(new URL(`/${screen.route}`, baseUrl).toString(), {
+          waitUntil: 'networkidle2',
+          timeout: 30_000,
+        })
+        await waitForAppShell(page)
+        const contextLabel = `Signed-in / ${viewport.label} / ${theme} / ${screen.name}`
+        await assertExpectedTexts(page, screen.expectedTexts, contextLabel)
+        await assertNoHorizontalOverflow(page, contextLabel)
+        await assertR8ResponsiveContracts(page, viewport, contextLabel)
+        await assertRenderedContrast(page, contextLabel)
+        checkedScreens += 1
+      }
+    }
+  }
 
-  return { status: 'checked' }
+  const checkedKioskSurfaces = await assertKioskFieldMode(page)
+
+  return { status: 'checked', checkedScreens, checkedKioskSurfaces }
 }
 
 async function main() {
@@ -485,6 +736,7 @@ async function main() {
     })
 
     const page = await browser.newPage()
+    await page.emulateMediaFeatures([{ name: 'prefers-reduced-motion', value: 'reduce' }])
     const consoleMessages = []
     page.on('console', (message) => {
       if (['error', 'warning'].includes(message.type())) {
@@ -496,9 +748,15 @@ async function main() {
     const lazyError = await assertLazyLoadErrorState(browser)
     const screenResults = []
     for (const viewport of viewports) {
-      screenResults.push({ viewport: viewport.label, screens: await runScreenMatrix(page, viewport) })
+      for (const theme of themes) {
+        screenResults.push({ viewport: viewport.label, theme, screens: await runScreenMatrix(page, viewport, theme) })
+      }
     }
-    await assertPublicCheckInErrorState(page)
+    for (const viewport of [viewports[1], viewports[3]]) {
+      for (const theme of themes) {
+        await assertPublicCheckInErrorState(page, viewport, theme)
+      }
+    }
     const signedIn = await runSignedInSmoke(page)
     if (signedIn.status === 'blocked') {
       throw new QaBlockedError(signedIn.reason)
@@ -523,6 +781,7 @@ async function main() {
           lazyError,
           viewports: screenResults.map((result) => ({
             viewport: result.viewport,
+            theme: result.theme,
             screenCount: result.screens.length,
           })),
         },

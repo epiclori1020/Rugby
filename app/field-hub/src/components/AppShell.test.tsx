@@ -183,6 +183,7 @@ describe('AppShell page title', () => {
     )
 
     expect(markup).toContain('aria-label="Mehr Unterbereiche"')
+    expect(markup).toContain('section-subnav more-subnav')
     expect(markup).toContain('Bibliothek')
     expect(markup).toContain('Export &amp; Backup')
     expect(markup).toContain('Einstellungen')

@@ -419,6 +419,59 @@
   background: var(--of-color-surface-default);
 }
 
+.of-metric-tile {
+  min-width: 0;
+  border: var(--of-border-width-default) solid var(--of-color-border-default);
+  border-radius: var(--of-radius-md);
+  background: var(--of-color-surface-default);
+  display: grid;
+  gap: var(--of-space-xs);
+  margin: 0;
+  padding: var(--of-space-md);
+}
+
+.of-metric-tile-label,
+.of-metric-tile-detail,
+.of-metric-tile-value {
+  margin: 0;
+}
+
+.of-metric-tile-label {
+  color: var(--of-color-text-secondary);
+  font-size: var(--of-font-size-caption);
+  font-weight: var(--of-font-weight-semibold);
+  text-transform: uppercase;
+}
+
+.of-metric-tile-value {
+  color: var(--of-color-text-primary);
+  font-family: var(--of-font-family-display);
+  font-size: var(--of-font-size-metric-xl);
+  font-weight: var(--of-font-weight-heading);
+  line-height: var(--of-line-height-tight);
+}
+
+.of-metric-tile-detail {
+  color: var(--of-color-text-secondary);
+  font-size: var(--of-font-size-caption);
+  line-height: var(--of-line-height-normal);
+}
+
+.of-metric-tile-success {
+  border-color: var(--of-color-status-success-border);
+  background: var(--of-color-status-success-bg-soft);
+}
+
+.of-metric-tile-warning {
+  border-color: var(--of-color-status-warning-border);
+  background: var(--of-color-status-warning-bg-soft);
+}
+
+.of-metric-tile-danger {
+  border-color: var(--of-color-status-danger-border);
+  background: var(--of-color-status-danger-bg-soft);
+}
+
 .of-athlete-row-content {
   min-width: 0;
   min-height: 64px;
