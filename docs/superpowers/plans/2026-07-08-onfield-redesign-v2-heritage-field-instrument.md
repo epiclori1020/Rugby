@@ -550,6 +550,8 @@ Impact:
 
 Ziel: iPhone nicht laenger als zusammengedrueckte iPad-Version wirken lassen und Dark "Field Mode" screen-weit pruefbar machen.
 
+**Status: Abgeschlossen am 2026-07-13.** R7D ist gelandet und der anschliessende vollstaendige `qa:local`-Lauf ist mit Supabase-Audit, Typecheck, Lint, 104 Testdateien / 706 Tests, Build, PWA-E2E und der Visual-QA-Matrix gruen. R8-Evidence: `docs/field-hub/2026-07-12_onfield_r8_responsive_field_mode_analysis_more_audit.md`. Die dort dokumentierten Grenzen fuer eine nicht-null iOS-Safe-Area auf echter Safari-/Simulator-Runtime, persistierte befuellte Analyse-Screenshots und einen vollstaendigen gueltigen Public-Remote-Flow bleiben transparente Folge-Evidence und sind keine gruene `qa:beta`-Freigabe.
+
 Scope drin:
 - Breakpoints auf `compact <600`, `medium 600-839`, `expanded >=840` konsolidieren.
 - Analyse-Tabellen am iPhone in Karten/Listen statt Horizontal-Scroll ueberfuehren.
@@ -583,13 +585,13 @@ Abhaengigkeiten:
 - R5-R7 empfohlen, damit QA gegen neue Kernflows laeuft.
 
 Definition of Done:
-- [ ] Keine iPhone-Tabelle mit zwingendem horizontalem Scroll in geaenderten Screens.
-- [ ] Pflichtgroessen 375, 393, 834, 1194 sind visuell geprueft.
-- [ ] Bottom Tab Bar, Safe Areas und Sticky Actions ueberlappen keine Inhalte.
-- [ ] Field Mode rendert Hauptscreens und Public/Kiosk ohne Kontrastfehler >= 4.5:1.
-- [ ] Primaercontrols streben in Dark 7:1 an; Abweichungen werden explizit dokumentiert.
-- [ ] Analyse bleibt eigener Auswertungsraum und dringt nicht in Live-Screens.
-- [ ] Export/destruktive Aktionen liegen hinter klarer Sekundaer-/Overflow-Logik.
+- [x] Keine iPhone-Tabelle mit zwingendem horizontalem Scroll in geaenderten Screens.
+- [x] Pflichtgroessen 375, 393, 834, 1194 sind visuell geprueft.
+- [x] Bottom Tab Bar, Safe Areas und Sticky Actions ueberlappen keine Inhalte.
+- [x] Field Mode rendert Hauptscreens und Public/Kiosk ohne Kontrastfehler >= 4.5:1.
+- [x] Primaercontrols streben in Dark 7:1 an; Abweichungen werden explizit dokumentiert.
+- [x] Analyse bleibt eigener Auswertungsraum und dringt nicht in Live-Screens.
+- [x] Export/destruktive Aktionen liegen hinter klarer Sekundaer-/Overflow-Logik.
 
 Aufwand/Risiko/QA:
 - Aufwand: L.
