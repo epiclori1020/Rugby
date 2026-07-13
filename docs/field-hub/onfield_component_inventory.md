@@ -1,6 +1,6 @@
 # OnField Component Inventory
 
-Stand: 2026-07-05
+Stand: 2026-07-13
 
 ## Zweck
 
@@ -76,6 +76,14 @@ Sprint 5 hat die erste Code-Struktur fuer das Core Component Kit unter `app/fiel
 | Error State | `ErrorState` | Angelegt und getestet |
 
 Sprint 5 bindet nur risikoarme bestehende Stellen an. Die alte 10-Tab-Navigation bleibt bis zum App-Shell-/Navigationssprint bestehen.
+
+## Redesign-v2 R7D Mapping
+
+- `PlayersView` nutzt `AthleteRow` fuer die Spielerliste; Foto/Initialen sind optionale Row-Medien, der aktuelle Eintrag wird mit `aria-current` markiert.
+- Eine Row zeigt einen primaeren Readiness-/Check-in-Status und maximal einen priorisierten Sekundaerstatus. Status bleibt durch Glyph/Form und Text ohne Farbabhaengigkeit lesbar.
+- Der Profilkopf kombiniert Identitaet, Position/Positionsgruppe, dieselbe Statuslogik und einen semantischen Vier-Metriken-Strip fuer letzte Teilnahme, Readiness, Beschwerden und offene Themen.
+- Player Detail bleibt unter 840 px ein modales Sheet mit Fokusfang/-rueckgabe und ab 840 px eine Pane neben der Liste. Der fachliche Umfang bleibt gleich.
+- `PrimaryButton`, `EmptyState` und `Skeleton` ersetzen Legacy-Aktionen beziehungsweise rohe Leer-/Ladehinweise in der Spielerliste.
 
 ## IA-Auswirkungen aus Sprint 2
 

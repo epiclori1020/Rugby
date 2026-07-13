@@ -1,6 +1,6 @@
 # OnField Gotchas
 
-Stand: 2026-07-12
+Stand: 2026-07-13
 
 Dieses Dokument speichert wiederkehrende Fehler, Fallen und konkrete Vermeidungsregeln fuer OnField-Agenten. Ein Gotcha gehoert nur hierher, wenn es zukuenftige Arbeit wahrscheinlich verbessert.
 
@@ -38,6 +38,7 @@ Dieses Dokument speichert wiederkehrende Fehler, Fallen und konkrete Vermeidungs
 | active | OnField-Worktrees koennen parallele Content- oder PDF-Aenderungen enthalten. | Vor Abschluss `git status --short --untracked-files=all` und sprintbezogene `git diff -- ...` pruefen; fremde Content-/PDF-Aenderungen klar aus dem Sprint-Scope und aus spaeteren Commits heraushalten. |
 | active | Legacy-Brand-Aliases koennen Field-Mode-Pruefungen verschleiern. | Field-Mode-sensitive Primaerflaechen und -foregrounds direkt mit `--of-color-brand-primary` und `--of-color-on-brand` binden; Legacy-Aliases wie `--brand` nur als Kompatibilitaetsschicht behandeln und gebauten CSS-/Browser-Output pruefen. |
 | active | Container-Kontrasttests uebersehen geerbte oder spezifisch ueberschriebene Kindfarben. | Field-Mode-QA muss sichtbare Text-/Control-Elemente selbst gegen den alpha-komponierten Hintergrund messen, Transitions fuer deterministische Evidence per Reduced Motion stabilisieren und Primary Controls in Dark separat gegen 7:1 pruefen. Ein gruener `.panel`- oder `body`-Wert belegt keine lesbaren Kinder. |
+| active | Isolierte Screen-Harnesses koennen responsive Fehler in der echten AppShell verdecken. | Sichtbare Screen-QA muss zusaetzlich mit realer Sidebar/Bottom-Tab- und Content-Geometrie laufen; Viewportbreite allein belegt keine nutzbare Contentbreite. Containerbreiten messen und die AppShell-Pruefung nicht durch einen isolierten Komponenten-Harness ersetzen. |
 | active | Preview-Eintraege koennen bereits eine gruene Ampel-Empfehlung tragen, obwohl noch kein meaningful Check-in vorliegt. | Sichtbare Rows, Tages-Scores, Filter und Warnlisten muessen zuerst `hasMeaningfulCheckIn` beachten: nur eingecheckte Spieler fuer Ampel/Returner/Aufmerksamkeit, pro Spieler eine aggregierte Zeile und `offen` niemals automatisch als Gruen oder Returner-Klaerung zaehlen. |
 
 ## Wann Neue Gotchas Hinzukommen

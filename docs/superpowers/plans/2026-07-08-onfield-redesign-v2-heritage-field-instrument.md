@@ -491,7 +491,7 @@ Scope drin:
 - R7A Check-in Rows & shared row primitives: Check-in-Roster auf v2-Athleten-Row mit Readiness-Dot, Status-Chip, Quick Action und Detail-Sheet aktualisieren; `Rows.tsx`, `Status.tsx` und gemeinsame CSS-Klassen stabilisieren.
 - R7B Training Live Rows: Training-Athletenliste, Live-Block-Aktionen und Toolbar-Dichte an R6/R7A ausrichten; genau eine Primaeraktion und Overflow fuer Sekundaeres/destruktive Aktionen.
 - R7C Nachbereitung & Returner Rows: Nachbereitungsqueue visuell an `TaskQueueRow`/row-first ausrichten; Returner-Caps als strukturierte Chips/Stepper vorbereiten, soweit ohne Datenumbau moeglich. **Status: Abgeschlossen am 2026-07-11.** Evidence: `docs/field-hub/2026-07-11_onfield_r7c_post_session_returner_rows_audit.md`.
-- R7D Spielerliste & Profilkopf: Spieler-Liste und Profilkopf auf v2-Hierarchie, tabular Metrics und Row-Muster bringen; Detail bleibt Sheet/Pane.
+- R7D Spielerliste & Profilkopf: Spieler-Liste und Profilkopf auf v2-Hierarchie, tabular Metrics und Row-Muster bringen; Detail bleibt Sheet/Pane. **Status: Abgeschlossen am 2026-07-13.** Evidence: `docs/field-hub/2026-07-13_onfield_r7d_player_list_profile_header_audit.md`.
 - In jedem Sub-Slice Status-Chips und Traffic-Light-Chips pruefen: Farbe + Text + Glyph/Form.
 
 Bewusst nicht drin:
@@ -521,17 +521,17 @@ Abhaengigkeiten:
 - R7B, R7C und R7D koennen danach separat umgesetzt und gemerged werden.
 
 Definition of Done:
-- [ ] Keine neuen Card-Walls in Kernflows.
-- [ ] Athletenobjekte sind row-first; Detail bleibt Sheet/Pane.
-- [ ] Max. eine dominante Primaeraktion pro View.
-- [ ] Geaenderte Komponenten nutzen Typo-/Spacing-/Radius-Tokens.
-- [ ] Tabular numbers fuer Readiness, Schmerz, sRPE, Caps, Reps und Load.
-- [ ] Status wird nie nur durch Farbe angezeigt.
-- [ ] Save-/Action-Feedback bleibt in Training, Nachbereitung und Returner erhalten.
-- [ ] iPhone verliert keine Aktionen; lange Tabellen werden Listen/Karten.
-- [ ] Dark Mode rendert Kernflows mit Kontrast >= 4.5:1.
-- [ ] Jeder R7-Sub-Slice liefert Redesign-Integrity-Evidence mit Vorher/Nachher-Screenshots fuer seine betroffenen Screens.
-- [ ] Jeder R7-Sub-Slice ist fuer sich mergebar und laesst `qa:local` gruen.
+- [x] Keine neuen Card-Walls in Kernflows.
+- [x] Athletenobjekte sind row-first; Detail bleibt Sheet/Pane.
+- [x] Max. eine dominante Primaeraktion pro View.
+- [x] Geaenderte Komponenten nutzen Typo-/Spacing-/Radius-Tokens.
+- [x] Tabular numbers fuer Readiness, Schmerz, sRPE, Caps, Reps und Load.
+- [x] Status wird nie nur durch Farbe angezeigt.
+- [x] Save-/Action-Feedback bleibt in Training, Nachbereitung und Returner erhalten.
+- [x] iPhone verliert keine Aktionen; lange Tabellen werden Listen/Karten.
+- [x] Dark Mode rendert Kernflows mit Kontrast >= 4.5:1. R7D wurde befuellt bei 375/393/834/1194 fuer Liste und Profil elementweise gemessen; 100-150 sichtbare Elemente je Zustand, keine Unterschreitung von 4.5:1 und aktive Primaercontrols im Field Mode ohne Unterschreitung des 7:1-Ziels. R7A-R7C dokumentieren ihre jeweiligen Kontrastwerte in den Slice-Audits.
+- [ ] Jeder R7-Sub-Slice liefert Redesign-Integrity-Evidence mit Vorher/Nachher-Screenshots fuer seine betroffenen Screens. R7D besitzt Figma- und maschinenlokale Screenshot-Evidence; dokumentierte historische Evidence-Luecken aus R7A-R7C werden nicht nachtraeglich als geschlossen markiert.
+- [x] Jeder R7-Sub-Slice ist fuer sich mergebar und laesst `qa:local` gruen.
 
 Aufwand/Risiko/QA:
 - Aufwand: L insgesamt; R7A/R7B/R7C/R7D jeweils S-M.
