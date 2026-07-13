@@ -1485,9 +1485,17 @@ button {
 
 .players-layout.has-detail {
   display: grid;
-  grid-template-columns: minmax(320px, 0.42fr) minmax(0, 0.58fr);
-  gap: 14px;
+  grid-template-columns: minmax(280px, 2fr) minmax(0, 3fr);
+  gap: var(--of-space-md);
   align-items: start;
+}
+
+.players-layout:not(.has-detail) .players-sidebar {
+  width: min(100%, 760px);
+}
+
+.players-sidebar {
+  min-width: 0;
 }
 
 .checkin-layout {
@@ -1512,60 +1520,45 @@ button {
 
 .player-list {
   display: grid;
-  grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
-  gap: 8px;
+  grid-template-columns: minmax(0, 1fr);
+  gap: var(--of-space-sm);
   overflow: visible;
+}
+
+.player-list-skeletons {
+  display: grid;
+  gap: var(--of-space-sm);
+}
+
+.player-list .of-athlete-row-note {
+  display: -webkit-box;
+  overflow: hidden;
+  -webkit-box-orient: vertical;
+  -webkit-line-clamp: 2;
+}
+
+.player-list .of-athlete-row-content {
+  gap: var(--of-space-sm);
+  padding: var(--of-space-sm) var(--of-space-md);
+}
+
+.player-list .of-athlete-row-main,
+.player-list .of-athlete-row-identity {
+  gap: var(--of-space-xs);
+}
+
+.players-sidebar .sync-mini {
+  flex-wrap: wrap;
 }
 
 .player-view-notice {
   margin: 0;
 }
 
-.player-list-item {
-  min-height: 76px;
-  border: 1px solid var(--line);
-  border-radius: var(--of-radius-sm);
-  background: var(--of-color-surface-default);
-  cursor: pointer;
-  display: grid;
-  grid-template-columns: 44px minmax(0, 1fr);
-  align-items: center;
-  gap: 10px;
-  padding: 10px;
-  text-align: left;
-}
-
-.player-list-item:hover,
-.player-list-item.active,
-.player-list-item[aria-pressed='true'] {
-  border-color: var(--brand);
-}
-
-.player-list-item.active,
-.player-list-item[aria-pressed='true'] {
-  background: var(--brand-soft);
-}
-
-.player-list-item:focus-visible {
-  outline: 3px solid var(--of-color-focus-ring);
-  outline-offset: 2px;
-}
-
-.player-list-item span:not(.player-avatar) {
-  min-width: 0;
-  display: grid;
-  gap: 3px;
-}
-
-.player-list-item small {
-  color: var(--muted);
-  line-height: 1.3;
-}
-
-.player-badges {
+.player-status-row {
   display: flex;
   flex-wrap: wrap;
-  gap: 5px;
+  gap: var(--of-space-xs);
 }
 
 .player-avatar {
@@ -1632,9 +1625,70 @@ button {
   height: 54px;
 }
 
-.player-detail-tabs {
+.button-row.player-detail-tabs {
+  flex-wrap: nowrap;
   overflow-x: auto;
   padding-bottom: 2px;
+}
+
+.player-detail-tabs .segmented {
+  flex: 0 0 auto;
+}
+
+.player-detail {
+  align-content: start;
+  grid-auto-rows: max-content;
+}
+
+.player-profile-summary {
+  border: var(--of-border-width-default) solid var(--of-color-border-default);
+  border-radius: var(--of-radius-lg);
+  background: var(--of-color-surface-muted);
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  margin: 0;
+  overflow: hidden;
+}
+
+.player-profile-summary > div {
+  min-width: 0;
+  display: grid;
+  gap: var(--of-space-xs);
+  padding: var(--of-space-md);
+}
+
+.player-profile-summary > div + div {
+  border-left: var(--of-border-width-default) solid var(--of-color-border-default);
+}
+
+.player-profile-summary dt,
+.player-profile-summary dd {
+  margin: 0;
+}
+
+.player-profile-summary dt,
+.player-profile-summary small {
+  color: var(--of-color-text-secondary);
+  font-size: var(--of-font-size-caption);
+  line-height: var(--of-line-height-normal);
+}
+
+.player-profile-summary dt {
+  font-weight: var(--of-font-weight-semibold);
+}
+
+.player-profile-summary dd {
+  display: grid;
+  gap: var(--of-space-xs);
+  color: var(--of-color-text-primary);
+}
+
+.player-profile-summary .of-num {
+  font-family: var(--of-font-family-display);
+  font-size: var(--of-font-size-section);
+  font-weight: var(--of-font-weight-heading);
+  line-height: var(--of-line-height-tight);
+  overflow-wrap: anywhere;
 }
 
 .player-profile-content,
@@ -4441,7 +4495,7 @@ code {
   }
 
   .players-layout.has-detail {
-    grid-template-columns: minmax(280px, 0.42fr) minmax(0, 0.58fr);
+    grid-template-columns: minmax(240px, 2fr) minmax(260px, 3fr);
   }
 
   .sync-status {
@@ -4644,6 +4698,27 @@ code {
 }
 
 @media (max-width: 599px) {
+
+  .player-toolbar > span,
+  .player-toolbar .of-button {
+    width: 100%;
+  }
+
+  .player-profile-summary {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .player-profile-summary > div + div {
+    border-left: 0;
+  }
+
+  .player-profile-summary > div:nth-child(even) {
+    border-left: var(--of-border-width-default) solid var(--of-color-border-default);
+  }
+
+  .player-profile-summary > div:nth-child(n + 3) {
+    border-top: var(--of-border-width-default) solid var(--of-color-border-default);
+  }
 
   .analysis-compact-filter-trigger {
     display: block;

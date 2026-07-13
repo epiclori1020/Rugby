@@ -492,6 +492,26 @@ button.of-athlete-row-content {
   font: inherit;
 }
 
+.of-athlete-row-media {
+  position: relative;
+  display: inline-grid;
+  place-items: center;
+  flex: 0 0 auto;
+}
+
+.of-athlete-row-media-status {
+  position: absolute;
+  right: calc(var(--of-space-xs) * -0.5);
+  bottom: calc(var(--of-space-xs) * -0.5);
+  min-width: var(--of-space-md);
+  min-height: var(--of-space-md);
+  border: var(--of-border-width-default) solid var(--of-color-surface-default);
+  border-radius: var(--of-radius-pill);
+  background: var(--of-color-surface-default);
+  display: grid;
+  place-items: center;
+}
+
 .of-session-header {
   display: grid;
   gap: var(--of-space-md);
@@ -709,6 +729,11 @@ button.of-athlete-row-content {
 
 .of-athlete-row-open {
   border-style: dashed;
+}
+
+.of-athlete-row-selected {
+  border-color: var(--of-color-brand-primary);
+  box-shadow: inset 3px 0 0 var(--of-color-brand-primary);
 }
 
 .of-athlete-row-main,

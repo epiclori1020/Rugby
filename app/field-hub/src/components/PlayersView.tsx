@@ -1,5 +1,5 @@
-import { Camera, RefreshCw, Search, Settings, Trash2, UserMinus, UserPlus, Users, X } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode } from 'react'
+import { Camera, CircleDashed, RefreshCw, Search, Settings, Trash2, UserMinus, UserPlus, Users, X } from 'lucide-react'
+import { useCallback, useEffect, useMemo, useRef, useState, type ChangeEvent, type FormEvent, type ReactNode, type RefObject } from 'react'
 import { activeSportConfig, positionGroupOptions } from '../config/labels'
 import { sprint30mOptionalLabel } from '../domain/baseline'
 import { metricDefinitions, type MetricDefinition } from '../content/metricDefinitions'
@@ -12,7 +12,6 @@ import {
   getPlayerInitials,
   photoConsentOptions,
   playerToFormValues,
-  returnerStatusOptions,
   type Player,
   type PlayerFormValues,
 } from '../domain/players'
@@ -36,7 +35,8 @@ import {
   TrainingAnalysis,
 } from './PlayerAnalysisCharts'
 import { PlayerEditorForm } from './PlayerEditorForm'
-import { SecondaryButton } from './ui'
+import { AthleteRow } from './onfield'
+import { EmptyState, PrimaryButton, SecondaryButton, Skeleton, StatusChip } from './ui'
 
 type PlayerActions = ReturnType<typeof usePlayers>
 type MetricActions = ReturnType<typeof useMetrics>
@@ -71,20 +71,13 @@ const attendanceLabels = {
   absent: 'nicht da',
 } as const
 
-const sourceLabels = {
-  coach: 'Coach',
-  player_link: 'Link',
-  player_kiosk: 'Kiosk',
-  mixed: 'Mixed',
-} as const
-
 const currentLimitSourceLabels = {
   returner_caps: 'Returner-Caps',
   session_limits: 'Session',
 } as const
 
 const trafficLabels = {
-  green: 'Gruen',
+  green: 'Grün',
   yellow: 'Gelb',
   red: 'Rot',
 } as const
@@ -137,10 +130,18 @@ function playerRowAriaLabel(player: Player, profile: PlayerProfileSummary | unde
 
   if (profile?.latestSession?.trafficLight) {
     labels.push(`Ampel ${trafficLabels[profile.latestSession.trafficLight]}`)
+  } else {
+    labels.push('Check-in offen')
   }
 
   if (profile?.openIssues.items.length) {
     labels.push(`${profile.openIssues.items.length} offene Themen`)
+  } else if (player.returnerStatus === 'ja') {
+    labels.push('Returner')
+  } else if (player.returnerStatus === 'offen') {
+    labels.push('Returner klären')
+  } else if (player.consentStatus !== 'vorhanden') {
+    labels.push('Einwilligung offen')
   }
 
   return labels.join(', ')
@@ -262,16 +263,53 @@ function usePhotoLoadError() {
   return { clearPhotoLoadError, markPhotoLoadError, photoLoadError }
 }
 
-function PlayerBadgeRow({ player, profile }: { player: Player; profile: PlayerProfileSummary | undefined }) {
+function playerReadinessTone(player: Player, profile: PlayerProfileSummary | undefined) {
+  return profile?.latestSession?.trafficLight ?? (player.returnerStatus === 'ja' ? 'returner' : 'open')
+}
+
+function playerRowNote(profile: PlayerProfileSummary | undefined) {
+  if (profile?.openIssues.items[0]) {
+    return profile.openIssues.items[0]
+  }
+
+  if (profile?.currentLimits[0]) {
+    return `${profile.currentLimits[0].label}: ${profile.currentLimits[0].detail}`
+  }
+
+  if (profile?.lastParticipation) {
+    return `${profile.lastParticipation.sessionDate} · ${attendanceLabels[profile.lastParticipation.attendanceStatus]}`
+  }
+
+  return 'Noch keine Trainingshistorie'
+}
+
+function PlayerStatusRow({ player, profile }: { player: Player; profile: PlayerProfileSummary | undefined }) {
   const trafficLight = profile?.latestSession?.trafficLight
+  const trafficTone = trafficLight === 'green' ? 'success' : trafficLight === 'yellow' ? 'warning' : trafficLight === 'red' ? 'danger' : 'neutral'
+  let secondaryStatus: ReactNode = null
+
+  if (profile?.openIssues.severity === 'red') {
+    secondaryStatus = <StatusChip label={`${profile.openIssues.items.length} offene Themen`} tone="danger" />
+  } else if (profile?.openIssues.severity === 'yellow') {
+    secondaryStatus = <StatusChip label={`${profile.openIssues.items.length} offene Themen`} tone="warning" />
+  } else if (!player.active) {
+    secondaryStatus = <StatusChip icon={<UserMinus />} label="Inaktiv" />
+  } else if (player.returnerStatus === 'ja') {
+    secondaryStatus = <StatusChip label="Returner" tone="info" />
+  } else if (player.returnerStatus === 'offen') {
+    secondaryStatus = <StatusChip label="Returner klären" tone="warning" />
+  } else if (player.consentStatus !== 'vorhanden') {
+    secondaryStatus = <StatusChip label="Einwilligung offen" tone="warning" />
+  }
 
   return (
-    <span className="player-badges" aria-label={`Status ${player.name}`}>
-      <span className="tag compact">{player.active ? 'aktiv' : 'inaktiv'}</span>
-      {player.consentStatus !== 'vorhanden' ? <span className="tag compact warning-tag">Consent {player.consentStatus}</span> : null}
-      {player.returnerStatus !== 'nein' ? <span className="tag compact warning-tag">Returner {player.returnerStatus}</span> : null}
-      {trafficLight ? <span className={`tag compact ${trafficLight === 'red' ? 'danger' : ''}`}>Ampel {trafficLight}</span> : null}
-      {profile?.openIssues.items.length ? <span className="tag compact warning-tag">Issues {profile.openIssues.items.length}</span> : null}
+    <span className="player-status-row" aria-label={`Status ${player.name}`}>
+      <StatusChip
+        icon={trafficLight ? undefined : <CircleDashed />}
+        label={trafficLight ? trafficLabels[trafficLight] : 'Check-in offen'}
+        tone={trafficTone}
+      />
+      {secondaryStatus}
     </span>
   )
 }
@@ -348,6 +386,7 @@ function ProfileSection({
 function PlayerDetailView({
   activeTab,
   canOpenSourceSession,
+  detailRef,
   metricActions,
   metricDrafts,
   metricError,
@@ -368,6 +407,7 @@ function PlayerDetailView({
 }: {
   activeTab: PlayerDetailTab
   canOpenSourceSession?: (source: PlayerAnalysisSource) => boolean
+  detailRef: RefObject<HTMLElement | null>
   metricActions?: MetricActions
   metricDrafts: Record<string, string>
   metricError: string | null
@@ -388,6 +428,7 @@ function PlayerDetailView({
 }) {
   return (
     <article
+      ref={detailRef}
       className={`panel player-detail ${profileTrafficClass(profile)}`}
       role={isModal ? 'dialog' : undefined}
       aria-modal={isModal ? 'true' : undefined}
@@ -400,7 +441,7 @@ function PlayerDetailView({
             <p className="eyebrow">Spielerprofil</p>
             <h3 id="player-detail-heading">{player.name}</h3>
             <p>{player.position} · {optionLabel(positionGroupOptions, player.cluster)}</p>
-            <PlayerBadgeRow player={player} profile={profile} />
+            <PlayerStatusRow player={player} profile={profile} />
           </div>
         </div>
         <div className="player-detail-actions">
@@ -412,6 +453,45 @@ function PlayerDetailView({
           </button>
         </div>
       </div>
+
+      <dl className="player-profile-summary" aria-label="Operative Profilzusammenfassung">
+        <div>
+          <dt>Letzte Teilnahme</dt>
+          <dd>
+            <span className="of-num">{profile?.lastParticipation?.sessionDate ?? '–'}</span>
+            <small>
+              {profile?.lastParticipation
+                ? attendanceLabels[profile.lastParticipation.attendanceStatus]
+                : 'Noch nicht erfasst'}
+            </small>
+          </dd>
+        </div>
+        <div>
+          <dt>Readiness</dt>
+          <dd>
+            <span className="of-num">{displayValue(profile?.lastParticipation?.readiness, '–')}</span>
+            <small>letzter Check-in</small>
+          </dd>
+        </div>
+        <div>
+          <dt>Beschwerden</dt>
+          <dd>
+            <span className="of-num">
+              {profile?.lastParticipation?.painScore !== null && profile?.lastParticipation?.painScore !== undefined
+                ? `${profile.lastParticipation.painScore}/10`
+                : '–'}
+            </span>
+            <small>Selbstauskunft</small>
+          </dd>
+        </div>
+        <div>
+          <dt>Offene Themen</dt>
+          <dd>
+            <span className="of-num">{profile?.openIssues.items.length ?? 0}</span>
+            <small>{profile?.openIssues.severity === 'red' ? 'Priorität hoch' : 'im Profil'}</small>
+          </dd>
+        </div>
+      </dl>
 
       <div className="button-row player-detail-tabs" role="tablist" aria-label="Spielerprofil Tabs">
         {playerDetailTabs.map((tab) => (
@@ -430,38 +510,6 @@ function PlayerDetailView({
 
       {activeTab === 'overview' ? (
         <div className="player-profile-content">
-          <ProfileSection title="Aktueller Status">
-            <div className="metric-grid mini">
-              <MetricCard label="Roster" value={player.active ? 'aktiv' : 'inaktiv'} />
-              <MetricCard
-                label="Ampel"
-                value={profile?.latestSession?.trafficLight ? trafficLabels[profile.latestSession.trafficLight] : '-'}
-              />
-              <MetricCard label="Offene Themen" value={profile?.openIssues.items.length ?? 0} />
-              <MetricCard label="Returner" value={optionLabel(returnerStatusOptions, player.returnerStatus)} />
-            </div>
-          </ProfileSection>
-          <ProfileSection title="Letzte Teilnahme" emptyText="Noch keine Teilnahme erfasst.">
-            {profile?.lastParticipation ? (
-              <div className="metric-grid mini">
-                <MetricCard label="Datum" value={profile.lastParticipation.sessionDate} />
-                <MetricCard label="Anwesenheit" value={attendanceLabels[profile.lastParticipation.attendanceStatus]} />
-                <MetricCard label="Readiness" value={displayValue(profile.lastParticipation.readiness)} />
-                <MetricCard
-                  label="Schmerz"
-                  value={profile.lastParticipation.painScore !== null ? `${profile.lastParticipation.painScore}/10` : '-'}
-                />
-                <MetricCard
-                  label="Ampel"
-                  value={profile.lastParticipation.trafficLight ? trafficLabels[profile.lastParticipation.trafficLight] : '-'}
-                />
-                <MetricCard
-                  label="Quelle"
-                  value={profile.lastParticipation.source ? sourceLabels[profile.lastParticipation.source] : '-'}
-                />
-              </div>
-            ) : null}
-          </ProfileSection>
           <ProfileSection title="Aktuelle Limits" emptyText="Keine aktuellen Limits aus lokalen Daten.">
             {profile?.currentLimits.length ? (
               <div className="profile-fact-list">
@@ -752,10 +800,13 @@ export function PlayersView({
   const [isMobileDetailOverlay, setIsMobileDetailOverlay] = useState(() =>
     typeof window === 'undefined' || typeof window.matchMedia !== 'function'
       ? true
-      : window.matchMedia('(max-width: 760px)').matches,
+      : window.matchMedia('(max-width: 839px)').matches,
   )
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState<Record<string, string>>({})
   const photoPreviewUrlsRef = useRef<Record<string, string>>({})
+  const playerDetailRef = useRef<HTMLElement | null>(null)
+  const playerListRef = useRef<HTMLElement | null>(null)
+  const profileOpenerRef = useRef<HTMLButtonElement | null>(null)
   const { clearPhotoLoadError, markPhotoLoadError, photoLoadError } = usePhotoLoadError()
   const showSyncAttention = shouldShowSyncAttention(syncOverview)
   const profileActions = usePlayerProfiles(authState.status === 'signed-in' ? authState.user.id : null, players, todayKey)
@@ -771,7 +822,7 @@ export function PlayersView({
       return undefined
     }
 
-    const mediaQuery = window.matchMedia('(max-width: 760px)')
+    const mediaQuery = window.matchMedia('(max-width: 839px)')
     const updateMobileDetailOverlay = () => setIsMobileDetailOverlay(mediaQuery.matches)
     updateMobileDetailOverlay()
     mediaQuery.addEventListener('change', updateMobileDetailOverlay)
@@ -814,6 +865,7 @@ export function PlayersView({
   }, [players, profileActions.profilesByPlayerId, searchQuery, statusFilter])
 
   function openNewPlayerSheet() {
+    profileOpenerRef.current = null
     setSelectedPlayerId(null)
     setActiveDetailTab('overview')
     setFormValues(emptyPlayerFormValues)
@@ -826,7 +878,8 @@ export function PlayersView({
     setIsEditorOpen(true)
   }
 
-  function openPlayerDetail(player: Player) {
+  function openPlayerDetail(player: Player, opener?: HTMLButtonElement) {
+    profileOpenerRef.current = opener ?? null
     setSelectedPlayerId(player.id)
     setActiveDetailTab('overview')
     setFormValues(playerToFormValues(player))
@@ -840,12 +893,21 @@ export function PlayersView({
   }
 
   const closePlayerProfile = useCallback(() => {
+    const opener = profileOpenerRef.current
+    const selectedRow = Array.from(playerListRef.current?.querySelectorAll<HTMLElement>('[data-player-id]') ?? []).find(
+      (row) => row.dataset.playerId === selectedPlayerId,
+    )
+    const returnTarget = opener ?? selectedRow?.querySelector<HTMLButtonElement>('.of-athlete-row-content') ?? playerListRef.current
     setSelectedPlayerId(null)
     setActiveDetailTab('overview')
     setMetricDrafts({})
     setMetricError(null)
     setMetricNotice(null)
-  }, [])
+    queueMicrotask(() => {
+      returnTarget?.focus()
+      profileOpenerRef.current = null
+    })
+  }, [selectedPlayerId])
 
   function openSelectedPlayerEditor() {
     if (!selectedPlayer) {
@@ -882,19 +944,68 @@ export function PlayersView({
   }, [closePlayerSheet, isEditorOpen])
 
   useEffect(() => {
-    if (!selectedPlayerId || isEditorOpen) {
+    if (!selectedPlayer || isEditorOpen) {
       return undefined
     }
 
     function handleKeyDown(event: KeyboardEvent) {
       if (event.key === 'Escape') {
         closePlayerProfile()
+        return
+      }
+
+      if (event.key !== 'Tab' || !isMobileDetailOverlay || !playerDetailRef.current) {
+        return
+      }
+
+      const focusableElements = Array.from(
+        playerDetailRef.current.querySelectorAll<HTMLElement>(
+          'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+        ),
+      )
+      if (focusableElements.length === 0) {
+        event.preventDefault()
+        playerDetailRef.current.focus()
+        return
+      }
+
+      const firstElement = focusableElements[0]
+      const lastElement = focusableElements[focusableElements.length - 1]
+      if (event.shiftKey && document.activeElement === firstElement) {
+        event.preventDefault()
+        lastElement.focus()
+      } else if (!event.shiftKey && document.activeElement === lastElement) {
+        event.preventDefault()
+        firstElement.focus()
       }
     }
 
     window.addEventListener('keydown', handleKeyDown)
     return () => window.removeEventListener('keydown', handleKeyDown)
-  }, [closePlayerProfile, isEditorOpen, selectedPlayerId])
+  }, [closePlayerProfile, isEditorOpen, isMobileDetailOverlay, selectedPlayer])
+
+  useEffect(() => {
+    if (!selectedPlayer || isEditorOpen || !isMobileDetailOverlay) {
+      return
+    }
+
+    const firstFocusable = playerDetailRef.current?.querySelector<HTMLElement>(
+      'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+    )
+    ;(firstFocusable ?? playerDetailRef.current)?.focus()
+  }, [isEditorOpen, isMobileDetailOverlay, selectedPlayer])
+
+  useEffect(() => {
+    if (!selectedPlayer || isEditorOpen || !isMobileDetailOverlay) {
+      return undefined
+    }
+
+    const previousOverflow = document.body.style.overflow
+    document.body.style.overflow = 'hidden'
+    return () => {
+      document.body.style.overflow = previousOverflow
+    }
+  }, [isEditorOpen, isMobileDetailOverlay, selectedPlayer])
 
   function handleDetailTabChange(tab: PlayerDetailTab) {
     setActiveDetailTab(tab)
@@ -1180,10 +1291,9 @@ export function PlayersView({
         </div>
 
         <div className="player-toolbar">
-          <button className="secondary-action" type="button" onClick={openNewPlayerSheet}>
-            <UserPlus className="nav-icon" aria-hidden />
-            <span>Neu</span>
-          </button>
+          <PrimaryButton icon={<UserPlus className="nav-icon" aria-hidden />} onClick={openNewPlayerSheet}>
+            Spieler anlegen
+          </PrimaryButton>
           {syncOverview.status === 'error' ? (
             <SecondaryButton icon={<RefreshCw className="nav-icon" aria-hidden />} isLoading={isLoading} loadingLabel="Sync laeuft" onClick={runSync}>
               Erneut synchronisieren
@@ -1206,10 +1316,11 @@ export function PlayersView({
             { id: 'active' as const, label: 'Aktiv' },
             { id: 'all' as const, label: 'Alle' },
             { id: 'returner' as const, label: 'Returner' },
-            { id: 'issues' as const, label: 'Issues' },
+            { id: 'issues' as const, label: 'Offene Themen' },
           ].map((filter) => (
             <button
               className={statusFilter === filter.id ? 'filter-chip active' : 'filter-chip'}
+              aria-pressed={statusFilter === filter.id}
               key={filter.id}
               type="button"
               onClick={() => setStatusFilter(filter.id)}
@@ -1226,39 +1337,54 @@ export function PlayersView({
             <span>{pendingCountLabel(syncOverview.pendingCount)}</span>
           </div>
         ) : null}
-        {profileActions.isLoading ? <p className="sync-mini">Profilverlauf wird lokal gelesen...</p> : null}
+        {profileActions.isLoading ? <Skeleton label="Profilverlauf wird lokal gelesen" /> : null}
         {viewNotice ? (
           <p className="form-success player-view-notice" aria-live="polite">
             {viewNotice}
           </p>
         ) : null}
 
-        <div className="player-list" aria-label="Spielerliste">
+        <section className="player-list" aria-label="Spielerliste" ref={playerListRef} tabIndex={-1}>
+          {isLoading && players.length === 0 ? (
+            <div className="player-list-skeletons" aria-label="Spielerliste wird geladen">
+              <Skeleton variant="row" />
+              <Skeleton variant="row" />
+              <Skeleton variant="row" />
+            </div>
+          ) : null}
           {filteredPlayers.map((player) => {
             const profile = profileActions.profilesByPlayerId[player.id]
             return (
-              <button
-                className={selectedPlayer?.id === player.id ? 'player-list-item active' : 'player-list-item'}
+              <AthleteRow
                 key={player.id}
-                type="button"
-                aria-label={playerRowAriaLabel(player, profile)}
-                aria-pressed={selectedPlayer?.id === player.id}
-                onClick={() => openPlayerDetail(player)}
-              >
-                <PlayerAvatar player={player} previewUrl={photoPreviewUrls[player.id]} />
-                <span>
-                  <strong>{player.name}</strong>
-                  <small>
-                    {player.position} · {optionLabel(positionGroupOptions, player.cluster)}
-                  </small>
-                  <PlayerBadgeRow player={player} profile={profile} />
-                </span>
-              </button>
+                media={<PlayerAvatar player={player} previewUrl={photoPreviewUrls[player.id]} />}
+                meta={[player.position, optionLabel(positionGroupOptions, player.cluster)]}
+                name={player.name}
+                note={playerRowNote(profile)}
+                onSelect={(event) => openPlayerDetail(player, event.currentTarget)}
+                playerId={player.id}
+                readinessLabel={
+                  profile?.latestSession?.trafficLight
+                    ? `Status ${trafficLabels[profile.latestSession.trafficLight]}`
+                    : player.returnerStatus === 'ja'
+                      ? 'Returner'
+                      : 'Check-in offen'
+                }
+                readinessTone={playerReadinessTone(player, profile)}
+                selected={selectedPlayer?.id === player.id}
+                selectDescription={playerRowNote(profile)}
+                selectLabel={playerRowAriaLabel(player, profile)}
+                status={<PlayerStatusRow player={player} profile={profile} />}
+              />
             )
           })}
-          {players.length === 0 ? <p className="empty-state">Noch keine Spieler angelegt.</p> : null}
-          {players.length > 0 && filteredPlayers.length === 0 ? <p className="empty-state">Kein Spieler passt zum Filter.</p> : null}
-        </div>
+          {!isLoading && players.length === 0 ? (
+            <EmptyState body="Lege den ersten Spieler über die Primärhandlung oben an." title="Noch keine Spieler angelegt" />
+          ) : null}
+          {players.length > 0 && filteredPlayers.length === 0 ? (
+            <EmptyState body="Passe Suche oder Filter an, um andere Spieler anzuzeigen." title="Keine Treffer" />
+          ) : null}
+        </section>
       </aside>
 
       {selectedPlayer && !isEditorOpen && isMobileDetailOverlay ? (
@@ -1274,6 +1400,7 @@ export function PlayersView({
         <PlayerDetailView
           activeTab={activeDetailTab}
           canOpenSourceSession={canOpenSourceSession}
+          detailRef={playerDetailRef}
           metricActions={metricActions}
           metricDrafts={metricDrafts}
           metricError={visibleMetricError}

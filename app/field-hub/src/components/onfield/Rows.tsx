@@ -1,4 +1,4 @@
-import { useId, type ReactNode } from 'react'
+import { useId, type MouseEvent, type ReactNode } from 'react'
 import { ReadinessDot, type ReadinessTone } from './ReadinessDot'
 
 export type AthleteRowProps = {
@@ -8,13 +8,15 @@ export type AthleteRowProps = {
   status?: ReactNode
   traffic?: ReactNode
   action?: ReactNode
+  media?: ReactNode
   note?: string
   readinessTone?: ReadinessTone
   readinessLabel?: string
   trendLabel?: string
   compact?: boolean
   className?: string
-  onSelect?: () => void
+  onSelect?: (event: MouseEvent<HTMLButtonElement>) => void
+  selected?: boolean
   selectDescription?: string
   selectLabel?: string
 }
@@ -23,6 +25,7 @@ export function AthleteRow({
   action,
   className,
   compact,
+  media,
   meta = [],
   name,
   note,
@@ -33,6 +36,7 @@ export function AthleteRow({
   status,
   selectDescription,
   selectLabel,
+  selected,
   traffic,
   trendLabel,
 }: AthleteRowProps) {
@@ -40,6 +44,7 @@ export function AthleteRow({
   const rowClassName = [
     'of-athlete-row',
     readinessTone ? `of-athlete-row-${readinessTone}` : null,
+    selected ? 'of-athlete-row-selected' : null,
     compact ? 'of-athlete-row-compact' : null,
     className,
   ]
@@ -48,7 +53,20 @@ export function AthleteRow({
 
   const content = (
     <>
-      {readinessTone ? (
+      {media ? (
+        <span className="of-athlete-row-media">
+          {media}
+          {readinessTone ? (
+            <span className="of-athlete-row-media-status">
+              <ReadinessDot
+                label={readinessLabel ?? `Status ${readinessTone}`}
+                size="sm"
+                tone={readinessTone}
+              />
+            </span>
+          ) : null}
+        </span>
+      ) : readinessTone ? (
         <ReadinessDot
           label={readinessLabel ?? `Status ${readinessTone}`}
           size={compact ? 'sm' : 'md'}
@@ -83,6 +101,7 @@ export function AthleteRow({
       {onSelect ? (
         <button
           aria-describedby={selectDescription ? selectDescriptionId : undefined}
+          aria-current={selected ? 'true' : undefined}
           aria-label={selectLabel ?? `${name} öffnen`}
           className="of-athlete-row-content"
           onClick={onSelect}

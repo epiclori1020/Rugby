@@ -142,6 +142,24 @@ describe('Sprint 5 OnField component compositions', () => {
     expect(markup).toContain('Gelb: Belastung anpassen. Da. Returner heute.')
   })
 
+  it('supports athlete media and exposes the selected row as the current item', () => {
+    const markup = renderToStaticMarkup(
+      <AthleteRow
+        media={<span className="player-avatar">MM</span>}
+        name="Max Muster"
+        onSelect={() => undefined}
+        readinessLabel="Status Rot"
+        readinessTone="red"
+        selected
+      />,
+    )
+
+    expect(markup).toContain('class="of-athlete-row-media"')
+    expect(markup).toContain('class="player-avatar"')
+    expect(markup).toContain('aria-current="true"')
+    expect(markup).not.toContain('aria-pressed=')
+  })
+
   it('renders queue rows with visible tone and recovery action', () => {
     const markup = renderToStaticMarkup(
       <TaskQueueRow

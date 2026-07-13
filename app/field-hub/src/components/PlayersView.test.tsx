@@ -213,7 +213,7 @@ const returnerEntry: ReturnerEntry = {
   syncError: null,
 }
 
-function buildPlayerActions() {
+function buildPlayerActions(overrides: Partial<ReturnType<typeof usePlayers>> = {}) {
   return {
     players: [player],
     syncOverview,
@@ -225,6 +225,7 @@ function buildPlayerActions() {
     deletePlayer: async () => undefined,
     uploadPlayerPhoto: async () => undefined,
     removePlayerPhoto: async () => undefined,
+    ...overrides,
   } satisfies ReturnType<typeof usePlayers>
 }
 
@@ -254,11 +255,16 @@ describe('PlayersView default layout', () => {
   it('starts as a roster-first screen without an always-open form panel', () => {
     const markup = renderPlayersView()
 
-    expect(markup).toContain('aria-label="Spielerliste"')
+    expect(markup).toContain('<section class="player-list" aria-label="Spielerliste"')
     expect(markup).toContain('Sabine')
-    expect(markup).toContain('Neu')
+    expect(markup).toContain('Spieler anlegen')
+    expect(markup).toContain('of-button-primary')
+    expect(markup).toContain('of-athlete-row')
+    expect(markup).not.toContain('player-list-item')
     expect(markup).toContain('Suche nach Name, Position, Cluster')
     expect(markup).toContain('Returner')
+    expect(markup).toContain('Offene Themen')
+    expect(markup).toContain('aria-pressed="true"')
     expect(markup).not.toContain('Spieler auswaehlen oder neu anlegen')
     expect(markup).not.toContain('player-empty-detail')
     expect(markup).not.toContain('Spielerprofil Tabs')
@@ -373,6 +379,50 @@ describe('PlayersView default layout', () => {
     root.unmount()
   })
 
+  it('does not lock the page for a stale selected player id', async () => {
+    const container = document.createElement('div')
+    document.body.append(container)
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <PlayersView
+          authState={authState}
+          initialSelectedPlayerId="missing-player"
+          playerActions={buildPlayerActions({ players: [] })}
+        />,
+      )
+    })
+
+    expect(container.querySelector('[role="dialog"]')).toBeNull()
+    expect(document.body.style.overflow).toBe('')
+    root.unmount()
+    container.remove()
+  })
+
+  it('returns focus to the matching row when a restored profile closes', async () => {
+    const container = document.createElement('div')
+    document.body.append(container)
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <PlayersView
+          authState={authState}
+          initialSelectedPlayerId={player.id}
+          playerActions={buildPlayerActions()}
+        />,
+      )
+    })
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    })
+
+    expect(document.activeElement).toBe(container.querySelector('.of-athlete-row-content'))
+    root.unmount()
+    container.remove()
+  })
+
   it('renders athlete rows as accessible profile openers with selected state', async () => {
     await localDb.delete()
     await localDb.open()
@@ -393,13 +443,15 @@ describe('PlayersView default layout', () => {
     )
     expect(playerButton?.getAttribute('aria-label')).toContain('Profil öffnen: Sabine')
     expect(playerButton?.getAttribute('aria-label')).toContain('Prop')
-    expect(playerButton?.getAttribute('aria-pressed')).toBe('false')
+    expect(playerButton?.getAttribute('aria-label')).toContain('Ampel Gelb')
+    expect(playerButton?.getAttribute('aria-label')).toContain('offene Themen')
+    expect(playerButton?.getAttribute('aria-current')).toBeNull()
 
     await act(async () => {
       playerButton?.click()
     })
 
-    expect(playerButton?.getAttribute('aria-pressed')).toBe('true')
+    expect(playerButton?.getAttribute('aria-current')).toBe('true')
 
     root.unmount()
   })
@@ -424,13 +476,17 @@ describe('PlayersView default layout', () => {
     })
 
     const text = container.textContent ?? ''
-    expect(text).toContain('Aktueller Status')
     expect(text).toContain('Letzte Teilnahme')
+    expect(container.querySelector('.player-profile-summary')).toBeTruthy()
+    expect(container.querySelectorAll('.player-profile-summary dt')).toHaveLength(4)
+    expect(container.querySelectorAll('.player-profile-summary dd')).toHaveLength(4)
+    expect(container.querySelector('[aria-label="Aktueller Status"]')).toBeFalsy()
+    expect(container.querySelector('[aria-label="Letzte Teilnahme"]')).toBeFalsy()
     expect(text).toContain('Aktuelle Limits')
     expect(text).toContain('Offene Themen')
     expect(text).toContain('Kurzer Verlauf')
     expect(text).toContain('Stammdaten & Consent')
-    expect(text.indexOf('Aktueller Status')).toBeLessThan(text.indexOf('Stammdaten & Consent'))
+    expect(text.indexOf('Letzte Teilnahme')).toBeLessThan(text.indexOf('Stammdaten & Consent'))
     expect(text).toContain('Kein Sprint')
     expect(text).toContain('Speed')
 
@@ -442,7 +498,7 @@ describe('PlayersView default layout', () => {
     window.matchMedia = vi.fn().mockImplementation((query: string) => ({
       addEventListener: vi.fn(),
       dispatchEvent: vi.fn(),
-      matches: query.includes('max-width: 760px') ? false : false,
+      matches: query.includes('max-width: 839px') ? false : false,
       media: query,
       onchange: null,
       removeEventListener: vi.fn(),
@@ -467,6 +523,119 @@ describe('PlayersView default layout', () => {
       root.unmount()
       window.matchMedia = originalMatchMedia
     }
+  })
+
+  it('moves focus into the compact profile sheet and restores it to the opening row', async () => {
+    await localDb.delete()
+    await localDb.open()
+    const container = document.createElement('div')
+    document.body.append(container)
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(<PlayersView authState={authState} playerActions={buildPlayerActions()} />)
+    })
+
+    const playerButton = Array.from(container.querySelectorAll<HTMLButtonElement>('button')).find((button) =>
+      button.textContent?.includes('Sabine'),
+    )
+    playerButton?.focus()
+
+    await act(async () => {
+      playerButton?.click()
+    })
+
+    const dialog = container.querySelector<HTMLElement>('[role="dialog"][aria-modal="true"]')
+    expect(dialog?.contains(document.activeElement)).toBe(true)
+    expect(document.body.style.overflow).toBe('hidden')
+
+    const focusableElements = Array.from(
+      dialog?.querySelectorAll<HTMLElement>(
+        'button:not([disabled]), a[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), [tabindex]:not([tabindex="-1"])',
+      ) ?? [],
+    )
+    const firstFocusable = focusableElements[0]
+    const lastFocusable = focusableElements[focusableElements.length - 1]
+    lastFocusable.focus()
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab' }))
+    })
+    expect(document.activeElement).toBe(firstFocusable)
+
+    firstFocusable.focus()
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Tab', shiftKey: true }))
+    })
+    expect(document.activeElement).toBe(lastFocusable)
+
+    await act(async () => {
+      window.dispatchEvent(new KeyboardEvent('keydown', { key: 'Escape' }))
+    })
+
+    expect(document.activeElement).toBe(playerButton)
+    expect(document.body.style.overflow).toBe('')
+    root.unmount()
+    container.remove()
+  })
+
+  it('shows severity-first row status without turning the roster into a chip wall', async () => {
+    await localDb.delete()
+    await localDb.open()
+    await localDb.sessionLogs.put(sessionLog)
+    await localDb.playerSessionEntries.put({
+      ...playerSessionEntry,
+      trafficLight: 'red',
+      trafficLightSuggestion: 'red',
+      movementConcern: true,
+      limits: ['klaeren'],
+    })
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(<PlayersView authState={authState} playerActions={buildPlayerActions()} />)
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+
+    const row = container.querySelector<HTMLElement>('[data-player-id="player-1"]')
+    expect(row?.textContent).toContain('Rot')
+    expect(row?.textContent).toContain('offene Themen')
+    expect(row?.textContent).not.toContain('Einwilligung offen')
+    expect(row?.querySelectorAll('.of-status-chip')).toHaveLength(2)
+    root.unmount()
+  })
+
+  it('keeps yellow open topics ahead of inactive roster status', async () => {
+    await localDb.delete()
+    await localDb.open()
+    await localDb.sessionLogs.put(sessionLog)
+    await localDb.playerSessionEntries.put(playerSessionEntry)
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <PlayersView
+          authState={authState}
+          playerActions={buildPlayerActions({ players: [{ ...player, active: false }] })}
+        />,
+      )
+    })
+    await act(async () => {
+      await Promise.resolve()
+    })
+    await act(async () => {
+      Array.from(container.querySelectorAll('button'))
+        .find((button) => button.textContent === 'Alle')
+        ?.click()
+    })
+
+    const row = container.querySelector<HTMLElement>(`[data-player-id="${player.id}"]`)
+    expect(row?.textContent).toContain('offene Themen')
+    expect(row?.textContent).not.toContain('Inaktiv')
+    root.unmount()
   })
 
   it('opens player editing from the profile settings icon', async () => {
