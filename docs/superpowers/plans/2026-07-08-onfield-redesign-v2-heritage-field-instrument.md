@@ -610,6 +610,8 @@ Impact:
 
 Ziel: OnField als Marke bewusst sichtbar machen, ohne Live-Coaching-Screens in Marketing-Flaechen zu verwandeln.
 
+Status: **abgeschlossen am 2026-07-14**. Umsetzung, Figma-Referenz, Redesign-Integrity-Gate und lokale/beta-nahe QA sind im Evidence-Report `docs/field-hub/2026-07-13_onfield_r9_brand_surfaces_wordmark_display_font_audit.md` dokumentiert.
+
 Scope drin:
 - Logo-/Wortmarken-Sprint: Dot-Signature, Wortmarken-Regeln und App-Header-Anwendung.
 - Display-Font-Test fuer Headlines/Scoreboard, mit Systemfont als Fallback.
@@ -649,16 +651,16 @@ Abhaengigkeiten:
 - R5 empfohlen, damit Scoreboard-/Wortmarken-Einsatz gegen echten Leit-Screen geprueft wird.
 
 Definition of Done:
-- [ ] Brand-Surfaces nutzen Oxblood nur dort, wo Brand Kit und Spec es erlauben.
-- [ ] Live-Coaching-Screens bleiben ruhig und ohne Hero/Marketing.
-- [ ] Display-Font ist getestet oder explizit als System-Platzhalter belassen.
-- [ ] Wortmarke/Dot-Signature ist in Code und SSOT konsistent.
-- [ ] Empty States haben einen Satz, eine Aktion, optional einen Helper.
-- [ ] Keine Diagnose-/Freigabesprache in Onboarding, Empty oder Kiosk.
-- [ ] iPhone/iPad-First-Run und Install-Surfaces sind funktionsgleich.
-- [ ] Dark Field Mode und Light Mode beide visuell geprueft.
-- [ ] Bild-KI-Assets sind nur Brand-/Marketing-/Kiosk-/Install-Assets, in Figma/Repo dokumentiert und nicht operative UI-Struktur.
-- [ ] Figma Brand-Surface Frames sind die visuelle Referenz fuer Implementierung und Evidence.
+- [x] Brand-Surfaces nutzen Oxblood nur dort, wo Brand Kit und Spec es erlauben.
+- [x] Live-Coaching-Screens bleiben ruhig und ohne Hero/Marketing.
+- [x] Display-Font ist getestet oder explizit als System-Platzhalter belassen.
+- [x] Wortmarke/Dot-Signature ist in Code und SSOT konsistent.
+- [x] Empty States haben einen Satz, eine Aktion, optional einen Helper.
+- [x] Keine Diagnose-/Freigabesprache in Onboarding, Empty oder Kiosk.
+- [x] iPhone/iPad-First-Run und Install-Surfaces sind funktionsgleich.
+- [x] Dark Field Mode und Light Mode beide visuell geprueft.
+- [x] Bild-KI-Assets sind nur Brand-/Marketing-/Kiosk-/Install-Assets, in Figma/Repo dokumentiert und nicht operative UI-Struktur.
+- [x] Figma Brand-Surface Frames sind die visuelle Referenz fuer Implementierung und Evidence.
 
 Aufwand/Risiko/QA:
 - Aufwand: M.
@@ -668,9 +670,9 @@ Aufwand/Risiko/QA:
 Rollback-/Sicherheitshinweis:
 - PWA-Icon-/Manifest-Aenderungen koennen gecacht werden; Rollback braucht Versions-/Cache-Pruefung. Display-Font nur mit Fallback mergen.
 
-Offene Fragen:
-- Finale Display-Font und Wortmarkenform muessen vor Umsetzung bestaetigt oder im Sprint als Testmatrix entschieden werden.
-- Mono fuer Labels bleibt pending Ratifizierung; ohne Ratifizierung System-Semibold-Uppercase verwenden.
+Abschlussentscheidungen:
+- Mixed-Case-`OnField•` und der selbst gehostete Display-Test `Barlow Semi Condensed` 800 sind ratifiziert; der Systemfont bleibt der operative Fallback.
+- Mono fuer Labels wurde bewusst nicht ratifiziert; System-Semibold-Uppercase bleibt bestehen. Das ist kein R9-Blocker.
 
 Impact:
 - M/H, weil die App dadurch nicht nur geordnet, sondern markenfaehig wirkt.
