@@ -380,18 +380,25 @@ function MissingValuesPanel({
 
     if (item.kind === 'missing_srpe' || item.kind === 'missing_post_pain') {
       return (
-        <PainScale
-          label={`${item.label} ${player.name}`}
-          value={null}
-          onChange={(value) => {
-            if (isPostSavingDisabled) {
-              return
-            }
+        <div className="scale-with-anchor">
+          <PainScale
+            label={`${item.label} ${player.name}`}
+            value={null}
+            onChange={(value) => {
+              if (isPostSavingDisabled) {
+                return
+              }
 
-            const patch = item.kind === 'missing_srpe' ? { sessionRpe: value } : { postPainScore: value }
-            void onPostSave(player, patch)
-          }}
-        />
+              const patch = item.kind === 'missing_srpe' ? { sessionRpe: value } : { postPainScore: value }
+              void onPostSave(player, patch)
+            }}
+          />
+          <p className="scale-anchor">
+            {item.kind === 'missing_srpe'
+              ? '0 = keine Anstrengung · 10 = maximal'
+              : '0 = keine Beschwerden · 10 = sehr stark'}
+          </p>
+        </div>
       )
     }
 
@@ -632,6 +639,7 @@ function PostSessionPlayerRow({
               </button>
             ))}
           </div>
+          <p className="scale-anchor">0 = keine Anstrengung · 10 = maximal</p>
         </div>
 
         <div className="control-group" aria-label={`Beschwerden nach Training ${player.name}`}>
@@ -649,6 +657,7 @@ function PostSessionPlayerRow({
               </button>
             ))}
           </div>
+          <p className="scale-anchor">0 = keine Beschwerden · 10 = sehr stark</p>
         </div>
 
         <label className="inline-field">

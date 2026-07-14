@@ -36,7 +36,7 @@ import {
 } from './PlayerAnalysisCharts'
 import { PlayerEditorForm } from './PlayerEditorForm'
 import { AthleteRow } from './onfield'
-import { EmptyState, PrimaryButton, SecondaryButton, Skeleton, StatusChip } from './ui'
+import { EmptyState, PrimaryButton, SecondaryButton, Sheet, Skeleton, StatusChip } from './ui'
 
 type PlayerActions = ReturnType<typeof usePlayers>
 type MetricActions = ReturnType<typeof useMetrics>
@@ -651,7 +651,7 @@ function PlayerDetailView({
                     <SecondaryButton
                       compact
                       disabled={!metricActions || !(metricDrafts[definition.key] ?? '').trim()}
-                      disabledReason={!metricActions ? 'Metrik-Speicher ist nicht verfuegbar.' : !(metricDrafts[definition.key] ?? '').trim() ? 'Trage zuerst einen Wert ein.' : undefined}
+                      disabledReason={!metricActions ? 'Metrik-Speicher ist nicht verfügbar.' : !(metricDrafts[definition.key] ?? '').trim() ? 'Trage zuerst einen Wert ein.' : undefined}
                       onClick={() => onMetricSave(definition)}
                     >
                       {definition.name} speichern
@@ -788,6 +788,10 @@ export function PlayersView({
   const [activeDetailTab, setActiveDetailTab] = useState<PlayerDetailTab>(initialDetailTab)
   const [isEditorOpen, setIsEditorOpen] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isDeleteSheetOpen, setIsDeleteSheetOpen] = useState(false)
+  const [isDeleting, setIsDeleting] = useState(false)
+  const [deleteTarget, setDeleteTarget] = useState<Player | null>(null)
+  const [deleteError, setDeleteError] = useState<string | null>(null)
   const [searchQuery, setSearchQuery] = useState('')
   const [statusFilter, setStatusFilter] = useState<'active' | 'all' | 'returner' | 'issues'>('active')
   const [formValues, setFormValues] = useState<PlayerFormValues>(emptyPlayerFormValues)
@@ -805,6 +809,8 @@ export function PlayersView({
   const [photoPreviewUrls, setPhotoPreviewUrls] = useState<Record<string, string>>({})
   const photoPreviewUrlsRef = useRef<Record<string, string>>({})
   const playerDetailRef = useRef<HTMLElement | null>(null)
+  const deleteActionRef = useRef<HTMLButtonElement | null>(null)
+  const restoreDeleteFocusRef = useRef(false)
   const playerListRef = useRef<HTMLElement | null>(null)
   const profileOpenerRef = useRef<HTMLButtonElement | null>(null)
   const { clearPhotoLoadError, markPhotoLoadError, photoLoadError } = usePhotoLoadError()
@@ -1068,6 +1074,12 @@ export function PlayersView({
     [],
   )
 
+  useEffect(() => {
+    if (!isEditorOpen || !restoreDeleteFocusRef.current) return
+    restoreDeleteFocusRef.current = false
+    queueMicrotask(() => deleteActionRef.current?.focus())
+  }, [isEditorOpen])
+
   if (authState.status !== 'signed-in') {
     return (
       <div className="content-stack">
@@ -1132,34 +1144,49 @@ export function PlayersView({
     }
   }
 
-  async function handleDelete() {
+  function requestDelete() {
     if (!selectedPlayer) {
       return
     }
 
-    const confirmed = window.confirm(
-      `${selectedPlayer.name} wirklich loeschen? Der Spieler wird lokal entfernt und aus der Datenbank geloescht. Historische Eintraege bleiben anonymisiert fuer Backups und Verlauf erhalten.`,
-    )
-    if (!confirmed) {
-      return
-    }
+    setDeleteError(null)
+    setDeleteTarget(selectedPlayer)
+    setIsEditorOpen(false)
+    setIsDeleteSheetOpen(true)
+    triggerHapticFeedback('selection')
+  }
+
+  function closeDeleteSheet() {
+    if (isDeleting) return
+    restoreDeleteFocusRef.current = true
+    setIsDeleteSheetOpen(false)
+    setDeleteTarget(null)
+    setIsEditorOpen(true)
+  }
+
+  async function confirmDelete() {
+    if (!deleteTarget || isDeleting) return
 
     setFormError(null)
     setFormNotice(null)
     clearPhotoLoadError()
-    triggerHapticFeedback('selection')
+    setIsDeleting(true)
 
     try {
-      await deletePlayer(selectedPlayer)
+      await deletePlayer(deleteTarget)
       setSelectedPlayerId(null)
       setFormValues(emptyPlayerFormValues)
-      await profileActions.refreshPlayerProfiles()
-      setFormNotice('Spieler geloescht.')
+      setViewNotice('Spieler gelöscht.')
+      setIsDeleteSheetOpen(false)
+      setDeleteTarget(null)
       setIsEditorOpen(false)
       triggerHapticFeedback('success')
-    } catch (caughtError) {
+      void profileActions.refreshPlayerProfiles().catch(() => undefined)
+    } catch {
       triggerHapticFeedback('warning')
-      setFormError(caughtError instanceof Error ? caughtError.message : 'Spieler konnte nicht geloescht werden.')
+      setDeleteError('Spieler konnte nicht gelöscht werden. Bitte erneut versuchen.')
+    } finally {
+      setIsDeleting(false)
     }
   }
 
@@ -1247,9 +1274,9 @@ export function PlayersView({
               <UserMinus className="nav-icon" aria-hidden />
               <span>Deaktivieren</span>
             </button>
-            <button className="secondary-action danger" type="button" onClick={handleDelete}>
+            <button className="secondary-action danger" ref={deleteActionRef} type="button" onClick={requestDelete}>
               <Trash2 className="nav-icon" aria-hidden />
-              <span>Loeschen</span>
+              <span>Löschen</span>
             </button>
           </>
         ) : null
@@ -1266,7 +1293,7 @@ export function PlayersView({
         <div className="photo-actions">
           <label className="secondary-action file-action">
             <Camera className="nav-icon" aria-hidden />
-            <span>Foto aufnehmen/waehlen</span>
+            <span>Foto aufnehmen/wählen</span>
             <input type="file" accept="image/jpeg,image/webp,image/png" onChange={handlePhotoChange} />
           </label>
           {selectedPlayer.photoPath ? (
@@ -1295,7 +1322,7 @@ export function PlayersView({
             Spieler anlegen
           </PrimaryButton>
           {syncOverview.status === 'error' ? (
-            <SecondaryButton icon={<RefreshCw className="nav-icon" aria-hidden />} isLoading={isLoading} loadingLabel="Sync laeuft" onClick={runSync}>
+            <SecondaryButton icon={<RefreshCw className="nav-icon" aria-hidden />} isLoading={isLoading} loadingLabel="Sync läuft" onClick={runSync}>
               Erneut synchronisieren
             </SecondaryButton>
           ) : null}
@@ -1396,7 +1423,7 @@ export function PlayersView({
         />
       ) : null}
 
-      {selectedPlayer ? (
+      {selectedPlayer && !isDeleteSheetOpen ? (
         <PlayerDetailView
           activeTab={activeDetailTab}
           canOpenSourceSession={canOpenSourceSession}
@@ -1449,7 +1476,7 @@ export function PlayersView({
               <button
                 className="icon-button"
                 type="button"
-                aria-label="Spielerformular schliessen"
+                aria-label="Spielerformular schließen"
                 onClick={closePlayerSheet}
               >
                 <X className="nav-icon" aria-hidden />
@@ -1458,6 +1485,26 @@ export function PlayersView({
             {playerForm}
           </article>
         </div>
+      ) : null}
+
+      {isDeleteSheetOpen && deleteTarget ? (
+        <Sheet
+          title="Spieler löschen"
+          description={`${deleteTarget.name} wird auf diesem Gerät aus dem aktiven Kader entfernt. Die Löschung wird mit Supabase synchronisiert.`}
+          onClose={closeDeleteSheet}
+        >
+          <div className="player-delete-confirmation">
+            <p>Historische Einträge bleiben anonymisiert für Backups und Verlauf erhalten.</p>
+            {deleteError ? <p className="form-error" role="alert">{deleteError}</p> : null}
+            <div className="player-delete-actions">
+              <SecondaryButton disabled={isDeleting} onClick={closeDeleteSheet}>Abbrechen</SecondaryButton>
+              <button className="secondary-action danger" disabled={isDeleting} type="button" onClick={() => void confirmDelete()}>
+                <Trash2 className="nav-icon" aria-hidden />
+                <span>{isDeleting ? 'Löschen läuft' : 'Spieler endgültig löschen'}</span>
+              </button>
+            </div>
+          </div>
+        </Sheet>
       ) : null}
     </section>
   )

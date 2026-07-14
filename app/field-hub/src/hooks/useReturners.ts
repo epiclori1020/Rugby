@@ -33,9 +33,11 @@ export function useReturners(
   const [returnerCaps, setReturnerCaps] = useState<ReturnerCapSummary[]>([])
   const [syncOverview, setSyncOverview] = useState<PlayerSyncOverview>(defaultPlayerSyncOverview)
   const [isLoading, setIsLoading] = useState(false)
+  const [isInitialLoading, setIsInitialLoading] = useState(false)
   const [sessionLogId, setSessionLogId] = useState<string | null>(null)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
   const checkInEntriesRef = useRef(checkInEntries)
+  const refreshRequestIdRef = useRef(0)
 
   useEffect(() => {
     checkInEntriesRef.current = checkInEntries
@@ -83,6 +85,7 @@ export function useReturners(
   )
 
   const refreshReturners = useCallback(async () => {
+    const requestId = ++refreshRequestIdRef.current
     if (!userId) {
       setEntries([])
       setHistoryByPlayerId({})
@@ -90,40 +93,46 @@ export function useReturners(
       setSyncOverview(defaultPlayerSyncOverview)
       setSessionLogId(null)
       setErrorMessage(null)
+      setIsInitialLoading(false)
       return
     }
 
-    const sessionLog = await findSessionLog(userId, sessionDefinition.id)
-    const [localEntries, caps, overview] = await Promise.all([
-      sessionLog ? listReturnerEntriesForSession(userId, sessionLog.id) : Promise.resolve([]),
-      listLatestReturnerCaps(userId, sessionLog?.id ?? null, sessionDefinition.date),
-      getReturnerSyncOverview(userId),
-    ])
-    const relevantPlayerIds = new Set<string>(
-      players.filter((player) => player.active && player.returnerStatus === 'ja').map((player) => player.id),
-    )
-    for (const entry of checkInEntriesRef.current) {
-      if (hasPlayerId(entry) && entry.returnerFlag === 'ja') {
-        relevantPlayerIds.add(entry.playerId)
+    setIsInitialLoading(true)
+    setErrorMessage(null)
+    try {
+      const sessionLog = await findSessionLog(userId, sessionDefinition.id)
+      const [localEntries, caps, overview] = await Promise.all([
+        sessionLog ? listReturnerEntriesForSession(userId, sessionLog.id) : Promise.resolve([]),
+        listLatestReturnerCaps(userId, sessionLog?.id ?? null, sessionDefinition.date),
+        getReturnerSyncOverview(userId),
+      ])
+      const relevantPlayerIds = new Set<string>(
+        players.filter((player) => player.active && player.returnerStatus === 'ja').map((player) => player.id),
+      )
+      for (const entry of checkInEntriesRef.current) {
+        if (hasPlayerId(entry) && entry.returnerFlag === 'ja') relevantPlayerIds.add(entry.playerId)
       }
-    }
-    for (const cap of caps) {
-      if (hasPlayerId(cap)) {
-        relevantPlayerIds.add(cap.playerId)
+      for (const cap of caps) {
+        if (hasPlayerId(cap)) relevantPlayerIds.add(cap.playerId)
       }
-    }
-    for (const entry of localEntries) {
-      if (hasPlayerId(entry)) {
-        relevantPlayerIds.add(entry.playerId)
+      for (const entry of localEntries) {
+        if (hasPlayerId(entry)) relevantPlayerIds.add(entry.playerId)
       }
-    }
-    const historyEntriesByPlayerId = await listReturnerEntriesForPlayers(userId, [...relevantPlayerIds])
+      const historyEntriesByPlayerId = await listReturnerEntriesForPlayers(userId, [...relevantPlayerIds])
+      if (requestId !== refreshRequestIdRef.current) return
 
-    setEntries(localEntries)
-    setReturnerCaps(caps)
-    setSyncOverview(overview)
-    setSessionLogId(sessionLog?.id ?? null)
-    setHistoryByPlayerId(historyEntriesByPlayerId)
+      setEntries(localEntries)
+      setReturnerCaps(caps)
+      setSyncOverview(overview)
+      setSessionLogId(sessionLog?.id ?? null)
+      setHistoryByPlayerId(historyEntriesByPlayerId)
+    } catch (caughtError) {
+      if (requestId === refreshRequestIdRef.current) {
+        setErrorMessage(caughtError instanceof Error ? caughtError.message : 'Returner-Aufgaben konnten nicht geladen werden.')
+      }
+    } finally {
+      if (requestId === refreshRequestIdRef.current) setIsInitialLoading(false)
+    }
   }, [players, sessionDefinition, userId])
 
   const runSync = useCallback(async () => {
@@ -134,10 +143,10 @@ export function useReturners(
     setIsLoading(true)
     try {
       const overview = await syncCheckIns(userId, { sessionDefinitionId: sessionDefinition.id })
-      const returnerOverview = await getReturnerSyncOverview(userId)
-      setSyncOverview(returnerOverview)
-      setErrorMessage(overview.status === 'error' ? overview.errorMessage ?? 'Returner-Sync fehlgeschlagen.' : null)
       await refreshReturners()
+      if (overview.status === 'error') {
+        setErrorMessage(overview.errorMessage ?? 'Returner-Sync fehlgeschlagen.')
+      }
       return overview
     } catch (caughtError) {
       const message = caughtError instanceof Error ? caughtError.message : 'Returner-Sync fehlgeschlagen.'
@@ -178,9 +187,8 @@ export function useReturners(
   }, [refreshReturners, userId])
 
   useEffect(() => {
-    Promise.resolve()
-      .then(refreshReturners)
-      .catch(() => undefined)
+    void Promise.resolve().then(refreshReturners)
+    return () => { refreshRequestIdRef.current += 1 }
   }, [refreshReturners])
 
   useEffect(() => {
@@ -267,6 +275,7 @@ export function useReturners(
     getEntryForPlayer,
     getHistoryForPlayer,
     isLoading,
+    isInitialLoading,
     refreshReturners,
     returnerCaps,
     returnerTaskStates,

@@ -275,6 +275,8 @@ describe('PostSessionView post-session queue', () => {
     expect(markup).not.toContain('metric-grid checkin-metrics')
     expect(markup).toContain('sRPE nachtragen')
     expect(markup).toContain('Subjektive Belastung 0-10')
+    expect(markup).toContain('0 = keine Anstrengung · 10 = maximal')
+    expect(markup).toContain('0 = keine Beschwerden · 10 = sehr stark')
     expect(markup).toContain('Dauer Minuten')
     expect(markup).toContain('Pflicht')
     expect(markup).toContain('Optional nachtragen')

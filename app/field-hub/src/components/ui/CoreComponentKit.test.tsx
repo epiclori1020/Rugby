@@ -121,10 +121,42 @@ describe('Sprint 5 Core Component Kit', () => {
     expect(markup).toContain('Training anpassen')
     expect(markup).toContain('role="dialog"')
     expect(markup).toContain('aria-modal="true"')
-    expect(markup).toContain('Schliessen')
+    expect(markup).toContain('Schließen')
     expect(markup).toContain('Keine offenen Aufgaben')
     expect(markup).toContain('role="status"')
     expect(markup).toContain('Speichern nicht moeglich')
+  })
+
+  it('supports quiet inline states without creating nested panels', () => {
+    const markup = renderToStaticMarkup(
+      <>
+        <EmptyState appearance="inline" title="Keine Daten" body="Filter anpassen." />
+        <ErrorState appearance="inline" title="Nicht geladen" body="Erneut versuchen." />
+      </>,
+    )
+
+    expect(markup).toContain('of-empty-state of-state-inline')
+    expect(markup).toContain('of-error-state of-state-inline')
+  })
+
+  it('allows repeated skeleton shapes to stay decorative under one announced loader', () => {
+    const markup = renderToStaticMarkup(
+      <div role="status" aria-label="Liste wird geladen">
+        <Skeleton announce={false} variant="row" />
+        <Skeleton announce={false} variant="row" />
+      </div>,
+    )
+
+    expect(markup.match(/role="status"/g)).toHaveLength(1)
+    expect(markup.match(/aria-hidden="true"/g)).toHaveLength(2)
+  })
+
+  it('keeps inline states and sheet motion tokenized and reduced-motion safe', () => {
+    const css = readComponentCss()
+
+    expect(css).toContain('.of-state-inline')
+    expect(css).toContain('var(--of-motion-duration-sheet)')
+    expect(css).toContain('@media (prefers-reduced-motion: reduce)')
   })
 
   it('keeps touch targets and component colors routed through tokens', () => {

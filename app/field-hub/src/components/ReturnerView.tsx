@@ -20,6 +20,7 @@ import {
 import type { ReturnerTaskState } from '../domain/returnerTasks'
 import type { Player } from '../domain/players'
 import { useActionFeedback } from '../hooks/useActionFeedback'
+import { useDelayedLoadingIndicator } from '../hooks/useDelayedLoadingIndicator'
 import type { useReturners } from '../hooks/useReturners'
 import type { AuthSessionState } from '../lib/auth'
 import { applyOptimisticReturnerPatch } from '../lib/optimisticUpdates'
@@ -29,7 +30,7 @@ import { pendingCountLabel, shouldShowSyncAttention, syncStatusLabel } from '../
 import { SessionPicker } from './SessionPicker'
 import { AthleteRow } from './onfield'
 import { ActionFeedback } from './ui/ActionFeedback'
-import { EmptyState, PrimaryButton, SecondaryButton, SegmentedControl, StatusChip } from './ui'
+import { EmptyState, ErrorState, PrimaryButton, SecondaryButton, SegmentedControl, Skeleton, StatusChip } from './ui'
 
 type ReturnerActions = ReturnType<typeof useReturners>
 
@@ -50,7 +51,7 @@ type ReturnerViewProps = {
 
 function ReturnerHistory({ entries }: { entries: ReturnerEntry[] }) {
   if (entries.length === 0) {
-    return <p>Kein lokaler Returner-Verlauf fuer diesen Spieler.</p>
+    return <p>Kein lokaler Returner-Verlauf für diesen Spieler.</p>
   }
 
   return (
@@ -155,11 +156,11 @@ function ReturnerPlayerDetail({
         actionFeedback.showSaved(result.entry.syncStatus)
       } else {
         setLocalEntryOverride({ baseKey: sourceEntryKey, entry: previousEntry })
-        actionFeedback.showError(result.error)
+        actionFeedback.showError('nicht gespeichert – erneut versuchen')
       }
-    } catch (caughtError) {
+    } catch {
       setLocalEntryOverride({ baseKey: sourceEntryKey, entry: previousEntry })
-      actionFeedback.showError(caughtError instanceof Error ? caughtError.message : undefined)
+      actionFeedback.showError('nicht gespeichert – erneut versuchen')
     } finally {
       savingActionRef.current = null
       setSavingActionKey(null)
@@ -189,7 +190,7 @@ function ReturnerPlayerDetail({
 
       {controlsDisabled ? (
         <p className="disabled-action-reason" id={savingReasonId}>
-          Speichern laeuft gerade.
+          Speichern läuft gerade.
         </p>
       ) : null}
 
@@ -322,12 +323,15 @@ export function ReturnerView({
     errorMessage,
     getEntryForPlayer,
     getHistoryForPlayer,
+    isInitialLoading,
     isLoading,
+    refreshReturners,
     returnerTaskStates,
     runSync,
     savePlayerReturner,
     syncOverview,
   } = returnerActions
+  const showInitialLoading = useDelayedLoadingIndicator(isInitialLoading && returnerTaskStates.length === 0)
   const showSyncAttention = shouldShowSyncAttention(syncOverview)
   const detailPaneRef = useRef<HTMLElement | null>(null)
   const detailReturnFocusRef = useRef<HTMLElement | null>(null)
@@ -463,11 +467,16 @@ export function ReturnerView({
               sessions={sessions}
             />
           ) : null}
-          <PrimaryButton icon={<ArrowRight aria-hidden />} onClick={handlePrimaryAction}>
-            {nextOpenTask ? 'Nächste Returner-Aufgabe' : 'Nachbereitung öffnen'}
+          <PrimaryButton
+            disabled={isInitialLoading}
+            disabledReason={isInitialLoading ? 'Returner-Aufgaben werden geladen.' : undefined}
+            icon={<ArrowRight aria-hidden />}
+            onClick={handlePrimaryAction}
+          >
+            {isInitialLoading ? 'Returner-Aufgaben laden' : nextOpenTask ? 'Nächste Returner-Aufgabe' : 'Nachbereitung öffnen'}
           </PrimaryButton>
           {syncOverview.status === 'error' ? (
-            <SecondaryButton icon={<RefreshCw className="nav-icon" aria-hidden />} isLoading={isLoading} loadingLabel="Sync laeuft" onClick={runSync}>
+            <SecondaryButton icon={<RefreshCw className="nav-icon" aria-hidden />} isLoading={isLoading} loadingLabel="Sync läuft" onClick={runSync}>
               Erneut synchronisieren
             </SecondaryButton>
           ) : null}
@@ -478,36 +487,43 @@ export function ReturnerView({
         </div>
       </div>
 
-      <div className="returner-status-strip" aria-label="Returner Status">
-        <StatusChip
-          label={openTasks.length === 0 ? 'Returner aktuell geklärt' : `${openTasks.length} Aufgabe(n) offen`}
-          tone={openTasks.length === 0 ? 'success' : openTasks.some((task) => task.tone === 'danger') ? 'danger' : 'warning'}
-        />
-        <span className="of-num">{visibleTasks.length} im heutigen Kontext</span>
-      </div>
+      {!isInitialLoading ? (
+        <div className="returner-status-strip" aria-label="Returner Status">
+          <StatusChip
+            label={openTasks.length === 0 ? 'Returner aktuell geklärt' : `${openTasks.length} Aufgabe(n) offen`}
+            tone={openTasks.length === 0 ? 'success' : openTasks.some((task) => task.tone === 'danger') ? 'danger' : 'warning'}
+          />
+          <span className="of-num">{visibleTasks.length} im heutigen Kontext</span>
+        </div>
+      ) : null}
 
       {errorMessage ? (
-        <div className="panel error-panel" role="alert">
-          <strong>Returner nicht vollstaendig synchronisiert</strong>
-          <span>{errorMessage}</span>
-          <button className="secondary-action" type="button" onClick={clearError}>
-            Schliessen
-          </button>
-        </div>
+        <ErrorState
+          appearance="inline"
+          title="Returner-Aufgaben nicht geladen"
+          body="Vorhandene Einträge bleiben sichtbar. Lade die lokale Aufgabenliste erneut."
+          action={<><SecondaryButton onClick={() => void refreshReturners()}>Erneut versuchen</SecondaryButton><SecondaryButton onClick={clearError}>Schließen</SecondaryButton></>}
+        />
       ) : null}
 
       {showSyncAttention ? (
         <div className="panel checkin-sync-strip">
           <span className={`status-dot ${syncOverview.status === 'synced' ? 'online' : ''}`} aria-hidden />
           <strong>{syncStatusLabel(syncOverview.status)}</strong>
-          <span>{pendingCountLabel(syncOverview.pendingCount, 'Returner-Aenderungen')}</span>
-          {syncOverview.errorMessage ? <span>{syncOverview.errorMessage}</span> : null}
+          <span>{pendingCountLabel(syncOverview.pendingCount, 'Returner-Änderungen')}</span>
+          {syncOverview.errorMessage ? <span>Synchronisierung konnte nicht abgeschlossen werden.</span> : null}
         </div>
       ) : null}
 
       <div className="returner-workspace-grid">
         <section className="panel returner-task-list" aria-label="Returner Aufgabenliste">
-          {visibleTasks.length > 0 ? visibleTasks.map((task) => {
+          {showInitialLoading ? (
+            <div className="returner-list-skeletons" role="status" aria-label="Returner-Aufgaben werden geladen">
+              <Skeleton announce={false} variant="row" />
+              <Skeleton announce={false} variant="row" />
+            </div>
+          ) : null}
+          {!isInitialLoading && visibleTasks.length > 0 ? visibleTasks.map((task) => {
             const player = playerById.get(task.playerId)
             if (!player) {
               return null
@@ -534,12 +550,12 @@ export function ReturnerView({
                 status={<StatusChip label={statusLabel} tone={task.tone} />}
               />
             )
-          }) : (
+          }) : !isInitialLoading ? (
             <EmptyState
               body="Aktuell gibt es für diese Einheit keine Returner-Aufgabe. Offene Statusklärungen bleiben im Check-in."
               title="Returner aktuell geklärt"
             />
-          )}
+          ) : null}
         </section>
 
         {selectedPlayer && selectedTask && isMobileDetailSheet ? (

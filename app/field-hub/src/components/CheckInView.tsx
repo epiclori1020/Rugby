@@ -701,6 +701,7 @@ function CheckInPlayerRow({
               </button>
             ))}
           </div>
+          <p className="scale-anchor">1 = schlecht · 5 = voll bereit</p>
         </div>
 
         <div className="control-group">
@@ -769,6 +770,7 @@ function CheckInPlayerRow({
               </button>
             ))}
           </div>
+          <p className="scale-anchor">0 = keine Beschwerden · 10 = sehr stark</p>
         </div>
 
         <div className="control-group">

@@ -10,7 +10,7 @@ import { pendingCountLabel, syncStatusLabel } from '../lib/syncLabels'
 import type { ThemePreference } from '../lib/themePreference'
 import { AuthPanel } from './AuthPanel'
 import { BrandSurface } from './onfield'
-import { PrimaryButton, SecondaryButton, SegmentedControl, type SegmentedControlOption } from './ui'
+import { ErrorState, PrimaryButton, SecondaryButton, SegmentedControl, type SegmentedControlOption } from './ui'
 
 type SettingsViewProps = {
   authState: AuthSessionState
@@ -42,22 +42,22 @@ function formatTimestamp(timestamp: string | null) {
 
 function storageStatusLabel(status: StoragePersistenceState['status']) {
   if (status === 'persisted') {
-    return 'dauerhafter Speicher bestaetigt'
+    return 'dauerhafter Speicher bestätigt'
   }
 
   if (status === 'checking') {
-    return 'wird geprueft'
+    return 'wird geprüft'
   }
 
   if (status === 'unsupported') {
-    return 'nicht unterstuetzt'
+    return 'nicht unterstützt'
   }
 
   if (status === 'denied') {
-    return 'nicht bestaetigt'
+    return 'nicht bestätigt'
   }
 
-  return 'nicht pruefbar'
+  return 'nicht prüfbar'
 }
 
 function manualSyncFeedbackClassName(kind: ManualSyncFeedback['kind']) {
@@ -86,15 +86,15 @@ function manualSyncDisabledReason({
   isOnline: boolean
 }) {
   if (isManualSyncing) {
-    return 'Sync laeuft gerade.'
+    return 'Sync läuft gerade.'
   }
 
   if (authState.status !== 'signed-in') {
-    return 'Coach-Login noetig.'
+    return 'Coach-Login nötig.'
   }
 
   if (!isOnline) {
-    return 'Offline - Aenderungen bleiben lokal gespeichert.'
+    return 'Offline – Änderungen bleiben lokal gespeichert.'
   }
 
   return null
@@ -129,8 +129,8 @@ export function SettingsView({
   const pwaModeLabel = pwaDisplayMode === 'standalone' ? 'PWA installiert' : 'Browser-Modus'
   const pwaModeDescription =
     pwaDisplayMode === 'standalone'
-      ? 'OnField Coach laeuft im Home-Screen-Modus.'
-      : 'Installiere OnField Coach fuer mehr Platz am Spielfeldrand.'
+      ? 'OnField Coach läuft im Home-Screen-Modus.'
+      : 'Installiere OnField Coach für mehr Platz am Spielfeldrand.'
 
   return (
     <div className="settings-layout settings-utility-workspace">
@@ -139,7 +139,7 @@ export function SettingsView({
           <SyncIcon className="nav-icon" aria-hidden />
           <div>
             <h3 id="settings-sync-heading">Synchronisierung</h3>
-            <p>Coach-nahe Ablage fuer Spieler, Check-ins, Training, Nachbereitung, Baseline und Returner.</p>
+            <p>Coach-nahe Ablage für Spieler, Check-ins, Training, Nachbereitung, Baseline und Returner.</p>
           </div>
         </div>
         <dl className="settings-sync-strip">
@@ -161,7 +161,13 @@ export function SettingsView({
             <small>{formatTimestamp(syncOverview.lastSuccessfulSyncAt)}</small>
           </div>
         </dl>
-        {syncOverview.errorMessage ? <p className="form-error">{syncOverview.errorMessage}</p> : null}
+        {syncOverview.errorMessage ? (
+          <ErrorState
+            appearance="inline"
+            title="Synchronisierung nicht abgeschlossen"
+            body="Lokale Änderungen bleiben erhalten. Nutze die Synchronisierung unten erneut."
+          />
+        ) : null}
         {syncFeedback ? <p className={manualSyncFeedbackClassName(syncFeedback.kind)}>{syncFeedback.message}</p> : null}
         <ManualSyncButton
           disabled={!canManualSync}
@@ -169,7 +175,7 @@ export function SettingsView({
           icon={<RefreshCw aria-hidden />}
           id="manual-sync"
           isLoading={isManualSyncing}
-          loadingLabel="Sync laeuft gerade"
+          loadingLabel="Sync läuft gerade"
           onClick={onManualSync}
         >
           Jetzt synchronisieren
@@ -178,7 +184,7 @@ export function SettingsView({
           {syncOverview.pendingCount > 0
             ? `${pendingCountLabel(syncOverview.pendingCount)}.`
             : `${pendingCountLabel(syncOverview.pendingCount)}.`}{' '}
-          Bei Unterschieden zwischen Geraeten zaehlt die zuletzt gespeicherte Version.
+          Bei Unterschieden zwischen Geräten zählt die zuletzt gespeicherte Version.
         </p>
       </section>
 
@@ -189,7 +195,7 @@ export function SettingsView({
           <Download className="nav-icon" aria-hidden />
           <div>
             <h3 id="settings-backup-heading">Backup</h3>
-            <p>Supabase ist der normale Geraete-Sync. JSON bleibt das zusaetzliche Wiederherstellungsbackup.</p>
+            <p>Supabase ist der normale Geräte-Sync. JSON bleibt das zusätzliche Wiederherstellungsbackup.</p>
           </div>
         </div>
         <div className={backupRecommended ? 'warning-note' : 'sync-mini'}>
@@ -202,7 +208,7 @@ export function SettingsView({
         </div>
         <button className="secondary-action" type="button" onClick={() => onNavigate(routes.moreExport)}>
           <Download className="nav-icon" aria-hidden />
-          <span>Export & Backup oeffnen</span>
+          <span>Export & Backup öffnen</span>
         </button>
       </section>
 
@@ -210,8 +216,8 @@ export function SettingsView({
         <div className="status-line">
           <Smartphone className="nav-icon" aria-hidden />
           <div>
-            <h3 id="settings-device-heading">Geraet & Offline</h3>
-            <p>Fuer iPad/iPhone bleibt die Home-Screen-PWA die robusteste Nutzungsform.</p>
+            <h3 id="settings-device-heading">Gerät & Offline</h3>
+            <p>Für iPad/iPhone bleibt die Home-Screen-PWA die robusteste Nutzungsform.</p>
           </div>
         </div>
         <div className="sync-mini">
@@ -227,7 +233,7 @@ export function SettingsView({
         <div className="settings-theme-control">
           <div className="settings-theme-copy">
             <strong>Darstellung</strong>
-            <span>System folgt dem Geraet. Field Mode nutzt die dunkle Sideline-Darstellung.</span>
+            <span>System folgt dem Gerät. Field Mode nutzt die dunkle Sideline-Darstellung.</span>
           </div>
           <SegmentedControl
             label="Darstellung"

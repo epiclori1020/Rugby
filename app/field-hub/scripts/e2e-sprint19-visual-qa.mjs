@@ -15,7 +15,7 @@ const baseUrl = target.url
 const requireAuth = process.env.FIELD_HUB_SPRINT19_REQUIRE_AUTH === '1'
 const screenshotsRequested = process.env.FIELD_HUB_SPRINT19_SCREENSHOTS === '1'
 const screenshotsEnabled = screenshotsRequested && !requireAuth
-const screenshotsDir = resolve(repoRoot, '.tmp/onfield-qa/r9/after')
+const screenshotsDir = resolve(repoRoot, '.tmp/onfield-qa/r10/after')
 
 const authEmail = process.env.FIELD_HUB_E2E_EMAIL
 const authPassword = process.env.FIELD_HUB_E2E_PASSWORD
@@ -129,7 +129,7 @@ const screenChecks = [
     navigate: async (page) => {
       await clickButtonByLabelOrText(page, 'Analyse', 'Analyse')
     },
-    expectedTexts: ['Analyse', 'Kernwerte mit Kontext'],
+    expectedTexts: ['Analyse', 'Kernwerte mit Kontext', 'Belastung und Dosierung im Verlauf'],
   },
   {
     name: 'Mehr / Bibliothek',
@@ -145,7 +145,7 @@ const screenChecks = [
       await clickButtonByLabelOrText(page, 'Mehr', 'Mehr / Export & Backup')
       await clickButtonByLabelOrText(page, 'Export & Backup', 'Mehr / Export & Backup')
     },
-    expectedTexts: ['Export und Backup', 'Import-Vorschau'],
+    expectedTexts: ['Export und Backup', 'Komplettes Backup herunterladen', 'CSV-Auswahl öffnen', 'Import-Vorschau'],
   },
   {
     name: 'Mehr / Einstellungen',
@@ -153,7 +153,7 @@ const screenChecks = [
       await clickButtonByLabelOrText(page, 'Mehr', 'Mehr / Einstellungen')
       await clickButtonByLabelOrText(page, 'Einstellungen', 'Mehr / Einstellungen')
     },
-    expectedTexts: ['Synchronisierung', 'Geraet & Offline'],
+    expectedTexts: ['Synchronisierung', 'Gerät & Offline'],
   },
   {
     name: 'Mehr / Returner',
@@ -612,6 +612,8 @@ async function assertR8ResponsiveContracts(page, viewport, contextLabel) {
       if (width < 600 && !visible('.analysis-compact-filter-trigger')) problems.push('compact filter trigger missing')
       if (width < 600 && visible('.analysis-filter-panel-expanded')) problems.push('desktop filters visible on compact')
       if (width >= 600 && !visible('.analysis-filter-panel-expanded')) problems.push('filter panel missing on medium/expanded')
+      if (!document.querySelector('.analysis-trend-charts')) problems.push('R10 trend charts missing')
+      if (document.querySelectorAll('.analysis-trend-charts svg[role="img"]').length !== 2) problems.push('R10 chart accessibility contract missing')
     }
     if (document.querySelector('.library-layout') && width < 600 && document.querySelector('.library-detail-pane')) {
       problems.push('library detail pane rendered on compact')
@@ -625,6 +627,12 @@ async function assertR8ResponsiveContracts(page, viewport, contextLabel) {
     const settings = document.querySelector('.settings-utility-workspace')
     if (settings && settings.querySelectorAll('.of-button-primary').length !== 1) {
       problems.push('settings primary action count is not one')
+    }
+    const exportPanel = document.querySelector('.export-panel')
+    if (exportPanel) {
+      const csvDetails = exportPanel.querySelector('.export-csv-details')
+      if (!exportPanel.querySelector('.export-backup-primary .of-button-primary')) problems.push('R10 full backup hierarchy missing')
+      if (!csvDetails || csvDetails.hasAttribute('open')) problems.push('R10 CSV hierarchy is not default closed')
     }
     return problems
   }, viewport.width)

@@ -1,5 +1,5 @@
 import { BarChart3, CalendarDays, Database, Eye, MessageSquareText, SlidersHorizontal, TrendingUp, Wrench } from 'lucide-react'
-import { useCallback, useEffect, useMemo, useState } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
 import { positionGroupOptions } from '../config/labels'
 import type { SessionDefinition } from '../content/types'
 import {
@@ -20,10 +20,12 @@ import type { MetricResult } from '../domain/metrics'
 import type { Player } from '../domain/players'
 import type { SessionBlockLog } from '../domain/sessionBlocks'
 import { localDb } from '../lib/localDb'
+import { useDelayedLoadingIndicator } from '../hooks/useDelayedLoadingIndicator'
 import { AnalysisResultList } from './AnalysisResultList'
+import { AnalysisTrendCharts } from './AnalysisTrendCharts'
 import { CoachInsightsPanel } from './CoachInsightsPanel'
 import { MetricTile } from './onfield'
-import { PrimaryButton, SecondaryButton, Sheet } from './ui'
+import { EmptyState, ErrorState, PrimaryButton, SecondaryButton, Sheet, Skeleton } from './ui'
 
 type AnalysisViewProps = {
   coachInsights: CoachInsight[]
@@ -63,7 +65,7 @@ const rangeOptions: Array<{ value: AnalysisRangeWeeks; label: string }> = [
 ]
 
 const trafficLabels = {
-  green: 'Gruen',
+  green: 'Grün',
   yellow: 'Gelb',
   red: 'Rot',
 } as const
@@ -114,10 +116,6 @@ function BarValue({ value, max }: { value: number; max: number }) {
       <span className="analysis-bar-fill" style={{ width }} />
     </span>
   )
-}
-
-function EmptyState({ children }: { children: string }) {
-  return <p className="empty-state">{children}</p>
 }
 
 function clusterLabel(cluster: AnalysisClusterFilter) {
@@ -267,6 +265,8 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
   const [summary, setSummary] = useState<TeamAnalysisSummary | null>(null)
   const [isLoading, setIsLoading] = useState(false)
   const [errorMessage, setErrorMessage] = useState<string | null>(null)
+  const requestIdRef = useRef(0)
+  const showLoading = useDelayedLoadingIndicator(isLoading && !summary)
   const { cluster, exposureType, position, rangeWeeks } = appliedFilters
   const filters = useMemo<AnalysisFilters>(
     () => ({
@@ -298,9 +298,11 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
   }
 
   const refreshAnalysis = useCallback(async () => {
+    const requestId = ++requestIdRef.current
     if (!userId) {
       setSummary(null)
       setErrorMessage(null)
+      setIsLoading(false)
       return
     }
 
@@ -308,6 +310,7 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
     try {
       setErrorMessage(null)
       const localData = await readAnalysisLocalData(userId, filters)
+      if (requestId !== requestIdRef.current) return
       setSummary(
         buildTeamAnalysisSummary({
           players,
@@ -316,10 +319,11 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
           ...localData,
         }),
       )
-    } catch (caughtError) {
-      setErrorMessage(caughtError instanceof Error ? caughtError.message : 'Analyse konnte nicht geladen werden.')
+    } catch {
+      if (requestId !== requestIdRef.current) return
+      setErrorMessage('Lokale Analyse konnte nicht gelesen werden.')
     } finally {
-      setIsLoading(false)
+      if (requestId === requestIdRef.current) setIsLoading(false)
     }
   }, [filters, players, sessions, userId])
 
@@ -327,6 +331,7 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
     Promise.resolve()
       .then(refreshAnalysis)
       .catch(() => undefined)
+    return () => { requestIdRef.current += 1 }
   }, [refreshAnalysis])
 
   const rolling7d = rollingLoadLabel(summary?.rolling7dLoad ?? null)
@@ -363,20 +368,20 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
       value: latestWeek ? `${formatNumber(latestWeek.attendanceRate, '%')} Anwesenheit` : '-',
       detail: latestWeek
         ? `Letzte lokale Woche: Belastbarkeit ${formatNumber(latestWeek.readinessAverage)}, Trend ${readinessTrendLabel(latestWeek.readinessTrend)}.`
-        : 'Noch keine lokale Wochenhistorie im gewaehlten Zeitraum.',
+        : 'Noch keine lokale Wochenhistorie im gewählten Zeitraum.',
     },
     {
       icon: <Wrench className="nav-icon" aria-hidden />,
       label: 'Modifizieren',
-      question: 'Was muss fuer die naechste Einheit angepasst werden?',
+      question: 'Was muss für die nächste Einheit angepasst werden?',
       value: loadSpikeAdvisory ? `${loadSpikeAdvisory.ratio}x Belastung` : summary ? `${changedPlannedBlocks} Anpassungen` : '-',
       detail:
         !summary
-          ? 'Nach Login werden lokale Belastungs- und Blockdaten fuer diese Frage genutzt.'
+          ? 'Nach Login werden lokale Belastungs- und Blockdaten für diese Frage genutzt.'
           : (loadSpikeAdvisory?.message ??
             (changedPlannedBlocks > 0
-              ? `${changedPlannedBlocks} reduzierte, geaenderte oder gestrichene Bloecke im Zeitraum pruefen.`
-              : 'Keine lokale Belastungsspitze oder auffaellige Blockanpassung sichtbar.')),
+              ? `${changedPlannedBlocks} reduzierte, geänderte oder gestrichene Blöcke im Zeitraum prüfen.`
+              : 'Keine lokale Belastungsspitze oder auffällige Blockanpassung sichtbar.')),
     },
     {
       icon: <TrendingUp className="nav-icon" aria-hidden />,
@@ -390,14 +395,14 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
     },
     {
       icon: <MessageSquareText className="nav-icon" aria-hidden />,
-      label: 'Rueckmelden',
-      question: 'Welche Quelle oder offene Aufgabe muss geprueft werden?',
+      label: 'Rückmelden',
+      question: 'Welche Quelle oder offene Aufgabe muss geprüft werden?',
       value: `${coachInsights.length} Hinweise`,
       detail:
         coachInsights.length > 0
-          ? 'Coach-Hinweise unten als Quellenliste pruefen und bei Bedarf in den passenden Arbeitsbereich springen.'
+          ? 'Coach-Hinweise unten als Quellenliste prüfen und bei Bedarf in den passenden Arbeitsbereich springen.'
           : openPlannedBlocks > 0
-            ? `${openPlannedBlocks} geplante Bloecke sind lokal noch offen.`
+            ? `${openPlannedBlocks} geplante Blöcke sind lokal noch offen.`
             : 'Keine offenen Coach-Hinweise im Analyse-Kontext.',
     },
   ]
@@ -413,8 +418,8 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
           <div>
             <h3 id="analysis-heading">Analyse</h3>
             <p>
-              Ruhiger Rueckblick fuer Planung, Dosierung und Quellenpruefung. Beim Oeffnen wird kein Remote-Pull
-              gestartet und es entstehen keine Check-in- oder Trainingseintraege.
+              Ruhiger Rückblick für Planung, Dosierung und Quellenprüfung. Beim Öffnen wird kein Remote-Pull
+              gestartet und es entstehen keine Check-in- oder Trainingseinträge.
             </p>
           </div>
           <div className="analysis-filter-chips" aria-label="Aktive Analysefilter">
@@ -445,7 +450,7 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
         </div>
         <p className="privacy-note">
           Zeitraum: {filters.startDate} bis {filters.endDate}. Anwesenheit nutzt den aktuell aktiven gefilterten Kader;
-          historische Kaderstaende werden in dieser Ansicht nicht rekonstruiert.
+          historische Kaderstände werden in dieser Ansicht nicht rekonstruiert.
         </p>
       </article>
 
@@ -470,7 +475,7 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
         </Sheet>
       ) : null}
 
-      <section className="analysis-question-grid" aria-label="Coach-Fragen fuer die Auswertung">
+      <section className="analysis-question-grid" aria-label="Coach-Fragen für die Auswertung">
         {analysisQuestions.map((card) => (
           <article className="panel analysis-question-card" key={card.label}>
             <div className="analysis-question-label">
@@ -492,10 +497,12 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
       />
 
       {errorMessage ? (
-        <article className="panel error-panel">
-          <strong>Analyse nicht geladen</strong>
-          <span>{errorMessage}</span>
-        </article>
+        <ErrorState
+          appearance="inline"
+          title="Analyse nicht geladen"
+          body="Die vorhandene Auswertung bleibt sichtbar. Versuche das lokale Laden erneut."
+          action={<SecondaryButton onClick={() => void refreshAnalysis()}>Erneut versuchen</SecondaryButton>}
+        />
       ) : null}
 
       {!userId ? (
@@ -504,15 +511,18 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
             <BarChart3 className="nav-icon" aria-hidden />
             <h3>Kernwerte mit Kontext</h3>
           </div>
-          <EmptyState>Nach Login werden lokale Analyse-Daten aus diesem Geraet angezeigt.</EmptyState>
+          <EmptyState appearance="inline" title="Coach-Login nötig" body="Nach dem Login werden lokale Analysedaten dieses Geräts angezeigt." />
         </article>
-      ) : isLoading && !summary ? (
+      ) : showLoading ? (
         <article className="panel analysis-kpi-panel">
           <div className="status-line">
             <BarChart3 className="nav-icon" aria-hidden />
             <h3>Kernwerte mit Kontext</h3>
           </div>
-          <EmptyState>Lokale Analyse wird geladen.</EmptyState>
+          <div className="analysis-loading-skeletons" aria-label="Lokale Analyse wird geladen" role="status">
+            <Skeleton announce={false} variant="panel" />
+            <Skeleton announce={false} variant="row" />
+          </div>
         </article>
       ) : summary ? (
         <>
@@ -537,11 +547,19 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
 
           <article className="panel analysis-detail-panel">
             <div className="status-line">
+              <TrendingUp className="nav-icon" aria-hidden />
+              <h3>Belastung und Dosierung im Verlauf</h3>
+            </div>
+            <AnalysisTrendCharts weekly={summary.weeklySummaries} exposures={summary.weeklyExposureSummaries} />
+          </article>
+
+          <article className="panel analysis-detail-panel">
+            <div className="status-line">
               <CalendarDays className="nav-icon" aria-hidden />
               <h3>Wochenverlauf: Anwesenheit, Belastbarkeit und Belastung</h3>
             </div>
             {summary.weeklySummaries.length === 0 ? (
-              <EmptyState>Keine lokalen Sessions im gewaehlten Zeitraum. Erst nach Check-in oder Nachbereitung entstehen Analysewerte.</EmptyState>
+              <EmptyState appearance="inline" title="Noch kein Wochenverlauf" body="Erst nach Check-in oder Nachbereitung entstehen Analysewerte." />
             ) : (
               <AnalysisResultList
                 ariaLabel="Wochenverlauf: Anwesenheit, Belastbarkeit und Belastung"
@@ -588,7 +606,7 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
             <article className="panel analysis-detail-panel">
               <h3>Ampel-Verteilung als Beobachtung</h3>
               {totalTraffic === 0 ? (
-                <EmptyState>Noch keine Ampelwerte im gefilterten Zeitraum.</EmptyState>
+                <EmptyState appearance="inline" title="Noch keine Ampelwerte" body="Im gefilterten Zeitraum liegen keine Ampelwerte vor." />
               ) : (
                 <div className="analysis-distribution">
                   {(['green', 'yellow', 'red'] as const).map((trafficLight) => (
@@ -605,16 +623,16 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
             <article className="panel analysis-detail-panel">
               <h3>Planned vs Actual als Modifikationshinweis</h3>
               <p className="privacy-note">
-                Session-Level: Cluster- und Positionsfilter betreffen Spielerwerte, nicht geplante Session-Bloecke.
+                Session-Level: Cluster- und Positionsfilter betreffen Spielerwerte, nicht geplante Session-Blöcke.
               </p>
               {!plannedVsActual || plannedVsActual.planned === 0 ? (
-                <EmptyState>Keine geplanten Session-Bloecke fuer lokale Sessions im Zeitraum gefunden.</EmptyState>
+                <EmptyState appearance="inline" title="Keine geplanten Blöcke" body="Für lokale Einheiten im Zeitraum wurden keine geplanten Blöcke gefunden." />
               ) : (
                 <div className="analysis-distribution">
                   {[
                     ['Erledigt', plannedVsActual.done],
                     ['Reduziert', plannedVsActual.reduced],
-                    ['Geaendert', plannedVsActual.changed],
+                    ['Geändert', plannedVsActual.changed],
                     ['Gestrichen', plannedVsActual.skipped],
                     ['Offen', plannedVsActual.open],
                   ].map(([label, value]) => (
@@ -632,9 +650,7 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
           <article className="panel analysis-detail-panel">
             <h3>Belastungsarten pro Woche als Progressionscheck</h3>
             {summary.weeklyExposureSummaries.length === 0 ? (
-              <EmptyState>
-                Keine Belastungsübersichten im Zeitraum. Sie entstehen in der Nachbereitung aus Blockstatus und Anwesenheit.
-              </EmptyState>
+              <EmptyState appearance="inline" title="Keine Belastungsübersichten" body="Sie entstehen in der Nachbereitung aus Blockstatus und Anwesenheit." />
             ) : (
               <AnalysisResultList
                 ariaLabel="Belastungsarten pro Woche"
@@ -681,7 +697,7 @@ export function AnalysisView({ coachInsights, onOpenCoachInsightSource, players,
               <MetricTile label="Übungsergebnisse" value={summary.dataCoverage.exerciseResults} />
             </div>
             <p className="privacy-note">
-              Messwerte und Übungsergebnisse werden hier nur als Team-Datenabdeckung gezaehlt. Spielerspezifische Verläufe bleiben im Spielerprofil.
+              Messwerte und Übungsergebnisse werden hier nur als Team-Datenabdeckung gezählt. Spielerspezifische Verläufe bleiben im Spielerprofil.
             </p>
           </article>
         </>

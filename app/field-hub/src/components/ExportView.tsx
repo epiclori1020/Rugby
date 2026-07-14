@@ -1,5 +1,6 @@
 import { AlertTriangle, Download, FileDown, FileJson, Upload } from 'lucide-react'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
+import { useDelayedLoadingIndicator } from '../hooks/useDelayedLoadingIndicator'
 import type { AuthSessionState } from '../lib/auth'
 import {
   createFieldHubBackup,
@@ -21,7 +22,7 @@ import {
   downloadTextFile,
 } from '../lib/csvExport'
 import { MetricTile } from './onfield'
-import { PrimaryButton, SecondaryButton, Sheet } from './ui'
+import { ErrorState, PrimaryButton, SecondaryButton, Sheet, Skeleton } from './ui'
 
 type CsvExportKind = 'players' | 'checkIns' | 'progress' | 'baseline' | 'sessionBlocks' | 'exposures' | 'exercises' | 'metrics'
 
@@ -43,19 +44,6 @@ type ExportSummary = {
   playerExposureSummaries: number
   exerciseResults: number
   metricResults: number
-}
-
-const emptySummary: ExportSummary = {
-  players: 0,
-  sessionLogs: 0,
-  playerSessionEntries: 0,
-  progressEntries: 0,
-  baselineEntries: 0,
-  returnerEntries: 0,
-  sessionBlockLogs: 0,
-  playerExposureSummaries: 0,
-  exerciseResults: 0,
-  metricResults: 0,
 }
 
 const csvExportActions: Array<{ kind: CsvExportKind; label: string; resultLabel: string }> = [
@@ -121,23 +109,44 @@ export function ExportView({
   const [importPreview, setImportPreview] = useState<ImportPreview | null>(null)
   const [importResult, setImportResult] = useState<string | null>(null)
   const [exportResult, setExportResult] = useState<string | null>(null)
-  const [summary, setSummary] = useState<ExportSummary>(emptySummary)
+  const [summary, setSummary] = useState<ExportSummary | null>(null)
+  const [isSummaryLoading, setIsSummaryLoading] = useState(false)
+  const [summaryError, setSummaryError] = useState<string | null>(null)
   const [isImportSheetOpen, setIsImportSheetOpen] = useState(false)
   const fileInputRef = useRef<HTMLInputElement | null>(null)
+  const summaryRequestIdRef = useRef(0)
 
   const userId = authState.status === 'signed-in' ? authState.user.id : null
-  const totalRecords = Object.values(summary).reduce((total, count) => total + count, 0)
+  const totalRecords = summary ? Object.values(summary).reduce((total, count) => total + count, 0) : 0
+  const showSummaryLoading = useDelayedLoadingIndicator(isSummaryLoading && !summary)
 
-  useEffect(() => {
+  const loadSummary = useCallback(async () => {
+    const requestId = ++summaryRequestIdRef.current
     if (!userId) {
+      setSummary(null)
+      setSummaryError(null)
+      setIsSummaryLoading(false)
       return
     }
 
-    Promise.resolve()
-      .then(() => createFieldHubBackup(userId))
-      .then((backup) => setSummary(summaryFromBackup(backup)))
-      .catch(() => undefined)
+    setIsSummaryLoading(true)
+    setSummaryError(null)
+    try {
+      const backup = await createFieldHubBackup(userId)
+      if (requestId === summaryRequestIdRef.current) setSummary(summaryFromBackup(backup))
+    } catch {
+      if (requestId === summaryRequestIdRef.current) {
+        setSummaryError('Backup-Umfang konnte nicht gelesen werden.')
+      }
+    } finally {
+      if (requestId === summaryRequestIdRef.current) setIsSummaryLoading(false)
+    }
   }, [userId])
+
+  useEffect(() => {
+    void Promise.resolve().then(loadSummary)
+    return () => { summaryRequestIdRef.current += 1 }
+  }, [loadSummary])
 
   if (authState.status !== 'signed-in') {
     return (
@@ -145,7 +154,7 @@ export function ExportView({
         <section className="placeholder" aria-labelledby="export-locked-heading">
           <FileDown className="placeholder-icon" aria-hidden />
           <h2 id="export-locked-heading">Export & Backup</h2>
-          <p>Coach-Login noetig. Danach sind Backup, CSV-Tabellen und Import-Vorschau hier verfuegbar.</p>
+          <p>Coach-Login nötig. Danach sind Backup, CSV-Tabellen und Import-Vorschau hier verfügbar.</p>
         </section>
       </div>
     )
@@ -170,8 +179,8 @@ export function ExportView({
       downloadJson(`onfield-coach-backup-${todayStamp()}.json`, backup)
       await markExportComplete(userId)
       setExportResult('JSON-Backup: Download gestartet.')
-    } catch (caughtError) {
-      setExportErrorMessage(caughtError instanceof Error ? caughtError.message : 'JSON-Backup konnte nicht exportiert werden.')
+    } catch {
+      setExportErrorMessage('JSON-Backup konnte nicht exportiert werden.')
     }
   }
 
@@ -206,8 +215,8 @@ export function ExportView({
       downloadTextFile(filename, content, 'text/csv;charset=utf-8')
       await markExportComplete(userId)
       setExportResult(`CSV ${csvLabelForKind(kind)}: Download gestartet.`)
-    } catch (caughtError) {
-      setExportErrorMessage(caughtError instanceof Error ? caughtError.message : 'CSV konnte nicht exportiert werden.')
+    } catch {
+      setExportErrorMessage('CSV konnte nicht exportiert werden.')
     }
   }
 
@@ -225,10 +234,10 @@ export function ExportView({
       const preview = await previewFieldHubBackupImport(userId, parsedPayload)
       setImportPayload(parsedPayload)
       setImportPreview(preview)
-    } catch (caughtError) {
+    } catch {
       setImportPayload(null)
       setImportPreview(null)
-      setErrorMessage(caughtError instanceof Error ? caughtError.message : 'Backup-Datei konnte nicht gelesen werden.')
+      setErrorMessage('Backup-Datei konnte nicht gelesen werden.')
     } finally {
       if (fileInputRef.current) {
         fileInputRef.current.value = ''
@@ -246,15 +255,15 @@ export function ExportView({
       const localOnlyRecords = result.preview?.totals.localOnlyRecords ?? importPreview.totals.localOnlyRecords
       setImportResult(
         localOnlyRecords > 0
-          ? `${result.importedRecords} Datensaetze lokal importiert. ${localOnlyRecords} historische Eintraege bleiben nur lokal; andere Aenderungen warten auf Sync.`
-          : `${result.importedRecords} Datensaetze lokal importiert. Aenderungen warten auf Sync.`,
+          ? `${result.importedRecords} Datensätze lokal importiert. ${localOnlyRecords} historische Einträge bleiben nur lokal; andere Änderungen warten auf Sync.`
+          : `${result.importedRecords} Datensätze lokal importiert. Änderungen warten auf Sync.`,
       )
       setImportPayload(null)
       setImportPreview(null)
       setSummary(summaryFromBackup(await createFieldHubBackup(userId)))
       await onDataChanged()
-    } catch (caughtError) {
-      setErrorMessage(caughtError instanceof Error ? caughtError.message : 'Import fehlgeschlagen.')
+    } catch {
+      setErrorMessage('Import konnte nicht abgeschlossen werden.')
     }
   }
 
@@ -266,64 +275,75 @@ export function ExportView({
           <div>
             <h3 id="export-heading">Export und Backup</h3>
             <p>
-              Werkzeugbereich fuer sichere Ablage: JSON stellt OnField-Daten wieder her, CSV-Dateien
-              sind Tabellen fuer Analyse und Weitergabe. Profilfotos bleiben im privaten Supabase-Storage
+              Werkzeugbereich für sichere Ablage: JSON stellt OnField-Daten wieder her, CSV-Dateien
+              sind Tabellen für Analyse und Weitergabe. Profilfotos bleiben im privaten Supabase-Storage
               und werden nicht als Bilddatei exportiert.
             </p>
           </div>
         </div>
 
-        <div className="export-summary-metrics">
-          <MetricTile label="Spieler" value={summary.players} detail="im Backup" />
-          <MetricTile label="Einheiten" value={summary.sessionLogs} detail="lokal erfasst" />
-          <MetricTile label="Datensätze gesamt" value={totalRecords} detail="ohne Foto-Dateien" />
-        </div>
-
-        <details className="export-coverage-details">
-          <summary>Datenumfang im Detail</summary>
-          <dl className="export-coverage-list">
-            {summaryMetrics.map((metric) => (
-              <div key={metric.key}>
-                <dt>{metric.label}</dt>
-                <dd className="of-num">{summary[metric.key]}</dd>
-              </div>
-            ))}
-          </dl>
-        </details>
+        {showSummaryLoading ? <Skeleton label="Backup-Umfang wird geladen" variant="panel" /> : null}
+        {summaryError ? (
+          <ErrorState
+            appearance="inline"
+            title="Backup-Umfang nicht geladen"
+            body="Die Exportaktionen bleiben verfügbar. Lade die lokale Übersicht erneut."
+            action={<SecondaryButton onClick={() => void loadSummary()}>Erneut versuchen</SecondaryButton>}
+          />
+        ) : null}
+        {summary ? (
+          <>
+            <div className="export-summary-metrics">
+              <MetricTile label="Spieler" value={summary.players} detail="im Backup" />
+              <MetricTile label="Einheiten" value={summary.sessionLogs} detail="lokal erfasst" />
+              <MetricTile label="Datensätze gesamt" value={totalRecords} detail="ohne Foto-Dateien" />
+            </div>
+            <details className="export-coverage-details">
+              <summary>Datenumfang im Detail</summary>
+              <dl className="export-coverage-list">
+                {summaryMetrics.map((metric) => (
+                  <div key={metric.key}>
+                    <dt>{metric.label}</dt>
+                    <dd className="of-num">{summary[metric.key]}</dd>
+                  </div>
+                ))}
+              </dl>
+            </details>
+          </>
+        ) : null}
 
         <div className="export-utility-grid">
-          <section className="export-utility-section" aria-labelledby="backup-export-heading">
+          <section className="export-utility-section export-backup-primary" aria-labelledby="backup-export-heading">
             <div>
               <p className="eyebrow">Komplettes Backup</p>
               <h4 id="backup-export-heading">JSON-Backup</h4>
-              <p className="sync-help">Vollstaendige Wiederherstellung fuer dieses Coach-Konto.</p>
+              <p className="sync-help">Vollständige Wiederherstellung für dieses Coach-Konto.</p>
             </div>
             <PrimaryButton icon={<FileJson aria-hidden />} onClick={() => void handleJsonExport()}>
               Komplettes Backup herunterladen
             </PrimaryButton>
           </section>
 
-          <section className="export-utility-section" aria-labelledby="csv-export-heading">
-            <div>
-              <p className="eyebrow">CSV-Tabellen</p>
-              <h4 id="csv-export-heading">Arbeitsdaten exportieren</h4>
+          <details className="export-csv-details">
+            <summary>
+              <span className="eyebrow">CSV-Tabellen</span>
+              <strong id="csv-export-heading">Arbeitsdaten als Tabellen exportieren</strong>
+              <span>CSV-Auswahl öffnen</span>
+            </summary>
+            <section className="export-utility-section" aria-labelledby="csv-export-heading">
               <p className="sync-help">Tabellen funktionieren auch mit leeren Daten und bleiben ohne Foto-Dateien.</p>
-            </div>
-            <div className="export-action-list">
-              {csvExportActions.map((action) => (
-                <div className="export-action-row" key={action.kind}>
-                  <span>{action.label}</span>
-                  <SecondaryButton
-                    compact
-                    icon={<Download aria-hidden />}
-                    onClick={() => void handleCsvExport(action.kind)}
-                  >
-                    CSV {action.label}
-                  </SecondaryButton>
-                </div>
-              ))}
-            </div>
-          </section>
+              <div className="export-action-list">
+                {csvExportActions.map((action) => (
+                  <div className="export-action-row" key={action.kind}>
+                    <span>{action.label}</span>
+                    <SecondaryButton compact icon={<Download aria-hidden />} onClick={() => void handleCsvExport(action.kind)}>
+                      CSV {action.label}
+                    </SecondaryButton>
+                  </div>
+                ))}
+              </div>
+            </section>
+          </details>
         </div>
 
         {exportResult ? <p className="form-success">{exportResult}</p> : null}
@@ -333,8 +353,8 @@ export function ExportView({
           <AlertTriangle className="nav-icon" aria-hidden />
           <span>
             Letzter Export:{' '}
-            {lastExportAt ? new Date(lastExportAt).toLocaleString('de-AT') : 'noch kein Export auf diesem Geraet'}.
-            Daten liegen in Supabase und lokal im Geraete-Cache. Export ist ein Zusatzbackup, kein Ersatz fuer Sync.
+            {lastExportAt ? new Date(lastExportAt).toLocaleString('de-AT') : 'noch kein Export auf diesem Gerät'}.
+            Daten liegen in Supabase und lokal im Geräte-Cache. Export ist ein Zusatzbackup, kein Ersatz für Sync.
           </span>
         </div>
       </section>
@@ -344,14 +364,14 @@ export function ExportView({
           <Upload className="nav-icon" aria-hidden />
           <div>
             <p className="eyebrow">Import-Vorschau</p>
-            <h3 id="import-heading">Import pruefen</h3>
+            <h3 id="import-heading">Import prüfen</h3>
             <p>
               Backup-Datei in einem fokussierten Schritt prüfen. Erst die Vorschau, dann die bewusste Bestätigung.
             </p>
           </div>
         </div>
         <SecondaryButton icon={<Upload aria-hidden />} onClick={() => setIsImportSheetOpen(true)}>
-          Backup-Datei pruefen
+          Backup-Datei prüfen
         </SecondaryButton>
       </section>
 
@@ -363,7 +383,7 @@ export function ExportView({
         >
           <div className="export-import-sheet">
             <label className="file-upload-control">
-              <span>Backup-Datei pruefen</span>
+              <span>Backup-Datei prüfen</span>
               <input
                 accept="application/json,.json"
                 ref={fileInputRef}
@@ -384,11 +404,11 @@ export function ExportView({
               <div className={importPreview.valid ? 'import-preview' : 'import-preview danger'}>
                 <strong>{importPreview.valid ? 'Import-Vorschau' : 'Import blockiert'}</strong>
                 <p>
-                  {importPreview.totals.totalRecords} Datensaetze in Datei · {importPreview.totals.newRecords} neu ·{' '}
-                  {importPreview.totals.overwriteCandidates} moegliche Ueberschreibungen ·{' '}
-                  {importPreview.totals.skippedOlderRecords} lokale neuere Datensaetze bleiben erhalten
+                  {importPreview.totals.totalRecords} Datensätze in Datei · {importPreview.totals.newRecords} neu ·{' '}
+                  {importPreview.totals.overwriteCandidates} mögliche Überschreibungen ·{' '}
+                  {importPreview.totals.skippedOlderRecords} lokale neuere Datensätze bleiben erhalten
                   {importPreview.totals.localOnlyRecords > 0
-                    ? ` · ${importPreview.totals.localOnlyRecords} historische Eintraege bleiben nur lokal`
+                    ? ` · ${importPreview.totals.localOnlyRecords} historische Einträge bleiben nur lokal`
                     : ''}
                 </p>
                 {importPreview.errors.length > 0 ? (
@@ -403,7 +423,7 @@ export function ExportView({
                   disabledReason={!importPreview.valid ? 'Behebe zuerst die Fehler in der Import-Vorschau.' : undefined}
                   onClick={() => void confirmImport()}
                 >
-                  Import bestaetigen
+                  Import bestätigen
                 </PrimaryButton>
               </div>
             ) : null}

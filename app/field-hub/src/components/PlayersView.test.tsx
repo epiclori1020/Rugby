@@ -657,9 +657,80 @@ describe('PlayersView default layout', () => {
 
     expect(container.textContent).toContain('Spieler-Stammdaten')
     expect(container.textContent).toContain('Deaktivieren')
-    expect(container.textContent).toContain('Loeschen')
+    expect(container.textContent).toContain('Löschen')
 
     root.unmount()
+  })
+
+  it('requires an accessible in-app sheet before deleting a player', async () => {
+    await localDb.delete()
+    await localDb.open()
+    const deletePlayer = vi.fn(async () => undefined)
+    const container = document.createElement('div')
+    document.body.append(container)
+    const root = createRoot(container)
+
+    await act(async () => root.render(
+      <PlayersView authState={authState} playerActions={buildPlayerActions({ deletePlayer })} />,
+    ))
+    await act(async () => Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Sabine'))?.click())
+    await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="Spieler bearbeiten"]')?.click())
+    await act(async () => Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Löschen')?.click())
+
+    const dialog = Array.from(container.querySelectorAll('[role="dialog"]')).find((item) => item.textContent?.includes('Spieler löschen')) ?? null
+    expect(dialog?.textContent).toContain('Spieler löschen')
+    expect(dialog?.textContent).toContain('Historische Einträge bleiben anonymisiert')
+    expect(container.querySelectorAll('[role="dialog"]')).toHaveLength(1)
+    expect(deletePlayer).not.toHaveBeenCalled()
+
+    await act(async () => Array.from(dialog?.querySelectorAll('button') ?? []).find((button) => button.textContent === 'Abbrechen')?.click())
+    expect(container.textContent).not.toContain('Historische Einträge bleiben anonymisiert')
+    expect(container.textContent).toContain('Spieler-Stammdaten')
+    expect(document.activeElement?.textContent).toContain('Löschen')
+    expect(deletePlayer).not.toHaveBeenCalled()
+
+    await act(async () => Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Löschen')?.click())
+    const confirmDialog = Array.from(container.querySelectorAll('[role="dialog"]')).find((item) => item.textContent?.includes('Spieler löschen')) ?? null
+    await act(async () => Array.from(confirmDialog?.querySelectorAll('button') ?? []).find((button) => button.textContent === 'Spieler endgültig löschen')?.click())
+    expect(deletePlayer).toHaveBeenCalledTimes(1)
+
+    await act(async () => root.unmount())
+    container.remove()
+  })
+
+  it('keeps a successful deletion committed when the profile refresh fails afterwards', async () => {
+    await localDb.delete()
+    await localDb.open()
+    const deletePlayer = vi.fn(async () => undefined)
+    const container = document.createElement('div')
+    document.body.append(container)
+    const root = createRoot(container)
+
+    await act(async () => root.render(
+      <PlayersView authState={authState} playerActions={buildPlayerActions({ deletePlayer })} />,
+    ))
+    await act(async () => Array.from(container.querySelectorAll('button')).find((button) => button.textContent?.includes('Sabine'))?.click())
+    await act(async () => container.querySelector<HTMLButtonElement>('button[aria-label="Spieler bearbeiten"]')?.click())
+    await act(async () => Array.from(container.querySelectorAll('button')).find((button) => button.textContent === 'Löschen')?.click())
+
+    const profileRead = vi.spyOn(localDb.sessionLogs, 'where').mockImplementationOnce(() => {
+      throw new Error('DexieError: sessionLogs unavailable')
+    })
+    const dialog = Array.from(container.querySelectorAll('[role="dialog"]')).find((item) => item.textContent?.includes('Spieler löschen')) ?? null
+    await act(async () => {
+      Array.from(dialog?.querySelectorAll('button') ?? []).find((button) => button.textContent === 'Spieler endgültig löschen')?.click()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(deletePlayer).toHaveBeenCalledTimes(1)
+    expect(container.textContent).toContain('Spieler gelöscht.')
+    expect(container.textContent).not.toContain('DexieError')
+    expect(container.textContent).not.toContain('Spieler endgültig löschen')
+
+    profileRead.mockRestore()
+    await act(async () => root.unmount())
+    container.remove()
   })
 
   it('shows structured exercise progression in the player training tab', async () => {

@@ -440,6 +440,16 @@ describe('CheckInView R6 primary flow', () => {
     expect(onOpenReturner).toHaveBeenCalledWith(activePlayer.id)
   })
 
+  it('shows visible endpoint anchors for the numeric readiness and complaint scales', async () => {
+    const rendered = await renderInteractiveCheckInView()
+    root = rendered.root
+
+    await openPlayerSheet(rendered.container)
+
+    expect(rendered.container.textContent).toContain('1 = schlecht · 5 = voll bereit')
+    expect(rendered.container.textContent).toContain('0 = keine Beschwerden · 10 = sehr stark')
+  })
+
   it('does not offer Returner for an untouched open check-in', async () => {
     const openEntry = {
       ...autoGreenEntry,

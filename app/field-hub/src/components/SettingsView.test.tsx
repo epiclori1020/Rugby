@@ -92,14 +92,14 @@ describe('SettingsView', () => {
     expect(markup).toContain('Logout')
     expect(markup).toContain('Jetzt synchronisieren')
     expect(markup).toContain('Backup empfohlen')
-    expect(markup).toContain('Export &amp; Backup oeffnen')
+    expect(markup).toContain('Export &amp; Backup öffnen')
     expect(markup).toContain('Speicherstatus')
     expect(markup).toContain('Darstellung')
     expect(markup).toContain('System')
     expect(markup).toContain('Hell')
     expect(markup).toContain('Field Mode')
     expect(markup).toContain('Browser-Modus')
-    expect(markup).toContain('Installiere OnField Coach fuer mehr Platz am Spielfeldrand.')
+    expect(markup).toContain('Installiere OnField Coach für mehr Platz am Spielfeldrand.')
     expect(markup).toContain('OnField als PWA nutzen')
     expect(markup).toContain('Installationsschritte anzeigen')
     expect(markup).not.toContain('„Zum Home-Bildschirm“ wählen und hinzufügen.')
@@ -130,6 +130,17 @@ describe('SettingsView', () => {
     expect(markup).toContain('2 Aenderungen warten auf Sync.')
   })
 
+  it('renders sync failures through the shared inline error state', () => {
+    const markup = renderSettings(signedInAuthState, {
+      syncOverview: { ...syncedOverview, status: 'error', errorMessage: 'PostgrestError: policy players denied.' },
+    })
+
+    expect(markup).toContain('of-error-state of-state-inline')
+    expect(markup).toContain('Synchronisierung nicht abgeschlossen')
+    expect(markup).not.toContain('PostgrestError')
+    expect(markup).not.toContain('policy players denied')
+  })
+
   it('explains why manual sync is disabled', () => {
     const signedOutMarkup = renderSettings(signedOutAuthState)
     const offlineMarkup = renderSettings(signedInAuthState, {
@@ -139,12 +150,12 @@ describe('SettingsView', () => {
       isManualSyncing: true,
     })
 
-    expect(signedOutMarkup).toContain('Coach-Login noetig.')
+    expect(signedOutMarkup).toContain('Coach-Login nötig.')
     expect(signedOutMarkup).toContain('aria-describedby="manual-sync-disabled-reason"')
-    expect(offlineMarkup).toContain('Offline - Aenderungen bleiben lokal gespeichert.')
+    expect(offlineMarkup).toContain('Offline – Änderungen bleiben lokal gespeichert.')
     expect(offlineMarkup).toContain('2 Aenderungen warten auf Sync.')
-    expect(syncingMarkup).toContain('Sync laeuft gerade.')
-    expect(syncingMarkup).toContain('Sync laeuft gerade</span>')
+    expect(syncingMarkup).toContain('Sync läuft gerade.')
+    expect(syncingMarkup).toContain('Sync läuft gerade</span>')
   })
 
   it('uses the green storage indicator only after persistent storage is confirmed', () => {
@@ -166,7 +177,7 @@ describe('SettingsView', () => {
     })
 
     expect(markup).toContain('OnField ist installiert')
-    expect(markup).toContain('OnField Coach laeuft im Home-Screen-Modus.')
+    expect(markup).toContain('OnField Coach läuft im Home-Screen-Modus.')
     expect(markup).toContain('iPhone und iPad behalten denselben Funktionsumfang.')
     expect(markup).not.toContain('Installationsschritte anzeigen')
     expect(markup).not.toContain('beforeinstallprompt')

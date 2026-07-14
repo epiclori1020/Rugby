@@ -97,13 +97,14 @@ describe('ExportView utility zone', () => {
 
   afterEach(() => {
     vi.clearAllMocks()
+    vi.useRealTimers()
   })
 
   it('shows a coach-near locked state when signed out', () => {
     const markup = renderExport(signedOutAuthState)
 
     expect(markup).toContain('Export &amp; Backup')
-    expect(markup).toContain('Coach-Login noetig')
+    expect(markup).toContain('Coach-Login nötig')
     expect(markup).toContain('Import-Vorschau')
   })
 
@@ -113,9 +114,14 @@ describe('ExportView utility zone', () => {
     expect(markup).toContain('Komplettes Backup')
     expect(markup).toContain('CSV-Tabellen')
     expect(markup).toContain('Import-Vorschau')
-    expect(markup).toContain('Backup-Datei pruefen')
+    expect(markup).toContain('Backup-Datei prüfen')
     expect(markup).toContain('CSV Flexible Messwerte')
     expect(markup).toContain('export-action-list')
+    expect(markup).toContain('export-backup-primary')
+    expect(markup).toContain('<details class="export-csv-details">')
+    expect(markup).toContain('<summary><span class="eyebrow">CSV-Tabellen</span>')
+    expect(markup).not.toContain('<summary><p')
+    expect(markup).not.toContain('<details class="export-csv-details" open=""')
     expect((markup.match(/of-button-primary/g) ?? []).length).toBe(1)
     expect(markup).not.toContain('pending write queue')
     expect(markup).not.toContain('JSON conflict object')
@@ -138,7 +144,7 @@ describe('ExportView utility zone', () => {
 
     expect(container.querySelector('input[type="file"]')).toBeNull()
     const openImportButton = Array.from(container.querySelectorAll('button'))
-      .find((button) => button.textContent === 'Backup-Datei pruefen')
+      .find((button) => button.textContent === 'Backup-Datei prüfen')
     await act(async () => openImportButton?.click())
 
     const input = container.querySelector<HTMLInputElement>('input[type="file"]')
@@ -152,12 +158,12 @@ describe('ExportView utility zone', () => {
       input?.dispatchEvent(new Event('change', { bubbles: true }))
     })
 
-    expect(container.textContent).toContain('4 Datensaetze in Datei')
+    expect(container.textContent).toContain('4 Datensätze in Datei')
     expect(container.textContent).toContain('3 neu')
-    expect(container.textContent).toContain('1 moegliche Ueberschreibungen')
+    expect(container.textContent).toContain('1 mögliche Überschreibungen')
 
     const confirmButton = Array.from(container.querySelectorAll('button'))
-      .find((button) => button.textContent === 'Import bestaetigen')
+      .find((button) => button.textContent === 'Import bestätigen')
     expect(confirmButton?.disabled).toBe(false)
 
     await act(async () => {
@@ -169,8 +175,8 @@ describe('ExportView utility zone', () => {
       emptyBackup,
       { confirmOverwrite: true },
     )
-    expect(container.textContent).toContain('4 Datensaetze lokal importiert')
-    expect(container.textContent).toContain('Aenderungen warten auf Sync')
+    expect(container.textContent).toContain('4 Datensätze lokal importiert')
+    expect(container.textContent).toContain('Änderungen warten auf Sync')
 
     await act(async () => {
       root.unmount()
@@ -204,7 +210,7 @@ describe('ExportView utility zone', () => {
     })
 
     const openImportButton = Array.from(container.querySelectorAll('button'))
-      .find((button) => button.textContent === 'Backup-Datei pruefen')
+      .find((button) => button.textContent === 'Backup-Datei prüfen')
     await act(async () => openImportButton?.click())
 
     const input = container.querySelector<HTMLInputElement>('input[type="file"]')
@@ -216,7 +222,7 @@ describe('ExportView utility zone', () => {
     })
 
     const confirmButton = Array.from(container.querySelectorAll('button'))
-      .find((button) => button.textContent === 'Import bestaetigen')
+      .find((button) => button.textContent === 'Import bestätigen')
 
     expect(container.textContent).toContain('Import blockiert')
     expect(container.textContent).toContain('Backup-Datei passt nicht zu OnField Coach.')
@@ -225,5 +231,60 @@ describe('ExportView utility zone', () => {
     await act(async () => {
       root.unmount()
     })
+  })
+
+  it('delays the initial backup skeleton and offers recovery after a load error', async () => {
+    vi.useFakeTimers()
+    let rejectBackup: (reason?: unknown) => void = () => undefined
+    backupRepositoryMocks.createFieldHubBackup.mockImplementationOnce(
+      () => new Promise((_resolve, reject) => { rejectBackup = reject }),
+    )
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => root.render(
+      <ExportView authState={signedInAuthState} lastExportAt={null} onDataChanged={async () => undefined} onExportComplete={() => undefined} />,
+    ))
+    expect(container.querySelector('.of-skeleton')).toBeNull()
+
+    await act(async () => vi.advanceTimersByTime(300))
+    expect(container.querySelector('.of-skeleton')).not.toBeNull()
+
+    await act(async () => rejectBackup(new Error('Lokaler Speicher nicht lesbar.')))
+    expect(container.textContent).toContain('Backup-Umfang nicht geladen')
+    expect(container.textContent).toContain('Erneut versuchen')
+    expect(container.textContent).not.toContain('Lokaler Speicher nicht lesbar.')
+
+    await act(async () => root.unmount())
+  })
+
+  it('keeps technical export failures out of coach-facing feedback', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => {
+      root.render(
+        <ExportView authState={signedInAuthState} lastExportAt={null} onDataChanged={async () => undefined} onExportComplete={() => undefined} />,
+      )
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+    backupRepositoryMocks.createFieldHubBackup.mockRejectedValueOnce(
+      new Error('PostgrestError: backup table policy denied'),
+    )
+
+    await act(async () => {
+      Array.from(container.querySelectorAll('button'))
+        .find((button) => button.textContent === 'Komplettes Backup herunterladen')
+        ?.click()
+      await Promise.resolve()
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('JSON-Backup konnte nicht exportiert werden.')
+    expect(container.textContent).not.toContain('PostgrestError')
+    expect(container.textContent).not.toContain('policy denied')
+
+    await act(async () => root.unmount())
   })
 })

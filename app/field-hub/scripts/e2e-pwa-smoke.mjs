@@ -35,13 +35,13 @@ const lazyScreenChecks = [
     sectionLabel: 'Mehr',
     subTabLabel: 'Export & Backup',
     screenName: 'Export & Backup',
-    expectedTexts: ['Coach-Login noetig', 'Import-Vorschau'],
+    expectedTexts: ['Coach-Login nötig', 'Import-Vorschau'],
   },
   {
     sectionLabel: 'Mehr',
     subTabLabel: 'Einstellungen',
     screenName: 'Einstellungen',
-    expectedTexts: ['Synchronisierung', 'Geraet & Offline'],
+    expectedTexts: ['Synchronisierung', 'Gerät & Offline'],
   },
   {
     sectionLabel: 'Mehr',

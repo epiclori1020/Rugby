@@ -144,7 +144,16 @@ export function usePlayers(userId: string | null) {
   async function remove(player: Player) {
     const deletedPlayer = await deletePlayer(player)
     setPlayers((currentPlayers) => currentPlayers.filter((candidate) => candidate.id !== deletedPlayer.id))
-    setSyncOverview(await getPlayerSyncOverview(player.userId))
+    try {
+      setSyncOverview(await getPlayerSyncOverview(player.userId))
+    } catch {
+      setSyncOverview((currentOverview) => ({
+        ...currentOverview,
+        status: 'pending',
+        pendingCount: Math.max(1, currentOverview.pendingCount),
+        errorMessage: null,
+      }))
+    }
     if (typeof navigator === 'undefined' || navigator.onLine) {
       scheduleBackgroundSync(player.userId, 'players', runBackgroundSync)
     }

@@ -1,11 +1,13 @@
 // @vitest-environment jsdom
+import 'fake-indexeddb/auto'
 import { act } from 'react'
 import { createRoot } from 'react-dom/client'
 import { renderToStaticMarkup } from 'react-dom/server'
-import { describe, expect, it } from 'vitest'
+import { describe, expect, it, vi } from 'vitest'
 import type { SessionDefinition } from '../content/types'
 import type { CoachInsight } from '../domain/coachInsights'
 import type { Player } from '../domain/players'
+import { localDb } from '../lib/localDb'
 import { AnalysisView } from './AnalysisView'
 
 const player: Player = {
@@ -85,7 +87,7 @@ describe('AnalysisView', () => {
     expect(markup).toContain('Beobachten')
     expect(markup).toContain('Modifizieren')
     expect(markup).toContain('Steigern')
-    expect(markup).toContain('Rueckmelden')
+    expect(markup).toContain('Rückmelden')
     expect(markup).toContain('Was faellt im Verlauf auf?')
     expect(markup).toContain('Zeitraum: Letzte 8 Wochen')
     expect(markup).toContain('Cluster: Alle Cluster')
@@ -182,6 +184,31 @@ describe('AnalysisView', () => {
       expect(container.textContent).toContain('Analysefilter anpassen')
       expect(container.textContent).toContain('Zurücksetzen')
     } finally {
+      await act(async () => root.unmount())
+    }
+  })
+
+  it('keeps local storage details out of the coach-facing analysis error', async () => {
+    const localRead = vi.spyOn(localDb.sessionLogs, 'where').mockImplementationOnce(() => {
+      throw new Error('DexieError: session_logs index missing')
+    })
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    try {
+      await act(async () => {
+        root.render(
+          <AnalysisView coachInsights={[]} players={[player]} sessions={[session]} todayKey="2026-06-22" userId="user-1" />,
+        )
+        await Promise.resolve()
+        await Promise.resolve()
+      })
+
+      expect(container.textContent).toContain('Analyse nicht geladen')
+      expect(container.textContent).not.toContain('DexieError')
+      expect(container.textContent).not.toContain('session_logs')
+    } finally {
+      localRead.mockRestore()
       await act(async () => root.unmount())
     }
   })

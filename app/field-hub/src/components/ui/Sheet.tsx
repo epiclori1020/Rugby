@@ -74,7 +74,7 @@ export function Sheet({ children, description, onClose, title }: SheetProps) {
             <h2 id={headingId}>{title}</h2>
             {description ? <p id={descriptionId}>{description}</p> : null}
           </div>
-          <button className="of-sheet-close" type="button" aria-label="Schliessen" onClick={onClose}>
+          <button className="of-sheet-close" type="button" aria-label="Schließen" onClick={onClose}>
             <X aria-hidden />
           </button>
         </header>

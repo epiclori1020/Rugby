@@ -117,6 +117,7 @@ function actions(overrides: Partial<ReturnType<typeof useReturners>> = {}): Retu
     getCapsForPlayer: () => null,
     getEntryForPlayer: () => entry,
     getHistoryForPlayer: () => [entry],
+    isInitialLoading: false,
     isLoading: false,
     refreshReturners: async () => undefined,
     returnerCaps: [],
@@ -234,6 +235,43 @@ describe('ReturnerView', () => {
     expect(markup).not.toContain('Geklärt')
   })
 
+  it('uses a shared recoverable error state for the task list', () => {
+    const errorMarkup = renderToStaticMarkup(
+      <ReturnerView authState={authState} onNavigate={() => undefined} onSessionChange={() => undefined}
+        returnerActions={actions({ errorMessage: 'InternalError: returner_entries policy failed', returnerTaskStates: [] })}
+        selectedSession={selectedSession} selectedSessionId={selectedSession.id} sessions={[selectedSession]} showSessionPicker={false} />,
+    )
+
+    expect(errorMarkup).toContain('of-error-state of-state-inline')
+    expect(errorMarkup).toContain('Returner-Aufgaben nicht geladen')
+    expect(errorMarkup).toContain('Erneut versuchen')
+    expect(errorMarkup).not.toContain('returner_entries')
+    expect(errorMarkup).not.toContain('InternalError')
+  })
+
+  it('does not show a false cleared state while the initial Returner load is pending', async () => {
+    vi.useFakeTimers()
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    await act(async () => root.render(
+      <ReturnerView authState={authState} onNavigate={() => undefined} onSessionChange={() => undefined}
+        returnerActions={actions({ isInitialLoading: true, returnerTaskStates: [] })}
+        selectedSession={selectedSession} selectedSessionId={selectedSession.id} sessions={[selectedSession]} showSessionPicker={false} />,
+    ))
+
+    expect(container.textContent).not.toContain('Returner aktuell geklärt')
+    expect(container.querySelector('.of-empty-state')).toBeNull()
+    expect(container.querySelector('.of-skeleton')).toBeNull()
+
+    await act(async () => vi.advanceTimersByTime(300))
+    expect(container.querySelector('.of-skeleton')).not.toBeNull()
+    expect(container.textContent).not.toContain('Returner aktuell geklärt')
+
+    await act(async () => root.unmount())
+    vi.useRealTimers()
+  })
+
   it('contains reverse focus from the dialog container and restores the opener', async () => {
     ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
     const container = document.createElement('div')
@@ -321,6 +359,47 @@ describe('ReturnerView', () => {
     expect(savePlayerReturner).toHaveBeenCalledOnce()
     expect(container.querySelector<HTMLInputElement>('input[placeholder="z. B. 4 × 10 m smooth"]')?.value)
       .toBe('4 × 10 m smooth')
+
+    await act(async () => root.unmount())
+    container.remove()
+  })
+
+  it('does not expose technical save errors in Returner feedback', async () => {
+    ;(globalThis as typeof globalThis & { IS_REACT_ACT_ENVIRONMENT?: boolean }).IS_REACT_ACT_ENVIRONMENT = true
+    const savePlayerReturner = vi.fn(async () => {
+      throw new Error('PostgrestError: returner_entries policy denied')
+    })
+    const container = document.createElement('div')
+    document.body.append(container)
+    const root = createRoot(container)
+
+    await act(async () => root.render(
+      <ReturnerView
+        authState={authState}
+        focusedPlayer={player}
+        focusedTaskState={{ playerId: player.id, phase: 'planning', tone: 'warning', isOpen: true, label: 'Plan für heute festlegen' }}
+        onNavigate={() => undefined}
+        onSessionChange={() => undefined}
+        returnerActions={actions({ savePlayerReturner })}
+        selectedSession={selectedSession}
+        selectedSessionId={selectedSession.id}
+        sessions={[selectedSession]}
+        showSessionPicker={false}
+      />,
+    ))
+
+    const capInput = container.querySelector<HTMLInputElement>('input[placeholder="z. B. 4 × 10 m smooth"]')
+    await act(async () => {
+      if (capInput) {
+        capInput.value = '4 × 10 m smooth'
+        capInput.dispatchEvent(new FocusEvent('focusout', { bubbles: true }))
+      }
+      await Promise.resolve()
+    })
+
+    expect(container.textContent).toContain('nicht gespeichert – erneut versuchen')
+    expect(container.textContent).not.toContain('PostgrestError')
+    expect(container.textContent).not.toContain('returner_entries')
 
     await act(async () => root.unmount())
     container.remove()
