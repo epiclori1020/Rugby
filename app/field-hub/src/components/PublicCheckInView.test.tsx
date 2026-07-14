@@ -124,6 +124,29 @@ describe('PublicCheckInView', () => {
 
     setItemSpy.mockRestore()
   })
+
+  it('keeps artwork on the name step and removes it from the active check-in flow', async () => {
+    const container = await renderPublicCheckIn()
+
+    expect(container.querySelector('.brand-surface-artwork-texture')).not.toBeNull()
+    await changeInput(container.querySelector('input') as HTMLInputElement, 'max')
+    await clickButton(container, 'Max Muster')
+    await clickButton(container, 'Weiter')
+
+    expect(container.querySelector('.brand-surface')).toBeNull()
+    expect(container.textContent).toContain('Wie belastbar fühlst du dich heute?')
+  })
+
+  it('keeps an invalid-link error factual and artwork-free', async () => {
+    repositoryMocks.loadPublicCheckInForm.mockRejectedValueOnce(new Error('Check-in-Link ist ungueltig oder abgelaufen.'))
+    const container = await renderPublicCheckIn()
+
+    expect(container.querySelector('.brand-surface-artwork-none')).not.toBeNull()
+    expect(container.querySelector('.brand-surface-artwork-texture')).toBeNull()
+    expect(container.textContent).toContain('Check-in-Link ist ungültig oder abgelaufen. Bitte Coach informieren.')
+    expect(container.textContent).not.toContain('Link wird geprueft.')
+    expect(container.textContent).not.toContain('Know squad status before the whistle.')
+  })
 })
 
 describe('PublicCheckInView error mapping', () => {

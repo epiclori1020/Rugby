@@ -1,6 +1,6 @@
 # OnField Decision Log
 
-Stand: 2026-07-09
+Stand: 2026-07-14
 
 ## Zweck
 
@@ -71,6 +71,10 @@ Dieses Dokument ist das dauerhafte Entscheidungsgedaechtnis fuer OnField. Es spe
 | 2026-07-10 | `Squad heute` zeigt pro anwesendem Spieler hoechstens eine aggregierte Aufmerksamkeitszeile; Gelb/Rot zaehlen die jeweils hoechste aggregierte Aufmerksamkeitsstufe aus aktuellem Check-in, Mitnahme und Coach Insight; `returnerStatus=offen` ist eine Klaerung und kein Returner-Zaehler. | Mehrere Warnungen/Insights fuer dieselbe Person duerfen Liste und Kennzahlen nicht aufblasen. Scoreboard und priorisierte Liste muessen dieselbe Tagesprioritaet abbilden; explizites `ja` zaehlt zusaetzlich als Returner, `offen` fordert nur Klaerung. | Aktiv |
 | 2026-07-10 | Returner ist primaer ein kontextueller Einheitsschritt unter `#/unit/returners`; `#/more/returners` bleibt Backup. Kontextuelle Einstiege tragen nur `{ playerId, originRoute }` im laufenden UI-Zustand und persistieren keine neue Navigation oder Produktdaten. | Returner soll im Check-in-Training-Nachbereitung-Loop erreichbar sein, ohne globalen Haupttab, Query-Payload oder Datenmigration. Der Ursprungsbezug ermoeglicht stabile Rueckspruenge; der gemeinsame `selectedSession`-Kontext verhindert fachliche Drift. | Aktiv |
 | 2026-07-10 | `returnerStatus=offen` erzeugt allein keine Returner-Aufgabe; Aufgaben entstehen aus explizitem Kontext, dokumentiertem Cap oder aktuellem Returner-Eintrag und koennen neutral als geklaert enden. | Ein offener Check-in-Status ist eine Klaerung, kein medizinischer Alarm. Dadurch bleibt Returner wahrheitsgetreu, vermeidet Dauer-Warnung und nutzt konsequent `Hinweis fuer Coaching-Entscheidung` statt Freigabe-Sprache. | Aktiv |
+| 2026-07-13 | Redesign-v2 R9 ratifiziert Mixed Case `OnField•` als Wortmarke; Produkt-/Preset-Labels bleiben getrennt, der Dot ist auf Brand-Surfaces Oxblood und operativ Primary Green, aber nie Status. | Die Marke bleibt ueber alle OnField-Ausbaustufen konsistent, ohne Oxblood als Alarmton oder `Coach` als untrennbaren Teil der Hauptmarke zu behandeln. | Aktiv |
+| 2026-07-13 | `Barlow Semi Condensed` 800 ist der selbst gehostete R9-Display-Test fuer Wortmarke und erlaubte Brand-/Display-Headlines; Body und operative Labels bleiben Systemfont, Mono-Labels werden nicht ratifiziert. | Die markante Heritage-Instrument-Hierarchie wird real getestet, ohne Lesbarkeit, PWA-Offline-Verhalten oder die Drei-Gewichte-Regel der operativen UI zu opfern. | Aktiv |
+| 2026-07-13 | Field Ledger ist die aktive R9-Rasterrichtung; `BrandSurface` verwendet Artwork nur explizit als `hero` oder `texture` und standardmaessig `none`. | Bildgenerierung liefert Signature-Craft an Produktkanten, kann aber keine operative UI-, Status- oder Interaktionsstruktur einschleusen. Public/Kiosk verlieren das Artwork ab Readiness; Live-Coaching bleibt ruhig. | Aktiv |
+| 2026-07-13 | `#/welcome` ist die Coach-Auth-/First-Run-Kante und stellt nach Login eine zuvor angeforderte Coach-Route wieder her; Public/Kiosk-Prioritaet bleibt erhalten. | Ausgeloggte Nutzer sehen keine operative Today-Flaeche, Deep Links verlieren dennoch nicht ihren Intent und die getrennten Self-Check-in-Modi bleiben fachlich unveraendert. | Aktiv |
 
 ## Markenarchitektur
 

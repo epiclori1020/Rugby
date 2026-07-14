@@ -1,6 +1,6 @@
 # OnField Token Sheet
 
-Stand: 2026-07-09
+Stand: 2026-07-14
 
 ## Zweck
 
@@ -103,7 +103,15 @@ R1A ergaenzt die Redesign-v2-Typografie-Tokens aus `docs/field-hub/onfield_redes
 | `--of-font-weight-bold` | `700` |
 | `--of-font-weight-heading` | `800` |
 
-`--of-font-family-display` bleibt vorerst der System-Stack. Eine finale Display-Font-Lizenzierung ist nicht Teil von R1A.
+Seit Redesign-v2 R9 mappt `--of-font-family-display` auf `"Barlow Semi Condensed", var(--of-font-family-system)`. Die selbst gehostete Latin-800-Datei gilt fuer Wortmarke, erlaubte Brand-/Screen-Hauptueberschriften sowie Scoreboard- und groessere Metrikzahlen; Body, Labels, Inputs, Buttons und Navigation bleiben auf `--of-font-family-system`. Neue 850-/900-Gewichte bleiben verboten.
+
+## Brand Artwork Tokens
+
+| Token | Light | Field Mode | Einsatz |
+|---|---|---|---|
+| `--of-brand-artwork` | `onfield-signature-light.webp` | `onfield-signature-dark.webp` | ausschliesslich `BrandSurface` mit explizitem `hero` oder `texture` |
+
+Der Token hat keinen operativen Default-Einsatz. `BrandSurface` verwendet ohne explizite Angabe `artwork="none"`; Bild-KI liefert nur das textfreie Raster, nicht UI, Wortmarke oder Copy.
 
 ## Numeric Utility
 
@@ -144,3 +152,9 @@ Nicht enthalten in R1A:
 - Theme-Persistenz oder Toggle-UI.
 - neues App-Shell- oder Navigationsdesign.
 - Bildgenerierung oder Hero-Gestaltung.
+
+R9-Evidence:
+
+- Datei: `https://www.figma.com/design/BBaL4jQKLHeOC7tP5lajdW?node-id=68-2`
+- Page: `Redesign v2 R9 Brand Surfaces`
+- Inhalt: Wortmarken-/Display-Font-Test, drei Artwork-Richtungen, iPhone-/iPad-State-Matrizen in Light/Field Mode und operativer Integrity-Control.

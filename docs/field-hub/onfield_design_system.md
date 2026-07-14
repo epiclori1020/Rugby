@@ -1,6 +1,6 @@
 # OnField Design System
 
-Stand: 2026-07-05
+Stand: 2026-07-13
 
 ## Zweck
 
@@ -12,8 +12,8 @@ Dieses SSOT definiert die verbindlichen Designsystem-Regeln fuer OnField Coach. 
 - Live-Coaching ist list-/row-first. Cards sind sekundaer fuer fokussierte Metriken, Empty States, Analyse-Module und Dialogkontext.
 - Jede View hat genau eine dominante Primaerhandlung oberhalb der Falz.
 - Status wird nie nur ueber Farbe kommuniziert.
-- Operational UI nutzt Systemfont.
-- Light Mode ist v1-Prioritaet. Dark Mode wird erst nach stabilen Kernflows bewertet.
+- Operative Body-, Label-, Input- und Langtexte nutzen Systemfont. Die R9-Display-Font ist auf Wortmarke, erlaubte Brand-/Screen-Hauptueberschriften sowie Scoreboard- und groessere Metrikzahlen begrenzt.
+- Light und Dark/Field Mode sind aktive, tokenisierte Produktmodi und muessen in sichtbaren Sprints fachlich gleichwertig geprueft werden.
 - Keine zufaelligen Farben, Radiuswerte, Shadows oder Spacing-Werte ausserhalb des Token-Systems.
 - Oxblood ist Brand-/Editorial-Akzent und nie Status-, Alarm- oder Follow-up-Farbe.
 - Field-Operations-DNA wird ueber Layout, Gruppierung, Session Flow und Zonenlogik getragen, nicht ueber dekorative Feldlinien als Wallpaper.
@@ -73,6 +73,15 @@ Regeln:
 - Spielername, Status, Warnung, Einheit-Kontext und Primaeraktionen muessen schnell lesbar bleiben.
 - Zahlen fuer Scores, Load, Reps, Caps und Tabellen nutzen tabular numerals.
 - Maximal drei sichtbare Textgewichte pro Screen.
+- `Barlow Semi Condensed` 800 ist der aktive R9-Display-Test fuer Wortmarke, erlaubte Brand-/Screen-Hauptueberschriften sowie Scoreboard- und groessere Metrikzahlen; Systemfont-Fallback bleibt Pflicht, keine neuen 850-/900-Gewichte.
+- Die Wortmarke ist Mixed Case `OnField•`; Produktlabels bleiben getrennt. Der Dot ist in Brand-Kontext Oxblood, operativ Primary Green und nie alleiniger Status.
+
+### Brand-Surfaces
+
+- `BrandSurface` ist opt-in: `artwork="none"` ist der sichere Default; `hero` und `texture` muessen pro Surface explizit erlaubt werden.
+- `hero`: Welcome, Login/Auth und Browser-Install. `texture`: nur der Name-/Welcome-Einstieg von Public/Kiosk. `none`: Readiness, Review, Abschluss, Live-Coaching und operative Empty/Error/Offline-Zustaende.
+- Field Ledger ist textfreies Rasterterrain. Wortmarke, Copy, Controls und Zustandslogik bleiben echte UI.
+- Jede Brand-Surface behaelt genau eine dominante Primaerhandlung. Artwork darf keine Interaktion, Statusinformation oder fachliche Struktur tragen.
 
 ### Spacing und Layout
 

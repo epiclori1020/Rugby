@@ -76,7 +76,9 @@ describe('AppShell page title', () => {
     expect(markup).not.toContain('Navigation oeffnen')
     expect(markup).not.toContain('aria-controls="app-sidebar"')
     expect(markup).not.toContain('Field Hub')
-    expect(markup).toContain('OnField Coach')
+    expect(markup).toContain('<h1 class="onfield-wordmark"')
+    expect(markup).toContain('<span class="onfield-wordmark-name">OnField</span>')
+    expect(markup).toContain('<span class="onfield-wordmark-product">Coach</span>')
   })
 
   it('renders the settings title without a permanent sync button when data is synced', () => {

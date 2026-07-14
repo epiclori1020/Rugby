@@ -24,6 +24,15 @@ export function authErrorMessage(error: unknown) {
     return 'Coach-Login ist noch nicht eingerichtet. Bitte Setup prüfen.'
   }
 
+  if (
+    normalized.includes('failed to fetch') ||
+    normalized.includes('network') ||
+    normalized.includes('netzwerk') ||
+    normalized.includes('offline')
+  ) {
+    return 'Keine Netzwerkverbindung. Eine bereits aktive Coach-Session bleibt lokal nutzbar; für einen neuen Login bitte Verbindung prüfen.'
+  }
+
   if (normalized.includes('session') || normalized.includes('jwt') || normalized.includes('refresh')) {
     return 'Coach-Session konnte nicht geladen werden. Bitte erneut anmelden.'
   }

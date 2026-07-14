@@ -64,7 +64,7 @@ describe('Sprint 10 PWA configuration', () => {
   it('pre-caches active PDF library fallbacks for offline field use', () => {
     const viteConfig = readFileSync(join(projectRoot, 'vite.config.ts'), 'utf8')
 
-    expect(viteConfig).toContain("globPatterns: ['**/*.{js,css,html,svg,ico,png,webp,pdf}']")
+    expect(viteConfig).toContain("globPatterns: ['**/*.{js,css,html,svg,ico,png,webp,woff,woff2,pdf}']")
 
     for (const pdfRef of activePdfRefs) {
       expect(pdfRef.href.startsWith('/library/')).toBe(true)

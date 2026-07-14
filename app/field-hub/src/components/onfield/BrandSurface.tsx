@@ -1,8 +1,10 @@
 import { useId, type ReactNode } from 'react'
+import { OnFieldWordmark } from './OnFieldWordmark'
 
 type BrandSurfaceVariant = 'auth' | 'welcome' | 'install' | 'public' | 'kiosk' | 'compact'
 
 type BrandSurfaceProps = {
+  artwork?: 'hero' | 'texture' | 'none'
   body: string
   children?: ReactNode
   className?: string
@@ -16,10 +18,11 @@ type BrandSurfaceProps = {
 }
 
 export function BrandSurface({
+  artwork = 'none',
   body,
   children,
   className,
-  claim = 'Check in players. Run the session. Wrap the day.',
+  claim,
   meta,
   primaryAction,
   productFrame,
@@ -27,16 +30,21 @@ export function BrandSurface({
   title,
   variant,
 }: BrandSurfaceProps) {
-  const classNames = ['brand-surface', `brand-surface-${variant}`, className].filter(Boolean).join(' ')
+  const classNames = [
+    'brand-surface',
+    `brand-surface-${variant}`,
+    `brand-surface-artwork-${artwork}`,
+    className,
+  ].filter(Boolean).join(' ')
   const headingId = `brand-surface-${variant}-${useId().replaceAll(':', '')}`
 
   return (
     <section className={classNames} aria-labelledby={headingId}>
       <div className="brand-surface-copy">
         <span className="brand-accent" aria-hidden />
-        <p className="brand-surface-kicker">OnField Coach</p>
+        <p className="brand-surface-kicker"><OnFieldWordmark context="brand" product="Coach" /></p>
         <h2 id={headingId}>{title}</h2>
-        <p className="brand-surface-claim">{claim}</p>
+        {claim ? <p className="brand-surface-claim">{claim}</p> : null}
         <p className="brand-surface-body">{body}</p>
         {meta ? <div className="brand-surface-meta">{meta}</div> : null}
         {primaryAction || secondaryAction ? (

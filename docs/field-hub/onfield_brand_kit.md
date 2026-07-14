@@ -1,6 +1,6 @@
 # OnField Brand Kit
 
-Stand: 2026-07-05
+Stand: 2026-07-13
 
 ## Zweck
 
@@ -21,8 +21,8 @@ Dieses SSOT definiert die Markenrichtung fuer OnField. Es ist die Grundlage fuer
 - Mischung: etwa 70 Prozent native, ruhige App-Shell und 30 Prozent robuste OnField-Marke.
 - Brand-Persoenlichkeit: Calm intensity. Die App wirkt fokussiert, robust und entscheidungsstark, ohne Hektik zu erzeugen.
 - Field-Operations-DNA lebt primaer in Struktur, Informationsarchitektur und Session-Flow, nicht in dekorativen Feldlinien.
-- Operative UI nutzt Systemfont: `-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`.
-- Eigene Brand-Font ist nur fuer Logo, App Icon, Marketing, Landingpage und spaeter getestete Display-Headlines offen.
+- Operative Body-, Label-, Input-, Button- und Navigationstexte nutzen Systemfont: `-apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif`.
+- Die R9-Display-Font ist fuer Wortmarke, erlaubte Brand-/Screen-Hauptueberschriften sowie Scoreboard- und groessere Metrikzahlen ratifiziert.
 - Primaere Palette v1 ist **Field Graphite**:
   - Primary: `#1F6B5C`
   - Secondary/Oxblood Editorial: `#7A1F2B`
@@ -136,6 +136,18 @@ Live-Coaching-Screens zeigen keine Claims, keine Marketing-Heroes, keine grossen
 - Oxblood kann im Icon staerker genutzt werden als in der App-Flaeche.
 - Vor externem Launch braucht das PWA-Install-Erlebnis ein konsistentes Icon, Name, Splash/Startsurface und kurze Install-Copy.
 
+## R9 Wortmarke, Display-Typografie und Brand-Artwork
+
+- Die aktive Wortmarke lautet in Mixed Case `OnField` plus Dot-Signature `•`.
+- `Coach`, `Rugby` und `Performance` sind separate Produkt-/Preset-Labels und kein verschmolzener Teil der Hauptwortmarke.
+- Auf Brand-Surfaces ist der Dot Oxblood; in operativen Headern ist er Primary Green. Der Dot ist dekorative Signatur, kein alleinstehender Status.
+- `Barlow Semi Condensed` in Gewicht 800 mit Systemfont-Fallback gilt fuer Wortmarke, erlaubte Brand-/Screen-Hauptueberschriften sowie Scoreboard- und groessere Metrikzahlen. Body, Labels, Inputs, Buttons, Navigation und operative Langtexte bleiben auf dem Systemfont-Stack.
+- `Barlow Semi Condensed` ist selbst gehostet; es werden keine externen Font-Requests benoetigt.
+- R9 ratifiziert keine Mono-Labels. Kleine operative Labels bleiben System-Semibold/Uppercase, bis ein eigener Test sie begruendet.
+- Die aktive Rasterrichtung heisst **Field Ledger**: ruhiges Papier-/Instrument-Terrain mit abstrakter Feldgeometrie, ohne Spielerfoto, Text oder generierte UI.
+- Field Ledger darf nur als `hero` auf Welcome/Auth/Install oder als reduzierte `texture` am Einstieg von Public/Kiosk erscheinen. Ab dem ersten fachlichen Readiness-Schritt verschwindet das Artwork.
+- Light und Field Mode besitzen getrennte, komprimierte WebP-Assets. Die UI-, Wortmarken- und Textstruktur bleibt in React/CSS/Figma und wird nicht in das Rasterasset eingebrannt.
+
 ## Research-Quelle
 
 Die Sprint-3-Research-Synthese liegt in `docs/field-hub/2026-07-05_onfield_brand_competitive_research_synthesis.md`. Die langen Researches bleiben Quellenmaterial; dieses Brand Kit ist die verbindliche Arbeitsgrundlage.
@@ -149,4 +161,4 @@ Die Sprint-3-Research-Synthese liegt in `docs/field-hub/2026-07-05_onfield_brand
 ## Offene Fragen
 
 - Welche Logo-/Icon-Varianten passen am besten zu OnField als sportartenuebergreifender Marke?
-- Wann wird eine Display-Font fuer Headlines real getestet?
+- Eine Ausweitung von `Barlow Semi Condensed` auf Body, Labels, Inputs, Buttons oder Navigation ist nicht ratifiziert.

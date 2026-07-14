@@ -638,7 +638,7 @@ button.of-athlete-row-content {
 }
 
 .of-scoreboard-cell-green dd {
-  color: var(--of-color-status-success);
+  color: var(--of-color-status-success-text);
 }
 
 .of-scoreboard-cell-yellow dd {

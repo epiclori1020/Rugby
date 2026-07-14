@@ -1,4 +1,5 @@
 import { Cloud, CloudOff, Download, RefreshCw, ShieldCheck, Smartphone } from 'lucide-react'
+import { useState } from 'react'
 import { routes, type AppRoute } from '../navigation'
 import type { SessionLog } from '../domain/checkIn'
 import type { PlayerSyncOverview } from '../domain/sync'
@@ -116,6 +117,7 @@ export function SettingsView({
   syncOverview,
   themePreference,
 }: SettingsViewProps) {
+  const [installStepsVisible, setInstallStepsVisible] = useState(false)
   const syncDisabledReason = manualSyncDisabledReason({
     authState,
     isManualSyncing,
@@ -236,20 +238,36 @@ export function SettingsView({
         </div>
       </section>
 
-      <BrandSurface
-        body="Installiere OnField Coach auf iPhone oder iPad ueber den Home-Bildschirm. So startet die PWA mit App-Name, Icon und mehr Platz fuer den Trainingstag."
-        className="settings-panel install-surface"
-        claim="Know squad status before the whistle."
-        meta={
-          <ul className="compact-list">
-            <li>iOS: Teilen oeffnen und "Zum Home-Bildschirm" waehlen.</li>
-            <li>iPadOS: dieselbe PWA, derselbe Funktionsumfang, nur mehr Flaeche.</li>
-            <li>Offline-Hinweise bleiben in der App sichtbar; kein Browser-Offline-Fallback.</li>
-          </ul>
-        }
-        title="OnField als PWA nutzen"
-        variant="install"
-      />
+      {pwaDisplayMode === 'standalone' ? (
+        <BrandSurface
+          body="OnField Coach läuft im Home-Screen-Modus. iPhone und iPad behalten denselben Funktionsumfang."
+          className="settings-panel install-surface"
+          meta={<p>Offline-Hinweise und App-Updates bleiben direkt in OnField sichtbar.</p>}
+          title="OnField ist installiert"
+          variant="compact"
+        />
+      ) : (
+        <BrandSurface
+          artwork="hero"
+          body="Installiere OnField Coach auf iPhone oder iPad über den Home-Bildschirm. So startet die PWA mit App-Name, Icon und mehr Platz für den Trainingstag."
+          className="settings-panel install-surface"
+          claim="Know squad status before the whistle."
+          meta={installStepsVisible ? (
+            <ol className="install-steps">
+              <li><strong>1.</strong> OnField in Safari öffnen.</li>
+              <li><strong>2.</strong> Teilen wählen.</li>
+              <li><strong>3.</strong> „Zum Home-Bildschirm“ wählen und hinzufügen.</li>
+            </ol>
+          ) : <p>Eine Anleitung gilt für iPhone und iPad; der Funktionsumfang bleibt gleich.</p>}
+          primaryAction={
+            <SecondaryButton onClick={() => setInstallStepsVisible((visible) => !visible)}>
+              {installStepsVisible ? 'Installationsschritte schließen' : 'Installationsschritte anzeigen'}
+            </SecondaryButton>
+          }
+          title="OnField als PWA nutzen"
+          variant="install"
+        />
+      )}
 
       <section className="panel settings-panel" aria-labelledby="settings-app-heading">
         <div className="status-line">

@@ -441,7 +441,7 @@ describe('App public check-in routing', () => {
     vi.useFakeTimers()
     vi.setSystemTime(new Date('2026-06-18T12:00:00.000+02:00'))
     publicRouteState.nextMountId = 0
-    publicRouteState.authState.status = 'signed-out'
+    publicRouteState.authState.status = 'signed-in'
     publicRouteState.lastKioskProps = null
     publicRouteState.lastPlayersProps = null
     publicRouteState.lastReturnerProps = null
@@ -450,6 +450,7 @@ describe('App public check-in routing', () => {
     syncRepositoryMocks.syncAllUserData.mockClear()
     window.history.replaceState(null, '', '/')
     window.localStorage.clear()
+    window.sessionStorage.clear()
   })
 
   afterEach(async () => {
@@ -460,6 +461,47 @@ describe('App public check-in routing', () => {
       root = null
     }
     vi.useRealTimers()
+  })
+
+  it('routes signed-out coach entry to the hidden branded welcome surface', async () => {
+    publicRouteState.authState.status = 'signed-out'
+    window.history.replaceState(null, '', '#/unit/training')
+    const rendered = await renderApp()
+    root = rendered.root
+
+    expect(window.location.hash).toBe('#/welcome')
+    expect(rendered.container.textContent).toContain('Trainingstag vorbereiten')
+    expect(rendered.container.textContent).toContain('1. Login')
+    expect(window.sessionStorage.getItem('fieldHub:intendedCoachRoute')).toBe('#/unit/training')
+  })
+
+  it('keeps later signed-out hash changes behind welcome and refreshes their canonical intent', async () => {
+    publicRouteState.authState.status = 'signed-out'
+    const rendered = await renderApp()
+    root = rendered.root
+
+    await dispatchHashChange('#/nachbereitung')
+
+    expect(window.location.hash).toBe('#/welcome')
+    expect(rendered.container.textContent).toContain('Trainingstag vorbereiten')
+    expect(window.sessionStorage.getItem('fieldHub:intendedCoachRoute')).toBe('#/unit/post-session')
+  })
+
+  it('restores the intended coach route after login', async () => {
+    publicRouteState.authState.status = 'signed-out'
+    window.history.replaceState(null, '', '#/unit/training')
+    const rendered = await renderApp()
+    root = rendered.root
+
+    publicRouteState.authState.status = 'signed-in'
+    await act(async () => {
+      root?.render(<App />)
+    })
+
+    expect(window.location.hash).toBe('#/unit/training')
+    expect(rendered.container.querySelector<HTMLElement>('[data-testid="coach-app"]')?.dataset.activeRoute).toBe(
+      'unit/training',
+    )
   })
 
   it('switches between coach app and public check-in when the hash changes', async () => {

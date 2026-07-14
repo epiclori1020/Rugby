@@ -12,6 +12,7 @@ import {
   type MoreRoute,
 } from '../navigation'
 import { MainNavigation } from './MainNavigation'
+import { OnFieldWordmark } from './onfield'
 import { SyncStatusBadge } from './SyncStatusBadge'
 import { SegmentedControl, type SegmentedControlOption } from './ui'
 
@@ -135,8 +136,7 @@ export function AppShell({
     <div className="app-shell">
       <aside className="sidebar" id="app-sidebar" aria-label="Hauptnavigation">
         <div className="brand-block">
-          <p className="eyebrow">OnField</p>
-          <h1>OnField Coach</h1>
+          <OnFieldWordmark as="h1" context="operational" product="Coach" />
           <p>Coach-Operations fuer Trainingstage, Sync und Feldorganisation.</p>
         </div>
         <MainNavigation activeSection={activeSection} onSectionChange={onSectionChange} />

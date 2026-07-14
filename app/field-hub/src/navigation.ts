@@ -26,6 +26,7 @@ export type LegacyNavigationTarget =
 
 export type ParsedHashRoute =
   | { kind: 'coach'; route: AppRoute; canonicalHash: string; source: 'canonical' | 'legacy' | 'fallback' }
+  | { kind: 'welcome' }
   | { kind: 'public-check-in'; token: string }
 
 export const appSections: readonly AppSection[] = ['today', 'unit', 'players', 'analysis', 'more']
@@ -246,6 +247,10 @@ export function parseHashRoute(hash: string): ParsedHashRoute {
   const publicCheckInMatch = hash.match(/^#\/checkin\/([^/?#]+)/)
   if (publicCheckInMatch) {
     return { kind: 'public-check-in', token: decodeURIComponent(publicCheckInMatch[1]) }
+  }
+
+  if (normalizeHashPath(hash) === 'welcome') {
+    return { kind: 'welcome' }
   }
 
   const hashPath = normalizeHashPath(hash)

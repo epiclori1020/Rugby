@@ -10,6 +10,7 @@ type RenderFlowProps = Partial<{
   disabled: boolean
   mode: 'kiosk' | 'public'
   resetActionLabel: string
+  onStepChange: (step: import('./SelfCheckInFlow').SelfCheckInStep) => void
 }>
 
 function getButton(container: HTMLElement, name: string) {
@@ -279,5 +280,17 @@ describe('SelfCheckInFlow', () => {
 
     expect(container.textContent).not.toContain('Returner')
     expect(container.textContent).not.toContain('Returner-Status')
+  })
+
+  it('reports step changes so parent brand surfaces can become quiet after name selection', async () => {
+    const onStepChange = vi.fn()
+    const container = await renderFlow(undefined, { onStepChange })
+
+    expect(onStepChange).toHaveBeenLastCalledWith('player')
+    await changeInput(container.querySelector('input') as HTMLInputElement, 'max')
+    await clickButton(container, 'Max Muster')
+    await clickButton(container, 'Weiter')
+
+    expect(onStepChange).toHaveBeenLastCalledWith('readiness')
   })
 })

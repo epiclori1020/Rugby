@@ -11,7 +11,7 @@ import type { StoragePersistenceState } from '../hooks/useStoragePersistence'
 import { triggerHapticFeedback } from '../lib/interactionFeedback'
 import { hasPlayerId } from '../lib/playerId'
 import { CoachInsightsPanel } from './CoachInsightsPanel'
-import { AthleteRow, ScoreboardStrip, type ScoreboardMetric } from './onfield'
+import { AthleteRow, OnFieldWordmark, ScoreboardStrip, type ScoreboardMetric } from './onfield'
 import { EmptyState, PrimaryButton, SecondaryButton, Skeleton, StatusChip, type StatusTone } from './ui'
 import { SessionPicker } from './SessionPicker'
 
@@ -181,11 +181,9 @@ export function TodayDashboard({
     ? postSessionWork.completion.blockers.reduce((sum, blocker) => sum + Math.max(1, blocker.count), 0)
     : 0
   const showStorageWarning = !['checking', 'persisted'].includes(storagePersistence.status)
-  const showWelcomeSurface = !isSignedIn || activePlayers.length === 0
-  const welcomeTitle = !isSignedIn ? 'Trainingstag vorbereiten' : 'Squad für OnField anlegen'
-  const welcomeBody = !isSignedIn
-    ? 'Nach dem Login werden Spielerstatus, Anwesenheit und offene Aufgaben auf iPhone und iPad verfügbar.'
-    : 'Lege aktive Spieler an, damit Check-in, Session Flow und Wrap-up mit demselben Funktionsumfang starten.'
+  const showWelcomeSurface = activePlayers.length === 0
+  const welcomeTitle = 'Squad für OnField anlegen'
+  const welcomeBody = 'Lege aktive Spieler an, damit Check-in, Session Flow und Wrap-up mit demselben Funktionsumfang starten.'
   const reportAction = useCallback(
     (message: string) => {
       triggerHapticFeedback('selection')
@@ -239,7 +237,7 @@ export function TodayDashboard({
       <section className="dashboard-grid today-squad-screen today-squad-empty" aria-labelledby="today-heading">
         <header className="today-squad-header">
           <div className="today-squad-brandline">
-            <span className="today-wordmark">OnField<span aria-hidden>•</span></span>
+            <OnFieldWordmark className="today-wordmark" compact />
             <span>{formatContextDate(todayDate)} · {selectedSession.kw}</span>
             {syncStatusSlot ? <div className="today-sync-slot">{syncStatusSlot}</div> : null}
           </div>
@@ -268,13 +266,9 @@ export function TodayDashboard({
                   <PrimaryButton
                     data-testid="today-welcome-action"
                     icon={<ArrowRight aria-hidden />}
-                    onClick={() =>
-                      !isSignedIn
-                        ? navigateWithFeedback(routes.moreSettings, 'Einstellungen geöffnet.')
-                        : navigateWithFeedback(routes.players, 'Spieler geöffnet.')
-                    }
+                    onClick={() => navigateWithFeedback(routes.players, 'Spieler geöffnet.')}
                   >
-                    {!isSignedIn ? 'Login öffnen' : 'Spieler anlegen'}
+                    Spieler anlegen
                   </PrimaryButton>
                 }
                 body={welcomeBody}
@@ -291,7 +285,7 @@ export function TodayDashboard({
     <section className="dashboard-grid today-squad-screen" aria-labelledby="today-heading">
       <header className="today-squad-header">
         <div className="today-squad-brandline">
-          <span className="today-wordmark">OnField<span aria-hidden>•</span></span>
+          <OnFieldWordmark className="today-wordmark" compact />
           <span>{formatContextDate(todayDate)} · {selectedSession.kw}</span>
           {isPreview ? <StatusChip label="Vorschau" tone="warning" /> : null}
           {syncStatusSlot ? <div className="today-sync-slot">{syncStatusSlot}</div> : null}

@@ -24,7 +24,7 @@ export type SelfCheckInSubmissionInput = {
 
 type SelfCheckInMode = 'kiosk' | 'public'
 
-type SelfCheckInStep = 'player' | 'readiness' | 'life' | 'pain' | 'reaction' | 'review' | 'complete'
+export type SelfCheckInStep = 'player' | 'readiness' | 'life' | 'pain' | 'reaction' | 'review' | 'complete'
 
 type SelfCheckInFlowProps = {
   autoResetAfterSubmitMs?: number | null
@@ -35,6 +35,7 @@ type SelfCheckInFlowProps = {
   helperText?: string
   mode?: SelfCheckInMode
   onSubmit: (input: SelfCheckInSubmissionInput) => Promise<void>
+  onStepChange?: (step: SelfCheckInStep) => void
   players: SelfCheckInPlayerOption[]
   resetActionLabel?: string
   submitLabel?: string
@@ -106,6 +107,7 @@ export function SelfCheckInFlow({
   helperText,
   mode = 'public',
   onSubmit,
+  onStepChange,
   players,
   resetActionLabel = 'Weiteren Check-in erfassen',
   submitLabel = 'Check-in absenden',
@@ -125,6 +127,10 @@ export function SelfCheckInFlow({
   const [completedPlayerName, setCompletedPlayerName] = useState('')
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [message, setMessage] = useState<string | null>(null)
+
+  useEffect(() => {
+    onStepChange?.(step)
+  }, [onStepChange, step])
   const filteredPlayers = useMemo(() => {
     const normalizedSearch = searchTerm.trim().toLocaleLowerCase('de-AT')
 

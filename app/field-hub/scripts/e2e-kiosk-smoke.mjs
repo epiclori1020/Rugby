@@ -3,12 +3,16 @@ import { spawn } from 'node:child_process'
 import { randomUUID } from 'node:crypto'
 import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
-import { fileURLToPath } from 'node:url'
+import { fileURLToPath, pathToFileURL } from 'node:url'
 import puppeteer from 'puppeteer-core'
 
 const rootDir = resolve(dirname(fileURLToPath(import.meta.url)), '..')
 const defaultPort = process.env.FIELD_HUB_E2E_PORT ?? '5180'
-const baseUrl = process.env.FIELD_HUB_E2E_BASE_URL ?? `http://127.0.0.1:${defaultPort}/`
+const target = resolveKioskTarget(
+  process.env.FIELD_HUB_E2E_BASE_URL ?? `http://127.0.0.1:${defaultPort}/`,
+  process.env.FIELD_HUB_E2E_AUTH_ORIGIN,
+)
+const baseUrl = target.url
 const email = process.env.FIELD_HUB_E2E_EMAIL
 const password = process.env.FIELD_HUB_E2E_PASSWORD
 const allowRemoteMutation = process.env.FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION === '1'
@@ -19,6 +23,43 @@ class QaBlockedError extends Error {
     super(message)
     this.name = 'QaBlockedError'
   }
+}
+
+export function resolveKioskTarget(rawBaseUrl, allowedAuthOrigin) {
+  let url
+  try {
+    url = new URL(rawBaseUrl)
+  } catch {
+    throw new QaBlockedError('FIELD_HUB_E2E_BASE_URL ist keine gueltige URL.')
+  }
+
+  if (url.username || url.password) {
+    throw new QaBlockedError('Kiosk-QA-Ziel darf keine Zugangsdaten in der URL enthalten.')
+  }
+
+  const isLoopback = ['127.0.0.1', 'localhost', '[::1]'].includes(url.hostname)
+  if (!isLoopback) {
+    if (url.protocol !== 'https:') {
+      throw new QaBlockedError('Remote Kiosk-QA-Ziele muessen HTTPS verwenden.')
+    }
+
+    let allowedOrigin
+    try {
+      allowedOrigin = allowedAuthOrigin ? new URL(allowedAuthOrigin).origin : null
+    } catch {
+      throw new QaBlockedError('FIELD_HUB_E2E_AUTH_ORIGIN ist keine gueltige Origin.')
+    }
+    if (!allowedOrigin || allowedOrigin !== url.origin) {
+      throw new QaBlockedError(
+        'Remote Kiosk-QA-Ziel ist nicht freigegeben. Setze FIELD_HUB_E2E_AUTH_ORIGIN auf die exakte HTTPS-Origin.',
+      )
+    }
+  }
+
+  const safeLogUrl = new URL(url)
+  safeLogUrl.search = ''
+  safeLogUrl.hash = ''
+  return { url: url.href, logUrl: safeLogUrl.href }
 }
 
 function readDotEnv() {
@@ -77,7 +118,7 @@ async function waitForServer(url, timeoutMs = 30_000) {
     await new Promise((resolveTimer) => setTimeout(resolveTimer, 250))
   }
 
-  throw new Error(`${requirePreviewServer ? 'Preview' : 'Dev'}-Server nicht erreichbar: ${url}`)
+  throw new Error(`${requirePreviewServer ? 'Preview' : 'Dev'}-Server nicht erreichbar: ${target.logUrl}`)
 }
 
 function startAppServerIfNeeded() {
@@ -194,7 +235,7 @@ async function queryEntryForPlayer(supabase, playerId, timeoutMs = 15_000) {
   while (Date.now() - startedAt < timeoutMs) {
     const { data, error } = await supabase
       .from('player_session_entries')
-      .select('id, readiness, life_flag, pain_score, pain_location, returner_flag, session_reaction, checkin_source')
+      .select('id, session_log_id, readiness, life_flag, pain_score, pain_location, returner_flag, session_reaction, checkin_source')
       .eq('player_id', playerId)
       .is('deleted_at', null)
       .order('updated_at', { ascending: false })
@@ -212,15 +253,51 @@ async function queryEntryForPlayer(supabase, playerId, timeoutMs = 15_000) {
   throw new Error('Remote Check-in-Entry wurde nach Kiosk-Submit nicht gefunden.')
 }
 
-async function cleanupSeed(supabase, playerId) {
-  const entryDelete = await supabase.from('player_session_entries').delete().eq('player_id', playerId)
-  const playerDelete = await supabase.from('players').delete().eq('id', playerId)
+function sessionDateFromDefinitionId(sessionDefinitionId) {
+  const match = sessionDefinitionId.match(/(\d{4}-\d{2}-\d{2})$/)
+  if (!match) throw new QaBlockedError(`Session-Datum kann nicht aus der gewählten Session abgeleitet werden: ${sessionDefinitionId}`)
+  return match[1]
+}
 
-  if (entryDelete.error || playerDelete.error) {
-    throw new Error(
-      `Cleanup unvollstaendig: ${entryDelete.error?.message ?? 'entries ok'}; ${playerDelete.error?.message ?? 'player ok'}`,
+export async function cleanupSeed(supabase, playerId, createdSessionLogId) {
+  let cleanupError = null
+  const runCleanupStep = async (label, step) => {
+    try {
+      const result = await step()
+      if (result?.error) throw result.error
+      return result
+    } catch (error) {
+      cleanupError ??= new Error(`Kiosk-Cleanup ${label} fehlgeschlagen: ${error.message}`, { cause: error })
+      return null
+    }
+  }
+
+  await runCleanupStep('Entries löschen', () =>
+    supabase.from('player_session_entries').delete().eq('player_id', playerId),
+  )
+  await runCleanupStep('Spieler löschen', () => supabase.from('players').delete().eq('id', playerId))
+  if (createdSessionLogId) {
+    await runCleanupStep('eigene Session löschen', () =>
+      supabase.from('session_logs').delete().eq('id', createdSessionLogId),
     )
   }
+
+  const entryVerify = await runCleanupStep('Entries verifizieren', () =>
+    supabase.from('player_session_entries').select('id').eq('player_id', playerId),
+  )
+  const playerVerify = await runCleanupStep('Spieler verifizieren', () =>
+    supabase.from('players').select('id').eq('id', playerId),
+  )
+  const sessionVerify = createdSessionLogId
+    ? await runCleanupStep('Session verifizieren', () =>
+      supabase.from('session_logs').select('id').eq('id', createdSessionLogId),
+    )
+    : { data: [] }
+
+  if (entryVerify?.data?.length || playerVerify?.data?.length || sessionVerify?.data?.length) {
+    cleanupError ??= new Error('Remote-Cleanup unvollständig: temporäre Kiosk-Daten sind noch vorhanden.')
+  }
+  if (cleanupError) throw cleanupError
 }
 
 async function main() {
@@ -245,6 +322,8 @@ async function main() {
   let playerId = null
   let playerName = null
   let signedIn = false
+  let verifiedEntry = null
+  let createdSessionLogId = null
   try {
     const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
       email: e2eEmail,
@@ -292,13 +371,39 @@ async function main() {
     page.on('pageerror', (error) => consoleMessages.push({ type: 'pageerror', text: error.message }))
 
     await page.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 30_000 })
-    await clickButtonByLabelOrText(page, 'Mehr', 'Coach login navigation')
-    await clickButtonByLabelOrText(page, 'Einstellungen', 'Coach login navigation')
     await page.waitForSelector('input[type="email"]', { timeout: 20_000 })
     await page.type('input[type="email"]', e2eEmail)
     await page.type('input[type="password"]', e2ePassword)
     await clickButtonByLabelOrText(page, 'Einloggen', 'Coach login')
-    await waitForText(page, 'Coach-Session')
+    await page.waitForSelector('.app-shell', { timeout: 20_000 })
+
+    const selectedSessionId = await page.evaluate(() => localStorage.getItem('fieldHub:selectedSessionId'))
+    if (!selectedSessionId) throw new QaBlockedError('Gewählte Session ist im Browser nicht verfügbar.')
+    const existingSessionLogs = await supabase
+      .from('session_logs')
+      .select('id')
+      .eq('user_id', authData.user.id)
+      .eq('session_definition_id', selectedSessionId)
+      .is('deleted_at', null)
+    if (existingSessionLogs.error) throw existingSessionLogs.error
+    if ((existingSessionLogs.data ?? []).length === 0) {
+      createdSessionLogId = randomUUID()
+      const sessionInsert = await supabase.from('session_logs').insert({
+        id: createdSessionLogId,
+        user_id: authData.user.id,
+        session_definition_id: selectedSessionId,
+        date: sessionDateFromDefinitionId(selectedSessionId),
+        status: 'in_progress',
+        coach: `E2E Kiosk ${playerId}`,
+        created_at: now,
+        updated_at: now,
+        client_updated_at: now,
+        deleted_at: null,
+      })
+      if (sessionInsert.error) throw sessionInsert.error
+      await page.reload({ waitUntil: 'networkidle2', timeout: 30_000 })
+      await page.waitForSelector('.app-shell', { timeout: 20_000 })
+    }
 
     await clickButtonByLabelOrText(page, 'Einheit', 'Kiosk navigation')
     await clickButtonByLabelOrText(page, 'Check-in', 'Kiosk navigation')
@@ -342,6 +447,7 @@ async function main() {
     ) {
       throw new Error(`Remote Check-in-Entry unerwartet: ${JSON.stringify(entry)}`)
     }
+    verifiedEntry = entry
 
     const errorMessages = consoleMessages.filter(
       (message) =>
@@ -352,55 +458,63 @@ async function main() {
       throw new Error(`Browser-Konsole enthaelt Fehler: ${JSON.stringify(errorMessages)}`)
     }
 
-    console.log(
-      JSON.stringify(
-        {
-          ok: true,
-          baseUrl,
-          seededPlayer: playerName,
-          verifiedEntry: {
-            readiness: entry.readiness,
-            lifeFlag: entry.life_flag,
-            painScore: entry.pain_score,
-            painLocation: entry.pain_location,
-            returnerFlag: entry.returner_flag,
-            sessionReaction: entry.session_reaction,
-            checkInSource: entry.checkin_source,
-          },
-        },
-        null,
-        2,
-      ),
-    )
   } finally {
-    if (browser) {
-      await browser.close()
+    let cleanupError = null
+    const runCleanupStep = async (step) => {
+      try {
+        await step()
+      } catch (error) {
+        cleanupError ??= error
+      }
     }
-    if (playerId) {
-      await cleanupSeed(supabase, playerId)
-    }
-    if (signedIn) {
-      await supabase.auth.signOut()
-    }
-    await stopDevServer(appServer)
+
+    await runCleanupStep(async () => {
+      if (playerId) await cleanupSeed(supabase, playerId, createdSessionLogId)
+    })
+    await runCleanupStep(async () => {
+      if (browser) await browser.close()
+    })
+    await runCleanupStep(async () => {
+      if (!signedIn) return
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+    })
+    await runCleanupStep(() => stopDevServer(appServer))
+    if (cleanupError) throw cleanupError
   }
+
+  console.log(
+    JSON.stringify(
+      {
+        ok: true,
+        baseUrl: target.logUrl,
+        fixture: 'temporary-kiosk',
+        cleanup: 'remote-absence-verified',
+        verifiedEntry: {
+          readiness: verifiedEntry.readiness,
+          lifeFlag: verifiedEntry.life_flag,
+          painScore: verifiedEntry.pain_score,
+          painLocation: verifiedEntry.pain_location,
+          returnerFlag: verifiedEntry.returner_flag,
+          sessionReaction: verifiedEntry.session_reaction,
+          checkInSource: verifiedEntry.checkin_source,
+        },
+      },
+      null,
+      2,
+    ),
+  )
 }
 
-main().catch((error) => {
-  if (error instanceof QaBlockedError) {
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main().catch((error) => {
     console.error(
       JSON.stringify(
-        {
-          ok: false,
-          status: 'blocked',
-          reason: error.message,
-        },
+        { ok: false, status: error instanceof QaBlockedError ? 'blocked' : 'failed', reason: error.message },
         null,
         2,
       ),
     )
-    process.exit(1)
-  }
-  console.error(error instanceof Error ? error.message : error)
-  process.exit(1)
-})
+    process.exitCode = error instanceof QaBlockedError ? 2 : 1
+  })
+}

@@ -200,4 +200,37 @@ describe('KioskCheckInView', () => {
     expect(nextButton?.disabled).toBe(true)
     expect(container.textContent).toContain('Coach-Session prüfen. Der Kiosk bleibt gesperrt.')
   })
+
+  it('removes the brand texture after the initial name step', async () => {
+    const container = document.createElement('div')
+    root = createRoot(container)
+
+    await act(async () => {
+      root?.render(
+        <KioskCheckInView
+          errorMessage={null}
+          onExit={async () => undefined}
+          onSubmitKioskEntry={async () => undefined}
+          players={[{ id: 'player-1', displayName: 'Max Muster' }]}
+          selectedSession={selectedSession}
+        />,
+      )
+    })
+
+    expect(container.querySelector('.brand-surface-artwork-texture')).not.toBeNull()
+    const searchInput = container.querySelector('input') as HTMLInputElement
+    const valueSetter = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value')?.set
+    await act(async () => {
+      valueSetter?.call(searchInput, 'max')
+      searchInput.dispatchEvent(new Event('input', { bubbles: true }))
+    })
+    await act(async () => {
+      ;[...container.querySelectorAll('button')].find((button) => button.textContent === 'Max Muster')?.click()
+    })
+    await act(async () => {
+      ;[...container.querySelectorAll('button')].find((button) => button.textContent === 'Weiter')?.click()
+    })
+
+    expect(container.querySelector('.brand-surface')).toBeNull()
+  })
 })

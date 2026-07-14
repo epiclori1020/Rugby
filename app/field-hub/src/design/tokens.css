@@ -2,8 +2,9 @@
   color-scheme: light dark;
 
   --of-font-family-system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-  --of-font-family-display: var(--of-font-family-system);
+  --of-font-family-display: "Barlow Semi Condensed", var(--of-font-family-system);
   --of-font-family-mono: ui-monospace, "SF Mono", Menlo, monospace;
+  --of-brand-artwork: url("../assets/brand/onfield-signature-light.webp");
 
   --of-font-size-scoreboard: 2.5rem;
   --of-font-size-display: 1.75rem;
@@ -162,6 +163,7 @@
 @media (prefers-color-scheme: dark) {
   :root {
     color-scheme: dark;
+    --of-brand-artwork: url("../assets/brand/onfield-signature-dark.webp");
 
     --of-color-bg-base: #0C110E;
     --of-color-surface-default: #151D18;
@@ -229,6 +231,7 @@
 
 :root[data-theme="light"] {
   color-scheme: light;
+  --of-brand-artwork: url("../assets/brand/onfield-signature-light.webp");
 
   --of-color-brand-primary: #1F6B5C;
   --of-color-brand-primary-strong: #155448;
@@ -295,6 +298,7 @@
 
 :root[data-theme="dark"] {
   color-scheme: dark;
+  --of-brand-artwork: url("../assets/brand/onfield-signature-dark.webp");
 
   --of-color-bg-base: #0C110E;
   --of-color-surface-default: #151D18;

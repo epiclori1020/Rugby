@@ -1,5 +1,7 @@
+import { createClient } from '@supabase/supabase-js'
 import { spawn } from 'node:child_process'
-import { existsSync } from 'node:fs'
+import { randomUUID } from 'node:crypto'
+import { existsSync, readFileSync } from 'node:fs'
 import { dirname, resolve } from 'node:path'
 import { fileURLToPath, pathToFileURL } from 'node:url'
 import puppeteer from 'puppeteer-core'
@@ -14,6 +16,8 @@ const baseUrl = target.url
 const requireAuth = process.env.FIELD_HUB_R5_REQUIRE_AUTH === '1'
 const authEmail = process.env.FIELD_HUB_E2E_EMAIL
 const authPassword = process.env.FIELD_HUB_E2E_PASSWORD
+const allowRemoteMutation = process.env.FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION === '1'
+const fixtureMarkerPrefix = 'Temporary R5 E2E seed. Safe to delete.'
 
 const viewports = [
   { label: 'iPhone 375', width: 375, height: 667, isMobile: true, expectsSplit: false },
@@ -29,6 +33,27 @@ class QaBlockedError extends Error {
     super(message)
     this.name = 'QaBlockedError'
   }
+}
+
+function readDotEnv() {
+  const envPath = resolve(rootDir, '.env')
+  if (!existsSync(envPath)) return {}
+
+  return Object.fromEntries(
+    readFileSync(envPath, 'utf8')
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter((line) => line && !line.startsWith('#') && line.includes('='))
+      .map((line) => {
+        const [key, ...valueParts] = line.split('=')
+        return [key.trim(), valueParts.join('=').trim().replace(/^["']|["']$/g, '')]
+      }),
+  )
+}
+
+function requireValue(value, label) {
+  if (!value) throw new QaBlockedError(`${label} fehlt.`)
+  return value
 }
 
 export function resolveR5Target(rawBaseUrl, allowedAuthOrigin) {
@@ -167,7 +192,7 @@ export async function closeBrowser(browser) {
 export function validateR5Fixture({ squad, present, playerIds }) {
   if (squad < 1 || present < 1 || playerIds.length < 1) {
     throw new QaBlockedError(
-      'R5-QA-Testzustand fehlt: benoetigt werden mindestens ein Kaderspieler, ein Check-in und eine sichtbare Aufmerksamkeitszeile.',
+      `R5-QA-Testzustand fehlt: squad=${squad}, present=${present}, attentionRows=${playerIds.length}.`,
     )
   }
 }
@@ -199,16 +224,19 @@ async function signIn(page) {
     return { status: 'skipped' }
   }
   await page.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 30_000 })
-  await clickButton(page, 'Mehr')
-  await clickButton(page, 'Einstellungen')
   await page.waitForSelector('input[type="email"]', { timeout: 20_000 })
   await page.type('input[type="email"]', authEmail)
   await page.type('input[type="password"]', authPassword)
   await clickButton(page, 'Einloggen')
-  await page.waitForFunction(() => document.body.innerText.includes('Eingeloggt als'), { timeout: 30_000 })
-  await clickButton(page, 'Heute')
   await page.waitForSelector('.today-squad-screen', { timeout: 20_000 })
   return { status: 'checked' }
+}
+
+async function signOut(page) {
+  await page.goto(new URL('/#/more/settings', baseUrl).toString(), { waitUntil: 'networkidle2', timeout: 30_000 })
+  await page.waitForSelector('.app-shell', { timeout: 20_000 })
+  await clickButton(page, 'Logout')
+  await page.waitForSelector('.welcome-page', { timeout: 20_000 })
 }
 
 async function inspectToday(page, viewport) {
@@ -282,6 +310,136 @@ async function inspectToday(page, viewport) {
   return { viewport: viewport.label, squad: result.squad, present: result.present, attentionRows: result.playerIds.length }
 }
 
+function sessionDateFromDefinitionId(sessionDefinitionId) {
+  const match = sessionDefinitionId.match(/(\d{4}-\d{2}-\d{2})$/)
+  if (!match) {
+    throw new QaBlockedError(`Session-Datum kann nicht aus der gewählten Session abgeleitet werden: ${sessionDefinitionId}`)
+  }
+  return match[1]
+}
+
+async function createTemporaryFixture(supabase, userId, sessionDefinitionId) {
+  const now = new Date().toISOString()
+  const fixture = {
+    playerId: randomUUID(),
+    sessionLogIds: [],
+    createdSessionLogId: null,
+    entryIds: [],
+    marker: `${fixtureMarkerPrefix} Run ${randomUUID()}`,
+  }
+
+  try {
+    const existingSessionLogs = await supabase
+      .from('session_logs')
+      .select('id')
+      .eq('user_id', userId)
+      .eq('session_definition_id', sessionDefinitionId)
+      .is('deleted_at', null)
+    if (existingSessionLogs.error) throw existingSessionLogs.error
+    fixture.sessionLogIds = (existingSessionLogs.data ?? []).map((sessionLog) => sessionLog.id)
+
+    const playerInsert = await supabase.from('players').insert({
+      id: fixture.playerId,
+      user_id: userId,
+      name: `E2E R5 ${Date.now()}`,
+      position: 'E2E',
+      cluster: 'offen',
+      active: true,
+      consent_status: 'unklar',
+      photo_consent_status: 'not_asked',
+      returner_status: 'nein',
+      notes: fixture.marker,
+      created_at: now,
+      updated_at: now,
+      client_updated_at: now,
+      deleted_at: null,
+    })
+    if (playerInsert.error) throw playerInsert.error
+
+    if (fixture.sessionLogIds.length === 0) {
+      fixture.createdSessionLogId = randomUUID()
+      fixture.sessionLogIds = [fixture.createdSessionLogId]
+      const sessionInsert = await supabase.from('session_logs').insert({
+        id: fixture.createdSessionLogId,
+        user_id: userId,
+        session_definition_id: sessionDefinitionId,
+        date: sessionDateFromDefinitionId(sessionDefinitionId),
+        status: 'in_progress',
+        coach: 'E2E',
+        created_at: now,
+        updated_at: now,
+        client_updated_at: now,
+        deleted_at: null,
+      })
+      if (sessionInsert.error) throw sessionInsert.error
+    }
+
+    fixture.entryIds = fixture.sessionLogIds.map(() => randomUUID())
+    const entryInsert = await supabase.from('player_session_entries').insert(
+      fixture.sessionLogIds.map((sessionLogId, index) => ({
+        id: fixture.entryIds[index],
+        user_id: userId,
+        session_log_id: sessionLogId,
+        player_id: fixture.playerId,
+        present: true,
+        readiness: 2,
+        life_flag: 'Stress',
+        pain_score: 0,
+        pain_location: '',
+        returner_flag: 'nein',
+        traffic_light: 'yellow',
+        limits: [],
+        observation: fixture.marker,
+        session_reaction: 'none',
+        checkin_source: 'coach',
+        created_at: now,
+        updated_at: now,
+        client_updated_at: now,
+        deleted_at: null,
+      })),
+    )
+    if (entryInsert.error) throw entryInsert.error
+
+    return fixture
+  } catch (error) {
+    await cleanupTemporaryFixture(supabase, fixture)
+    throw error
+  }
+}
+
+async function assertRowsAbsent(supabase, table, ids) {
+  if (ids.length === 0) return
+  const result = await supabase.from(table).select('id').in('id', ids)
+  if (result.error) throw result.error
+  if (result.data?.length) {
+    throw new Error(`Remote-Cleanup unvollständig: ${table} enthält noch ${result.data.length} temporäre Zeile(n).`)
+  }
+}
+
+async function cleanupTemporaryFixture(supabase, fixture) {
+  if (!fixture) return
+
+  const entryDelete =
+    fixture.entryIds.length > 0
+      ? await supabase.from('player_session_entries').delete().in('id', fixture.entryIds)
+      : { error: null }
+  const sessionDelete = fixture.createdSessionLogId
+    ? await supabase.from('session_logs').delete().eq('id', fixture.createdSessionLogId)
+    : { error: null }
+  const playerDelete = await supabase.from('players').delete().eq('id', fixture.playerId)
+  const cleanupError = entryDelete.error ?? sessionDelete.error ?? playerDelete.error
+  if (cleanupError) throw cleanupError
+
+  await assertRowsAbsent(supabase, 'player_session_entries', fixture.entryIds)
+  await assertRowsAbsent(supabase, 'session_logs', fixture.createdSessionLogId ? [fixture.createdSessionLogId] : [])
+  await assertRowsAbsent(supabase, 'players', [fixture.playerId])
+  const markerVerify = await supabase.from('players').select('id').eq('notes', fixture.marker)
+  if (markerVerify.error) throw markerVerify.error
+  if (markerVerify.data?.length) {
+    throw new Error('Remote-Cleanup unvollständig: R5-Fixture-Marker ist noch vorhanden.')
+  }
+}
+
 async function main() {
   if (!existsSync(resolve(rootDir, 'dist/index.html'))) {
     throw new QaBlockedError('dist/index.html fehlt. Fuehre zuerst npm run build aus.')
@@ -289,13 +447,40 @@ async function main() {
   if (requireAuth && (!authEmail || !authPassword)) {
     throw new QaBlockedError('FIELD_HUB_E2E_EMAIL und FIELD_HUB_E2E_PASSWORD fehlen.')
   }
+  if (!allowRemoteMutation) {
+    throw new QaBlockedError('FIELD_HUB_E2E_ALLOW_REMOTE_MUTATION=1 fehlt für die temporäre R5-Fixture.')
+  }
+
+  const localEnv = readDotEnv()
+  const supabaseUrl = requireValue(process.env.VITE_SUPABASE_URL ?? localEnv.VITE_SUPABASE_URL, 'VITE_SUPABASE_URL')
+  const supabaseKey = requireValue(
+    process.env.VITE_SUPABASE_PUBLISHABLE_KEY ?? localEnv.VITE_SUPABASE_PUBLISHABLE_KEY,
+    'VITE_SUPABASE_PUBLISHABLE_KEY',
+  )
+  const e2eEmail = requireValue(authEmail, 'FIELD_HUB_E2E_EMAIL')
+  const e2ePassword = requireValue(authPassword, 'FIELD_HUB_E2E_PASSWORD')
+  const supabase = createClient(supabaseUrl, supabaseKey, {
+    auth: { autoRefreshToken: false, persistSession: false },
+  })
 
   const preview = startPreviewIfNeeded()
   let browser
+  let page
+  let signedIn = false
+  let apiSignedIn = false
+  let fixture = null
+  let checks = []
   try {
+    const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+      email: e2eEmail,
+      password: e2ePassword,
+    })
+    if (authError || !authData.user) throw authError ?? new Error('Supabase-Login fehlgeschlagen.')
+    apiSignedIn = true
+
     await waitForServer()
     browser = await puppeteer.launch({ executablePath: chromeExecutablePath(), headless: true, args: ['--no-sandbox'] })
-    const page = await browser.newPage()
+    page = await browser.newPage()
     const browserErrors = []
     page.on('pageerror', (error) => browserErrors.push(error.message))
     page.on('console', (message) => {
@@ -303,14 +488,44 @@ async function main() {
     })
     const auth = await signIn(page)
     if (auth.status !== 'checked') throw new QaBlockedError('R5-QA benötigt eine eingeloggte Coach-Session.')
-    const checks = []
+    signedIn = true
+    const sessionDefinitionId = await page.evaluate(() => localStorage.getItem('fieldHub:selectedSessionId'))
+    if (!sessionDefinitionId) throw new QaBlockedError('Gewählte Session ist im Browser nicht verfügbar.')
+    fixture = await createTemporaryFixture(supabase, authData.user.id, sessionDefinitionId)
+    await page.reload({ waitUntil: 'networkidle2', timeout: 30_000 })
     for (const viewport of viewports) checks.push(await inspectToday(page, viewport))
     if (browserErrors.length > 0) throw new Error(`Browserfehler: ${browserErrors.join('; ')}`)
-    console.log(JSON.stringify({ ok: true, baseUrl: target.logUrl, checks }, null, 2))
   } finally {
-    await closeBrowser(browser)
-    await stopPreview(preview)
+    let cleanupError = null
+    const runCleanupStep = async (step) => {
+      try {
+        await step()
+      } catch (error) {
+        cleanupError ??= error
+      }
+    }
+
+    await runCleanupStep(() => cleanupTemporaryFixture(supabase, fixture))
+    await runCleanupStep(async () => {
+      if (signedIn && page) await signOut(page)
+    })
+    await runCleanupStep(() => closeBrowser(browser))
+    await runCleanupStep(async () => {
+      if (!apiSignedIn) return
+      const { error } = await supabase.auth.signOut()
+      if (error) throw error
+    })
+    await runCleanupStep(() => stopPreview(preview))
+    if (cleanupError) throw cleanupError
   }
+
+  console.log(
+    JSON.stringify(
+      { ok: true, baseUrl: target.logUrl, fixture: 'temporary-r5', cleanup: 'remote-absence-verified', checks },
+      null,
+      2,
+    ),
+  )
 }
 
 if (import.meta.url === pathToFileURL(process.argv[1]).href) {

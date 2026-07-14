@@ -5,7 +5,7 @@ import type { SessionDefinition } from '../content/types'
 import { KIOSK_EXIT_HOLD_MS } from '../lib/kioskLock'
 import { triggerHapticFeedback } from '../lib/interactionFeedback'
 import { BrandSurface } from './onfield'
-import { SelfCheckInFlow, type SelfCheckInPlayerOption, type SelfCheckInSubmissionInput } from './SelfCheckInFlow'
+import { SelfCheckInFlow, type SelfCheckInPlayerOption, type SelfCheckInStep, type SelfCheckInSubmissionInput } from './SelfCheckInFlow'
 
 type KioskCheckInViewProps = {
   disabledReason?: string
@@ -28,6 +28,7 @@ export function KioskCheckInView({
 }: KioskCheckInViewProps) {
   const [exitPanelOpen, setExitPanelOpen] = useState(false)
   const [isHoldingExit, setIsHoldingExit] = useState(false)
+  const [flowStep, setFlowStep] = useState<SelfCheckInStep>('player')
   const holdTimerRef = useRef<number | null>(null)
   const holdButtonStyle = {
     '--kiosk-exit-hold-duration': `${KIOSK_EXIT_HOLD_MS}ms`,
@@ -96,7 +97,8 @@ export function KioskCheckInView({
 
   return (
     <main className="kiosk-checkin-page">
-      <BrandSurface
+      {flowStep === 'player' ? <BrandSurface
+        artwork="texture"
         body={`${formatSessionDate(selectedSession.date)} · ${sessionDetail(selectedSession.title)}`}
         className="kiosk-checkin-panel"
         claim="Know squad status before the whistle."
@@ -108,7 +110,7 @@ export function KioskCheckInView({
           <ClipboardCheck className="placeholder-icon" aria-hidden />
           <p>Nur Angaben für die heutige Einheit. Wähle deinen Namen, fülle den kurzen Check-in aus und gib das Gerät weiter.</p>
         </div>
-      </BrandSurface>
+      </BrandSurface> : null}
 
       <section className="self-checkin-panel kiosk-flow-panel" aria-label="Kiosk Check-in">
         <SelfCheckInFlow
@@ -120,6 +122,7 @@ export function KioskCheckInView({
           helperText="Nur Angaben für die heutige Einheit. Coach-Bereiche bleiben gesperrt."
           mode="kiosk"
           onSubmit={onSubmitKioskEntry}
+          onStepChange={setFlowStep}
           players={players}
           resetActionLabel="Nächsten Check-in starten"
           submitLabel="Speichern und weitergeben"

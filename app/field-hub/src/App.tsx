@@ -22,6 +22,7 @@ import type { SelfCheckInSubmissionInput } from './components/SelfCheckInFlow'
 import { SyncStatusBadge } from './components/SyncStatusBadge'
 import { TodayDashboard } from './components/TodayDashboard'
 import { TrainingView } from './components/TrainingView'
+import { WelcomeView } from './components/WelcomeView'
 import { getRelevantSessions, sessionDefinitions } from './content/sessions'
 import type { LibraryCategory, PdfRef, SessionDefinition } from './content/types'
 import { shouldShowBackupReminder } from './domain/backupReminder'
@@ -99,6 +100,7 @@ const SettingsView = lazy(() =>
 )
 
 const selectedSessionStorageKey = 'fieldHub:selectedSessionId'
+const intendedCoachRouteStorageKey = 'fieldHub:intendedCoachRoute'
 type PwaDisplayMode = 'browser' | 'standalone'
 type ReturnerFocus = { playerId: string; originRoute: AppRoute }
 
@@ -273,6 +275,9 @@ function getInitialSessionState(fallbackSessionId: string, todayKey = toLocalDat
 
 function CoachApp() {
   const [activeRoute, setActiveRoute] = useState<AppRoute>(getInitialCoachRoute)
+  const [isWelcomeRoute, setIsWelcomeRoute] = useState(() =>
+    typeof window !== 'undefined' && parseHashRoute(window.location.hash).kind === 'welcome',
+  )
   const [themePreference, setThemePreference] = useState<ThemePreference>(getStoredThemePreference)
   const [rememberedUnitRoute, setRememberedUnitRoute] = useState<UnitRoute>(() => {
     const initialRoute = getInitialCoachRoute()
@@ -549,6 +554,20 @@ function CoachApp() {
         return
       }
 
+      if (parsedRoute.kind === 'welcome') {
+        setIsWelcomeRoute(true)
+        return
+      }
+
+      if (authState.status !== 'signed-in' && activeKioskSessionId !== selectedSession.id) {
+        window.sessionStorage.setItem(intendedCoachRouteStorageKey, parsedRoute.canonicalHash)
+        window.history.replaceState(null, '', '#/welcome')
+        setIsWelcomeRoute(true)
+        return
+      }
+
+      setIsWelcomeRoute(false)
+
       if (window.location.hash !== parsedRoute.canonicalHash) {
         window.history.replaceState(null, '', parsedRoute.canonicalHash)
       }
@@ -573,7 +592,26 @@ function CoachApp() {
       window.removeEventListener('hashchange', syncRouteFromHash)
       window.removeEventListener('popstate', syncRouteFromHash)
     }
-  }, [clearLibraryInitialState, rememberNavigationRoute])
+  }, [activeKioskSessionId, authState.status, clearLibraryInitialState, rememberNavigationRoute, selectedSession.id])
+
+  useEffect(() => {
+    const parsedRoute = parseHashRoute(window.location.hash)
+
+    if (authState.status === 'signed-in') {
+      if (parsedRoute.kind !== 'welcome') {
+        return
+      }
+
+      const storedHash = window.sessionStorage.getItem(intendedCoachRouteStorageKey)
+      const storedRoute = storedHash ? parseHashRoute(storedHash) : null
+      window.sessionStorage.removeItem(intendedCoachRouteStorageKey)
+      const restoredHash = routeToHash(storedRoute?.kind === 'coach' ? storedRoute.route : routes.today)
+      window.history.replaceState(null, '', restoredHash)
+      window.dispatchEvent(new HashChangeEvent('hashchange'))
+      return
+    }
+
+  }, [authState.status])
 
   const handleOpenReturnerForPlayer = useCallback(
     (playerId: string) => {
@@ -914,6 +952,10 @@ function CoachApp() {
         />
       </>
     )
+  }
+
+  if (authState.status !== 'signed-in' || isWelcomeRoute) {
+    return <WelcomeView authState={authState} />
   }
 
   const syncStatusSlot = (

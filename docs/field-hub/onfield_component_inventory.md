@@ -25,6 +25,8 @@ Sprint 5 hat die erste Code-Struktur fuer das Core Component Kit unter `app/fiel
 | iPad Sidebar | Top-Level-Navigation | `Heute`, `Einheit`, `Spieler`, `Analyse`, `Mehr` | Inline-Aktionen, Filter | iPad |
 | iPhone Bottom Tab Bar | Top-Level-Navigation | 5 Hauptbereiche mit Label | Unterbereiche, Filter, Aktionen | iPhone |
 | Topbar | Screen-Kontext, Suche, Filter, Sync, Overflow | maximal eine Primaeraktion | zweites Hauptmenue | alle Hauptbereiche |
+| OnField Wordmark | konsistente Markenkennung mit Dot-Signature | Brand- und operative Header; Produktlabel separat | Statusanzeige oder in Rasterasset eingebrannter Text | App Shell, Welcome/Auth, Install, Public/Kiosk |
+| Brand Surface | erlaubte Markenflaeche mit kontrolliertem Artwork | Welcome/Auth/Install als Hero; Public/Kiosk-Einstieg als Texture | Live-Coaching, Readiness, Review, Error/Offline | Welcome, Auth, Settings, Public/Kiosk |
 | Session Header | schnelle Einheit-Zusammenfassung | Datum, Gruppe, Ort, Attendance, offene Tasks, CTA | Charts oder tiefe Historie | Heute, Einheit |
 | Primary Button | dominante Hauptaktion | eine sichtbare Hauptaktion pro Screen | mehrere gleich starke CTAs | alle |
 | Secondary Button | Alternative ohne Dominanz | Details, Profil oeffnen, Abbrechen | konkurrierende Primaeraktion | alle |
@@ -84,6 +86,14 @@ Sprint 5 bindet nur risikoarme bestehende Stellen an. Die alte 10-Tab-Navigation
 - Der Profilkopf kombiniert Identitaet, Position/Positionsgruppe, dieselbe Statuslogik und einen semantischen Vier-Metriken-Strip fuer letzte Teilnahme, Readiness, Beschwerden und offene Themen.
 - Player Detail bleibt unter 840 px ein modales Sheet mit Fokusfang/-rueckgabe und ab 840 px eine Pane neben der Liste. Der fachliche Umfang bleibt gleich.
 - `PrimaryButton`, `EmptyState` und `Skeleton` ersetzen Legacy-Aktionen beziehungsweise rohe Leer-/Ladehinweise in der Spielerliste.
+
+## Redesign-v2 R9 Mapping
+
+- `OnFieldWordmark` implementiert Mixed Case `OnField•`, getrennte optionale Produktlabels und Brand-/Operational-Kontext ohne Statussemantik.
+- `BrandSurface` hat den sicheren Artwork-Default `none` sowie die expliziten Modi `hero` und `texture`.
+- `WelcomeView` ist die First-Run-/Login-Kante mit drei nuetzlichen Schritten; nach erfolgreichem Login wird eine zuvor angeforderte Coach-Route wiederhergestellt.
+- Public/Kiosk zeigen die Textur nur am Einstieg und entfernen sie ab Readiness. `Heute` und der No-Roster-Zustand bleiben kontrolliert ruhig und row-/action-first.
+- Settings zeigt im Browser genau eine Install-Aktion und danach dieselben nummerierten Safari-Schritte fuer iPhone und iPad; im Standalone-Modus bleibt die Darstellung kompakt.
 
 ## IA-Auswirkungen aus Sprint 2
 

@@ -23,8 +23,27 @@ describe('AuthPanel', () => {
 
     expect(markup).toContain('brand-surface-auth')
     expect(markup).toContain('Coach-Login')
-    expect(markup).toContain('Check in players. Run the session. Wrap the day.')
+    expect(markup).toContain('brand-surface-artwork-hero')
     expect(markup).toContain('Einloggen')
+  })
+
+  it('can join the welcome composition without nesting a second brand surface', () => {
+    const markup = renderToStaticMarkup(<AuthPanel authState={signedOutAuthState} embedded />)
+
+    expect(markup).toContain('auth-panel-embedded')
+    expect(markup).toContain('Coach-Login')
+    expect(markup).not.toContain('brand-surface')
+    expect((markup.match(/of-button-primary/g) ?? []).length).toBe(1)
+  })
+
+  it('renders branded startup feedback without exposing an active login form', () => {
+    const markup = renderToStaticMarkup(
+      <AuthPanel authState={{ status: 'loading', session: null, user: null, error: null }} />,
+    )
+
+    expect(markup).toContain('OnField Coach wird vorbereitet')
+    expect(markup).toContain('role="status"')
+    expect(markup).not.toContain('current-password')
   })
 
   it('keeps setup copy limited to publishable client configuration', () => {
@@ -45,6 +64,15 @@ describe('AuthPanel', () => {
 
     expect(markup).toContain('Login nicht möglich. Email oder Passwort prüfen.')
     expect(markup).not.toContain('Invalid login credentials')
+  })
+
+  it('distinguishes a network failure from invalid credentials', () => {
+    const markup = renderToStaticMarkup(
+      <AuthPanel authState={{ ...signedOutAuthState, error: 'Failed to fetch' }} />,
+    )
+
+    expect(markup).toContain('Keine Netzwerkverbindung')
+    expect(markup).not.toContain('Email oder Passwort prüfen')
   })
 
   it('keeps controlled beta auth login-only', () => {

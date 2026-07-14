@@ -1,5 +1,6 @@
 export { OnFieldTopbar } from './OnFieldTopbar'
 export { BrandSurface } from './BrandSurface'
+export { OnFieldWordmark } from './OnFieldWordmark'
 export { AthleteRow, TaskQueueRow } from './Rows'
 export { ReadinessDot, type ReadinessTone } from './ReadinessDot'
 export { MetricTile, type MetricTileTone } from './MetricTile'

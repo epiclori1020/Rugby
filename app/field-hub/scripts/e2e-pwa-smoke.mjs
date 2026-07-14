@@ -106,11 +106,14 @@ function startPreviewIfNeeded() {
     return null
   }
 
+  const childEnv = { ...process.env }
+  delete childEnv.FIELD_HUB_E2E_EMAIL
+  delete childEnv.FIELD_HUB_E2E_PASSWORD
   const useProcessGroup = process.platform !== 'win32'
   const child = spawn('npm', ['run', 'preview', '--', '--host', '127.0.0.1', '--port', defaultPort], {
     cwd: rootDir,
     detached: useProcessGroup,
-    env: process.env,
+    env: childEnv,
     stdio: ['ignore', 'pipe', 'pipe'],
   })
 
@@ -281,6 +284,61 @@ async function assertKeyboardFocusVisible(page, viewportName) {
   throw new Error(`${viewportName}: kein sichtbarer Keyboard-Fokus nach Tab-Navigation.`)
 }
 
+async function assertDisplayFontLoaded(page) {
+  const displayFontLoaded = await page.evaluate(async () => {
+    await document.fonts.ready
+    return document.fonts.check('800 1rem "Barlow Semi Condensed"')
+  })
+  if (!displayFontLoaded) {
+    throw new Error('Barlow Semi Condensed 800 wurde auf der Welcome-Surface nicht geladen.')
+  }
+}
+
+async function assertDisplayFontFallback(browser) {
+  const page = await browser.newPage()
+  await page.setBypassServiceWorker(true)
+  await page.setCacheEnabled(false)
+  let blockedFontRequests = 0
+  await page.setRequestInterception(true)
+  page.on('request', (request) => {
+    if (request.resourceType() === 'font') {
+      blockedFontRequests += 1
+      request.abort()
+      return
+    }
+    request.continue()
+  })
+
+  try {
+    for (const viewport of [viewports[0], viewports[1], viewports[3]]) {
+      await page.setViewport({
+        width: viewport.width,
+        height: viewport.height,
+        deviceScaleFactor: 2,
+        isMobile: viewport.isMobile,
+      })
+      await page.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 30_000 })
+      await waitForAppShell(page)
+      await page.waitForSelector('.welcome-page .of-button-primary', { timeout: 20_000 })
+      const fallbackGeometry = await page.evaluate(() => {
+        const action = document.querySelector('.welcome-page .of-button-primary')?.getBoundingClientRect()
+        return {
+          noOverflow: document.documentElement.scrollWidth <= document.documentElement.clientWidth + 1,
+          actionVisible: Boolean(action && action.top >= 0 && action.bottom <= window.innerHeight + 1),
+        }
+      })
+      if (!fallbackGeometry.noOverflow || !fallbackGeometry.actionVisible) {
+        throw new Error(`${viewport.name}: Font-Fallback verursacht Layoutbruch oder verdeckt die Primäraktion.`)
+      }
+    }
+    if (blockedFontRequests < 1) {
+      throw new Error('Font-Fallback-Test hat keine lokale Font-Anforderung abgefangen.')
+    }
+  } finally {
+    await page.close()
+  }
+}
+
 async function clickButtonByLabelOrText(page, label, contextLabel) {
   await page.waitForFunction(
     (buttonLabel) =>
@@ -374,6 +432,43 @@ async function assertCoachRouteDeepLinks(page, viewport) {
     await page.goto(`${baseUrl}${check.hash}`, { waitUntil: 'networkidle2', timeout: 30_000 })
     await waitForAppShell(page)
     await waitForCoachRoute(page, check.expectedHash, check.expectedText, `${viewport.name}: ${check.hash}`)
+  }
+}
+
+async function assertCoachRouteAuthGate(page, viewport) {
+  await page.setViewport({
+    width: viewport.width,
+    height: viewport.height,
+    deviceScaleFactor: 2,
+    isMobile: viewport.isMobile,
+  })
+
+  for (const check of routeSmokeChecks) {
+    await page.goto(`${baseUrl}${check.hash}`, { waitUntil: 'networkidle2', timeout: 30_000 })
+    await waitForAppShell(page)
+
+    try {
+      await page.waitForFunction(
+        (expectedIntent) =>
+          window.location.hash === '#/welcome' &&
+          Boolean(document.querySelector('.welcome-page')) &&
+          window.sessionStorage.getItem('fieldHub:intendedCoachRoute') === expectedIntent,
+        { timeout: 20_000 },
+        check.expectedHash,
+      )
+    } catch (error) {
+      const diagnostics = await page.evaluate(() => ({
+        currentHash: window.location.hash,
+        intendedRoute: window.sessionStorage.getItem('fieldHub:intendedCoachRoute'),
+        hasWelcome: Boolean(document.querySelector('.welcome-page')),
+        textPreview: document.body.innerText.slice(0, 600),
+      }))
+
+      throw new Error(
+        `${viewport.name}: Coach-Route ${check.hash} wurde nicht sicher ueber Welcome gegated. Aktueller Hash: ${diagnostics.currentHash}. Gespeicherter Intent: ${diagnostics.intendedRoute ?? 'keiner'}. Welcome: ${diagnostics.hasWelcome ? 'ja' : 'nein'}. Sichtbarer Text: ${diagnostics.textPreview}`,
+        { cause: error },
+      )
+    }
   }
 }
 
@@ -471,18 +566,23 @@ async function main() {
       })
       await page.goto(baseUrl, { waitUntil: 'networkidle2', timeout: 30_000 })
       await waitForAppShell(page)
+      await assertDisplayFontLoaded(page)
       await assertNoHorizontalOverflow(page, viewport.name)
       await assertBottomNavigationClearance(page, viewport.name)
       await assertKeyboardFocusVisible(page, viewport.name)
     }
 
-    for (const viewport of lazyScreenViewports) {
-      await assertLazyScreensLoad(page, viewport)
-    }
+    await assertDisplayFontFallback(browser)
 
+    const coachRoutesAreAuthGated = await page.evaluate(() => Boolean(document.querySelector('.welcome-page')))
     for (const viewport of lazyScreenViewports) {
-      await assertCoachRouteDeepLinks(page, viewport)
-      await assertCoachRouteHistory(page, viewport)
+      if (coachRoutesAreAuthGated) {
+        await assertCoachRouteAuthGate(page, viewport)
+      } else {
+        await assertLazyScreensLoad(page, viewport)
+        await assertCoachRouteDeepLinks(page, viewport)
+        await assertCoachRouteHistory(page, viewport)
+      }
     }
 
     await assertOfflineFallback(page)
@@ -500,11 +600,9 @@ async function main() {
     }
 
     console.log(
-      `PWA smoke passed for ${viewports.map((viewport) => viewport.name).join(', ')}; lazy screens passed for ${lazyScreenViewports
-        .map((viewport) => viewport.name)
-        .join(', ')}; coach route deep links and history passed for ${lazyScreenViewports
-        .map((viewport) => viewport.name)
-        .join(', ')}.`,
+      coachRoutesAreAuthGated
+        ? `PWA smoke passed for ${viewports.map((viewport) => viewport.name).join(', ')}; Welcome auth gate and canonical coach-route intent passed for ${lazyScreenViewports.map((viewport) => viewport.name).join(', ')}.`
+        : `PWA smoke passed for ${viewports.map((viewport) => viewport.name).join(', ')}; lazy screens, coach route deep links and history passed for ${lazyScreenViewports.map((viewport) => viewport.name).join(', ')}.`,
     )
   } finally {
     await Promise.race([cleanupResources(browser, previewServer), new Promise((resolveTimer) => setTimeout(resolveTimer, 3_000))])

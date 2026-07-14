@@ -80,6 +80,10 @@ describe('OnField coach routing', () => {
     })
   })
 
+  it('keeps the hidden welcome route outside the operational coach shell', () => {
+    expect(parseHashRoute('#/welcome')).toEqual({ kind: 'welcome' })
+  })
+
   it('falls back unknown coach hashes to Today', () => {
     expect(parseHashRoute('#/unknown')).toMatchObject({
       kind: 'coach',

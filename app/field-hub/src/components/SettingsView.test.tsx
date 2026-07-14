@@ -101,7 +101,8 @@ describe('SettingsView', () => {
     expect(markup).toContain('Browser-Modus')
     expect(markup).toContain('Installiere OnField Coach fuer mehr Platz am Spielfeldrand.')
     expect(markup).toContain('OnField als PWA nutzen')
-    expect(markup).toContain('Zum Home-Bildschirm')
+    expect(markup).toContain('Installationsschritte anzeigen')
+    expect(markup).not.toContain('„Zum Home-Bildschirm“ wählen und hinzufügen.')
     expect(markup).toContain('Neue App-Version bereit')
     expect(markup).toContain('Wartet auf Sync')
     expect(markup).toContain('settings-utility-workspace')
@@ -164,10 +165,56 @@ describe('SettingsView', () => {
       pwaDisplayMode: 'standalone',
     })
 
-    expect(markup).toContain('PWA installiert')
+    expect(markup).toContain('OnField ist installiert')
     expect(markup).toContain('OnField Coach laeuft im Home-Screen-Modus.')
-    expect(markup).toContain('iPadOS: dieselbe PWA, derselbe Funktionsumfang, nur mehr Flaeche.')
+    expect(markup).toContain('iPhone und iPad behalten denselben Funktionsumfang.')
+    expect(markup).not.toContain('Installationsschritte anzeigen')
     expect(markup).not.toContain('beforeinstallprompt')
+  })
+
+  it('reveals one numbered Safari install path for both iPhone and iPad', async () => {
+    const container = document.createElement('div')
+    const root = createRoot(container)
+
+    try {
+      await act(async () => {
+        root.render(createElement(SettingsView, {
+          authState: signedInAuthState,
+          backupRecommended: false,
+          isManualSyncing: false,
+          lastExportAt: null,
+          latestCompletedSession: null,
+          needsAppRefresh: false,
+          pwaDisplayMode: 'browser',
+          onManualSync: () => undefined,
+          onNavigate: () => undefined,
+          onReloadApp: () => undefined,
+          onThemePreferenceChange: () => undefined,
+          storagePersistence,
+          syncFeedback: null,
+          syncOverview: syncedOverview,
+          themePreference: 'system',
+        }))
+      })
+
+      const installButton = [...container.querySelectorAll('button')].find(
+        (button) => button.textContent === 'Installationsschritte anzeigen',
+      )
+      expect(installButton).toBeTruthy()
+      expect(container.textContent).not.toContain('3. „Zum Home-Bildschirm“ wählen und hinzufügen.')
+
+      await act(async () => {
+        installButton?.click()
+      })
+
+      expect(container.textContent).toContain('1. OnField in Safari öffnen.')
+      expect(container.textContent).toContain('2. Teilen wählen.')
+      expect(container.textContent).toContain('3. „Zum Home-Bildschirm“ wählen und hinzufügen.')
+    } finally {
+      await act(async () => {
+        root.unmount()
+      })
+    }
   })
 
   it('keeps the current theme preference pressed and reports changes from the segmented control', async () => {

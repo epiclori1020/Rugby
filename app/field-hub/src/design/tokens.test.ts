@@ -81,7 +81,7 @@ describe('OnField design tokens', () => {
     const tokensCss = readSource('src/design/tokens.css')
 
     expect(tokensCss).toContain('--of-font-family-system: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;')
-    expect(tokensCss).toContain('--of-font-family-display: var(--of-font-family-system);')
+    expect(tokensCss).toContain('--of-font-family-display: "Barlow Semi Condensed", var(--of-font-family-system);')
     expect(tokensCss).toContain('--of-font-family-mono: ui-monospace, "SF Mono", Menlo, monospace;')
     expect(tokensCss).toContain('--of-font-size-scoreboard: 2.5rem;')
     expect(tokensCss).toContain('--of-font-size-display: 1.75rem;')
@@ -178,6 +178,16 @@ describe('OnField design tokens', () => {
 
     expect(componentCss).toContain('.of-scoreboard-cell-yellow dd {\n  color: var(--of-color-status-warning-text);')
     expect(contrastRatio(warningText, surface)).toBeGreaterThanOrEqual(4.5)
+  })
+
+  it('uses the accessible success text token on the primary scoreboard surface', () => {
+    const componentCss = readSource('src/components/ui/onfield-ui.css')
+    const tokensCss = readSource('src/design/tokens.css')
+    const successText = extractToken(tokensCss, '--of-color-status-success-text')
+    const primarySurface = extractToken(tokensCss, '--of-color-brand-primary-soft')
+
+    expect(componentCss).toContain('.of-scoreboard-cell-green dd {\n  color: var(--of-color-status-success-text);')
+    expect(contrastRatio(successText, primarySurface)).toBeGreaterThanOrEqual(4.5)
   })
 
   it('keeps screen CSS color values routed through tokens', () => {

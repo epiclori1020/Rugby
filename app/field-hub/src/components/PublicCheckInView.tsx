@@ -8,7 +8,7 @@ import {
 } from '../lib/publicCheckInRepository'
 import { publicSubmissionErrorMessage } from '../lib/publicCheckInErrors'
 import { BrandSurface } from './onfield'
-import { SelfCheckInFlow, type SelfCheckInSubmissionInput } from './SelfCheckInFlow'
+import { SelfCheckInFlow, type SelfCheckInStep, type SelfCheckInSubmissionInput } from './SelfCheckInFlow'
 
 type PublicCheckInViewProps = {
   token: string
@@ -18,6 +18,7 @@ export function PublicCheckInView({ token }: PublicCheckInViewProps) {
   const [formData, setFormData] = useState<PublicCheckInFormData | null>(null)
   const [status, setStatus] = useState<'loading' | 'ready' | 'submitting' | 'error'>('loading')
   const [message, setMessage] = useState<string | null>(null)
+  const [flowStep, setFlowStep] = useState<SelfCheckInStep>('player')
 
   useEffect(() => {
     loadPublicCheckInForm(token)
@@ -33,6 +34,7 @@ export function PublicCheckInView({ token }: PublicCheckInViewProps) {
 
   const isSubmitting = status === 'submitting'
   const isFormVisible = status === 'ready' || isSubmitting
+  const hasLoadError = status === 'error'
 
   async function handleSubmit(input: SelfCheckInSubmissionInput) {
     if (!formData || status !== 'ready') {
@@ -64,26 +66,29 @@ export function PublicCheckInView({ token }: PublicCheckInViewProps) {
 
   return (
     <main className="public-checkin-page">
-      <BrandSurface
+      {flowStep === 'player' ? <BrandSurface
+        artwork={hasLoadError ? 'none' : 'texture'}
         body={
           formData
             ? `${formData.link.sessionTitle} · ${formData.link.sessionDate}`
-            : 'Link wird geprueft.'
+            : hasLoadError
+              ? 'Dieser Check-in kann gerade nicht geöffnet werden.'
+              : 'Link wird geprueft.'
         }
         className="public-checkin-panel"
-        claim="Know squad status before the whistle."
+        claim={hasLoadError ? undefined : 'Know squad status before the whistle.'}
         meta={<span>{activeSportConfig.productLabel} Public Check-in</span>}
         title="Training Check-in"
         variant="public"
       >
         <div className="status-line">
           <ClipboardCheck className="placeholder-icon" aria-hidden />
-          <p>Kurzer Status vor der Einheit. Das Formular bleibt direkt erreichbar.</p>
+          <p>{hasLoadError ? 'Bitte den Link prüfen oder Coach informieren.' : 'Kurzer Status vor der Einheit. Das Formular bleibt direkt erreichbar.'}</p>
         </div>
 
         {status === 'loading' ? <p>Check-in wird geladen...</p> : null}
         {status === 'error' ? <p className="form-error">{message}</p> : null}
-      </BrandSurface>
+      </BrandSurface> : null}
 
       {isFormVisible ? (
         <section className="self-checkin-panel public-flow-panel" aria-label="Public Check-in">
@@ -94,6 +99,7 @@ export function PublicCheckInView({ token }: PublicCheckInViewProps) {
             helperText={activeSportConfig.safetyCopy.publicCheckInPrivacy}
             mode="public"
             onSubmit={handleSubmit}
+            onStepChange={setFlowStep}
             players={formData?.linkPlayers.map((player) => ({ id: player.id, displayName: player.displayName })) ?? []}
             resetActionLabel="Weiteren Check-in erfassen"
           />
