@@ -38,7 +38,7 @@ Fuer Redesign-, UX-, UI- oder Branding-Arbeit zusaetzlich lesen:
 
 - **Bauen/Umsetzen:** `docs/field-hub/onfield_redesign_spec_v2.md` — konkrete, buildbare Spec (Route A): Farb-Tokens Light+Dark „Field Mode", Typo-Tokens + Gewicht-Disziplin, Komponenten (row-first Athleten-Row, Scoreboard, Readiness-Dot), Screen-Spec „Squad heute", Build-Reihenfolge + Definition of Done. **Primaere Quelle fuer Redesign-Code.**
 - **Diagnose/Kontext:** `docs/field-hub/2026-07-08_onfield_design_audit_live.md` — Audit-Grundlage (Execution-Drift, Live-Durchgang, iPhone/iPad-Paritaet, Backlog P0–P2).
-- **Redesign-v2-Sprintplanung:** `docs/superpowers/plans/2026-07-08-onfield-redesign-v2-heritage-field-instrument.md` — aktive Sprint-Roadmap R1-R10 fuer Route A "Heritage Field Instrument"; vor Umsetzung eines Redesign-Sprints den konkreten Sprintabschnitt daraus lesen.
+- **Redesign-v2-Sprintplanung:** `docs/superpowers/plans/2026-07-08-onfield-redesign-v2-heritage-field-instrument.md` — R1-R10 sind code- und funktionsseitig abgeschlossen; das historische Launch-Evidence-Gate ist teilweise offen. Fuer Rueckfragen oder Folgearbeit den betroffenen Sprintabschnitt und das R10-Closeout lesen.
 - Visuelle Referenz (nur Menschen/Abgleich): `docs/field-hub/2026-07-08_onfield_redesign_concept.html` (CSS enthaelt dieselben Werte; die Spec-MD ist die verbindliche Textquelle).
 - Menschen-Report (ausfuehrlich): `app/field-hub/DESIGN_AUDIT_2026-07-08.md`.
 
@@ -86,7 +86,7 @@ Roadmap-Status:
 
 - `docs/superpowers/plans/2026-07-04-onfield-ux-branding-transformation-roadmap.md` ist die abgeschlossene Haupt-Roadmap fuer Sprint 0A bis Sprint 20.
 - `docs/superpowers/plans/2026-07-06-onfield-post-roadmap-hardening.md` ist die abgeschlossene Anschluss-Roadmap fuer Sprint 21 bis Sprint 26.
-- `docs/superpowers/plans/2026-07-08-onfield-redesign-v2-heritage-field-instrument.md` ist die aktive Redesign-v2-Roadmap fuer R1 bis R10 (Route A "Heritage Field Instrument").
+- `docs/superpowers/plans/2026-07-08-onfield-redesign-v2-heritage-field-instrument.md` ist code- und funktionsseitig fuer R1 bis R10 abgeschlossen (Route A "Heritage Field Instrument"); historische Vorher-/Nachher- und authentifizierte Screenshot-Evidence bleibt teilweise offen. Closeout: `docs/field-hub/2026-07-14_onfield_redesign_v2_evidence.md`.
 - `docs/field-hub/2026-07-07_onfield_post_roadmap_hardening_evidence.md` ist das Closeout-/Evidence-Dokument fuer Sprint 21 bis Sprint 26.
 - Phase A der Anschluss-Roadmap war beta-blockierend. Externe Beta bleibt von frischer echter `qa:beta`-Evidence, Supabase/Auth/RLS-Gate und Credential-Hygiene abhaengig.
 

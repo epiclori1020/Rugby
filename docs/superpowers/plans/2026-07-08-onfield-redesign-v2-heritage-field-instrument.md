@@ -681,6 +681,8 @@ Impact:
 
 ### R10 - Politur, P2-Backlog & Launch-Evidence
 
+Status: **code- und funktionsseitig abgeschlossen am 2026-07-14; Launch-Evidence teilweise offen**. Umsetzung, Figma-Referenz, P2-Klassifizierung, lokale QA und die verbleibenden historischen Screenshot-Grenzen sind im Evidence-Report `docs/field-hub/2026-07-14_onfield_redesign_v2_evidence.md` dokumentiert. `qa:beta` wurde nicht als grün gewertet: R10 verändert keine Auth-/Kiosk-/Public-/RLS-Logik, und das remote mutierende Gate hatte in diesem Lauf kein ausdrückliches Opt-in.
+
 Ziel: Nach den Redesign-Kernarbeiten die restlichen P2-Politurpunkte, QA-Evidence und Dokumentation so schliessen, dass kuenftige Agenten nicht wieder den falschen Stand interpretieren.
 
 Scope drin:
@@ -716,15 +718,17 @@ Abhaengigkeiten:
 - R1A, R1B, R2-R9.
 
 Definition of Done:
-- [ ] P0 und P1 aus dem Audit sind abgeschlossen oder bewusst mit Grund blockiert dokumentiert.
-- [ ] P2-Items sind entweder umgesetzt, in ein spaeteres Backlog verschoben oder als Nicht-Ziel dokumentiert.
-- [ ] `qa:local` ist gruen.
-- [ ] `qa:beta` ist fuer Auth/Kiosk/Public/RLS relevante Aenderungen frisch geprueft oder klar blockiert.
-- [ ] Visual QA deckt 375/393/834/1194 in Light und Field Mode ab.
-- [ ] Fuer R5-R9 existiert Redesign-Integrity-Evidence mit Vorher/Nachher-Screenshots, UX-Intent, Pattern-Audit und Token-/Typo-Audit.
-- [ ] Keine neuen Card-Walls, keine neuen Rohwerte, keine neuen 850/900-Gewichte.
-- [ ] Keine sichtbaren Dev-/Rohfehler, keine personenbezogenen/sensiblen Daten in Doku oder Screenshots.
-- [ ] Memory Closeout wurde nach Governance ausgefuehrt.
+- [x] P0 und P1 aus dem Audit sind abgeschlossen oder bewusst mit Grund blockiert dokumentiert.
+- [x] P2-Items sind entweder umgesetzt, in ein spaeteres Backlog verschoben oder als Nicht-Ziel dokumentiert.
+- [x] `qa:local` ist gruen.
+- [x] `qa:beta` ist fuer Auth/Kiosk/Public/RLS relevante Aenderungen frisch geprueft oder klar blockiert.
+- [ ] Die generische Visual-QA deckt 375/393/834/1194 in Light und Field Mode ab; eine persistierte authentifizierte R10-Appmatrix fuer alle geaenderten Screens bleibt offen.
+- [ ] Fuer R5-R9 existieren UX-Intent, Pattern- und Token-/Typo-Audits; die bereits dokumentierten historischen Vorher-/Nachher-Screenshot-Luecken in R5 und R7A-R7C bleiben offen und werden nicht nachtraeglich als geschlossen markiert.
+- [x] Keine neuen Card-Walls, keine neuen Rohwerte, keine neuen 850/900-Gewichte.
+- [x] Keine sichtbaren Dev-/Rohfehler, keine personenbezogenen/sensiblen Daten in Doku oder Screenshots.
+- [x] Memory Closeout wurde nach Governance ausgefuehrt.
+
+Die beiden offenen Evidence-Punkte blockieren nicht den lokalen Code-/Funktionsstand, aber eine Behauptung, das historische Redesign-Integrity- und Launch-Evidence-Gate sei vollstaendig geschlossen.
 
 Aufwand/Risiko/QA:
 - Aufwand: M.
@@ -759,10 +763,11 @@ Impact:
 
 Diese Punkte bleiben bewusst spaeter, falls sie nicht in R10 abgeschlossen werden:
 
-- Echte leichte SVG-/Custom-Charts fuer Analyse, ohne schwere Chart-Library.
 - Weitere Export-/Backup-Informationsarchitektur nach externer Coach-Evidence.
 - Feiner abgestimmte Micro-Motion/Haptik aus LUVI-Mustern.
 - Zusaetzliche Brand-Assets fuer externe Landingpage oder App-Store-/SaaS-Vorbereitung.
+
+In R10 abgeschlossen: echte leichte, zugaengliche SVG-Charts fuer Wochenbelastung und Belastungsarten ohne Chart-Library; die exakten Ergebnislisten bleiben als primaere Datenreferenz erhalten.
 
 ## Offene Fragen Vor Umsetzung
 

@@ -1,6 +1,6 @@
 # OnField Component Inventory
 
-Stand: 2026-07-13
+Stand: 2026-07-14
 
 ## Zweck
 
@@ -94,6 +94,17 @@ Sprint 5 bindet nur risikoarme bestehende Stellen an. Die alte 10-Tab-Navigation
 - `WelcomeView` ist die First-Run-/Login-Kante mit drei nuetzlichen Schritten; nach erfolgreichem Login wird eine zuvor angeforderte Coach-Route wiederhergestellt.
 - Public/Kiosk zeigen die Textur nur am Einstieg und entfernen sie ab Readiness. `Heute` und der No-Roster-Zustand bleiben kontrolliert ruhig und row-/action-first.
 - Settings zeigt im Browser genau eine Install-Aktion und danach dieselben nummerierten Safari-Schritte fuer iPhone und iPad; im Standalone-Modus bleibt die Darstellung kompakt.
+
+## Redesign-v2 R10 Mapping
+
+- `EmptyState` und `ErrorState` unterstuetzen `surface` und `inline`; geaenderte Analyse-, Export-, Returner- und Einstellungsflaechen verwenden die gemeinsamen Muster statt screen-lokaler Rohfehler.
+- `useDelayedLoadingIndicator` zeigt Listen-/Panel-Skeletons erst ab 300 ms und verhindert dadurch Flackern bei kurzen lokalen Reads.
+- Analyse nutzt zwei native, zugaengliche SVG-Diagramme fuer Wochenbelastung und Belastungsarten. Exakte Ergebniszeilen bleiben erhalten; keine Chart-Library und kein schwerer Dashboard-Layer wurden eingefuehrt.
+- Export & Backup hat genau eine dominante Vollbackup-Aktion. CSV-Tabellen sind in einer standardmaessig geschlossenen Sekundaergruppe; Import bleibt ein separates Sheet.
+- Verbleibendes Spieler-Loeschen nutzt das gemeinsame `Sheet` mit `SecondaryButton` und destruktiver Bestaetigung statt `window.confirm`.
+- Numerische Readiness-, sRPE- und Beschwerde-Skalen zeigen sichtbare Minimal-/Maximalanker; Status und Bedeutung bleiben damit auch ohne Farbwahrnehmung lesbar.
+- Recoverable Fehler zeigen coachnahe Handlungstexte; technische Dexie-, PostgREST- oder Policy-Details bleiben aus der sichtbaren UI entfernt.
+- Sheet-Motion ist tokenisiert und bei `prefers-reduced-motion` deaktiviert; Haptik bleibt auf funktionale Zustandswechsel begrenzt.
 
 ## IA-Auswirkungen aus Sprint 2
 
