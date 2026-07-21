@@ -6,11 +6,13 @@ Status: vom Nutzer freigegeben
 
 ## Ziel
 
-Die bestehende generische OnField-Session fuer Donnerstag, 23. Juli 2026, wird durch den aktuell ausgearbeiteten kontrollierten KW30-Off-Season-Entwicklungsreiz ersetzt. Kompaktplan, Check-in/Nachbereitung und insbesondere das Deep Playbook werden als aktive Offline-PDF-Unterlagen in OnField Coach integriert und aus Einheit sowie Bibliothek erreichbar gemacht.
+Die bestehende generische OnField-Session fuer Donnerstag, 23. Juli 2026, wird durch den aktuell ausgearbeiteten kontrollierten KW30-Off-Season-Entwicklungsreiz ersetzt. Zusaetzlich wird die heutige Session vom Dienstag, 21. Juli 2026, auf die tatsaechlich vorgesehene Session 4B mit den bereits vorhandenen Unterlagen vom 16. Juli umgestellt. Kompaktplan, Check-in/Nachbereitung und insbesondere die Deep Playbooks werden als aktive Offline-PDF-Unterlagen in OnField Coach integriert und aus Einheit sowie Bibliothek erreichbar gemacht.
 
 ## Verbindlicher Scope
 
 - Die kanonische Session-ID `kw30-do-2026-07-23` bleibt stabil, damit bestehende lokale und synchronisierte Session-Bezuege nicht brechen.
+- Die kanonische Session-ID `kw30-di-2026-07-21` bleibt ebenfalls stabil. Ihr Inhalt wird auf die bereits geplante und heute auszufuehrende Session 4B umgestellt; die Session-ID und das heutige Datum bleiben erhalten.
+- Die bereits vorhandenen KW29-Donnerstag-PDFs werden als aktives 4B-Paket typisiert und sowohl der historischen Session vom 16. Juli als auch der heutigen Session vom 21. Juli zugeordnet.
 - Titel, Zusammenfassung, Ziele, Timeline, Materialien, Safety Notes und Coach Notes der Session werden auf den neuen 90-Minuten-Plan aktualisiert.
 - Die drei aktiven PDFs werden mit stabilen `/library/`-URLs nach `app/field-hub/public/library/` uebernommen:
   - Training kompakt.
@@ -23,6 +25,14 @@ Die bestehende generische OnField-Session fuer Donnerstag, 23. Juli 2026, wird d
 - iPhone und iPad erhalten identische Inhalte und Funktionen; nur die bestehende responsive Darstellung unterscheidet sich.
 
 ## Session-Abbildung
+
+### Dienstag 21. Juli
+
+Die heutige App-Session nutzt die vollstaendige 4B-Charakteristik: Check-in und RAMP, A-Skip und kontrollierte Speedqualitaet, kurzer Power-Primer, zwei Kraftsaetze bei RPE 6-7, clusterspezifische Robustheit sowie nur optionale extensive Tempoarbeit. OnField zeigt damit heute nicht mehr die alte harte 5A-Vorschau.
+
+Die PDF-Reihenfolge fuer heute ist Deep Playbook, Training kompakt und Check-in/Beobachtung. Die PDF-Dateien behalten ihr fachlich korrektes Erstellungsdatum 16. Juli; die App bezeichnet die aktive Session klar als heutige Session 4B.
+
+### Donnerstag 23. Juli
 
 Die Timeline wird von drei groben Altbloecken auf die acht Coach-Bloecke des aktuellen Plans erweitert:
 
@@ -63,6 +73,7 @@ Die statische `SessionDefinition` bleibt die Arbeitsgrundlage fuer Heute, Einhei
 
 1. Neue Content-Tests werden zuerst geschrieben und muessen vor der Implementierung wegen fehlender KW30-Referenzen fehlschlagen.
 2. Die Tests pruefen:
+   - dass `kw30-di-2026-07-21` Session 4B statt der alten Session 5A anzeigt und auf das vollstaendige 4B-PDF-Paket verweist;
    - die acht erwarteten stabilen Block-Keys;
    - Datum, Titel, Hauptdosen und Safety Notes der Session;
    - Reihenfolge und Erreichbarkeit der drei PDF-Referenzen;

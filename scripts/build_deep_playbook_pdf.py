@@ -173,6 +173,8 @@ def build_pdf(src: Path, dst: Path):
         footer_text = "Einheit 2 - Deep Playbook - Do 18.06.2026"
     elif "unit_1" in src.name or "einheit_1" in src.name:
         footer_text = "Einheit 1 - Deep Playbook - Di 16.06.2026"
+    elif "kw30_thursday" in src.name:
+        footer_text = "KW30 - Deep Playbook - Do 23.07.2026"
 
     doc = BaseDocTemplate(
         str(dst), pagesize=portrait(A4),

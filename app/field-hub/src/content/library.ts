@@ -236,6 +236,79 @@ export const libraryItems: LibraryItem[] = [
     ],
   },
   {
+    id: 'kw29-thursday-active-pack',
+    category: 'Aktive Pläne',
+    title: 'Session 4B: aktives PDF-Paket',
+    summary:
+      'Aktive Feld- und iPad-Unterlagen fuer die heute auszufuehrende Session 4B: Deep Playbook, Training kompakt und Check-in/Beobachtung.',
+    sourcePath: 'plans/offseason_coach_sheets/KW29_thursday_training_compact_2026-07-16.md',
+    tags: ['KW30', 'Dienstag', '21.07', 'Session 4B', 'Training kompakt', 'Check-in', 'Deep Playbook'],
+    sections: [
+      {
+        title: 'Heute am Feld',
+        body: [
+          'Session 4B bestaetigt Speed- und Powerqualitaet, statt einen zweiten Aufbau-Hauptreiz zu erzeugen.',
+          'Kraft bleibt bei zwei sauberen Arbeitssaetzen @ RPE 6-7; kein A+-Satz und kein Nachholen.',
+          'Tempo ist optional und wird bei Zeitdruck, schwerer Reaktion oder vielen Gelb/Rot zuerst gestrichen.',
+        ],
+      },
+      {
+        title: 'Deep Playbook',
+        body: [
+          'Das Deep Playbook ist die primaere iPad-Vorbereitung mit Wording, Beobachtung, Entscheidung und Fallbacks.',
+          'Speed, COD/Deceleration, Conditioning und Kontakt werden fuer Returner getrennt gecappt.',
+          'Kopf-, Nacken-, Schwindel- oder neurologische Warnzeichen bedeuten Stopp, medizinische Abklaerung und keine Rueckkehr am selben Tag.',
+        ],
+      },
+    ],
+    pdfRefs: [
+      pdfRefs.kw29ThursdayDeepPlaybook,
+      pdfRefs.kw29ThursdayTrainingCompact,
+      pdfRefs.kw29ThursdayCheckIn,
+    ],
+  },
+  {
+    id: 'kw30-thursday-active-pack',
+    category: 'Aktive Pläne',
+    title: 'Donnerstag 23.07: aktives PDF-Paket',
+    summary:
+      'Aktuelle Feld- und iPad-Unterlagen fuer den kontrollierten KW30-Off-Season-Entwicklungsreiz: Deep Playbook, Training kompakt und Check-in/Beobachtung.',
+    sourcePath: 'plans/offseason_coach_sheets/KW30_thursday_training_compact_2026-07-23.md',
+    tags: ['KW30', 'Donnerstag', '23.07', 'Off-Season', 'Speed', 'COD', 'Ball-in-Play', 'Deep Playbook'],
+    sections: [
+      {
+        title: 'Hauptprogression',
+        body: [
+          'Track entwickelt A-Skip ueber Low Dribble und Walk-in Plant weiter; Speed bleibt clusterspezifisch und frisch.',
+          'Collision Forwards laufen 70 m, Hybrid 60 m plus geschlossenes 5-5-5, Speed/Space Backs 110 m inklusive zwei dosierten Fly-Zonen.',
+          'Kraft laeuft mit drei sauberen Hauptlift-Arbeitssaetzen @ RPE 7; zwei Ball-in-Play-Serien sind die Obergrenze.',
+        ],
+      },
+      {
+        title: 'Steuerung am Feld',
+        body: [
+          'Fly nur fuer gruene, technisch stabile und symptomfreie Speed/Space Backs; Gelb ohne Fly und Reaccel.',
+          'Contact Prep bleibt bei Kontaktindex 0-1; kein Shield-Hit, Live-Tackle oder Full Contact.',
+          'Bei Zeitdruck zuerst die zweite Ball-in-Play-Serie, danach Cluster, Med-Ball und Pod B/C kuerzen.',
+          'Returner-Caps fuer Speed, COD/Deceleration, Conditioning und Kontakt bleiben getrennt.',
+        ],
+      },
+      {
+        title: 'Deep Playbook',
+        body: [
+          'Das Deep Playbook erklaert jeden Block mit Ziel, Aufbau, Wording, Beobachtung, Entscheidung und Fallback.',
+          'Kopf-, Nacken-, Schwindel- oder neurologische Warnzeichen bedeuten Stopp, medizinische Abklaerung und keine Rueckkehr am selben Tag.',
+          'OnField unterstuetzt die Coach-Entscheidung und erteilt keine medizinische Freigabe.',
+        ],
+      },
+    ],
+    pdfRefs: [
+      pdfRefs.kw30ThursdayDeepPlaybook,
+      pdfRefs.kw30ThursdayTrainingCompact,
+      pdfRefs.kw30ThursdayCheckIn,
+    ],
+  },
+  {
     id: 'spieler-briefing-start',
     category: 'Quellen',
     title: 'Spieler-Briefing: S&C Start',
