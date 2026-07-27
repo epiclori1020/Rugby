@@ -309,6 +309,77 @@ export const libraryItems: LibraryItem[] = [
     ],
   },
   {
+    id: 'kw31-tuesday-active-plan',
+    category: 'Aktive Pläne',
+    title: 'Dienstag 28.07: aktiver Trainingsplan',
+    summary:
+      'Aktuelle KW31-Off-Season-Einheit mit spezifischem RAMP, schlanker Track-Vorbereitung, geplantem 45-Grad-COD und drei festen Kraftstationen.',
+    sourcePath: 'docs/27_kw31_tuesday_deep_playbook_2026-07-28.md',
+    tags: ['KW31', 'Dienstag', '28.07', 'Off-Season', 'COD', 'Kraft', 'Deep Playbook'],
+    sections: [
+      {
+        title: 'Hauptprogression',
+        body: [
+          'Der 5-5-5 fuehrt fuer alle Cluster geplante Richtungswechsel bei ungefaehr 45 Grad ein; kein reaktiver Cut und kein Rennen.',
+          'Das RAMP bereitet gezielt Sprunggelenk, Adduktoren, seitliche Lastaufnahme und Squat-Position vor.',
+          'Die Track-Vorbereitung nutzt A-March, A-Skip, Pogo, Snap-down und den bekannten Walk-in Plant; Low Dribble und ein neuer Shuffle-to-Plant entfallen.',
+        ],
+      },
+      {
+        title: 'Organisation fuer sechs bis acht Spieler',
+        body: [
+          'Der Kraftteil hat genau drei feste Stationen mit zwei bis drei Spielern pro Gruppe.',
+          'Horizontaler Zug plus Floor Press sowie Step-up plus Carry bleiben jeweils am selben Stationsplatz und erzeugen keine zusaetzlichen Stationen.',
+          'In der Robustheit arbeiten alle zuerst an Hamstrings und Adduktoren; danach folgt pro Cluster genau ein Zusatz.',
+        ],
+      },
+      {
+        title: 'Steuerung am Feld',
+        body: [
+          'Hybrid absolviert die zweite 5-5-5-Runde nur nach stabilen Wiederholungen auf beiden Seiten.',
+          'Loaded Jumps entfallen; Squat Jump und Med-Ball Shot-Put bleiben kurz und explosiv.',
+          'Bei Zeit- oder Qualitaetsverlust wird zuerst die extensive Tempoarbeit gestrichen.',
+          'OnField unterstuetzt Coaching-Entscheidungen und erteilt keine medizinische Freigabe.',
+        ],
+      },
+    ],
+    pdfRefs: [pdfRefs.kw31TuesdayDeepPlaybook],
+  },
+  {
+    id: 'kw31-thursday-active-plan',
+    category: 'Aktive Pläne',
+    title: 'Donnerstag 30.07: aktiver Trainingsplan',
+    summary:
+      'Aktuelle KW31-Off-Season-Einheit mit linearer Speedqualitaet, niedrig dosierter horizontaler Power, drei Kraftstationen und August-Uebergabe.',
+    sourcePath: 'docs/28_kw31_thursday_deep_playbook_2026-07-30.md',
+    tags: ['KW31', 'Donnerstag', '30.07', 'Off-Season', 'Speed', 'Power', 'Kraft', 'Deep Playbook'],
+    sections: [
+      {
+        title: 'Wochen-Ergaenzung',
+        body: [
+          'Dienstag war kniedominant mit geplantem COD sowie horizontalem Push/Pull. Donnerstag bleibt linear, arbeitet hueftdominant und variiert den Oberkoerper vertikal.',
+          'Der RAMP prueft neben Laufbild, Sprunggelenk und Hinge auch Schulterblatt, Rippenposition und Overhead-Bewegungsweg.',
+        ],
+      },
+      {
+        title: 'Power und Kraft',
+        body: [
+          'Power: Snap-down 1x2, Broad Jump plus Stick 2x2 und beidarmiger Rotational Scoop 2x2 pro Seite. Keine Weitenmessung und kein dritter Satz.',
+          'Drei Kraftstationen: unterstuetzter Single-Leg RDL, Half-Kneeling One-Arm DB Overhead Press und Pull-up oder Band-Assisted Pull-up.',
+        ],
+      },
+      {
+        title: 'Steuerung',
+        body: [
+          'Gelb reduziert Speed, Broad Jump, Hinge sowie Press/Pull getrennt und macht kein Conditioning.',
+          'Der optionale Tempoblock kommt nur, wenn er am Dienstag bewusst fuer die Gruppe entfiel und Donnerstag gruen bleibt.',
+          'OnField unterstuetzt Coaching-Entscheidungen und erteilt keine medizinische Freigabe.',
+        ],
+      },
+    ],
+    pdfRefs: [pdfRefs.kw31ThursdayDeepPlaybook],
+  },
+  {
     id: 'spieler-briefing-start',
     category: 'Quellen',
     title: 'Spieler-Briefing: S&C Start',

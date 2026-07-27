@@ -75,8 +75,29 @@ const expectedBlockKeysBySession: Record<string, string[]> = {
     'cluster-robustness',
     'conditioning-closeout',
   ],
-  'kw31-di-2026-07-28': ['checkin-prep-mini-recheck', 'power-strength-pods', 'microdose-conditioning-august-rules'],
-  'kw31-do-2026-07-30': ['checkin-prep-speed', 'power-strength-technique', 'august-robustness-closeout'],
+  'kw31-di-2026-07-28': [
+    'check-in',
+    'specific-ramp',
+    'track-cod-prep',
+    'speed-cod',
+    'power',
+    'three-strength-stations',
+    'shared-robustness',
+    'tempo-closeout',
+  ],
+  'kw31-do-2026-07-30': [
+    'start',
+    'check-in',
+    'specific-ramp',
+    'track-prep',
+    'speed',
+    'power',
+    'three-strength-stations',
+    'robustness',
+    'conditional-tempo',
+    'august-handover',
+    'closeout',
+  ],
 }
 
 describe('session block keys', () => {

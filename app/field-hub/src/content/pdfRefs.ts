@@ -121,6 +121,16 @@ export const pdfRefs = {
     href: '/library/kw30_thursday_2026-07-23_checkin_beobachtung.pdf',
     sourcePath: 'templates/kw30_thursday_checkin_observation_2026-07-23.md',
   },
+  kw31TuesdayDeepPlaybook: {
+    label: 'Di 28.07 Deep Playbook',
+    href: '/library/kw31_tuesday_2026-07-28_deep_playbook.pdf',
+    sourcePath: 'docs/27_kw31_tuesday_deep_playbook_2026-07-28.md',
+  },
+  kw31ThursdayDeepPlaybook: {
+    label: 'Do 30.07 Deep Playbook',
+    href: '/library/kw31_thursday_2026-07-30_deep_playbook.pdf',
+    sourcePath: 'docs/28_kw31_thursday_deep_playbook_2026-07-30.md',
+  },
   consent: {
     label: 'Einwilligung 20x',
     href: '/library/5_OPTIONAL_einwilligung_20x.pdf',

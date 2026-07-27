@@ -92,15 +92,23 @@ def make_styles():
             "section", parent=base["Heading2"], fontName="Helvetica-Bold",
             fontSize=12.5, leading=15, textColor=colors.white, backColor=BRAND,
             borderPadding=(5, 7, 5, 7), spaceBefore=14, spaceAfter=8, leftIndent=0,
+            keepWithNext=True,
         ),
         "h3": ParagraphStyle(
             "h3", parent=base["Heading3"], fontName="Helvetica-Bold",
             fontSize=11, leading=14, textColor=BRAND, spaceBefore=9, spaceAfter=2,
+            keepWithNext=True,
+        ),
+        "h4": ParagraphStyle(
+            "h4", parent=base["Heading4"], fontName="Helvetica-Bold",
+            fontSize=9.8, leading=12.5, textColor=INK, spaceBefore=6, spaceAfter=2,
+            keepWithNext=True,
         ),
         "ziel": ParagraphStyle(
             "ziel", parent=base["BodyText"], fontName="Helvetica", fontSize=9.5,
             leading=13, textColor=INK, backColor=ZIEL_BG,
             borderPadding=(5, 7, 5, 7), spaceBefore=2, spaceAfter=6,
+            keepWithNext=True,
         ),
         "body": ParagraphStyle(
             "body", parent=base["BodyText"], fontName="Helvetica", fontSize=9.5,
@@ -113,10 +121,19 @@ def make_styles():
         "caption": ParagraphStyle(
             "caption", parent=base["BodyText"], fontName="Helvetica-Bold",
             fontSize=7.5, leading=9, textColor=ACCENT, spaceBefore=3, spaceAfter=2,
+            keepWithNext=True,
         ),
         "quote": ParagraphStyle(
             "quote", parent=base["BodyText"], fontName="Helvetica", fontSize=9.8,
             leading=13.8, textColor=colors.HexColor("#16324a"),
+        ),
+        "table_header": ParagraphStyle(
+            "table_header", parent=base["BodyText"], fontName="Helvetica-Bold",
+            fontSize=8.2, leading=10.5, textColor=BRAND,
+        ),
+        "table_cell": ParagraphStyle(
+            "table_cell", parent=base["BodyText"], fontName="Helvetica",
+            fontSize=8.2, leading=10.5, textColor=INK,
         ),
     }
 
@@ -167,6 +184,43 @@ def render_bullet(text: str, styles) -> Paragraph:
     return Paragraph(esc(text), styles["bullet"], bulletText="•")
 
 
+def markdown_table(rows: list[str], styles, width: float) -> Table:
+    """Einfache GFM-Tabellen als umbrechende ReportLab-Tabelle rendern."""
+    parsed = [[cell.strip() for cell in row.strip().strip("|").split("|")]
+              for row in rows]
+    if len(parsed) > 1 and all(re.fullmatch(r":?-{3,}:?", cell)
+                               for cell in parsed[1]):
+        parsed.pop(1)
+
+    column_count = max(len(row) for row in parsed)
+    parsed = [row + [""] * (column_count - len(row)) for row in parsed]
+    data = []
+    for row_index, row in enumerate(parsed):
+        style = styles["table_header"] if row_index == 0 else styles["table_cell"]
+        data.append([Paragraph(esc(cell), style) for cell in row])
+
+    if column_count == 2:
+        col_widths = [width * 0.30, width * 0.70]
+    elif column_count == 3:
+        col_widths = [width * 0.22, width * 0.39, width * 0.39]
+    else:
+        col_widths = [width / column_count] * column_count
+
+    table = Table(data, colWidths=col_widths, repeatRows=1, hAlign="LEFT")
+    table.setStyle(TableStyle([
+        ("BACKGROUND", (0, 0), (-1, 0), BRAND_SOFT),
+        ("GRID", (0, 0), (-1, -1), 0.35, RULE),
+        ("VALIGN", (0, 0), (-1, -1), "TOP"),
+        ("LEFTPADDING", (0, 0), (-1, -1), 5),
+        ("RIGHTPADDING", (0, 0), (-1, -1), 5),
+        ("TOPPADDING", (0, 0), (-1, -1), 4),
+        ("BOTTOMPADDING", (0, 0), (-1, -1), 4),
+        ("ROWBACKGROUNDS", (0, 1), (-1, -1),
+         [colors.white, colors.HexColor("#f8fafc")]),
+    ]))
+    return table
+
+
 def build_pdf(src: Path, dst: Path):
     footer_text = "Deep Playbook"
     if "unit_2" in src.name or "einheit_2" in src.name:
@@ -175,6 +229,10 @@ def build_pdf(src: Path, dst: Path):
         footer_text = "Einheit 1 - Deep Playbook - Di 16.06.2026"
     elif "kw30_thursday" in src.name:
         footer_text = "KW30 - Deep Playbook - Do 23.07.2026"
+    elif "kw31_tuesday" in src.name:
+        footer_text = "KW31 - Deep Playbook - Di 28.07.2026"
+    elif "kw31_thursday" in src.name:
+        footer_text = "KW31 - Deep Playbook - Do 30.07.2026"
 
     doc = BaseDocTemplate(
         str(dst), pagesize=portrait(A4),
@@ -220,6 +278,12 @@ def build_pdf(src: Path, dst: Path):
             i += 1
             continue
 
+        if s.startswith("#### "):
+            story.append(Paragraph(esc(s[5:]), styles["h4"]))
+            expect_subtitle = False
+            i += 1
+            continue
+
         if s.startswith("### "):
             # Kein Sonderzeichen-Akzent: Helvetica/WinAnsi hat keine Box-Glyphen
             # (▮/■ wuerden als Tofu rendern). Blau-fett + Haarlinie reicht.
@@ -248,13 +312,24 @@ def build_pdf(src: Path, dst: Path):
             if quotes:
                 story.append(Paragraph("WAS ICH SAGE", styles["caption"]))
                 story.append(quote_callout(quotes, styles, doc.width))
-                story.append(Spacer(1, 4))
+                if any(line.strip() for line in lines[i:]):
+                    story.append(Spacer(1, 4))
             expect_subtitle = False
             continue
 
         if s.startswith("> "):  # vereinzelte Quote ohne Header
             story.append(quote_callout([s.lstrip(">").strip()], styles, doc.width))
             i += 1
+            continue
+
+        if s.startswith("|"):
+            table_rows: list[str] = []
+            while i < len(lines) and lines[i].strip().startswith("|"):
+                table_rows.append(lines[i].strip())
+                i += 1
+            story.append(markdown_table(table_rows, styles, doc.width))
+            story.append(Spacer(1, 5))
+            expect_subtitle = False
             continue
 
         if s.startswith("- "):
